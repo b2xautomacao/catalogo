@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
@@ -104,7 +105,7 @@ const Index = () => {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            <DashboardCards userRole={profile?.role || 'store_admin'} />
+            <DashboardCards userRole={profile?.role === 'superadmin' ? 'superadmin' : 'admin'} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="card-modern">
