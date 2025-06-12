@@ -187,18 +187,18 @@ const StoreInfoSettings = () => {
                     <Input
                       type="time"
                       className="w-24"
-                      {...form.register(`businessHours.${day.key}.open`)}
+                      {...form.register(`businessHours.${day.key}.open` as any)}
                     />
                     <span>às</span>
                     <Input
                       type="time"
                       className="w-24"
-                      {...form.register(`businessHours.${day.key}.close`)}
+                      {...form.register(`businessHours.${day.key}.close` as any)}
                     />
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        {...form.register(`businessHours.${day.key}.closed`)}
+                        {...form.register(`businessHours.${day.key}.closed` as any)}
                       />
                       <span className="text-sm">Fechado</span>
                     </label>
