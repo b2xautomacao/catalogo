@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, Users, DollarSign, Plus, Settings, TrendingUp, AlertTriangle } from 'lucide-react';
@@ -7,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useProducts, CreateProductData } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ProductFormModal from '@/components/products/ProductFormModal';
 import DashboardCard from './DashboardCard';
+import NavigationPanel from './NavigationPanel';
 
 const StoreDashboard = () => {
   const navigate = useNavigate();
@@ -46,7 +47,6 @@ const StoreDashboard = () => {
         title: "Sucesso",
         description: "Produto criado com sucesso",
       });
-      setShowProductForm(false);
     }
   };
 
@@ -108,46 +108,10 @@ const StoreDashboard = () => {
         />
       </div>
 
-      {/* Ações Rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-modern cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => setShowProductForm(true)}>
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="bg-blue-100 p-4 rounded-full inline-block mb-4">
-                <Plus className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">Adicionar Produto</h3>
-              <p className="text-sm text-muted-foreground">Cadastre um novo produto com imagens e variações</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="card-modern cursor-pointer hover:shadow-xl transition-all duration-300"
-          onClick={() => navigate('/settings')}
-        >
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="bg-purple-100 p-4 rounded-full inline-block mb-4">
-                <Settings className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">Configurar Catálogos</h3>
-              <p className="text-sm text-muted-foreground">Gerencie varejo e atacado</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern cursor-pointer hover:shadow-xl transition-all duration-300">
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="bg-green-100 p-4 rounded-full inline-block mb-4">
-                <ShoppingCart className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">Ver Pedidos</h3>
-              <p className="text-sm text-muted-foreground">Acompanhe vendas e entregas</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Painel de Navegação */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
+        <NavigationPanel />
       </div>
 
       {/* Produtos e Performance */}
@@ -254,15 +218,12 @@ const StoreDashboard = () => {
         </Card>
       </div>
 
-      {/* Dialog para criar novo produto */}
-      <Dialog open={showProductForm} onOpenChange={setShowProductForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Novo Produto</DialogTitle>
-          </DialogHeader>
-          <ProductFormAdvanced onSubmit={handleCreateProduct} onCancel={() => setShowProductForm(false)} />
-        </DialogContent>
-      </Dialog>
+      {/* Modal para criar novo produto */}
+      <ProductFormModal
+        open={showProductForm}
+        onOpenChange={setShowProductForm}
+        onSubmit={handleCreateProduct}
+      />
     </div>
   );
 };
