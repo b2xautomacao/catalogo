@@ -12,9 +12,10 @@ import {
   Store
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UserRole } from '@/hooks/useAuth';
 
 interface SidebarProps {
-  userRole: 'superadmin' | 'admin';
+  userRole: UserRole;
   activePage: string;
   onPageChange: (page: string) => void;
 }
