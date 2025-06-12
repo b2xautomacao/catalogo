@@ -18,7 +18,7 @@ const StoreDashboard = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const { toast } = useToast();
 
-  const handleCreateProduct = async (productData: CreateProductData, variations: any[], images: string[]) => {
+  const handleCreateProduct = async (productData: CreateProductData) => {
     if (!profile?.store_id) {
       toast({
         title: "Erro",
