@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, Users, DollarSign, Plus, Settings, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import DashboardCard from './DashboardCard';
 
 const StoreDashboard = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { products, loading, createProduct } = useProducts(profile?.store_id || '');
   const [showProductForm, setShowProductForm] = useState(false);
@@ -121,7 +122,10 @@ const StoreDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-modern cursor-pointer hover:shadow-xl transition-all duration-300">
+        <Card 
+          className="card-modern cursor-pointer hover:shadow-xl transition-all duration-300"
+          onClick={() => navigate('/settings')}
+        >
           <CardContent className="flex items-center justify-center p-8">
             <div className="text-center">
               <div className="bg-purple-100 p-4 rounded-full inline-block mb-4">

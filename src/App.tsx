@@ -8,9 +8,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import Header from "./components/layout/Header";
-import Sidebar from "./components/layout/Sidebar";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -48,6 +47,11 @@ function AppContent() {
             <Route path="/products" element={
               <ProtectedRoute>
                 <Products />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="/auth" element={<Navigate to="/" replace />} />
