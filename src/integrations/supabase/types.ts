@@ -395,39 +395,72 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          allow_categories_filter: boolean | null
+          allow_price_filter: boolean | null
           business_hours: Json | null
+          catalog_url_slug: string | null
+          checkout_type: string | null
           created_at: string
+          custom_domain: string | null
           id: string
           payment_methods: Json | null
           retail_catalog_active: boolean | null
+          seo_description: string | null
+          seo_keywords: string | null
+          seo_title: string | null
           shipping_options: Json | null
+          show_prices: boolean | null
+          show_stock: boolean | null
           store_id: string
+          template_name: string | null
           updated_at: string
           whatsapp_integration_active: boolean | null
           whatsapp_number: string | null
           wholesale_catalog_active: boolean | null
         }
         Insert: {
+          allow_categories_filter?: boolean | null
+          allow_price_filter?: boolean | null
           business_hours?: Json | null
+          catalog_url_slug?: string | null
+          checkout_type?: string | null
           created_at?: string
+          custom_domain?: string | null
           id?: string
           payment_methods?: Json | null
           retail_catalog_active?: boolean | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           shipping_options?: Json | null
+          show_prices?: boolean | null
+          show_stock?: boolean | null
           store_id: string
+          template_name?: string | null
           updated_at?: string
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
           wholesale_catalog_active?: boolean | null
         }
         Update: {
+          allow_categories_filter?: boolean | null
+          allow_price_filter?: boolean | null
           business_hours?: Json | null
+          catalog_url_slug?: string | null
+          checkout_type?: string | null
           created_at?: string
+          custom_domain?: string | null
           id?: string
           payment_methods?: Json | null
           retail_catalog_active?: boolean | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           shipping_options?: Json | null
+          show_prices?: boolean | null
+          show_stock?: boolean | null
           store_id?: string
+          template_name?: string | null
           updated_at?: string
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null

@@ -97,15 +97,23 @@ export const useCatalogSettings = (storeId?: string) => {
         
         const processedSettings: CatalogSettingsData = {
           ...newSettings,
-          payment_methods: newSettings.payment_methods || defaultSettings.payment_methods,
-          shipping_options: newSettings.shipping_options || defaultSettings.shipping_options,
+          payment_methods: typeof newSettings.payment_methods === 'object' && newSettings.payment_methods !== null ? {
+            pix: (newSettings.payment_methods as any)?.pix || false,
+            bank_slip: (newSettings.payment_methods as any)?.bank_slip || false,
+            credit_card: (newSettings.payment_methods as any)?.credit_card || false,
+          } : defaultSettings.payment_methods,
+          shipping_options: typeof newSettings.shipping_options === 'object' && newSettings.shipping_options !== null ? {
+            pickup: (newSettings.shipping_options as any)?.pickup || false,
+            delivery: (newSettings.shipping_options as any)?.delivery || false,
+            shipping: (newSettings.shipping_options as any)?.shipping || false,
+          } : defaultSettings.shipping_options,
         };
         
         setSettings(processedSettings);
       } else {
         const processedSettings: CatalogSettingsData = {
           ...data,
-          payment_methods: data.payment_methods ? {
+          payment_methods: typeof data.payment_methods === 'object' && data.payment_methods !== null ? {
             pix: (data.payment_methods as any)?.pix || false,
             bank_slip: (data.payment_methods as any)?.bank_slip || false,
             credit_card: (data.payment_methods as any)?.credit_card || false,
@@ -114,7 +122,7 @@ export const useCatalogSettings = (storeId?: string) => {
             bank_slip: false,
             credit_card: false,
           },
-          shipping_options: data.shipping_options ? {
+          shipping_options: typeof data.shipping_options === 'object' && data.shipping_options !== null ? {
             pickup: (data.shipping_options as any)?.pickup || false,
             delivery: (data.shipping_options as any)?.delivery || false,
             shipping: (data.shipping_options as any)?.shipping || false,
@@ -160,8 +168,16 @@ export const useCatalogSettings = (storeId?: string) => {
       
       const processedSettings: CatalogSettingsData = {
         ...data,
-        payment_methods: data.payment_methods || settings.payment_methods,
-        shipping_options: data.shipping_options || settings.shipping_options,
+        payment_methods: typeof data.payment_methods === 'object' && data.payment_methods !== null ? {
+          pix: (data.payment_methods as any)?.pix || false,
+          bank_slip: (data.payment_methods as any)?.bank_slip || false,
+          credit_card: (data.payment_methods as any)?.credit_card || false,
+        } : settings.payment_methods,
+        shipping_options: typeof data.shipping_options === 'object' && data.shipping_options !== null ? {
+          pickup: (data.shipping_options as any)?.pickup || false,
+          delivery: (data.shipping_options as any)?.delivery || false,
+          shipping: (data.shipping_options as any)?.shipping || false,
+        } : settings.shipping_options,
       };
       
       setSettings(processedSettings);
