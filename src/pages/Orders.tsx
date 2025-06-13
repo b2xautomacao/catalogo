@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
@@ -96,11 +95,6 @@ const Orders = () => {
     // Integração com WhatsApp seria implementada aqui
   };
 
-  const handlePrintPickingList = (order: Order) => {
-    toast.success('Romaneio de separação enviado para impressão');
-    // Lógica de impressão aqui
-  };
-
   const handlePrintLabel = async (order: Order) => {
     if (order.label_generated_at) {
       toast.warning('Etiqueta já foi gerada para este pedido');
@@ -117,11 +111,6 @@ const Orders = () => {
 
   const handlePrintDeclaration = (order: Order) => {
     toast.success('Declaração de conteúdo enviada para impressão');
-    // Lógica de impressão aqui
-  };
-
-  const handlePrintReceipt = (order: Order) => {
-    toast.success('Recibo de pagamento enviado para impressão');
     // Lógica de impressão aqui
   };
 
@@ -200,11 +189,19 @@ const Orders = () => {
             <OrdersTable
               orders={paginatedOrders}
               onViewOrder={handleViewOrder}
+              onCancelOrder={handleCancelOrder}
+              onSendFollowUp={handleSendFollowUp}
+              onPrintLabel={handlePrintLabel}
+              onPrintDeclaration={handlePrintDeclaration}
             />
           ) : (
             <OrdersGrid
               orders={paginatedOrders}
               onViewOrder={handleViewOrder}
+              onCancelOrder={handleCancelOrder}
+              onSendFollowUp={handleSendFollowUp}
+              onPrintLabel={handlePrintLabel}
+              onPrintDeclaration={handlePrintDeclaration}
             />
           )}
 
@@ -228,10 +225,8 @@ const Orders = () => {
         onClose={() => setIsModalOpen(false)}
         onCancelOrder={handleCancelOrder}
         onSendFollowUp={handleSendFollowUp}
-        onPrintPickingList={handlePrintPickingList}
         onPrintLabel={handlePrintLabel}
         onPrintDeclaration={handlePrintDeclaration}
-        onPrintReceipt={handlePrintReceipt}
         onMarkPrintedDocument={handleMarkPrintedDocument}
         onGenerateTrackingCode={handleGenerateTrackingCode}
       />
