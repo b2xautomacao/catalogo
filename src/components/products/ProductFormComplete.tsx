@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useCategories } from '@/hooks/useCategories';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
-import { CreateProductData } from '@/hooks/useProducts';
+import { useProductImages } from '@/hooks/useProductImages';
+import { useProductVariations } from '@/hooks/useProductVariations';
+import { CreateProductData, UpdateProductData } from '@/hooks/useProducts';
+import { useToast } from '@/hooks/use-toast';
 import QuickCategoryForm from './QuickCategoryForm';
 import ProductDescriptionAI from '@/components/ai/ProductDescriptionAI';
 import ProductImageUpload from './ProductImageUpload';
@@ -19,9 +21,10 @@ import ProductVariationsForm from './ProductVariationsForm';
 import { Plus, ArrowLeft, Package, Image, Palette, Search, Sparkles } from 'lucide-react';
 
 interface ProductFormCompleteProps {
-  onSubmit: (data: CreateProductData) => void;
+  onSubmit: (data: CreateProductData | UpdateProductData) => void;
   onCancel: () => void;
   initialData?: any;
+  mode?: 'create' | 'edit';
 }
 
 interface Variation {
@@ -32,11 +35,12 @@ interface Variation {
   sku?: string;
 }
 
-const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCompleteProps) => {
+const ProductFormComplete = ({ onSubmit, onCancel, initialData, mode = 'create' }: ProductFormCompleteProps) => {
   const [activeTab, setActiveTab] = useState('basic');
   const [showQuickCategory, setShowQuickCategory] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
   const [variations, setVariations] = useState<Variation[]>([]);
+  const { toast } = useToast();
   
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -55,22 +59,68 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
 
   const { categories, loading: categoriesLoading } = useCategories();
   const { settings } = useStoreSettings();
+  const { images, uploadImage, deleteImage } = useProductImages(initialData?.id);
+  const { variations: dbVariations, createVariation, updateVariation, deleteVariation } = useProductVariations(initialData?.id);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Carregar variações do banco quando em modo de edição
+  useEffect(() => {
+    if (mode === 'edit' && dbVariations.length > 0) {
+      setVariations(dbVariations.map(v => ({
+        color: v.color || '',
+        size: v.size || '',
+        stock: v.stock,
+        price_adjustment: v.price_adjustment || 0,
+        sku: v.sku || ''
+      })));
+    }
+  }, [dbVariations, mode]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const productData: CreateProductData = {
-      name: formData.name,
-      description: formData.description || undefined,
-      category: formData.category || undefined,
-      retail_price: formData.retail_price,
-      wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price.toString()) : undefined,
-      stock: formData.stock,
-      min_wholesale_qty: formData.min_wholesale_qty || undefined,
-      is_active: formData.is_active,
-      store_id: '',
-      image_url: images[0] || undefined
-    };
-    onSubmit(productData);
+    setSaving(true);
+
+    try {
+      const productData = {
+        ...(mode === 'edit' && { id: initialData.id }),
+        name: formData.name,
+        description: formData.description || undefined,
+        category: formData.category || undefined,
+        retail_price: formData.retail_price,
+        wholesale_price: formData.wholesale_price ? parseFloat(formData.wholesale_price.toString()) : undefined,
+        stock: formData.stock,
+        min_wholesale_qty: formData.min_wholesale_qty || undefined,
+        is_active: formData.is_active,
+        meta_title: formData.meta_title || undefined,
+        meta_description: formData.meta_description || undefined,
+        keywords: formData.keywords || undefined,
+        seo_slug: formData.seo_slug || undefined,
+        store_id: initialData?.store_id || '',
+        image_url: images[0]?.image_url || undefined
+      };
+
+      await onSubmit(productData as CreateProductData | UpdateProductData);
+
+      // Salvar variações se existirem
+      if (variations.length > 0 && mode === 'create') {
+        // Para produtos novos, as variações serão salvas após a criação do produto
+        // Isso será feito no componente pai após obter o ID do produto criado
+      }
+
+      toast({
+        title: mode === 'edit' ? 'Produto atualizado' : 'Produto criado',
+        description: mode === 'edit' ? 'As alterações foram salvas com sucesso' : 'O produto foi criado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao salvar o produto. Tente novamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCategoryCreated = (category: any) => {
@@ -83,13 +133,15 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
   };
 
   const handleImageUpload = async (file: File, order: number) => {
-    // Simular upload - em produção, usar useProductImages hook
-    const imageUrl = URL.createObjectURL(file);
-    setImages(prev => [...prev, imageUrl]);
+    if (initialData?.id) {
+      await uploadImage(file, initialData.id, order);
+    }
   };
 
-  const handleImageRemove = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+  const handleImageRemove = async (index: number) => {
+    if (images[index]?.id) {
+      await deleteImage(images[index].id);
+    }
   };
 
   const showRetailFields = settings?.retail_catalog_active !== false;
@@ -105,7 +157,7 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
         </Button>
         <div>
           <h2 className="text-2xl font-bold gradient-text">
-            {initialData ? 'Editar Produto' : 'Novo Produto'}
+            {mode === 'edit' ? 'Editar Produto' : 'Novo Produto'}
           </h2>
           <p className="text-muted-foreground">
             Complete todas as informações do produto
@@ -294,10 +346,15 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
               <CardContent>
                 <ProductImageUpload
                   onImageUpload={handleImageUpload}
-                  images={images}
+                  images={images.map(img => img.image_url)}
                   onImageRemove={handleImageRemove}
                   maxImages={5}
                 />
+                {mode === 'create' && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Salve o produto primeiro para adicionar imagens
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -313,6 +370,11 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
                   variations={variations}
                   onVariationsChange={setVariations}
                 />
+                {mode === 'create' && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Salve o produto primeiro para gerenciar variações
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -388,10 +450,10 @@ const ProductFormComplete = ({ onSubmit, onCancel, initialData }: ProductFormCom
 
         {/* Botões de Ação */}
         <div className="flex gap-4 sticky bottom-0 bg-background p-4 border-t">
-          <Button type="submit" className="flex-1 btn-primary">
-            {initialData ? 'Atualizar' : 'Criar'} Produto
+          <Button type="submit" className="flex-1 btn-primary" disabled={saving}>
+            {saving ? 'Salvando...' : (mode === 'edit' ? 'Atualizar' : 'Criar')} Produto
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
             Cancelar
           </Button>
         </div>

@@ -15,6 +15,10 @@ export interface Product {
   min_wholesale_qty: number | null;
   image_url: string | null;
   is_active: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
+  keywords: string | null;
+  seo_slug: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +34,14 @@ export interface CreateProductData {
   min_wholesale_qty?: number;
   image_url?: string;
   is_active?: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  keywords?: string;
+  seo_slug?: string;
+}
+
+export interface UpdateProductData extends Partial<CreateProductData> {
+  id: string;
 }
 
 export const useProducts = (storeId?: string) => {
@@ -61,7 +73,10 @@ export const useProducts = (storeId?: string) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .insert([productData])
+        .insert([{
+          ...productData,
+          store_id: profile?.store_id || productData.store_id
+        }])
         .select()
         .single();
 
@@ -70,6 +85,57 @@ export const useProducts = (storeId?: string) => {
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao criar produto:', error);
+      return { data: null, error };
+    }
+  };
+
+  const updateProduct = async (productData: UpdateProductData) => {
+    try {
+      const { id, ...updates } = productData;
+      const { data, error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      await fetchProducts();
+      return { data, error: null };
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      return { data: null, error };
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      await fetchProducts();
+      return { error: null };
+    } catch (error) {
+      console.error('Erro ao deletar produto:', error);
+      return { error };
+    }
+  };
+
+  const getProduct = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Erro ao buscar produto:', error);
       return { data: null, error };
     }
   };
@@ -84,6 +150,9 @@ export const useProducts = (storeId?: string) => {
     products,
     loading,
     fetchProducts,
-    createProduct
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    getProduct
   };
 };

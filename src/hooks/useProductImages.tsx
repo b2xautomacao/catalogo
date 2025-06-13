@@ -48,6 +48,14 @@ export const useProductImages = (productId?: string) => {
 
   const uploadImage = async (file: File, productId: string, imageOrder: number = 1) => {
     try {
+      // Verificar se o bucket existe, se não, criar
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const productImagesBucket = buckets?.find(bucket => bucket.name === 'product-images');
+      
+      if (!productImagesBucket) {
+        await supabase.storage.createBucket('product-images', { public: true });
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${productId}/${Date.now()}.${fileExt}`;
       
@@ -85,6 +93,23 @@ export const useProductImages = (productId?: string) => {
 
   const deleteImage = async (id: string) => {
     try {
+      // Buscar a imagem para obter a URL
+      const { data: imageData } = await supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+
+      if (imageData?.image_url) {
+        // Extrair o path da URL para deletar do storage
+        const urlParts = imageData.image_url.split('/');
+        const fileName = urlParts.slice(-2).join('/'); // produto_id/arquivo.ext
+        
+        await supabase.storage
+          .from('product-images')
+          .remove([fileName]);
+      }
+
       const { error } = await supabase
         .from('product_images')
         .delete()

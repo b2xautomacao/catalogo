@@ -1,19 +1,26 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import ProductFormComplete from './ProductFormComplete';
-import { CreateProductData } from '@/hooks/useProducts';
+import { CreateProductData, UpdateProductData } from '@/hooks/useProducts';
 
 interface ProductFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateProductData) => void;
+  onSubmit: (data: CreateProductData | UpdateProductData) => void;
   initialData?: any;
+  mode?: 'create' | 'edit';
 }
 
-const ProductFormModal = ({ open, onOpenChange, onSubmit, initialData }: ProductFormModalProps) => {
-  const handleSubmit = (data: CreateProductData) => {
-    onSubmit(data);
+const ProductFormModal = ({ 
+  open, 
+  onOpenChange, 
+  onSubmit, 
+  initialData, 
+  mode = 'create' 
+}: ProductFormModalProps) => {
+  const handleSubmit = async (data: CreateProductData | UpdateProductData) => {
+    await onSubmit(data);
     onOpenChange(false);
   };
 
@@ -29,6 +36,7 @@ const ProductFormModal = ({ open, onOpenChange, onSubmit, initialData }: Product
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             initialData={initialData}
+            mode={mode}
           />
         </div>
       </DialogContent>
