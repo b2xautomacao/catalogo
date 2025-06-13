@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Truck, MapPin, CreditCard, Smartphone, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ interface CheckoutModalProps {
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSettings }) => {
   const { items, totalAmount, clearCart } = useCart();
-  const { createOrder, isCreatingOrder } = useOrders();
+  const { createOrderAsync, isCreatingOrder } = useOrders();
   const { toast } = useToast();
   
   const [customerData, setCustomerData] = useState({
@@ -61,7 +60,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
   };
 
   const handleSubmit = async () => {
-    console.log('Iniciando processamento do pedido...');
+    console.log('CheckoutModal: Iniciando processamento do pedido...');
     
     try {
       // Validar dados obrigatórios
@@ -121,43 +120,36 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
         notes: notes.trim() || undefined
       };
 
-      console.log('Dados do pedido preparados:', orderData);
+      console.log('CheckoutModal: Dados do pedido preparados:', orderData);
 
-      // Salvar pedido no banco de dados
-      createOrder(orderData, {
-        onSuccess: (savedOrder) => {
-          console.log('Pedido salvo com sucesso:', savedOrder);
-          
-          // Enviar para WhatsApp se configurado
-          if (storeSettings?.whatsapp_number) {
-            const message = generateWhatsAppMessage(orderData);
-            window.open(`https://wa.me/${storeSettings.whatsapp_number}?text=${encodeURIComponent(message)}`, '_blank');
-          }
+      // Usar createOrderAsync para obter o resultado diretamente
+      const savedOrder = await createOrderAsync(orderData);
+      
+      console.log('CheckoutModal: Pedido salvo com sucesso:', savedOrder);
+      
+      // Enviar para WhatsApp se configurado
+      if (storeSettings?.whatsapp_number) {
+        const message = generateWhatsAppMessage(orderData);
+        window.open(`https://wa.me/${storeSettings.whatsapp_number}?text=${encodeURIComponent(message)}`, '_blank');
+      }
 
-          // Limpar carrinho e fechar modal
-          clearCart();
-          onClose();
-          
-          toast({
-            title: "Pedido criado!",
-            description: `Seu pedido foi criado com sucesso! ${storeSettings?.whatsapp_number ? 'Você será redirecionado para o WhatsApp.' : ''}`,
-          });
-        },
-        onError: (error) => {
-          console.error('Erro ao criar pedido:', error);
-          toast({
-            title: "Erro ao processar pedido",
-            description: "Não foi possível criar seu pedido. Tente novamente.",
-            variant: "destructive"
-          });
-        }
+      // Limpar carrinho e fechar modal
+      clearCart();
+      onClose();
+      
+      toast({
+        title: "Pedido criado!",
+        description: `Seu pedido foi criado com sucesso! ${storeSettings?.whatsapp_number ? 'Você será redirecionado para o WhatsApp.' : ''}`,
       });
 
     } catch (error) {
-      console.error('Erro no processamento do pedido:', error);
+      console.error('CheckoutModal: Erro ao criar pedido:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
       toast({
-        title: "Erro inesperado",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        title: "Erro ao processar pedido",
+        description: `Não foi possível criar seu pedido: ${errorMessage}`,
         variant: "destructive"
       });
     }

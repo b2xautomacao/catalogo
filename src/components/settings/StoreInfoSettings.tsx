@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Clock, MapPin, Phone, Mail, FileText, Loader2, AlertCircle } from 'lucide-react';
+import { Building, Clock, Phone, Loader2, AlertCircle } from 'lucide-react';
 import { useStores } from '@/hooks/useStores';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -31,7 +31,7 @@ interface StoreInfoFormData {
 
 const StoreInfoSettings = () => {
   const { toast } = useToast();
-  const { currentStore, updateCurrentStore, loading: storeLoading, error: storeError } = useStores();
+  const { currentStore, updateCurrentStore, loading, error } = useStores();
   const [saving, setSaving] = React.useState(false);
 
   const form = useForm<StoreInfoFormData>({
@@ -93,10 +93,10 @@ const StoreInfoSettings = () => {
         cnpj: data.cnpj
       };
 
-      const { error } = await updateCurrentStore(updates);
+      const { error: updateError } = await updateCurrentStore(updates);
 
-      if (error) {
-        throw error;
+      if (updateError) {
+        throw new Error(updateError);
       }
 
       toast({
@@ -125,7 +125,7 @@ const StoreInfoSettings = () => {
     { key: 'sunday', label: 'Domingo' }
   ];
 
-  if (storeLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -134,12 +134,12 @@ const StoreInfoSettings = () => {
     );
   }
 
-  if (storeError) {
+  if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Erro ao carregar dados da loja: {storeError}
+          Erro ao carregar dados da loja: {error}
         </AlertDescription>
       </Alert>
     );

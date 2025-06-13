@@ -54,20 +54,24 @@ export const useStores = () => {
   const [stores, setStores] = useState<Store[]>([]);
   const [currentStore, setCurrentStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
 
   const fetchStores = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      
+      const { data, error: fetchError } = await supabase
         .from('stores')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
       setStores(data || []);
     } catch (error) {
       console.error('Erro ao buscar lojas:', error);
+      setError(error instanceof Error ? error.message : 'Erro ao buscar lojas');
     } finally {
       setLoading(false);
     }
@@ -75,23 +79,43 @@ export const useStores = () => {
 
   const fetchCurrentStore = async () => {
     try {
-      if (!profile?.store_id) return;
+      setLoading(true);
+      setError(null);
+      
+      if (!profile?.store_id) {
+        console.log('useStores: Nenhum store_id no profile');
+        setCurrentStore(null);
+        return;
+      }
 
-      const { data, error } = await supabase
+      console.log('useStores: Buscando loja atual:', profile.store_id);
+
+      const { data, error: fetchError } = await supabase
         .from('stores')
         .select('*')
         .eq('id', profile.store_id)
         .single();
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error('useStores: Erro ao buscar loja atual:', fetchError);
+        throw fetchError;
+      }
+      
+      console.log('useStores: Loja atual carregada:', data);
       setCurrentStore(data);
     } catch (error) {
       console.error('Erro ao buscar loja atual:', error);
+      setError(error instanceof Error ? error.message : 'Erro ao buscar loja atual');
+      setCurrentStore(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   const createStore = async (storeData: CreateStoreData) => {
     try {
+      setError(null);
+      
       const { data, error } = await supabase
         .from('stores')
         .insert([storeData])
@@ -103,12 +127,16 @@ export const useStores = () => {
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao criar loja:', error);
-      return { data: null, error };
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao criar loja';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
     }
   };
 
   const updateStore = async (id: string, updates: UpdateStoreData) => {
     try {
+      setError(null);
+      
       const { data, error } = await supabase
         .from('stores')
         .update(updates)
@@ -122,19 +150,25 @@ export const useStores = () => {
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar loja:', error);
-      return { data: null, error };
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar loja';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
     }
   };
 
   const updateCurrentStore = async (updates: UpdateStoreData) => {
     if (!profile?.store_id) {
-      return { data: null, error: 'Store ID não encontrado' };
+      const errorMessage = 'Store ID não encontrado';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
     }
     return updateStore(profile.store_id, updates);
   };
 
   const updateStoreSlug = async (id: string, slug: string) => {
     try {
+      setError(null);
+      
       const { data, error } = await supabase
         .from('stores')
         .update({ url_slug: slug })
@@ -148,7 +182,9 @@ export const useStores = () => {
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar slug da loja:', error);
-      return { data: null, error };
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar slug da loja';
+      setError(errorMessage);
+      return { data: null, error: errorMessage };
     }
   };
 
@@ -166,6 +202,7 @@ export const useStores = () => {
     stores,
     currentStore,
     loading,
+    error,
     fetchStores,
     fetchCurrentStore,
     createStore,
