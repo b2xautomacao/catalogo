@@ -2,6 +2,12 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { OrderPaymentStatus } from '@/hooks/useOrderPayments';
+import { 
+  CreditCard, 
+  DollarSign, 
+  QrCode, 
+  FileText 
+} from 'lucide-react';
 
 interface PaymentStatusBadgeProps {
   paymentStatus: OrderPaymentStatus | null;
@@ -34,6 +40,37 @@ const PaymentStatusBadge: React.FC<PaymentStatusBadgeProps> = ({
     return texts[status as keyof typeof texts] || status;
   };
 
+  const getPaymentMethodIcon = (method: string) => {
+    const iconProps = { className: "h-3 w-3" };
+    
+    switch (method?.toLowerCase()) {
+      case 'pix':
+        return <QrCode {...iconProps} />;
+      case 'card':
+      case 'credit_card':
+        return <CreditCard {...iconProps} />;
+      case 'money':
+      case 'cash':
+        return <DollarSign {...iconProps} />;
+      case 'bank_slip':
+        return <FileText {...iconProps} />;
+      default:
+        return <DollarSign {...iconProps} />;
+    }
+  };
+
+  const getPaymentMethodText = (method: string) => {
+    const texts = {
+      pix: 'PIX',
+      card: 'Cartão',
+      credit_card: 'Cartão',
+      money: 'Dinheiro',
+      cash: 'Dinheiro',
+      bank_slip: 'Boleto'
+    };
+    return texts[method?.toLowerCase() as keyof typeof texts] || method;
+  };
+
   const status = paymentStatus?.status || fallbackStatus;
   const statusText = getPaymentStatusText(status);
   const statusColor = getPaymentStatusColor(status);
@@ -44,9 +81,12 @@ const PaymentStatusBadge: React.FC<PaymentStatusBadgeProps> = ({
         {statusText}
       </Badge>
       {paymentStatus?.lastPaymentMethod && (
-        <span className="text-xs text-gray-500 uppercase">
-          {paymentStatus.lastPaymentMethod}
-        </span>
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          {getPaymentMethodIcon(paymentStatus.lastPaymentMethod)}
+          <span className="uppercase">
+            {getPaymentMethodText(paymentStatus.lastPaymentMethod)}
+          </span>
+        </div>
       )}
     </div>
   );
