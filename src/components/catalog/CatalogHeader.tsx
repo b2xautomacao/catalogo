@@ -1,13 +1,13 @@
-
 import React, { useState } from 'react';
 import { Search, Heart, ShoppingCart, Menu, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Store, CatalogType } from '@/hooks/useCatalog';
+import { StoreData } from '@/hooks/useStoreData';
+import { CatalogType } from '@/hooks/useCatalog';
 
 interface CatalogHeaderProps {
-  store: Store;
+  store: StoreData;
   catalogType: CatalogType;
   onCatalogTypeChange: (type: CatalogType) => void;
   onSearch: (query: string) => void;

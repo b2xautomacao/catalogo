@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Store } from '@/hooks/useCatalog';
+import { StoreData } from '@/hooks/useStoreData';
 
 interface CatalogFooterProps {
-  store: Store;
+  store: StoreData;
   whatsappNumber?: string;
 }
 
@@ -59,7 +58,7 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <MapPin size={16} className="text-gray-400" />
-                <span className="text-gray-300">Rua Exemplo, 123 - São Paulo, SP</span>
+                <span className="text-gray-300">{store.address || 'Rua Exemplo, 123 - São Paulo, SP'}</span>
               </div>
               {whatsappNumber && (
                 <div className="flex items-center gap-3">
@@ -69,7 +68,7 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
               )}
               <div className="flex items-center gap-3">
                 <Mail size={16} className="text-gray-400" />
-                <span className="text-gray-300">contato@{store.name.toLowerCase().replace(/\s+/g, '')}.com.br</span>
+                <span className="text-gray-300">{store.email || `contato@${store.name.toLowerCase().replace(/\s+/g, '')}.com.br`}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Clock size={16} className="text-gray-400" />
