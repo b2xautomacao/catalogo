@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
+import { useOrderPayments } from '@/hooks/useOrderPayments';
 import OrdersHeader from '@/components/orders/OrdersHeader';
 import OrderFilters from '@/components/orders/OrderFilters';
 import OrdersTable from '@/components/orders/OrdersTable';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 const Orders = () => {
   const { orders, loading, fetchOrders, updateOrderStatus, markPrintedDocument, generateTrackingCode } = useOrders();
+  const { orderPayments, loading: paymentsLoading, getOrderPaymentStatus, refreshPayments } = useOrderPayments(orders);
   
   // View state
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -34,7 +35,7 @@ const Orders = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeclarationModalOpen, setIsDeclarationModalOpen] = useState(false);
 
-  // Filter orders
+  // Filter orders with payment status integration
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchTerm === '' || 
       order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,7 +46,19 @@ const Orders = () => {
     const matchesType = typeFilter === 'all' || order.order_type === typeFilter;
     const matchesShipping = shippingFilter === 'all' || order.shipping_method === shippingFilter;
     
-    return matchesSearch && matchesStatus && matchesType && matchesShipping;
+    // Payment filter logic using real payment data
+    let matchesPayment = true;
+    if (paymentFilter !== 'all') {
+      const paymentStatus = getOrderPaymentStatus(order.id);
+      if (paymentStatus) {
+        matchesPayment = paymentStatus.status === paymentFilter;
+      } else {
+        // Fallback for orders without payment data loaded yet
+        matchesPayment = paymentFilter === 'pending';
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesType && matchesShipping && matchesPayment;
   });
 
   // Paginate orders
@@ -54,8 +67,9 @@ const Orders = () => {
   const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   // Handlers
-  const handleRefresh = () => {
-    fetchOrders();
+  const handleRefresh = async () => {
+    await fetchOrders();
+    refreshPayments();
     toast.success('Lista de pedidos atualizada');
   };
 
@@ -84,6 +98,7 @@ const Orders = () => {
     } else {
       toast.success('Pedido cancelado com sucesso');
       setIsModalOpen(false);
+      refreshPayments();
     }
   };
 
@@ -197,6 +212,8 @@ const Orders = () => {
     searchTerm !== ''
   ].filter(Boolean).length;
 
+  const isLoading = loading || paymentsLoading;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <OrdersHeader
@@ -205,7 +222,7 @@ const Orders = () => {
         onViewModeChange={setViewMode}
         onRefresh={handleRefresh}
         onExport={handleExport}
-        isLoading={loading}
+        isLoading={isLoading}
       />
 
       <OrderFilters
@@ -223,7 +240,7 @@ const Orders = () => {
         activeFiltersCount={activeFiltersCount}
       />
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -253,6 +270,7 @@ const Orders = () => {
               onSendFollowUp={handleSendFollowUp}
               onPrintLabel={handlePrintLabel}
               onPrintDeclaration={handlePrintDeclaration}
+              getOrderPaymentStatus={getOrderPaymentStatus}
             />
           ) : (
             <OrdersGrid
@@ -262,6 +280,7 @@ const Orders = () => {
               onSendFollowUp={handleSendFollowUp}
               onPrintLabel={handlePrintLabel}
               onPrintDeclaration={handlePrintDeclaration}
+              getOrderPaymentStatus={getOrderPaymentStatus}
             />
           )}
 

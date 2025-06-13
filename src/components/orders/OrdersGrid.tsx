@@ -1,8 +1,11 @@
+
 import React from 'react';
 import { Order } from '@/hooks/useOrders';
+import { OrderPaymentStatus } from '@/hooks/useOrderPayments';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import PaymentStatusBadge from './PaymentStatusBadge';
 import { 
   Eye, 
   MessageCircle, 
@@ -26,6 +29,7 @@ interface OrdersGridProps {
   onSendFollowUp: (order: Order) => void;
   onPrintLabel: (order: Order) => void;
   onPrintDeclaration: (order: Order) => void;
+  getOrderPaymentStatus: (orderId: string) => OrderPaymentStatus | null;
 }
 
 const OrdersGrid: React.FC<OrdersGridProps> = ({
@@ -34,7 +38,8 @@ const OrdersGrid: React.FC<OrdersGridProps> = ({
   onCancelOrder,
   onSendFollowUp,
   onPrintLabel,
-  onPrintDeclaration
+  onPrintDeclaration,
+  getOrderPaymentStatus
 }) => {
   const getStatusColor = (status: string) => {
     const colors = {
@@ -55,33 +60,6 @@ const OrdersGrid: React.FC<OrdersGridProps> = ({
       preparing: 'Preparando',
       shipping: 'Enviado',
       delivered: 'Entregue',
-      cancelled: 'Cancelado'
-    };
-    return texts[status as keyof typeof texts] || status;
-  };
-
-  const getPaymentStatus = (order: Order) => {
-    if (order.status === 'cancelled') return 'cancelled';
-    if (order.status === 'delivered') return 'paid';
-    if (order.status === 'pending') return 'pending';
-    return 'processing';
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    const colors = {
-      pending: 'bg-red-50 text-red-700 border-red-200',
-      processing: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      paid: 'bg-green-50 text-green-700 border-green-200',
-      cancelled: 'bg-gray-50 text-gray-700 border-gray-200'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const getPaymentStatusText = (status: string) => {
-    const texts = {
-      pending: 'Não Pago',
-      processing: 'Processando',
-      paid: 'Pago',
       cancelled: 'Cancelado'
     };
     return texts[status as keyof typeof texts] || status;
@@ -113,10 +91,19 @@ const OrdersGrid: React.FC<OrdersGridProps> = ({
            (order.shipping_method === 'shipping' || order.shipping_method === 'express');
   };
 
+  const getFallbackPaymentStatus = (order: Order) => {
+    if (order.status === 'cancelled') return 'cancelled';
+    if (order.status === 'delivered') return 'paid';
+    if (order.status === 'pending') return 'pending';
+    return 'processing';
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4">
       {orders.map((order) => {
-        const paymentStatus = getPaymentStatus(order);
+        const paymentStatus = getOrderPaymentStatus(order.id);
+        const fallbackPaymentStatus = getFallbackPaymentStatus(order);
+        
         return (
           <Card key={order.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4">
@@ -161,14 +148,28 @@ const OrdersGrid: React.FC<OrdersGridProps> = ({
                   <Badge className={getStatusColor(order.status)} variant="outline">
                     {getStatusText(order.status)}
                   </Badge>
-                  <Badge className={getPaymentStatusColor(paymentStatus)} variant="outline">
-                    {getPaymentStatusText(paymentStatus)}
-                  </Badge>
+                  <PaymentStatusBadge
+                    paymentStatus={paymentStatus}
+                    fallbackStatus={fallbackPaymentStatus}
+                  />
                   <Badge className={getShippingMethodColor(order.shipping_method)} variant="outline">
                     <Truck className="h-3 w-3 mr-1" />
                     {getShippingMethodText(order.shipping_method)}
                   </Badge>
                 </div>
+
+                {/* Payment Info */}
+                {paymentStatus && paymentStatus.totalPaid > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <CreditCard className="h-4 w-4" />
+                    <span>Pago: R$ {paymentStatus.totalPaid.toFixed(2)}</span>
+                    {paymentStatus.remainingAmount > 0 && (
+                      <span className="text-red-600">
+                        (Restante: R$ {paymentStatus.remainingAmount.toFixed(2)})
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Tracking Code */}
                 {order.tracking_code && (
@@ -221,7 +222,7 @@ const OrdersGrid: React.FC<OrdersGridProps> = ({
                       Detalhes
                     </Button>
                     
-                    {paymentStatus === 'pending' && (
+                    {paymentStatus?.status === 'pending' && (
                       <Button
                         size="sm"
                         variant="outline"

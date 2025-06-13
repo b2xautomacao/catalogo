@@ -92,8 +92,10 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Não Pago</SelectItem>
-            <SelectItem value="processing">Processando</SelectItem>
+            <SelectItem value="partial">Pago Parcial</SelectItem>
             <SelectItem value="paid">Pago</SelectItem>
+            <SelectItem value="overpaid">Pago a Mais</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
 

@@ -1,16 +1,16 @@
 
 import React from 'react';
 import { Order } from '@/hooks/useOrders';
+import { OrderPaymentStatus } from '@/hooks/useOrderPayments';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import PaymentStatusBadge from './PaymentStatusBadge';
 import { 
   Eye, 
   MessageCircle, 
   X, 
   Printer, 
   FileText,
-  CreditCard,
-  Package,
   Truck
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,6 +23,7 @@ interface OrdersTableProps {
   onSendFollowUp: (order: Order) => void;
   onPrintLabel: (order: Order) => void;
   onPrintDeclaration: (order: Order) => void;
+  getOrderPaymentStatus: (orderId: string) => OrderPaymentStatus | null;
 }
 
 const OrdersTable: React.FC<OrdersTableProps> = ({
@@ -31,7 +32,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   onCancelOrder,
   onSendFollowUp,
   onPrintLabel,
-  onPrintDeclaration
+  onPrintDeclaration,
+  getOrderPaymentStatus
 }) => {
   const getStatusColor = (status: string) => {
     const colors = {
@@ -57,37 +59,10 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
     return texts[status as keyof typeof texts] || status;
   };
 
-  const getPaymentStatus = (order: Order) => {
-    if (order.status === 'cancelled') return 'cancelled';
-    if (order.status === 'delivered') return 'paid';
-    if (order.status === 'pending') return 'pending';
-    return 'processing';
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    const colors = {
-      pending: 'bg-red-50 text-red-700 border-red-200',
-      processing: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      paid: 'bg-green-50 text-green-700 border-green-200',
-      cancelled: 'bg-gray-50 text-gray-700 border-gray-200'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const getPaymentStatusText = (status: string) => {
-    const texts = {
-      pending: 'Não Pago',
-      processing: 'Processando',
-      paid: 'Pago',
-      cancelled: 'Cancelado'
-    };
-    return texts[status as keyof typeof texts] || status;
-  };
-
   const getShippingMethodText = (method: string | null) => {
     const methods = {
       pickup: 'Retirada',
-      delivery: 'Entrega',
+      delivery: 'Entrega Local',
       shipping: 'Correios',
       express: 'Expresso'
     };
@@ -110,6 +85,13 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
            (order.shipping_method === 'shipping' || order.shipping_method === 'express');
   };
 
+  const getFallbackPaymentStatus = (order: Order) => {
+    if (order.status === 'cancelled') return 'cancelled';
+    if (order.status === 'delivered') return 'paid';
+    if (order.status === 'pending') return 'pending';
+    return 'processing';
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -127,7 +109,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
         </thead>
         <tbody>
           {orders.map((order) => {
-            const paymentStatus = getPaymentStatus(order);
+            const paymentStatus = getOrderPaymentStatus(order.id);
+            const fallbackPaymentStatus = getFallbackPaymentStatus(order);
+            
             return (
               <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                 <td className="py-3 px-4">
@@ -157,14 +141,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 </td>
                 
                 <td className="py-3 px-4">
-                  <Badge className={getPaymentStatusColor(paymentStatus)} variant="outline">
-                    {getPaymentStatusText(paymentStatus)}
-                  </Badge>
+                  <PaymentStatusBadge
+                    paymentStatus={paymentStatus}
+                    fallbackStatus={fallbackPaymentStatus}
+                  />
                 </td>
 
                 <td className="py-3 px-4">
                   <div className="flex flex-col gap-1">
                     <Badge className={getShippingMethodColor(order.shipping_method)} variant="outline">
+                      <Truck className="h-3 w-3 mr-1" />
                       {getShippingMethodText(order.shipping_method)}
                     </Badge>
                     {order.tracking_code && (
@@ -183,6 +169,11 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                     {order.shipping_cost && order.shipping_cost > 0 && (
                       <span className="text-xs text-gray-500">
                         +R$ {order.shipping_cost.toFixed(2)} frete
+                      </span>
+                    )}
+                    {paymentStatus && paymentStatus.totalPaid > 0 && (
+                      <span className="text-xs text-green-600">
+                        Pago: R$ {paymentStatus.totalPaid.toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -208,7 +199,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                       <Eye className="h-4 w-4" />
                     </Button>
                     
-                    {paymentStatus === 'pending' && (
+                    {paymentStatus?.status === 'pending' && (
                       <Button
                         size="sm"
                         variant="ghost"
