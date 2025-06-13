@@ -8,7 +8,6 @@ import {
   CreditCard, 
   Truck, 
   MessageSquare, 
-  Palette, 
   Settings as SettingsIcon,
   Bot,
   Bell,
@@ -22,7 +21,6 @@ import StoreInfoSettings from '@/components/settings/StoreInfoSettings';
 import PaymentSettings from '@/components/settings/PaymentSettings';
 import ShippingSettings from '@/components/settings/ShippingSettings';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
-import TemplateSettings from '@/components/settings/TemplateSettings';
 import AutomationSettings from '@/components/settings/AutomationSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import SecuritySettings from '@/components/settings/SecuritySettings';
@@ -62,12 +60,6 @@ const Settings = () => {
       label: 'WhatsApp',
       icon: MessageSquare,
       component: WhatsAppSettings
-    },
-    {
-      id: 'templates',
-      label: 'Templates',
-      icon: Palette,
-      component: TemplateSettings
     },
     {
       id: 'automation',
@@ -110,7 +102,7 @@ const Settings = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 gap-2 h-auto p-2 bg-white rounded-xl shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white rounded-xl shadow-sm">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -22,7 +22,7 @@ export const useStoreSettings = (storeId?: string) => {
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       const targetStoreId = storeId || profile?.store_id;
@@ -63,9 +63,9 @@ export const useStoreSettings = (storeId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId, profile?.store_id]);
 
-  const updateSettings = async (updates: Partial<StoreSettings>) => {
+  const updateSettings = useCallback(async (updates: Partial<StoreSettings>) => {
     try {
       if (!settings) return { data: null, error: 'Configurações não encontradas' };
 
@@ -83,15 +83,11 @@ export const useStoreSettings = (storeId?: string) => {
       console.error('Erro ao atualizar configurações:', error);
       return { data: null, error };
     }
-  };
+  }, [settings]);
 
-  // Corrigindo as dependências para evitar loop infinito
   useEffect(() => {
-    const targetStoreId = storeId || profile?.store_id;
-    if (targetStoreId) {
-      fetchSettings();
-    }
-  }, [storeId, profile?.store_id]); // Dependências específicas e estáveis
+    fetchSettings();
+  }, [fetchSettings]);
 
   return {
     settings,

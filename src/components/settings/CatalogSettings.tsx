@@ -7,9 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
+import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
 import ShareableLinks from '@/components/settings/ShareableLinks';
+import ModernTemplate from '@/components/catalog/templates/ModernTemplate';
+import MinimalTemplate from '@/components/catalog/templates/MinimalTemplate';
+import ElegantTemplate from '@/components/catalog/templates/ElegantTemplate';
 import { 
   ShoppingBag, 
   Package, 
@@ -22,13 +27,60 @@ import {
   CreditCard,
   Truck,
   MessageSquare,
-  Share2
+  Share2,
+  Check
 } from 'lucide-react';
 
 const CatalogSettings = () => {
   const { settings, loading, updateSettings } = useCatalogSettings();
+  const { products } = useProducts();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+
+  // Produto de exemplo para preview dos templates
+  const sampleProduct = products[0] || {
+    id: 'sample',
+    name: 'Produto de Exemplo',
+    description: 'Esta é uma descrição de exemplo do produto',
+    retail_price: 99.90,
+    wholesale_price: 79.90,
+    stock: 10,
+    reserved_stock: 0,
+    min_wholesale_qty: 1,
+    allow_negative_stock: false,
+    stock_alert_threshold: 5,
+    image_url: '/placeholder.svg',
+    store_id: '',
+    category: 'Exemplo',
+    is_active: true,
+    meta_title: null,
+    meta_description: null,
+    keywords: null,
+    seo_slug: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const templates = [
+    {
+      id: 'modern',
+      name: 'Moderno',
+      description: 'Design arrojado com gradientes e sombras vibrantes',
+      component: ModernTemplate
+    },
+    {
+      id: 'minimal',
+      name: 'Minimalista',
+      description: 'Layout limpo e focado no produto',
+      component: MinimalTemplate
+    },
+    {
+      id: 'elegant',
+      name: 'Elegante',
+      description: 'Estilo sofisticado com detalhes refinados',
+      component: ElegantTemplate
+    }
+  ];
 
   const handleToggle = async (field: string, value: boolean) => {
     setSaving(true);
@@ -66,6 +118,30 @@ const CatalogSettings = () => {
       });
     }
     setSaving(false);
+  };
+
+  const handleTemplateChange = async (templateId: string) => {
+    setSaving(true);
+    try {
+      const { error } = await updateSettings({
+        template_name: templateId
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Template atualizado",
+        description: "O template foi alterado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o template.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePaymentMethodChange = async (method: string, value: boolean) => {
@@ -144,13 +220,15 @@ const CatalogSettings = () => {
     );
   }
 
+  const currentTemplate = settings?.template_name || 'modern';
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="catalogs" className="w-full">
         <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="catalogs">Catálogos</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="sharing">Compartilhar</TabsTrigger>
-          <TabsTrigger value="template">Template</TabsTrigger>
           <TabsTrigger value="domain">Domínio</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="checkout">Checkout</TabsTrigger>
@@ -302,40 +380,108 @@ const CatalogSettings = () => {
           </Card>
         </TabsContent>
 
-        {/* Links Compartilháveis */}
-        <TabsContent value="sharing">
-          <ShareableLinks />
-        </TabsContent>
-
-        {/* Template */}
-        <TabsContent value="template">
+        {/* Templates */}
+        <TabsContent value="templates">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Template do Catálogo
+                Escolha o Template do Catálogo
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="template_name">Template</Label>
-                <Select 
-                  value={settings.template_name} 
-                  onValueChange={(value) => handleInputChange('template_name', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Padrão</SelectItem>
-                    <SelectItem value="modern">Moderno</SelectItem>
-                    <SelectItem value="minimal">Minimalista</SelectItem>
-                    <SelectItem value="elegant">Elegante</SelectItem>
-                  </SelectContent>
-                </Select>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-6">
+                Selecione o template que melhor representa sua marca. As alterações são aplicadas em tempo real.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {templates.map((template) => {
+                  const TemplateComponent = template.component;
+                  const isSelected = currentTemplate === template.id;
+                  
+                  return (
+                    <Card 
+                      key={template.id} 
+                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                        isSelected ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:ring-1 hover:ring-gray-300'
+                      }`}
+                      onClick={() => handleTemplateChange(template.id)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{template.name}</h3>
+                          {isSelected && (
+                            <Badge variant="default" className="text-xs">
+                              <Check className="h-3 w-3 mr-1" />
+                              Ativo
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {template.description}
+                        </p>
+                      </CardHeader>
+                      
+                      <CardContent className="pt-0">
+                        {/* Preview do Template */}
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                          <div className="transform scale-75 origin-top-left">
+                            <TemplateComponent
+                              product={sampleProduct}
+                              catalogType="retail"
+                              onAddToCart={() => {}}
+                              onAddToWishlist={() => {}}
+                              onQuickView={() => {}}
+                              isInWishlist={false}
+                              showPrices={true}
+                              showStock={true}
+                            />
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          variant={isSelected ? "default" : "outline"}
+                          className="w-full"
+                          disabled={saving}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTemplateChange(template.id);
+                          }}
+                        >
+                          {isSelected ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Selecionado
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Usar Este Template
+                            </>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Sobre os Templates:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• As alterações são aplicadas instantaneamente no catálogo</li>
+                  <li>• Cada template é otimizado para diferentes tipos de produtos</li>
+                  <li>• Todos os templates são responsivos e funcionam em mobile</li>
+                  <li>• Você pode trocar o template a qualquer momento</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Links Compartilháveis */}
+        <TabsContent value="sharing">
+          <ShareableLinks />
         </TabsContent>
 
         {/* Domínio */}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Filter, Grid, List, ArrowUpDown } from 'lucide-react';
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCatalog, CatalogType } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { Product } from '@/hooks/useProducts';
-import { CartProvider } from '@/hooks/useCart';
+import { CartProvider, useCart } from '@/hooks/useCart';
 import CatalogHeader from '@/components/catalog/CatalogHeader';
 import FilterSidebar, { FilterState } from '@/components/catalog/FilterSidebar';
 import ProductGrid from '@/components/catalog/ProductGrid';
@@ -23,6 +24,7 @@ const CatalogContent = () => {
   }>();
   const location = useLocation();
   const { toast } = useToast();
+  const { addItem, totalItems } = useCart();
   
   const storeIdentifier = storeSlug || storeId;
   
@@ -153,6 +155,7 @@ const CatalogContent = () => {
   };
 
   const handleAddToCart = (product: Product) => {
+    addItem(product, catalogType);
     toast({
       title: "Produto adicionado!",
       description: `${product.name} foi adicionado ao carrinho.`,
@@ -200,7 +203,7 @@ const CatalogContent = () => {
         catalogType={catalogType}
         onCatalogTypeChange={handleCatalogTypeChange}
         onSearch={handleSearch}
-        cartItemsCount={0}
+        cartItemsCount={totalItems}
         wishlistCount={wishlist.length}
         whatsappNumber={settings?.whatsapp_number || undefined}
         onCartClick={() => setShowCheckout(true)}
