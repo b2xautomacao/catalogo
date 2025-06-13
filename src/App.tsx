@@ -10,6 +10,9 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import Products from '@/pages/Products';
 import OrdersImproved from '@/pages/OrdersImproved';
+import Customers from '@/pages/Customers';
+import Coupons from '@/pages/Coupons';
+import Reports from '@/pages/Reports';
 import Settings from '@/pages/Settings';
 import UserManagement from '@/pages/UserManagement';
 import NotFound from '@/pages/NotFound';
@@ -50,6 +53,45 @@ function App() {
                     <Header title="Pedidos" />
                     <main className="flex-1 overflow-auto">
                       <OrdersImproved />
+                    </main>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="/customers" element={
+              <ProtectedRoute>
+                <div className="flex h-screen">
+                  <Sidebar />
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header title="Clientes" />
+                    <main className="flex-1 overflow-auto">
+                      <Customers />
+                    </main>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="/coupons" element={
+              <ProtectedRoute>
+                <div className="flex h-screen">
+                  <Sidebar />
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header title="Cupons" />
+                    <main className="flex-1 overflow-auto">
+                      <Coupons />
+                    </main>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <div className="flex h-screen">
+                  <Sidebar />
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header title="Relatórios" />
+                    <main className="flex-1 overflow-auto">
+                      <Reports />
                     </main>
                   </div>
                 </div>
