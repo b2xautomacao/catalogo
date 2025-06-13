@@ -162,6 +162,136 @@ export const useOrders = (filters: OrderFilters = {}) => {
     retry: 1
   });
 
+  // Mutation para criar novo pedido
+  const createOrderMutation = useMutation({
+    mutationFn: async (orderData: Partial<Order>) => {
+      console.log('useOrders: Iniciando criação de pedido:', orderData);
+      
+      // Validação básica
+      if (!orderData.customer_name) {
+        throw new Error('Nome do cliente é obrigatório');
+      }
+      
+      if (!orderData.items || orderData.items.length === 0) {
+        throw new Error('Pedido deve ter pelo menos um item');
+      }
+
+      // Determinar store_id
+      const targetStoreId = orderData.store_id || profile?.store_id;
+      
+      if (!targetStoreId) {
+        console.error('useOrders: Store ID não encontrado. Profile:', profile);
+        throw new Error('Store ID não encontrado. Verifique se você está logado corretamente.');
+      }
+
+      console.log('useOrders: Usando store_id:', targetStoreId);
+
+      // Verificar disponibilidade de estoque antes de criar o pedido
+      for (const item of orderData.items) {
+        console.log('useOrders: Verificando estoque para item:', item.name);
+        
+        const { data: product, error: productError } = await supabase
+          .from('products')
+          .select('stock, reserved_stock, allow_negative_stock, name')
+          .eq('id', item.id)
+          .maybeSingle();
+
+        if (productError) {
+          console.error('useOrders: Erro ao verificar produto:', productError);
+          throw new Error(`Erro ao verificar produto ${item.name}: ${productError.message}`);
+        }
+
+        if (!product) {
+          throw new Error(`Produto ${item.name} não encontrado`);
+        }
+
+        const availableStock = product.stock - (product.reserved_stock || 0);
+        console.log(`useOrders: Estoque disponível para ${product.name}: ${availableStock}, solicitado: ${item.quantity}`);
+        
+        if (availableStock < item.quantity && !product.allow_negative_stock) {
+          throw new Error(`Estoque insuficiente para ${product.name}. Disponível: ${availableStock}, solicitado: ${item.quantity}`);
+        }
+      }
+
+      // Preparar dados para inserção
+      const newOrderData = {
+        customer_name: orderData.customer_name,
+        customer_email: orderData.customer_email || null,
+        customer_phone: orderData.customer_phone || null,
+        status: (orderData.status || 'pending') as OrderStatus,
+        order_type: (orderData.order_type || 'retail') as CatalogType,
+        total_amount: Number(orderData.total_amount) || 0,
+        items: convertOrderItemsToJson(orderData.items),
+        shipping_address: orderData.shipping_address || null,
+        store_id: targetStoreId,
+        stock_reserved: false,
+        reservation_expires_at: null
+      };
+
+      console.log('useOrders: Dados preparados para inserção:', newOrderData);
+
+      // Criar o pedido no banco
+      const { data: createdOrder, error: createError } = await supabase
+        .from('orders')
+        .insert(newOrderData)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('useOrders: Erro ao criar pedido no banco:', createError);
+        throw new Error(`Erro ao criar pedido: ${createError.message}`);
+      }
+
+      console.log('useOrders: Pedido criado com sucesso:', createdOrder.id);
+
+      // Se o pedido for criado como confirmado, reservar estoque automaticamente
+      if (newOrderData.status === 'confirmed' && orderData.items) {
+        console.log('useOrders: Reservando estoque para pedido confirmado');
+        
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+        
+        for (const item of orderData.items) {
+          try {
+            await createStockMovement({
+              product_id: item.id,
+              order_id: createdOrder.id,
+              movement_type: 'reservation',
+              quantity: item.quantity,
+              expires_at: expiresAt.toISOString(),
+              notes: `Estoque reservado automaticamente para pedido ${createdOrder.id}`
+            });
+            
+            console.log(`useOrders: Estoque reservado para produto ${item.name}`);
+          } catch (stockError) {
+            console.error(`useOrders: Erro ao reservar estoque para ${item.name}:`, stockError);
+            // Não falhar o pedido por erro de estoque, apenas logar
+          }
+        }
+
+        // Atualizar pedido com informações de reserva
+        await supabase
+          .from('orders')
+          .update({ 
+            stock_reserved: true,
+            reservation_expires_at: expiresAt.toISOString()
+          })
+          .eq('id', createdOrder.id);
+      }
+
+      console.log('useOrders: Pedido finalizado com sucesso:', createdOrder.id);
+      return createdOrder;
+    },
+    onSuccess: (data) => {
+      console.log('useOrders: Pedido criado com sucesso, invalidando queries');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] });
+    },
+    onError: (error) => {
+      console.error('useOrders: Erro na criação do pedido:', error);
+    }
+  });
+
   // Mutation para atualizar status do pedido com gestão de estoque
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
@@ -253,108 +383,6 @@ export const useOrders = (filters: OrderFilters = {}) => {
     }
   });
 
-  // Mutation para criar novo pedido com gestão de estoque
-  const createOrderMutation = useMutation({
-    mutationFn: async (orderData: Partial<Order>) => {
-      console.log('useOrders: Criando novo pedido:', orderData);
-      
-      // Determinar store_id de múltiplas fontes
-      const targetStoreId = orderData.store_id || profile?.store_id;
-      
-      if (!targetStoreId) {
-        console.error('useOrders: Store ID não encontrado. Profile:', profile);
-        throw new Error('Store ID não encontrado. Verifique se você está logado corretamente.');
-      }
-
-      console.log('useOrders: Usando store_id:', targetStoreId);
-
-      // Verificar disponibilidade de estoque
-      if (orderData.items) {
-        for (const item of orderData.items) {
-          const { data: product, error: productError } = await supabase
-            .from('products')
-            .select('stock, reserved_stock, allow_negative_stock')
-            .eq('id', item.id)
-            .single();
-
-          if (productError) {
-            console.error('useOrders: Erro ao verificar produto:', productError);
-            throw new Error(`Produto ${item.name} não encontrado`);
-          }
-
-          const availableStock = product.stock - (product.reserved_stock || 0);
-          if (availableStock < item.quantity && !product.allow_negative_stock) {
-            throw new Error(`Estoque insuficiente para ${item.name}. Disponível: ${availableStock}`);
-          }
-        }
-      }
-
-      // Preparar dados para inserção no formato esperado pelo banco
-      const newOrderData = {
-        customer_name: orderData.customer_name || '',
-        customer_email: orderData.customer_email || null,
-        customer_phone: orderData.customer_phone || null,
-        status: (orderData.status || 'pending') as OrderStatus,
-        order_type: (orderData.order_type || 'retail') as CatalogType,
-        total_amount: orderData.total_amount || 0,
-        items: convertOrderItemsToJson(orderData.items || []),
-        shipping_address: orderData.shipping_address || null,
-        store_id: targetStoreId,
-        stock_reserved: false,
-        reservation_expires_at: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log('useOrders: Dados formatados para inserção:', newOrderData);
-
-      const { data, error } = await supabase
-        .from('orders')
-        .insert(newOrderData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('useOrders: Erro ao criar pedido no banco:', error);
-        throw error;
-      }
-
-      console.log('useOrders: Pedido criado com sucesso:', data.id);
-
-      // Se o pedido for criado como confirmado, reservar estoque automaticamente
-      if (newOrderData.status === 'confirmed' && orderData.items) {
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
-        
-        for (const item of orderData.items) {
-          await createStockMovement({
-            product_id: item.id,
-            order_id: data.id,
-            movement_type: 'reservation',
-            quantity: item.quantity,
-            expires_at: expiresAt.toISOString(),
-            notes: `Estoque reservado automaticamente`
-          });
-        }
-
-        // Atualizar pedido com informações de reserva
-        await supabase
-          .from('orders')
-          .update({ 
-            stock_reserved: true,
-            reservation_expires_at: expiresAt.toISOString()
-          })
-          .eq('id', data.id);
-      }
-
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['stock_movements'] });
-    }
-  });
-
   // Função para buscar pedido por ID
   const getOrderById = async (orderId: string): Promise<Order | null> => {
     console.log('useOrders: Buscando pedido por ID:', orderId);
@@ -396,10 +424,11 @@ export const useOrders = (filters: OrderFilters = {}) => {
     error: ordersQuery.error,
     
     // Funções
-    updateOrderStatus: updateOrderStatusMutation.mutate,
-    isUpdatingStatus: updateOrderStatusMutation.isPending,
     createOrder: createOrderMutation.mutate,
     isCreatingOrder: createOrderMutation.isPending,
+    createOrderAsync: createOrderMutation.mutateAsync, // Adicionar versão async
+    updateOrderStatus: updateOrderStatusMutation.mutate,
+    isUpdatingStatus: updateOrderStatusMutation.isPending,
     getOrderById,
     refetch: ordersQuery.refetch,
     

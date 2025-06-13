@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -6,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Clock, MapPin, Phone, Mail, FileText, Loader2 } from 'lucide-react';
+import { Building, Clock, MapPin, Phone, Mail, FileText, Loader2, AlertCircle } from 'lucide-react';
 import { useStores } from '@/hooks/useStores';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface StoreInfoFormData {
   storeName: string;
@@ -29,7 +31,7 @@ interface StoreInfoFormData {
 
 const StoreInfoSettings = () => {
   const { toast } = useToast();
-  const { currentStore, updateCurrentStore, loading: storeLoading } = useStores();
+  const { currentStore, updateCurrentStore, loading: storeLoading, error: storeError } = useStores();
   const [saving, setSaving] = React.useState(false);
 
   const form = useForm<StoreInfoFormData>({
@@ -52,9 +54,11 @@ const StoreInfoSettings = () => {
     }
   });
 
-  // Correção: usar apenas currentStore como dependência
+  // Carregar dados da loja quando disponível
   useEffect(() => {
     if (currentStore) {
+      console.log('StoreInfoSettings: Carregando dados da loja:', currentStore);
+      
       form.reset({
         storeName: currentStore.name || '',
         description: currentStore.description || '',
@@ -73,11 +77,12 @@ const StoreInfoSettings = () => {
         }
       });
     }
-  }, [currentStore]); // Apenas currentStore
+  }, [currentStore, form]);
 
   const onSubmit = async (data: StoreInfoFormData) => {
     try {
       setSaving(true);
+      console.log('StoreInfoSettings: Salvando dados:', data);
 
       const updates = {
         name: data.storeName,
@@ -99,7 +104,7 @@ const StoreInfoSettings = () => {
         description: "As informações da loja foram atualizadas com sucesso",
       });
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('StoreInfoSettings: Erro ao salvar configurações:', error);
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar as configurações. Tente novamente.",
@@ -123,9 +128,31 @@ const StoreInfoSettings = () => {
   if (storeLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <span className="ml-2">Carregando dados da loja...</span>
       </div>
+    );
+  }
+
+  if (storeError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Erro ao carregar dados da loja: {storeError}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!currentStore) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Nenhuma loja encontrada. Verifique suas permissões.
+        </AlertDescription>
+      </Alert>
     );
   }
 
