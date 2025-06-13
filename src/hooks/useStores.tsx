@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -55,7 +55,25 @@ export const useStores = () => {
   const [currentStore, setCurrentStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  
+  // Refs para controle de requests
+  const currentStoreCache = useRef<{ data: Store; timestamp: number } | null>(null);
+  const requestInProgress = useRef(false);
+
+  // Função para aguardar o profile estar disponível
+  const waitForProfile = useCallback(async (maxAttempts = 15): Promise<void> => {
+    let attempts = 0;
+    while (attempts < maxAttempts && (!profile || !profile.store_id)) {
+      console.log(`useStores: Aguardando profile (tentativa ${attempts + 1}/${maxAttempts})`);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      attempts++;
+    }
+    
+    if (!profile || !profile.store_id) {
+      throw new Error('Profile ou Store ID não disponível após aguardar');
+    }
+  }, [profile]);
 
   const fetchStores = async () => {
     try {
@@ -77,14 +95,33 @@ export const useStores = () => {
     }
   };
 
-  const fetchCurrentStore = async () => {
+  const fetchCurrentStore = useCallback(async (forceRefresh = false) => {
+    // Evitar requests simultâneos
+    if (requestInProgress.current && !forceRefresh) {
+      console.log('useStores: Request já em andamento, aguardando...');
+      return;
+    }
+
     try {
+      requestInProgress.current = true;
       setLoading(true);
       setError(null);
+      
+      // Aguardar profile estar disponível
+      await waitForProfile();
       
       if (!profile?.store_id) {
         console.log('useStores: Nenhum store_id no profile');
         setCurrentStore(null);
+        return;
+      }
+
+      // Verificar cache (válido por 2 minutos)
+      const cached = currentStoreCache.current;
+      const now = Date.now();
+      if (!forceRefresh && cached && now - cached.timestamp < 120000) {
+        console.log('useStores: Usando dados do cache');
+        setCurrentStore(cached.data);
         return;
       }
 
@@ -102,6 +139,13 @@ export const useStores = () => {
       }
       
       console.log('useStores: Loja atual carregada:', data);
+      
+      // Atualizar cache
+      currentStoreCache.current = {
+        data,
+        timestamp: now
+      };
+      
       setCurrentStore(data);
     } catch (error) {
       console.error('Erro ao buscar loja atual:', error);
@@ -109,8 +153,9 @@ export const useStores = () => {
       setCurrentStore(null);
     } finally {
       setLoading(false);
+      requestInProgress.current = false;
     }
-  };
+  }, [profile, waitForProfile]);
 
   const createStore = async (storeData: CreateStoreData) => {
     try {
@@ -145,8 +190,12 @@ export const useStores = () => {
         .single();
 
       if (error) throw error;
+      
+      // Invalidar cache
+      currentStoreCache.current = null;
+      
       await fetchStores();
-      await fetchCurrentStore();
+      await fetchCurrentStore(true);
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar loja:', error);
@@ -177,8 +226,12 @@ export const useStores = () => {
         .single();
 
       if (error) throw error;
+      
+      // Invalidar cache
+      currentStoreCache.current = null;
+      
       await fetchStores();
-      await fetchCurrentStore();
+      await fetchCurrentStore(true);
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar slug da loja:', error);
@@ -188,15 +241,32 @@ export const useStores = () => {
     }
   };
 
+  // Effect para carregar dados quando o profile estiver disponível
   useEffect(() => {
-    if (profile) {
+    if (profile?.store_id && !requestInProgress.current) {
+      console.log('useStores: Profile disponível, carregando loja atual');
       if (profile.role === 'superadmin') {
         fetchStores();
       } else {
         fetchCurrentStore();
       }
+    } else if (user && !profile) {
+      console.log('useStores: Usuário logado mas profile ainda não disponível');
+      // Aguardar um pouco e tentar novamente
+      const timer = setTimeout(() => {
+        if (profile?.store_id && !requestInProgress.current) {
+          fetchCurrentStore();
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else if (!user) {
+      console.log('useStores: Usuário não logado');
+      setLoading(false);
+      setCurrentStore(null);
+      setStores([]);
     }
-  }, [profile]);
+  }, [profile?.store_id, profile?.role, user, fetchCurrentStore]);
 
   return {
     stores,
@@ -204,7 +274,7 @@ export const useStores = () => {
     loading,
     error,
     fetchStores,
-    fetchCurrentStore,
+    fetchCurrentStore: () => fetchCurrentStore(true),
     createStore,
     updateStore,
     updateCurrentStore,

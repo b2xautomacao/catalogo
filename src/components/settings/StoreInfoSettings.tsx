@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Building, Clock, Phone, Loader2, AlertCircle } from 'lucide-react';
 import { useStores } from '@/hooks/useStores';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import LogoUpload from './LogoUpload';
 
 interface StoreInfoFormData {
   storeName: string;
@@ -159,7 +160,10 @@ const StoreInfoSettings = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Logo da Loja */}
+          <LogoUpload />
+
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
