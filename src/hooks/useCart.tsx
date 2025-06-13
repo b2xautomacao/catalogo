@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface CartItem {
@@ -20,8 +20,24 @@ export interface CartItem {
   catalogType: 'retail' | 'wholesale';
 }
 
-export const useCart = () => {
+interface CartContextType {
+  items: CartItem[];
+  addItem: (item: CartItem) => void;
+  removeItem: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
+  clearCart: () => void;
+  totalAmount: number;
+  totalItems: number;
+  isOpen: boolean;
+  toggleCart: () => void;
+  closeCart: () => void;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   // Carregar itens do localStorage
@@ -95,19 +111,44 @@ export const useCart = () => {
     localStorage.removeItem('cart-items');
   };
 
+  const toggleCart = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const closeCart = () => {
+    setIsOpen(false);
+  };
+
   const totalAmount = items.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
 
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
-  return {
+  const value: CartContextType = {
     items,
     addItem,
     removeItem,
     updateQuantity,
     clearCart,
     totalAmount,
-    totalItems
+    totalItems,
+    isOpen,
+    toggleCart,
+    closeCart
   };
+
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
 };

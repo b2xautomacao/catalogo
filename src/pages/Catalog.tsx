@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Filter, Grid, List, ArrowUpDown } from 'lucide-react';
@@ -8,6 +7,7 @@ import { useCatalog, CatalogType } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { Product } from '@/hooks/useProducts';
 import { CartProvider, useCart } from '@/hooks/useCart';
+import { createCartItem } from '@/utils/cartHelpers';
 import CatalogHeader from '@/components/catalog/CatalogHeader';
 import FilterSidebar, { FilterState } from '@/components/catalog/FilterSidebar';
 import ProductGrid from '@/components/catalog/ProductGrid';
@@ -156,11 +156,8 @@ const CatalogContent = () => {
   };
 
   const handleAddToCart = (product: Product) => {
-    addItem(product, catalogType);
-    toast({
-      title: "Produto adicionado!",
-      description: `${product.name} foi adicionado ao carrinho.`,
-    });
+    const cartItem = createCartItem(product, catalogType);
+    addItem(cartItem);
   };
 
   const getSortedProducts = () => {
@@ -346,6 +343,7 @@ const CatalogContent = () => {
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
         storeSettings={settings}
+        storeId={store?.id}
       />
     </div>
   );

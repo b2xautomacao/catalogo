@@ -1,4 +1,3 @@
-
 import React, { useState, memo, useCallback } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { createCartItem } from '@/utils/cartHelpers';
 
 interface ProductCardProps {
   product: Product;
@@ -60,12 +60,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   }, [product.name, product.description, product.id, toast]);
 
   const handleAddToCart = useCallback(() => {
-    addItem(product, catalogType);
-    toast({
-      title: "Produto adicionado!",
-      description: `${product.name} foi adicionado ao carrinho.`,
-    });
-  }, [addItem, product, catalogType, toast]);
+    const cartItem = createCartItem(product, catalogType, minQuantity);
+    addItem(cartItem);
+  }, [addItem, product, catalogType, minQuantity]);
 
   const handleAddToWishlist = useCallback(() => {
     onAddToWishlist(product);
