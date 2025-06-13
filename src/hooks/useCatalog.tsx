@@ -1,255 +1,127 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/hooks/useProducts';
-
-export interface CatalogStore {
-  id: string;
-  name: string;
-  description: string | null;
-  owner_id: string;
-  is_active: boolean;
-  url_slug: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CatalogSettings {
-  id: string;
-  store_id: string;
-  retail_catalog_active: boolean | null;
-  wholesale_catalog_active: boolean | null;
-  whatsapp_number: string | null;
-  whatsapp_integration_active: boolean | null;
-  payment_methods: {
-    pix: boolean;
-    bank_slip: boolean;
-    credit_card: boolean;
-  } | null;
-  shipping_options: {
-    pickup: boolean;
-    delivery: boolean;
-    shipping: boolean;
-  } | null;
-  business_hours: any;
-  created_at: string;
-  updated_at: string;
-}
+import { useStoreSettings } from './useStoreSettings';
 
 export type CatalogType = 'retail' | 'wholesale';
-export type CheckoutType = 'whatsapp' | 'online' | 'fluid';
 
-export const useCatalog = (storeIdentifier?: string) => {
-  const [store, setStore] = useState<CatalogStore | null>(null);
-  const [settings, setSettings] = useState<CatalogSettings | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+interface Store {
+  id: string;
+  name: string;
+  description?: string;
+  logo_url?: string;
+  is_active: boolean;
+}
 
-  const fetchStoreBySlugOrId = useCallback(async (identifier: string) => {
-    try {
-      console.log('Buscando loja por identifier:', identifier);
-      
-      // Primeiro tenta buscar por slug
-      let { data, error } = await supabase
+// Função para verificar se é um UUID válido
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
+export const useCatalog = (identifier?: string) => {
+  const [catalogType, setCatalogType] = useState<CatalogType>('retail');
+
+  // Query para buscar loja por ID ou slug
+  const storeQuery = useQuery({
+    queryKey: ['store', identifier],
+    queryFn: async (): Promise<Store | null> => {
+      if (!identifier) {
+        console.log('useCatalog: Nenhum identificador fornecido');
+        return null;
+      }
+
+      console.log('useCatalog: Buscando loja para identificador:', identifier);
+
+      let query = supabase
         .from('stores')
-        .select('*')
-        .eq('url_slug', identifier)
-        .eq('is_active', true)
-        .single();
+        .select('id, name, description, logo_url, is_active')
+        .eq('is_active', true);
 
-      // Se não encontrou por slug, tenta por ID
-      if (!data || error) {
-        console.log('Não encontrou por slug, tentando por ID...');
-        const result = await supabase
-          .from('stores')
-          .select('*')
-          .eq('id', identifier)
-          .eq('is_active', true)
-          .single();
-        
-        data = result.data;
-        error = result.error;
+      // Determinar se é UUID (buscar por ID) ou string (buscar por slug)
+      if (isValidUUID(identifier)) {
+        console.log('useCatalog: Identificador é UUID, buscando por ID');
+        query = query.eq('id', identifier);
+      } else {
+        console.log('useCatalog: Identificador é slug, buscando por url_slug');
+        query = query.eq('url_slug', identifier);
       }
+
+      const { data, error } = await query.single();
 
       if (error) {
-        console.error('Erro ao buscar loja:', error);
-        throw error;
-      }
-      
-      console.log('Loja encontrada:', data);
-      setStore(data);
-      return data.id;
-    } catch (error) {
-      console.error('Erro ao buscar loja:', error);
-      return null;
-    }
-  }, []);
-
-  const fetchSettings = useCallback(async (storeId: string) => {
-    try {
-      console.log('Buscando configurações para store:', storeId);
-      const { data, error } = await supabase
-        .from('store_settings')
-        .select('*')
-        .eq('store_id', storeId)
-        .single();
-
-      if (error) {
-        console.error('Erro ao buscar configurações:', error);
-        throw error;
-      }
-      
-      // Converter e validar os dados JSON
-      const processedSettings: CatalogSettings = {
-        ...data,
-        payment_methods: data.payment_methods ? {
-          pix: (data.payment_methods as any)?.pix || false,
-          bank_slip: (data.payment_methods as any)?.bank_slip || false,
-          credit_card: (data.payment_methods as any)?.credit_card || false,
-        } : {
-          pix: false,
-          bank_slip: false,
-          credit_card: false,
-        },
-        shipping_options: data.shipping_options ? {
-          pickup: (data.shipping_options as any)?.pickup || false,
-          delivery: (data.shipping_options as any)?.delivery || false,
-          shipping: (data.shipping_options as any)?.shipping || false,
-        } : {
-          pickup: true,
-          delivery: false,
-          shipping: false,
+        console.error('useCatalog: Erro ao buscar loja:', error);
+        if (error.code === 'PGRST116') {
+          console.log('useCatalog: Loja não encontrada');
+          return null;
         }
-      };
+        throw error;
+      }
 
-      console.log('Configurações processadas:', processedSettings);
-      setSettings(processedSettings);
-      return processedSettings;
-    } catch (error) {
-      console.error('Erro ao buscar configurações:', error);
-      return null;
-    }
-  }, []);
+      console.log('useCatalog: Loja encontrada:', data?.name);
+      return data;
+    },
+    enabled: !!identifier,
+    retry: 1,
+    refetchOnWindowFocus: false
+  });
 
-  const fetchProducts = useCallback(async (storeId: string, catalogType: CatalogType) => {
-    try {
-      setLoading(true);
-      console.log('Buscando produtos para store:', storeId, 'tipo:', catalogType);
-      
+  // Hook para configurações da loja
+  const { settings: storeSettings, loading: settingsLoading } = useStoreSettings(storeQuery.data?.id);
+
+  // Query para buscar produtos da loja
+  const productsQuery = useQuery({
+    queryKey: ['catalog-products', storeQuery.data?.id, catalogType],
+    queryFn: async () => {
+      if (!storeQuery.data?.id) {
+        console.log('useCatalog: Store ID não disponível para buscar produtos');
+        return [];
+      }
+
+      console.log('useCatalog: Buscando produtos para store_id:', storeQuery.data.id, 'tipo:', catalogType);
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('store_id', storeId)
+        .eq('store_id', storeQuery.data.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Filtrar produtos baseado no tipo de catálogo
-      const filtered = data?.filter(product => {
-        if (catalogType === 'wholesale') {
-          return product.wholesale_price && product.min_wholesale_qty;
-        }
-        return true;
-      }) || [];
-
-      console.log('Produtos filtrados:', filtered.length);
-      setProducts(filtered);
-      setFilteredProducts(filtered);
-    } catch (error) {
-      console.error('Erro ao buscar produtos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const searchProducts = useCallback((query: string) => {
-    if (!query.trim()) {
-      setFilteredProducts(products);
-      return;
-    }
-
-    const filtered = products.filter(product =>
-      product.name.toLowerCase().includes(query.toLowerCase()) ||
-      product.description?.toLowerCase().includes(query.toLowerCase()) ||
-      product.category?.toLowerCase().includes(query.toLowerCase())
-    );
-
-    setFilteredProducts(filtered);
-  }, [products]);
-
-  const filterProducts = useCallback((filters: {
-    category?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    inStock?: boolean;
-  }) => {
-    let filtered = products;
-
-    if (filters.category) {
-      filtered = filtered.filter(p => p.category === filters.category);
-    }
-
-    if (filters.minPrice !== undefined) {
-      filtered = filtered.filter(p => p.retail_price >= filters.minPrice!);
-    }
-
-    if (filters.maxPrice !== undefined) {
-      filtered = filtered.filter(p => p.retail_price <= filters.maxPrice!);
-    }
-
-    if (filters.inStock) {
-      filtered = filtered.filter(p => p.stock > 0);
-    }
-
-    setFilteredProducts(filtered);
-  }, [products]);
-
-  const initializeCatalog = useCallback(async (identifier: string, catalogType: CatalogType) => {
-    console.log('Inicializando catálogo:', identifier, catalogType);
-    
-    const storeId = await fetchStoreBySlugOrId(identifier);
-    if (storeId) {
-      const settings = await fetchSettings(storeId);
-      
-      // Verificar se o tipo de catálogo está ativo
-      if (catalogType === 'wholesale' && settings && !settings.wholesale_catalog_active) {
-        console.warn('Catálogo de atacado não está ativo');
-        return false;
+      if (error) {
+        console.error('useCatalog: Erro ao buscar produtos:', error);
+        throw error;
       }
-      
-      if (catalogType === 'retail' && settings && !settings.retail_catalog_active) {
-        console.warn('Catálogo de varejo não está ativo');
-        return false;
-      }
-      
-      await fetchProducts(storeId, catalogType);
-      return true;
-    }
-    return false;
-  }, [fetchStoreBySlugOrId, fetchSettings, fetchProducts]);
 
-  // Efeito principal que inicializa o catálogo apenas quando necessário
-  useEffect(() => {
-    if (storeIdentifier) {
-      // Resetar estado apenas se mudou o identificador
-      setStore(null);
-      setSettings(null);
-      setProducts([]);
-      setFilteredProducts([]);
-    }
-  }, [storeIdentifier]);
+      console.log('useCatalog: Produtos encontrados:', data?.length || 0);
+      return data || [];
+    },
+    enabled: !!storeQuery.data?.id,
+    retry: 1,
+    refetchOnWindowFocus: false
+  });
 
   return {
-    store,
-    settings,
-    products,
-    filteredProducts,
-    loading,
-    fetchProducts,
-    searchProducts,
-    filterProducts,
-    initializeCatalog
+    // Store data
+    store: storeQuery.data,
+    storeLoading: storeQuery.isLoading,
+    storeError: storeQuery.error,
+    
+    // Products data
+    products: productsQuery.data || [],
+    productsLoading: productsQuery.isLoading,
+    productsError: productsQuery.error,
+    
+    // Settings data
+    storeSettings,
+    settingsLoading,
+    
+    // Catalog type
+    catalogType,
+    setCatalogType,
+    
+    // Refetch functions
+    refetchStore: storeQuery.refetch,
+    refetchProducts: productsQuery.refetch
   };
 };

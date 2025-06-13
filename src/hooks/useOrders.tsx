@@ -87,9 +87,12 @@ export const useOrders = (filters: OrderFilters = {}) => {
 
   // Função para buscar pedidos
   const fetchOrders = async (): Promise<Order[]> => {
-    if (!profile) return [];
+    if (!profile) {
+      console.log('useOrders: Profile não disponível');
+      return [];
+    }
 
-    console.log('Buscando pedidos com filtros:', filters);
+    console.log('useOrders: Buscando pedidos com filtros:', filters);
 
     let query = supabase.from('orders').select('*');
 
@@ -127,11 +130,11 @@ export const useOrders = (filters: OrderFilters = {}) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Erro ao buscar pedidos:', error);
+      console.error('useOrders: Erro ao buscar pedidos:', error);
       throw error;
     }
 
-    console.log('Pedidos encontrados:', data?.length || 0);
+    console.log('useOrders: Pedidos encontrados:', data?.length || 0);
     
     // Converter dados do banco para nossa interface
     return (data || []).map((order: DatabaseOrder): Order => ({
@@ -253,11 +256,17 @@ export const useOrders = (filters: OrderFilters = {}) => {
   // Mutation para criar novo pedido com gestão de estoque
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: Partial<Order>) => {
-      console.log('Criando novo pedido:', orderData);
+      console.log('useOrders: Criando novo pedido:', orderData);
       
-      if (!profile?.store_id) {
-        throw new Error('Store ID não encontrado');
+      // Determinar store_id de múltiplas fontes
+      const targetStoreId = orderData.store_id || profile?.store_id;
+      
+      if (!targetStoreId) {
+        console.error('useOrders: Store ID não encontrado. Profile:', profile);
+        throw new Error('Store ID não encontrado. Verifique se você está logado corretamente.');
       }
+
+      console.log('useOrders: Usando store_id:', targetStoreId);
 
       // Verificar disponibilidade de estoque
       if (orderData.items) {
@@ -269,7 +278,7 @@ export const useOrders = (filters: OrderFilters = {}) => {
             .single();
 
           if (productError) {
-            console.error('Erro ao verificar produto:', productError);
+            console.error('useOrders: Erro ao verificar produto:', productError);
             throw new Error(`Produto ${item.name} não encontrado`);
           }
 
@@ -290,12 +299,14 @@ export const useOrders = (filters: OrderFilters = {}) => {
         total_amount: orderData.total_amount || 0,
         items: convertOrderItemsToJson(orderData.items || []),
         shipping_address: orderData.shipping_address || null,
-        store_id: profile.store_id,
+        store_id: targetStoreId,
         stock_reserved: false,
         reservation_expires_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      console.log('useOrders: Dados formatados para inserção:', newOrderData);
 
       const { data, error } = await supabase
         .from('orders')
@@ -304,9 +315,11 @@ export const useOrders = (filters: OrderFilters = {}) => {
         .single();
 
       if (error) {
-        console.error('Erro ao criar pedido:', error);
+        console.error('useOrders: Erro ao criar pedido no banco:', error);
         throw error;
       }
+
+      console.log('useOrders: Pedido criado com sucesso:', data.id);
 
       // Se o pedido for criado como confirmado, reservar estoque automaticamente
       if (newOrderData.status === 'confirmed' && orderData.items) {
@@ -344,7 +357,7 @@ export const useOrders = (filters: OrderFilters = {}) => {
 
   // Função para buscar pedido por ID
   const getOrderById = async (orderId: string): Promise<Order | null> => {
-    console.log('Buscando pedido por ID:', orderId);
+    console.log('useOrders: Buscando pedido por ID:', orderId);
     
     const { data, error } = await supabase
       .from('orders')
@@ -353,7 +366,7 @@ export const useOrders = (filters: OrderFilters = {}) => {
       .single();
 
     if (error) {
-      console.error('Erro ao buscar pedido:', error);
+      console.error('useOrders: Erro ao buscar pedido:', error);
       return null;
     }
 

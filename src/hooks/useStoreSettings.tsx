@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -21,19 +21,32 @@ export const useStoreSettings = (storeId?: string) => {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
+  
+  // Usar useRef para valores estáveis e evitar loops
+  const stableStoreId = useRef<string | null>(null);
+  const hasFetched = useRef(false);
 
-  const fetchSettings = useCallback(async () => {
+  // Determinar store_id de forma estável
+  const targetStoreId = storeId || profile?.store_id;
+
+  const fetchSettings = useCallback(async (forceRefresh = false) => {
+    // Evitar requisições duplicadas
+    if (!forceRefresh && hasFetched.current && stableStoreId.current === targetStoreId) {
+      return;
+    }
+
     try {
       setLoading(true);
-      const targetStoreId = storeId || profile?.store_id;
       
       if (!targetStoreId) {
-        console.log('Nenhum store_id disponível para buscar configurações');
+        console.log('useStoreSettings: Nenhum store_id disponível');
+        setSettings(null);
         setLoading(false);
         return;
       }
 
-      console.log('Buscando configurações para store_id:', targetStoreId);
+      console.log('useStoreSettings: Buscando configurações para store_id:', targetStoreId);
+      stableStoreId.current = targetStoreId;
 
       const { data, error } = await supabase
         .from('store_settings')
@@ -42,13 +55,13 @@ export const useStoreSettings = (storeId?: string) => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao buscar configurações:', error);
+        console.error('useStoreSettings: Erro ao buscar configurações:', error);
         throw error;
       }
       
       // Se não existir configuração, criar uma padrão
       if (!data) {
-        console.log('Criando configurações padrão para store_id:', targetStoreId);
+        console.log('useStoreSettings: Criando configurações padrão');
         const { data: newSettings, error: createError } = await supabase
           .from('store_settings')
           .insert([{
@@ -61,30 +74,34 @@ export const useStoreSettings = (storeId?: string) => {
           .single();
 
         if (createError) {
-          console.error('Erro ao criar configurações:', createError);
+          console.error('useStoreSettings: Erro ao criar configurações:', createError);
           throw createError;
         }
-        console.log('Configurações criadas:', newSettings);
+        
+        console.log('useStoreSettings: Configurações criadas com sucesso');
         setSettings(newSettings);
       } else {
-        console.log('Configurações encontradas:', data);
+        console.log('useStoreSettings: Configurações encontradas');
         setSettings(data);
       }
+      
+      hasFetched.current = true;
     } catch (error) {
-      console.error('Erro ao buscar configurações:', error);
+      console.error('useStoreSettings: Erro geral:', error);
+      setSettings(null);
     } finally {
       setLoading(false);
     }
-  }, [storeId, profile?.store_id]); // Dependências mínimas necessárias
+  }, []); // Sem dependências para manter estável
 
   const updateSettings = useCallback(async (updates: Partial<StoreSettings>) => {
     try {
       if (!settings) {
-        console.error('Configurações não encontradas para atualizar');
+        console.error('useStoreSettings: Configurações não encontradas para atualizar');
         return { data: null, error: 'Configurações não encontradas' };
       }
 
-      console.log('Atualizando configurações:', updates);
+      console.log('useStoreSettings: Atualizando configurações:', updates);
 
       const { data, error } = await supabase
         .from('store_settings')
@@ -94,29 +111,31 @@ export const useStoreSettings = (storeId?: string) => {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar configurações:', error);
+        console.error('useStoreSettings: Erro ao atualizar:', error);
         throw error;
       }
       
-      console.log('Configurações atualizadas:', data);
+      console.log('useStoreSettings: Configurações atualizadas com sucesso');
       setSettings(data);
       return { data, error: null };
     } catch (error) {
-      console.error('Erro ao atualizar configurações:', error);
+      console.error('useStoreSettings: Erro na atualização:', error);
       return { data: null, error };
     }
-  }, [settings]); // Apenas settings como dependência
+  }, [settings?.id]); // Apenas o ID como dependência
 
+  // Effect para buscar dados quando store_id mudar
   useEffect(() => {
-    if (profile?.store_id || storeId) {
+    if (targetStoreId && targetStoreId !== stableStoreId.current) {
+      hasFetched.current = false; // Reset flag quando store_id mudar
       fetchSettings();
     }
-  }, [profile?.store_id, storeId]); // Dependências mínimas para evitar loops
+  }, [targetStoreId, fetchSettings]);
 
   return {
     settings,
     loading,
-    fetchSettings,
+    fetchSettings: () => fetchSettings(true), // Force refresh
     updateSettings
   };
 };
