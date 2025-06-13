@@ -85,7 +85,7 @@ export const useReports = (dateRange: string = '30d') => {
       .eq('store_id', profile.store_id)
       .gte('created_at', from.toISOString())
       .lte('created_at', to.toISOString())
-      .in('status', ['confirmed', 'shipped', 'delivered']);
+      .in('status', ['confirmed', 'shipping', 'delivered']);
 
     if (currentError) throw currentError;
 
@@ -96,7 +96,7 @@ export const useReports = (dateRange: string = '30d') => {
       .eq('store_id', profile.store_id)
       .gte('created_at', previousFrom.toISOString())
       .lt('created_at', from.toISOString())
-      .in('status', ['confirmed', 'shipped', 'delivered']);
+      .in('status', ['confirmed', 'shipping', 'delivered']);
 
     if (previousError) throw previousError;
 
@@ -253,7 +253,7 @@ export const useReports = (dateRange: string = '30d') => {
       .eq('store_id', profile.store_id)
       .gte('created_at', from.toISOString())
       .lte('created_at', to.toISOString())
-      .in('status', ['confirmed', 'shipped', 'delivered']);
+      .in('status', ['confirmed', 'shipping', 'delivered']);
 
     if (error) throw error;
 
