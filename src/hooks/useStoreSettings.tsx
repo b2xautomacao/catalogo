@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -22,50 +22,43 @@ export const useStoreSettings = (storeId?: string) => {
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   
-  // Usar refs para evitar loops
-  const lastFetchedStoreId = useRef<string | null>(null);
-  const isCurrentlyFetching = useRef(false);
-  const fetchTimestamp = useRef<number>(0);
-
-  // Determinar store_id de forma estável
+  // Cache para evitar requests repetidos
+  const cacheRef = useRef<Map<string, { data: StoreSettings; timestamp: number }>>(new Map());
+  const lastStoreIdRef = useRef<string | null>(null);
+  const isFetchingRef = useRef(false);
+  
   const targetStoreId = storeId || profile?.store_id;
 
-  const fetchSettings = async (forceRefresh = false) => {
-    // Evitar requests duplicados
-    if (isCurrentlyFetching.current && !forceRefresh) {
-      console.log('useStoreSettings: Request já em andamento, ignorando');
-      return;
-    }
-
-    // Throttle requests - mínimo 1 segundo entre requests
-    const now = Date.now();
-    if (!forceRefresh && now - fetchTimestamp.current < 1000) {
-      console.log('useStoreSettings: Request throttled');
-      return;
-    }
-
-    // Evitar requests desnecessários
-    if (!forceRefresh && lastFetchedStoreId.current === targetStoreId && settings) {
-      console.log('useStoreSettings: Dados já carregados para este store_id');
+  // Função de fetch com cache e throttling
+  const fetchSettings = useCallback(async (forceRefresh = false) => {
+    if (!targetStoreId) {
+      console.log('useStoreSettings: Nenhum store_id disponível');
+      setSettings(null);
       setLoading(false);
+      return;
+    }
+
+    // Verificar cache (válido por 5 minutos)
+    const cached = cacheRef.current.get(targetStoreId);
+    const now = Date.now();
+    if (!forceRefresh && cached && now - cached.timestamp < 300000) {
+      console.log('useStoreSettings: Usando dados do cache');
+      setSettings(cached.data);
+      setLoading(false);
+      return;
+    }
+
+    // Evitar requests simultâneos
+    if (isFetchingRef.current) {
+      console.log('useStoreSettings: Request já em andamento');
       return;
     }
 
     try {
       setLoading(true);
-      isCurrentlyFetching.current = true;
-      fetchTimestamp.current = now;
+      isFetchingRef.current = true;
       
-      if (!targetStoreId) {
-        console.log('useStoreSettings: Nenhum store_id disponível');
-        setSettings(null);
-        setLoading(false);
-        lastFetchedStoreId.current = null;
-        return;
-      }
-
       console.log('useStoreSettings: Buscando configurações para store_id:', targetStoreId);
-      lastFetchedStoreId.current = targetStoreId;
 
       const { data, error } = await supabase
         .from('store_settings')
@@ -77,6 +70,8 @@ export const useStoreSettings = (storeId?: string) => {
         console.error('useStoreSettings: Erro ao buscar configurações:', error);
         throw error;
       }
+      
+      let finalData = data;
       
       // Se não existir configuração, criar uma padrão
       if (!data) {
@@ -97,23 +92,28 @@ export const useStoreSettings = (storeId?: string) => {
           throw createError;
         }
         
-        console.log('useStoreSettings: Configurações criadas com sucesso');
-        setSettings(newSettings);
-      } else {
-        console.log('useStoreSettings: Configurações encontradas');
-        setSettings(data);
+        finalData = newSettings;
       }
+
+      // Atualizar cache
+      cacheRef.current.set(targetStoreId, {
+        data: finalData,
+        timestamp: now
+      });
+      
+      setSettings(finalData);
+      lastStoreIdRef.current = targetStoreId;
       
     } catch (error) {
       console.error('useStoreSettings: Erro geral:', error);
       setSettings(null);
     } finally {
       setLoading(false);
-      isCurrentlyFetching.current = false;
+      isFetchingRef.current = false;
     }
-  };
+  }, [targetStoreId]); // APENAS targetStoreId como dependência
 
-  const updateSettings = async (updates: Partial<StoreSettings>) => {
+  const updateSettings = useCallback(async (updates: Partial<StoreSettings>) => {
     try {
       if (!settings) {
         console.error('useStoreSettings: Configurações não encontradas para atualizar');
@@ -134,34 +134,35 @@ export const useStoreSettings = (storeId?: string) => {
         throw error;
       }
       
-      console.log('useStoreSettings: Configurações atualizadas com sucesso');
+      // Atualizar cache
+      if (targetStoreId) {
+        cacheRef.current.set(targetStoreId, {
+          data,
+          timestamp: Date.now()
+        });
+      }
+      
       setSettings(data);
       return { data, error: null };
     } catch (error) {
       console.error('useStoreSettings: Erro na atualização:', error);
       return { data: null, error };
     }
-  };
+  }, [settings, targetStoreId]);
 
-  // Effect para buscar dados quando store_id mudar - SEM fetchSettings nas dependências
+  // Effect simplificado - SEM fetchSettings nas dependências
   useEffect(() => {
-    // Reset estado se store_id mudou
-    if (targetStoreId !== lastFetchedStoreId.current) {
-      console.log('useStoreSettings: Store ID mudou, reset e fetch');
-      setSettings(null);
-      setLoading(true);
-      lastFetchedStoreId.current = null;
-      fetchSettings();
-    } else if (targetStoreId && !settings && !isCurrentlyFetching.current) {
-      console.log('useStoreSettings: Sem dados, fazendo fetch inicial');
+    // Apenas buscar se mudou o store_id ou é a primeira vez
+    if (targetStoreId !== lastStoreIdRef.current) {
+      console.log('useStoreSettings: Store ID mudou, fazendo fetch');
       fetchSettings();
     }
-  }, [targetStoreId]); // APENAS targetStoreId como dependência
+  }, [targetStoreId]); // APENAS targetStoreId
 
   return {
     settings,
     loading,
-    fetchSettings: () => fetchSettings(true), // Force refresh sempre
+    fetchSettings: () => fetchSettings(true),
     updateSettings
   };
 };
