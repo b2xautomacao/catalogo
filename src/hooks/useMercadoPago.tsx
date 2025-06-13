@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 interface MercadoPagoItem {
   id: string;
@@ -30,6 +31,7 @@ interface MercadoPagoCheckout {
     excluded_payment_types?: Array<{ id: string }>;
     installments?: number;
   };
+  access_token?: string;
 }
 
 interface PaymentResult {
@@ -42,16 +44,32 @@ interface PaymentResult {
 export const useMercadoPago = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { settings } = useStoreSettings();
 
-  const createCheckout = async (checkoutData: MercadoPagoCheckout): Promise<PaymentResult | null> => {
+  const getAccessToken = (): string | null => {
+    const paymentMethods = settings?.payment_methods as any;
+    return paymentMethods?.mercadopago_access_token || null;
+  };
+
+  const createCheckout = async (checkoutData: Omit<MercadoPagoCheckout, 'access_token'>): Promise<PaymentResult | null> => {
     try {
       setLoading(true);
       setError(null);
       
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        throw new Error('Token de acesso do Mercado Pago não configurado. Configure nas configurações de pagamento.');
+      }
+      
       console.log('🚀 Criando checkout no Mercado Pago:', checkoutData);
       
+      const checkoutWithToken = {
+        ...checkoutData,
+        access_token: accessToken
+      };
+      
       const { data, error: functionError } = await supabase.functions.invoke('mercadopago-checkout', {
-        body: checkoutData
+        body: checkoutWithToken
       });
 
       if (functionError) {
@@ -76,18 +94,17 @@ export const useMercadoPago = () => {
     }
   };
 
-  const openCheckout = async (checkoutData: MercadoPagoCheckout) => {
+  const openCheckout = async (checkoutData: Omit<MercadoPagoCheckout, 'access_token'>) => {
     const result = await createCheckout(checkoutData);
     if (result?.init_point) {
-      // Abrir checkout em nova aba
       window.open(result.init_point, '_blank');
       return result;
     }
     return null;
   };
 
-  const createPixPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods'>) => {
-    const pixCheckoutData: MercadoPagoCheckout = {
+  const createPixPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+    const pixCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
       ...checkoutData,
       payment_methods: {
         excluded_payment_types: [
@@ -101,8 +118,8 @@ export const useMercadoPago = () => {
     return await createCheckout(pixCheckoutData);
   };
 
-  const createCardPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods'>) => {
-    const cardCheckoutData: MercadoPagoCheckout = {
+  const createCardPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+    const cardCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
       ...checkoutData,
       payment_methods: {
         excluded_payment_types: [
@@ -116,8 +133,8 @@ export const useMercadoPago = () => {
     return await createCheckout(cardCheckoutData);
   };
 
-  const createBankSlipPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods'>) => {
-    const bankSlipCheckoutData: MercadoPagoCheckout = {
+  const createBankSlipPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+    const bankSlipCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
       ...checkoutData,
       payment_methods: {
         excluded_payment_types: [
@@ -139,6 +156,7 @@ export const useMercadoPago = () => {
     createBankSlipPayment,
     loading,
     error,
-    clearError: () => setError(null)
+    clearError: () => setError(null),
+    hasCredentials: !!getAccessToken()
   };
 };

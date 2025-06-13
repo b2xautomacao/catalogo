@@ -30,6 +30,7 @@ interface CheckoutRequest {
     excluded_payment_types?: Array<{ id: string }>;
     installments?: number;
   };
+  access_token?: string;
 }
 
 // Helper para logging detalhado
@@ -46,14 +47,16 @@ serve(async (req) => {
   try {
     logStep("Iniciando criação de checkout");
 
-    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    const requestBody: CheckoutRequest = await req.json();
+    const { items, payer, back_urls, auto_return, notification_url, external_reference, payment_methods, access_token } = requestBody;
+
+    // Usar o access_token enviado pelo frontend ou fallback para variável de ambiente
+    const accessToken = access_token || Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    
     if (!accessToken) {
       throw new Error('Token de acesso do Mercado Pago não configurado');
     }
     logStep("Token do MP verificado");
-
-    const requestBody: CheckoutRequest = await req.json();
-    const { items, payer, back_urls, auto_return, notification_url, external_reference, payment_methods } = requestBody;
 
     // Validar dados obrigatórios
     if (!items || !items.length) {
