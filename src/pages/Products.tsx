@@ -32,8 +32,8 @@ import {
 
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, productId: null });
@@ -56,8 +56,8 @@ const Products = () => {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    const matchesStatus = !selectedStatus || 
+    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesStatus = selectedStatus === 'all' || 
                          (selectedStatus === 'active' && product.is_active) ||
                          (selectedStatus === 'inactive' && !product.is_active);
     
@@ -238,7 +238,7 @@ const Products = () => {
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.name}>
                     {category.name}
@@ -252,7 +252,7 @@ const Products = () => {
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="active">Ativo</SelectItem>
                 <SelectItem value="inactive">Inativo</SelectItem>
               </SelectContent>
@@ -262,8 +262,8 @@ const Products = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
-                setSelectedCategory('');
-                setSelectedStatus('');
+                setSelectedCategory('all');
+                setSelectedStatus('all');
               }}
             >
               Limpar Filtros
