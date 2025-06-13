@@ -203,6 +203,14 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   // Tratamento de erros específico para versão pública
   const error = usePublicVersion ? publicProductsError : null;
 
+  // Obter store_id para uso no CheckoutModal
+  const storeId = useMemo(() => {
+    if (usePublicVersion && store) {
+      return store.id;
+    }
+    return profile?.store_id;
+  }, [usePublicVersion, store, profile?.store_id]);
+
   return {
     // Retorno original
     products: filteredProducts,
@@ -221,6 +229,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     // Dados da loja (agora reais)
     store,
     storeError: storeError || error,
+    storeId, // Novo campo para CheckoutModal
     
     // Compatibilidade com Catalog.tsx
     filteredProducts,

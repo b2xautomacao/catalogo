@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Truck, MapPin, CreditCard, Smartphone, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,9 +16,10 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeSettings: any;
+  storeId?: string; // Novo prop para suportar criação pública
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSettings }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSettings, storeId }) => {
   const { items, totalAmount, clearCart } = useCart();
   const { createOrderAsync, isCreatingOrder } = useOrders();
   const { toast } = useToast();
@@ -118,7 +118,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
         shipping_method: shippingMethod,
         payment_method: paymentMethod,
         shipping_cost: shippingCost,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        store_id: storeId // Passar store_id para criação pública
       };
 
       console.log('CheckoutModal: Dados do pedido preparados:', orderData);

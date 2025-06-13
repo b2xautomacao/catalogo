@@ -32,6 +32,7 @@ export interface CreateOrderData {
   payment_method?: string;
   shipping_cost?: number;
   notes?: string;
+  store_id?: string; // Novo campo para suportar criação pública
 }
 
 export const useOrders = () => {
@@ -115,29 +116,34 @@ export const useOrders = () => {
 
       console.log('useOrders: Criando pedido com dados:', orderData);
 
-      // Tentar obter store_id do profile, mas permitir criação mesmo sem profile completo
-      let storeId = profile?.store_id;
+      // Determinar store_id - priorizar o passado via parâmetro para criação pública
+      let storeId = orderData.store_id;
       
+      // Se não foi passado store_id, tentar obter do profile (usuário autenticado)
       if (!storeId) {
-        console.warn('useOrders: Store ID não encontrado no profile, tentando buscar...');
+        storeId = profile?.store_id;
         
-        // Tentar aguardar profile por um tempo limitado
-        try {
-          await waitForProfile(5); // Apenas 5 tentativas para não bloquear muito
-          storeId = profile?.store_id;
-        } catch {
-          // Se não conseguir o profile, verificar se há uma store ativa
-          const { data: activeStores } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('is_active', true)
-            .limit(1);
-            
-          if (activeStores?.length) {
-            storeId = activeStores[0].id;
-            console.log('useOrders: Usando store ativa como fallback:', storeId);
-          } else {
-            throw new Error('Nenhuma loja disponível para criar o pedido');
+        if (!storeId) {
+          console.warn('useOrders: Store ID não encontrado, tentando buscar...');
+          
+          // Tentar aguardar profile por um tempo limitado
+          try {
+            await waitForProfile(5); // Apenas 5 tentativas para não bloquear muito
+            storeId = profile?.store_id;
+          } catch {
+            // Se não conseguir o profile, verificar se há uma store ativa
+            const { data: activeStores } = await supabase
+              .from('stores')
+              .select('id')
+              .eq('is_active', true)
+              .limit(1);
+              
+            if (activeStores?.length) {
+              storeId = activeStores[0].id;
+              console.log('useOrders: Usando store ativa como fallback:', storeId);
+            } else {
+              throw new Error('Nenhuma loja disponível para criar o pedido');
+            }
           }
         }
       }
@@ -151,9 +157,19 @@ export const useOrders = () => {
       reservationExpires.setMinutes(reservationExpires.getMinutes() + 30);
 
       const newOrder = {
-        ...orderData,
-        store_id: storeId,
+        customer_name: orderData.customer_name,
+        customer_email: orderData.customer_email || null,
+        customer_phone: orderData.customer_phone || null,
+        total_amount: orderData.total_amount,
         status: 'pending' as const,
+        order_type: orderData.order_type,
+        items: orderData.items,
+        shipping_address: orderData.shipping_address || null,
+        shipping_method: orderData.shipping_method || null,
+        payment_method: orderData.payment_method || null,
+        shipping_cost: orderData.shipping_cost || 0,
+        notes: orderData.notes || null,
+        store_id: storeId,
         stock_reserved: true,
         reservation_expires_at: reservationExpires.toISOString()
       };
@@ -176,8 +192,8 @@ export const useOrders = () => {
         await reserveStock(item.id || item.product_id, item.quantity, data.id, storeId);
       }
 
-      // Recarregar pedidos apenas se o profile estiver disponível
-      if (profile?.store_id) {
+      // Recarregar pedidos apenas se o profile estiver disponível e o store_id for o mesmo
+      if (profile?.store_id && profile.store_id === storeId) {
         await fetchOrders();
       }
       
