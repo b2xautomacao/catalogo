@@ -15,8 +15,10 @@ export interface UserProfile {
   updated_at: string;
 }
 
+export type UserRole = 'superadmin' | 'store_admin';
+
 export const useAuth = () => {
-  const { user, session, loading: sessionLoading } = useAuthSession();
+  const { user, session, loading: sessionLoading, signOut } = useAuthSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,6 +84,57 @@ export const useAuth = () => {
     }
   };
 
+  const createStoreForUser = async (userId: string, storeName: string, storeDescription?: string) => {
+    try {
+      console.log('Criando loja para usuário:', userId, storeName);
+      
+      // Criar a loja
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .insert([{
+          name: storeName,
+          description: storeDescription,
+          owner_id: userId,
+          is_active: true
+        }])
+        .select()
+        .single();
+
+      if (storeError) {
+        console.error('Erro ao criar loja:', storeError);
+        return { data: null, error: storeError };
+      }
+
+      console.log('Loja criada:', storeData);
+
+      // Atualizar o perfil do usuário com o store_id
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .update({ store_id: storeData.id })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao atualizar perfil com store_id:', profileError);
+        return { data: null, error: profileError };
+      }
+
+      console.log('Perfil atualizado com store_id:', profileData);
+      return { data: storeData, error: null };
+    } catch (error) {
+      console.error('Erro inesperado ao criar loja:', error);
+      return { data: null, error };
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      const userProfile = await fetchProfile(user.id);
+      setProfile(userProfile);
+    }
+  };
+
   const isSuperadmin = profile?.role === 'superadmin';
   const isStoreAdmin = profile?.role === 'store_admin';
 
@@ -90,7 +143,10 @@ export const useAuth = () => {
     session,
     profile,
     loading,
+    signOut,
     updateProfile,
+    createStoreForUser,
+    refreshProfile,
     isSuperadmin,
     isStoreAdmin,
     refetchProfile: () => user && fetchProfile(user.id).then(setProfile)
