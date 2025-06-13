@@ -10,7 +10,8 @@ import {
   Tag, 
   BarChart3,
   Store,
-  Palette
+  Palette,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -27,6 +28,7 @@ const Sidebar = () => {
     { path: '/catalogs', icon: Palette, label: 'Catálogos', roles: ['store_admin'] },
     { path: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['superadmin', 'store_admin'] },
     { path: '/stores', icon: Store, label: 'Lojas', roles: ['superadmin'] },
+    { path: '/users', icon: UserCheck, label: 'Usuários', roles: ['superadmin'] },
     { path: '/settings', icon: Settings, label: 'Configurações', roles: ['superadmin', 'store_admin'] },
   ];
 

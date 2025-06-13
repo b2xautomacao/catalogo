@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCategories } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import ProductFormModal from '@/components/products/ProductFormModal';
-import { Plus, Search, Filter, Edit, Trash2, MoreHorizontal, Sparkles, Package, AlertCircle } from 'lucide-react';
+import StoreSetup from '@/components/onboarding/StoreSetup';
+import { Plus, Search, Filter, Edit, Trash2, MoreHorizontal, Sparkles, Package } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +46,11 @@ const Products = () => {
 
   console.log('Profile no Products:', profile);
   console.log('Store ID:', profile?.store_id);
+
+  // Se o usuário não tem store_id, mostrar tela de configuração
+  if (!profile?.store_id && profile?.role === 'store_admin') {
+    return <StoreSetup />;
+  }
 
   // Filtrar produtos
   const filteredProducts = products.filter(product => {
@@ -184,31 +191,6 @@ const Products = () => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando produtos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Verificar se o usuário tem um store_id válido
-  if (!profile?.store_id) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Configuração Necessária</h3>
-            <p className="text-muted-foreground mb-4">
-              Seu perfil não está associado a uma loja. Entre em contato com o administrador do sistema.
-            </p>
-            <div className="bg-muted p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Informações de Debug:</h4>
-              <p className="text-sm text-muted-foreground">
-                Usuário ID: {profile?.id || 'Não encontrado'}<br />
-                Store ID: {profile?.store_id || 'Não definido'}<br />
-                Papel: {profile?.role || 'Não definido'}
-              </p>
-            </div>
           </div>
         </div>
       </div>

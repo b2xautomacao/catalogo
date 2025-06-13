@@ -11,6 +11,7 @@ import Auth from '@/pages/Auth';
 import Products from '@/pages/Products';
 import Orders from '@/pages/Orders';
 import Settings from '@/pages/Settings';
+import UserManagement from '@/pages/UserManagement';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -36,6 +37,7 @@ function App() {
                           <Route path="/" element={<Index />} />
                           <Route path="/products" element={<Products />} />
                           <Route path="/orders" element={<Orders />} />
+                          <Route path="/users" element={<UserManagement />} />
                           <Route path="/settings" element={<Settings />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>

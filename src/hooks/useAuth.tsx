@@ -22,6 +22,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, role?: UserRole) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  createStoreForUser: (userId: string, storeName: string, description?: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,6 +52,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(data);
     } catch (error) {
       console.error('Erro inesperado ao buscar perfil:', error);
+    }
+  };
+
+  const createStoreForUser = async (userId: string, storeName: string, description?: string) => {
+    try {
+      // Criar a loja
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .insert([{
+          name: storeName,
+          description: description || `Loja de ${storeName}`,
+          owner_id: userId,
+          is_active: true,
+          plan_type: 'basic',
+          monthly_fee: 0
+        }])
+        .select()
+        .single();
+
+      if (storeError) throw storeError;
+
+      // Associar o usuário à loja criada
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ store_id: storeData.id })
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      // Criar configurações padrão da loja
+      const { error: settingsError } = await supabase
+        .from('store_settings')
+        .insert([{
+          store_id: storeData.id,
+          payment_methods: { pix: true, credit_card: false, bank_slip: false },
+          shipping_options: { pickup: true, delivery: false, shipping: false },
+          retail_catalog_active: true,
+          wholesale_catalog_active: false
+        }]);
+
+      if (settingsError) throw settingsError;
+
+      // Atualizar o perfil local
+      await fetchProfile(userId);
+
+      return { error: null };
+    } catch (error) {
+      console.error('Erro ao criar loja para usuário:', error);
+      return { error };
     }
   };
 
@@ -104,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string, role: UserRole = 'store_admin') => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -115,6 +165,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
+
+    // Se o usuário foi criado com sucesso e é um store_admin, criar loja automaticamente
+    if (!error && data.user && role === 'store_admin') {
+      // Aguardar um pouco para garantir que o perfil foi criado pelo trigger
+      setTimeout(async () => {
+        await createStoreForUser(
+          data.user.id, 
+          `Loja de ${fullName}`,
+          `Loja criada automaticamente para ${fullName}`
+        );
+      }, 2000);
+    }
+
     return { error };
   };
 
@@ -130,6 +193,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    createStoreForUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
