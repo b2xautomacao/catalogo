@@ -105,6 +105,14 @@ export const useOrders = () => {
       setError(null);
       setIsCreatingOrder(true);
       
+      console.log('🚀 useOrders: Iniciando criação de pedido');
+      console.log('📋 useOrders: Dados recebidos:', {
+        customer_name: orderData.customer_name,
+        store_id: orderData.store_id,
+        items_count: orderData.items?.length,
+        total_amount: orderData.total_amount
+      });
+      
       // Validar dados obrigatórios antes de prosseguir
       if (!orderData.customer_name?.trim()) {
         throw new Error('Nome do cliente é obrigatório');
@@ -114,17 +122,16 @@ export const useOrders = () => {
         throw new Error('Pedido deve conter pelo menos um item');
       }
 
-      console.log('useOrders: Criando pedido com dados:', orderData);
-
       // Determinar store_id - priorizar o passado via parâmetro para criação pública
       let storeId = orderData.store_id;
       
       // Se não foi passado store_id, tentar obter do profile (usuário autenticado)
       if (!storeId) {
+        console.log('⚠️ useOrders: Store ID não fornecido, tentando obter do profile...');
         storeId = profile?.store_id;
         
         if (!storeId) {
-          console.warn('useOrders: Store ID não encontrado, tentando buscar...');
+          console.warn('⚠️ useOrders: Store ID não encontrado no profile, tentando aguardar...');
           
           // Tentar aguardar profile por um tempo limitado
           try {
@@ -132,6 +139,7 @@ export const useOrders = () => {
             storeId = profile?.store_id;
           } catch {
             // Se não conseguir o profile, verificar se há uma store ativa
+            console.log('🔍 useOrders: Buscando store ativa como fallback...');
             const { data: activeStores } = await supabase
               .from('stores')
               .select('id')
@@ -140,7 +148,7 @@ export const useOrders = () => {
               
             if (activeStores?.length) {
               storeId = activeStores[0].id;
-              console.log('useOrders: Usando store ativa como fallback:', storeId);
+              console.log('✅ useOrders: Usando store ativa como fallback:', storeId);
             } else {
               throw new Error('Nenhuma loja disponível para criar o pedido');
             }
@@ -151,6 +159,8 @@ export const useOrders = () => {
       if (!storeId) {
         throw new Error('Store ID não encontrado. Verifique se existe uma loja ativa.');
       }
+
+      console.log('🏪 useOrders: Store ID determinado:', storeId);
 
       // Calcular tempo de expiração da reserva (30 minutos)
       const reservationExpires = new Date();
@@ -174,6 +184,13 @@ export const useOrders = () => {
         reservation_expires_at: reservationExpires.toISOString()
       };
 
+      console.log('💾 useOrders: Tentando inserir pedido no banco:', {
+        store_id: newOrder.store_id,
+        customer_name: newOrder.customer_name,
+        total_amount: newOrder.total_amount,
+        items_count: newOrder.items.length
+      });
+
       const { data, error } = await supabase
         .from('orders')
         .insert([newOrder])
@@ -181,27 +198,38 @@ export const useOrders = () => {
         .single();
 
       if (error) {
-        console.error('useOrders: Erro ao criar pedido:', error);
+        console.error('❌ useOrders: Erro ao inserir pedido:', error);
         throw error;
       }
 
-      console.log('useOrders: Pedido criado com sucesso:', data);
+      console.log('✅ useOrders: Pedido criado com sucesso:', data);
 
       // Reservar estoque para cada item
+      console.log('📦 useOrders: Iniciando reserva de estoque para', orderData.items.length, 'itens');
+      
       for (const item of orderData.items) {
-        await reserveStock(item.id || item.product_id, item.quantity, data.id, storeId);
+        try {
+          console.log('🔒 useOrders: Reservando estoque para produto:', item.id || item.product_id);
+          await reserveStock(item.id || item.product_id, item.quantity, data.id, storeId);
+          console.log('✅ useOrders: Estoque reservado para produto:', item.id || item.product_id);
+        } catch (stockError) {
+          console.error('❌ useOrders: Erro ao reservar estoque para produto:', item.id || item.product_id, stockError);
+          // Continuar com outros produtos mesmo se um falhar
+        }
       }
 
       // Recarregar pedidos apenas se o profile estiver disponível e o store_id for o mesmo
       if (profile?.store_id && profile.store_id === storeId) {
+        console.log('🔄 useOrders: Recarregando lista de pedidos...');
         await fetchOrders();
       }
       
       // Converter o dado para o tipo Order antes de retornar
       const convertedOrder = convertSupabaseToOrder(data);
+      console.log('🎉 useOrders: Processo de criação concluído com sucesso');
       return { data: convertedOrder, error: null };
     } catch (error) {
-      console.error('useOrders: Erro ao criar pedido:', error);
+      console.error('❌ useOrders: Erro geral ao criar pedido:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao criar pedido';
       setError(errorMessage);
       return { data: null, error: errorMessage };
@@ -221,7 +249,7 @@ export const useOrders = () => {
 
   const reserveStock = async (productId: string, quantity: number, orderId: string, storeId: string) => {
     try {
-      console.log('useOrders: Reservando estoque:', { productId, quantity, orderId, storeId });
+      console.log('📦 reserveStock: Iniciando reserva:', { productId, quantity, orderId, storeId });
 
       // Buscar produto atual
       const { data: product, error: productError } = await supabase
@@ -230,7 +258,12 @@ export const useOrders = () => {
         .eq('id', productId)
         .single();
 
-      if (productError) throw productError;
+      if (productError) {
+        console.error('❌ reserveStock: Erro ao buscar produto:', productError);
+        throw productError;
+      }
+
+      console.log('📊 reserveStock: Estoque atual do produto:', product);
 
       const availableStock = (product.stock || 0) - (product.reserved_stock || 0);
       
@@ -239,6 +272,7 @@ export const useOrders = () => {
       }
 
       // Atualizar estoque reservado
+      console.log('🔄 reserveStock: Atualizando estoque reservado...');
       const { error: updateError } = await supabase
         .from('products')
         .update({ 
@@ -246,28 +280,39 @@ export const useOrders = () => {
         })
         .eq('id', productId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ reserveStock: Erro ao atualizar estoque:', updateError);
+        throw updateError;
+      }
 
       // Registrar movimentação de estoque
+      console.log('📝 reserveStock: Registrando movimentação de estoque...');
+      const movementData = {
+        product_id: productId,
+        order_id: orderId,
+        movement_type: 'reservation',
+        quantity: quantity,
+        previous_stock: product.stock,
+        new_stock: product.stock,
+        notes: `Reserva para pedido ${orderId}`,
+        store_id: storeId,
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos
+      };
+
+      console.log('📋 reserveStock: Dados da movimentação:', movementData);
+
       const { error: movementError } = await supabase
         .from('stock_movements')
-        .insert([{
-          product_id: productId,
-          order_id: orderId,
-          movement_type: 'reservation',
-          quantity: quantity,
-          previous_stock: product.stock,
-          new_stock: product.stock,
-          notes: `Reserva para pedido ${orderId}`,
-          store_id: storeId,
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos
-        }]);
+        .insert([movementData]);
 
-      if (movementError) throw movementError;
+      if (movementError) {
+        console.error('❌ reserveStock: Erro ao registrar movimentação:', movementError);
+        throw movementError;
+      }
 
-      console.log('useOrders: Estoque reservado com sucesso');
+      console.log('✅ reserveStock: Estoque reservado com sucesso');
     } catch (error) {
-      console.error('useOrders: Erro ao reservar estoque:', error);
+      console.error('❌ reserveStock: Erro geral na reserva:', error);
       throw error;
     }
   };
