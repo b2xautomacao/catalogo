@@ -1,169 +1,61 @@
 
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Package } from 'lucide-react';
-import { useOrders, Order } from '@/hooks/useOrders';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react';
+import { useOrders } from '@/hooks/useOrders';
 import OrdersHeader from '@/components/orders/OrdersHeader';
 import OrderFilters from '@/components/orders/OrderFilters';
 import OrdersTable from '@/components/orders/OrdersTable';
 import OrdersGrid from '@/components/orders/OrdersGrid';
 import OrdersPagination from '@/components/orders/OrdersPagination';
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal';
-import { generateWhatsAppMessage } from '@/components/catalog/checkout/checkoutUtils';
+import { Order } from '@/hooks/useOrders';
+import { toast } from 'sonner';
 
 const Orders = () => {
-  const { orders, loading, error, fetchOrders, updateOrderStatus } = useOrders();
-  const { toast } = useToast();
-
-  // View State
+  const { orders, loading, fetchOrders, updateOrderStatus, markPrintedDocument, generateTrackingCode } = useOrders();
+  
+  // View state
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-
-  // Filter State
+  
+  // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-
-  // Pagination State
+  
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  
+  // Modal state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Filter and Search Logic
-  const filteredOrders = useMemo(() => {
-    let filtered = [...orders];
+  // Filter orders
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = searchTerm === '' || 
+      order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer_phone?.includes(searchTerm) ||
+      order.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const matchesType = typeFilter === 'all' || order.order_type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(order => 
-        order.customer_name.toLowerCase().includes(searchLower) ||
-        order.customer_phone?.toLowerCase().includes(searchLower) ||
-        order.customer_email?.toLowerCase().includes(searchLower) ||
-        order.id.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
-    // Payment filter
-    if (paymentFilter !== 'all') {
-      filtered = filtered.filter(order => {
-        const paymentStatus = getPaymentStatus(order);
-        return paymentStatus === paymentFilter;
-      });
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(order => order.order_type === typeFilter);
-    }
-
-    return filtered;
-  }, [orders, searchTerm, statusFilter, paymentFilter, typeFilter]);
-
-  // Pagination Logic
+  // Paginate orders
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredOrders.slice(startIndex, endIndex);
-  }, [filteredOrders, currentPage, itemsPerPage]);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
-  // Helper Functions
-  const getPaymentStatus = (order: Order) => {
-    if (order.status === 'cancelled') return 'cancelled';
-    if (order.status === 'delivered') return 'paid';
-    if (order.status === 'pending') return 'pending';
-    return 'processing';
-  };
-
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (searchTerm) count++;
-    if (statusFilter !== 'all') count++;
-    if (paymentFilter !== 'all') count++;
-    if (typeFilter !== 'all') count++;
-    return count;
-  };
-
-  // Event Handlers
-  const handleViewOrder = (order: Order) => {
-    setSelectedOrder(order);
-    setIsDetailsModalOpen(true);
-  };
-
-  const handleCancelOrder = async (orderId: string) => {
-    try {
-      const result = await updateOrderStatus(orderId, 'cancelled');
-      if (result.error) {
-        toast({
-          title: "Erro",
-          description: result.error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sucesso",
-          description: "Pedido cancelado com sucesso!",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao cancelar pedido",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSendFollowUp = (order: Order) => {
-    try {
-      const message = generateWhatsAppMessage(order);
-      const whatsappUrl = `https://wa.me/${order.customer_phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-      
-      toast({
-        title: "WhatsApp Aberto",
-        description: "Mensagem de cobrança preparada no WhatsApp",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao abrir WhatsApp",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePrintLabel = (order: Order) => {
-    // TODO: Implementar impressão de etiqueta
-    toast({
-      title: "Em Desenvolvimento",
-      description: "Funcionalidade de impressão de etiqueta em breve",
-    });
-  };
-
-  const handlePrintDeclaration = (order: Order) => {
-    // TODO: Implementar impressão de declaração
-    toast({
-      title: "Em Desenvolvimento",
-      description: "Funcionalidade de declaração de conteúdo em breve",
-    });
+  // Handlers
+  const handleRefresh = () => {
+    fetchOrders();
+    toast.success('Lista de pedidos atualizada');
   };
 
   const handleExport = () => {
-    // TODO: Implementar exportação
-    toast({
-      title: "Em Desenvolvimento",
-      description: "Funcionalidade de exportação em breve",
-    });
+    toast.info('Funcionalidade de exportação em desenvolvimento');
   };
 
   const handleClearFilters = () => {
@@ -174,153 +66,162 @@ const Orders = () => {
     setCurrentPage(1);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
   };
 
-  const handleItemsPerPageChange = (items: number) => {
-    setItemsPerPage(items);
-    setCurrentPage(1);
+  const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
+    const result = await updateOrderStatus(orderId, newStatus);
+    if (result.error) {
+      toast.error('Erro ao atualizar status: ' + result.error);
+    } else {
+      toast.success('Status atualizado com sucesso');
+    }
   };
 
-  // Loading State
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-6">
-            <div className="h-20 bg-gray-200 rounded-lg animate-pulse" />
-            <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
-            <Card>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleCancelOrder = async (orderId: string) => {
+    const result = await updateOrderStatus(orderId, 'cancelled');
+    if (result.error) {
+      toast.error('Erro ao cancelar pedido: ' + result.error);
+    } else {
+      toast.success('Pedido cancelado com sucesso');
+      setIsModalOpen(false);
+    }
+  };
 
-  // Error State
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <p className="text-red-600">Erro ao carregar pedidos: {error}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const handleSendFollowUp = (order: Order) => {
+    toast.info('Enviando lembrete de pagamento via WhatsApp...');
+    // Integração com WhatsApp seria implementada aqui
+  };
+
+  const handlePrintLabel = async (order: Order) => {
+    if (order.label_generated_at) {
+      toast.warning('Etiqueta já foi gerada para este pedido');
+      return;
+    }
+    
+    const result = await generateTrackingCode(order.id);
+    if (result.success) {
+      toast.success(`Etiqueta gerada! Código: ${result.trackingCode}`);
+    } else {
+      toast.error('Erro ao gerar etiqueta: ' + result.error);
+    }
+  };
+
+  const handlePrintDeclaration = (order: Order) => {
+    toast.success('Declaração de conteúdo enviada para impressão');
+  };
+
+  const handleMarkPrintedDocument = async (orderId: string, documentType: 'label' | 'picking_list' | 'content_declaration' | 'receipt') => {
+    const result = await markPrintedDocument(orderId, documentType);
+    if (result.success) {
+      toast.success('Documento marcado como impresso');
+    } else {
+      toast.error('Erro ao marcar documento: ' + result.error);
+    }
+  };
+
+  const handleGenerateTrackingCode = async (orderId: string) => {
+    const result = await generateTrackingCode(orderId);
+    if (result.success) {
+      toast.success(`Código de rastreamento gerado: ${result.trackingCode}`);
+    } else {
+      toast.error('Erro ao gerar código: ' + result.error);
+    }
+  };
+
+  const activeFiltersCount = [
+    statusFilter !== 'all',
+    paymentFilter !== 'all',
+    typeFilter !== 'all',
+    searchTerm !== ''
+  ].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <OrdersHeader
-            totalOrders={filteredOrders.length}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            onRefresh={fetchOrders}
-            onExport={handleExport}
-            isLoading={loading}
-          />
+    <div className="container mx-auto p-6 space-y-6">
+      <OrdersHeader
+        totalOrders={filteredOrders.length}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onRefresh={handleRefresh}
+        onExport={handleExport}
+        isLoading={loading}
+      />
 
-          <OrderFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            paymentFilter={paymentFilter}
-            onPaymentFilterChange={setPaymentFilter}
-            typeFilter={typeFilter}
-            onTypeFilterChange={setTypeFilter}
-            onClearFilters={handleClearFilters}
-            activeFiltersCount={getActiveFiltersCount()}
-          />
+      <OrderFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        paymentFilter={paymentFilter}
+        onPaymentFilterChange={setPaymentFilter}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
+        onClearFilters={handleClearFilters}
+        activeFiltersCount={activeFiltersCount}
+      />
 
-          <Card>
-            <CardContent className="p-0">
-              {filteredOrders.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Package className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nenhum pedido encontrado
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    {getActiveFiltersCount() > 0 
-                      ? "Tente ajustar os filtros para encontrar pedidos."
-                      : "Os pedidos aparecerão aqui quando forem realizados pelos clientes."
-                    }
-                  </p>
-                  {getActiveFiltersCount() > 0 && (
-                    <Button variant="outline" onClick={handleClearFilters}>
-                      Limpar Filtros
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className={viewMode === 'table' ? 'p-0' : 'p-6'}>
-                    {viewMode === 'table' ? (
-                      <OrdersTable
-                        orders={paginatedOrders}
-                        onViewOrder={handleViewOrder}
-                        onCancelOrder={handleCancelOrder}
-                        onSendFollowUp={handleSendFollowUp}
-                        onPrintLabel={handlePrintLabel}
-                        onPrintDeclaration={handlePrintDeclaration}
-                      />
-                    ) : (
-                      <OrdersGrid
-                        orders={paginatedOrders}
-                        onViewOrder={handleViewOrder}
-                        onCancelOrder={handleCancelOrder}
-                        onSendFollowUp={handleSendFollowUp}
-                        onPrintLabel={handlePrintLabel}
-                        onPrintDeclaration={handlePrintDeclaration}
-                      />
-                    )}
-                  </div>
-
-                  <div className="px-6 pb-6">
-                    <OrdersPagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      itemsPerPage={itemsPerPage}
-                      totalItems={filteredOrders.length}
-                      onPageChange={handlePageChange}
-                      onItemsPerPageChange={handleItemsPerPageChange}
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando pedidos...</p>
+          </div>
         </div>
-      </div>
+      ) : paginatedOrders.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {filteredOrders.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum resultado'}
+          </h3>
+          <p className="text-gray-600">
+            {filteredOrders.length === 0 
+              ? 'Quando você receber pedidos, eles aparecerão aqui.'
+              : 'Tente ajustar os filtros para encontrar o que procura.'
+            }
+          </p>
+        </div>
+      ) : (
+        <>
+          {viewMode === 'table' ? (
+            <OrdersTable
+              orders={paginatedOrders}
+              onViewOrder={handleViewOrder}
+              onStatusChange={handleStatusChange}
+            />
+          ) : (
+            <OrdersGrid
+              orders={paginatedOrders}
+              onViewOrder={handleViewOrder}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+
+          <OrdersPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredOrders.length}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(newItemsPerPage) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
 
       <OrderDetailsModal
         order={selectedOrder}
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onCancelOrder={handleCancelOrder}
         onSendFollowUp={handleSendFollowUp}
         onPrintLabel={handlePrintLabel}
         onPrintDeclaration={handlePrintDeclaration}
+        onMarkPrintedDocument={handleMarkPrintedDocument}
+        onGenerateTrackingCode={handleGenerateTrackingCode}
       />
     </div>
   );

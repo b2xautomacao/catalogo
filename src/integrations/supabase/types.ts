@@ -138,15 +138,23 @@ export type Database = {
       }
       orders: {
         Row: {
+          content_declaration_printed_at: string | null
+          content_declaration_printed_by: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
           customer_phone: string | null
           id: string
           items: Json
+          label_generated_at: string | null
+          label_generated_by: string | null
           notes: string | null
           order_type: Database["public"]["Enums"]["catalog_type"]
           payment_method: string | null
+          picking_list_printed_at: string | null
+          picking_list_printed_by: string | null
+          receipt_printed_at: string | null
+          receipt_printed_by: string | null
           reservation_expires_at: string | null
           shipping_address: Json | null
           shipping_cost: number | null
@@ -155,18 +163,27 @@ export type Database = {
           stock_reserved: boolean
           store_id: string
           total_amount: number
+          tracking_code: string | null
           updated_at: string
         }
         Insert: {
+          content_declaration_printed_at?: string | null
+          content_declaration_printed_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
           customer_phone?: string | null
           id?: string
           items?: Json
+          label_generated_at?: string | null
+          label_generated_by?: string | null
           notes?: string | null
           order_type?: Database["public"]["Enums"]["catalog_type"]
           payment_method?: string | null
+          picking_list_printed_at?: string | null
+          picking_list_printed_by?: string | null
+          receipt_printed_at?: string | null
+          receipt_printed_by?: string | null
           reservation_expires_at?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
@@ -175,18 +192,27 @@ export type Database = {
           stock_reserved?: boolean
           store_id: string
           total_amount?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Update: {
+          content_declaration_printed_at?: string | null
+          content_declaration_printed_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string | null
           id?: string
           items?: Json
+          label_generated_at?: string | null
+          label_generated_by?: string | null
           notes?: string | null
           order_type?: Database["public"]["Enums"]["catalog_type"]
           payment_method?: string | null
+          picking_list_printed_at?: string | null
+          picking_list_printed_by?: string | null
+          receipt_printed_at?: string | null
+          receipt_printed_by?: string | null
           reservation_expires_at?: string | null
           shipping_address?: Json | null
           shipping_cost?: number | null
@@ -195,14 +221,103 @@ export type Database = {
           stock_reserved?: boolean
           store_id?: string
           total_amount?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_content_declaration_printed_by_fkey"
+            columns: ["content_declaration_printed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_label_generated_by_fkey"
+            columns: ["label_generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_picking_list_printed_by_fkey"
+            columns: ["picking_list_printed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_receipt_printed_by_fkey"
+            columns: ["receipt_printed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          payment_method: string
+          reference_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          payment_method: string
+          reference_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          payment_method?: string
+          reference_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]

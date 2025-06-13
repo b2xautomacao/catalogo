@@ -21,6 +21,30 @@ export interface Order {
   payment_method: string | null;
   shipping_method: string | null;
   notes: string | null;
+  tracking_code: string | null;
+  label_generated_at: string | null;
+  label_generated_by: string | null;
+  picking_list_printed_at: string | null;
+  picking_list_printed_by: string | null;
+  content_declaration_printed_at: string | null;
+  content_declaration_printed_by: string | null;
+  receipt_printed_at: string | null;
+  receipt_printed_by: string | null;
+}
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  amount: number;
+  payment_method: 'pix' | 'money' | 'card' | 'bank_slip';
+  status: 'pending' | 'confirmed' | 'failed' | 'refunded';
+  reference_id: string | null;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  due_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateOrderData {
@@ -244,6 +268,53 @@ export const useOrders = () => {
     }
   };
 
+  const markPrintedDocument = async (orderId: string, documentType: 'label' | 'picking_list' | 'content_declaration' | 'receipt') => {
+    try {
+      const { profile } = useAuth();
+      const updateField = `${documentType}_printed_at`;
+      const updateByField = `${documentType}_printed_by`;
+      
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          [updateField]: new Date().toISOString(),
+          [updateByField]: profile?.id
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      
+      await fetchOrders();
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao marcar documento como impresso:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+    }
+  };
+
+  const generateTrackingCode = async (orderId: string) => {
+    try {
+      const trackingCode = `TR${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          tracking_code: trackingCode,
+          label_generated_at: new Date().toISOString(),
+          label_generated_by: profile?.id
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      
+      await fetchOrders();
+      return { success: true, trackingCode };
+    } catch (error) {
+      console.error('Erro ao gerar código de rastreamento:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+    }
+  };
+
   useEffect(() => {
     if (profile?.store_id) {
       console.log('useOrders: Profile disponível, carregando pedidos');
@@ -274,6 +345,8 @@ export const useOrders = () => {
     fetchOrders,
     createOrder,
     createOrderAsync,
-    updateOrderStatus
+    updateOrderStatus,
+    markPrintedDocument,
+    generateTrackingCode
   };
 };
