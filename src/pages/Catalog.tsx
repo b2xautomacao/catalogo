@@ -114,7 +114,6 @@ const Catalog = () => {
   };
 
   const handleQuickView = (product: Product) => {
-    // Implementar modal de visualização rápida
     toast({
       title: "Visualização rápida",
       description: `Abrindo detalhes de ${product.name}...`,
@@ -150,6 +149,11 @@ const Catalog = () => {
   }
 
   const sortedProducts = getSortedProducts();
+  
+  // Verificar se filtros devem aparecer baseado nas configurações
+  const showCategoryFilter = settings?.allow_categories_filter !== false;
+  const showPriceFilter = settings?.allow_price_filter !== false;
+  const showFilters = showCategoryFilter || showPriceFilter;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -167,23 +171,27 @@ const Catalog = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
-          {/* Filter Sidebar - Desktop */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
+          {/* Filter Sidebar - Desktop - Mostrar apenas se filtros estiverem habilitados */}
+          {showFilters && (
+            <div className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                products={products}
+                onFilter={handleFilter}
+                isOpen={true}
+                onClose={() => {}}
+              />
+            </div>
+          )}
+
+          {/* Mobile Filter Sidebar */}
+          {showFilters && (
             <FilterSidebar
               products={products}
               onFilter={handleFilter}
-              isOpen={true}
-              onClose={() => {}}
+              isOpen={filterSidebarOpen}
+              onClose={() => setFilterSidebarOpen(false)}
             />
-          </div>
-
-          {/* Mobile Filter Sidebar */}
-          <FilterSidebar
-            products={products}
-            onFilter={handleFilter}
-            isOpen={filterSidebarOpen}
-            onClose={() => setFilterSidebarOpen(false)}
-          />
+          )}
 
           {/* Products Area */}
           <div className="flex-1 min-w-0">
@@ -191,14 +199,17 @@ const Catalog = () => {
             <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setFilterSidebarOpen(true)}
-                    className="lg:hidden"
-                  >
-                    <Filter size={16} className="mr-2" />
-                    Filtros
-                  </Button>
+                  {/* Mostrar botão de filtros apenas se filtros estiverem habilitados */}
+                  {showFilters && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setFilterSidebarOpen(true)}
+                      className="lg:hidden"
+                    >
+                      <Filter size={16} className="mr-2" />
+                      Filtros
+                    </Button>
+                  )}
                   
                   <span className="text-sm text-gray-600">
                     {sortedProducts.length} produto{sortedProducts.length !== 1 ? 's' : ''} encontrado{sortedProducts.length !== 1 ? 's' : ''}

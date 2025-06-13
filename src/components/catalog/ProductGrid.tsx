@@ -15,6 +15,21 @@ interface ProductGridProps {
   wishlist: Product[];
 }
 
+// Skeleton component para loading state
+const ProductSkeleton = () => (
+  <div className="bg-white rounded-lg shadow-sm border overflow-hidden animate-pulse">
+    <div className="aspect-square bg-gray-200" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 bg-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gray-200 rounded w-1/2" />
+      <div className="flex justify-between items-center">
+        <div className="h-5 bg-gray-200 rounded w-1/3" />
+        <div className="h-8 bg-gray-200 rounded w-1/4" />
+      </div>
+    </div>
+  </div>
+);
+
 const ProductGrid: React.FC<ProductGridProps> = ({
   products,
   catalogType,
@@ -26,11 +41,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Carregando produtos...</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <ProductSkeleton key={index} />
+        ))}
       </div>
     );
   }
@@ -55,15 +69,16 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          catalogType={catalogType}
-          onAddToCart={onAddToCart}
-          onAddToWishlist={onAddToWishlist}
-          onQuickView={onQuickView}
-          isInWishlist={wishlist.some(item => item.id === product.id)}
-        />
+        <div key={product.id} className="transition-opacity duration-200">
+          <ProductCard
+            product={product}
+            catalogType={catalogType}
+            onAddToCart={onAddToCart}
+            onAddToWishlist={onAddToWishlist}
+            onQuickView={onQuickView}
+            isInWishlist={wishlist.some(item => item.id === product.id)}
+          />
+        </div>
       ))}
     </div>
   );
