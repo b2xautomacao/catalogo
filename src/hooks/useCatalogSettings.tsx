@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,17 +35,58 @@ export interface CatalogSettingsData {
   updated_at: string;
 }
 
-export const useCatalogSettings = (storeId?: string) => {
+export const useCatalogSettings = (storeIdentifier?: string) => {
   const [settings, setSettings] = useState<CatalogSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
+  const fetchStoreIdByIdentifier = async (identifier: string): Promise<string | null> => {
+    try {
+      // Primeiro tenta buscar por slug
+      let { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('url_slug', identifier)
+        .eq('is_active', true)
+        .single();
+
+      // Se não encontrou por slug, tenta por ID
+      if (!data || error) {
+        const result = await supabase
+          .from('stores')
+          .select('id')
+          .eq('id', identifier)
+          .eq('is_active', true)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) throw error;
+      return data.id;
+    } catch (error) {
+      console.error('Erro ao buscar ID da loja:', error);
+      return null;
+    }
+  };
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const targetStoreId = storeId || profile?.store_id;
+      let targetStoreId: string | null = null;
+
+      if (storeIdentifier) {
+        // Para catálogo público, resolver o identifier
+        targetStoreId = await fetchStoreIdByIdentifier(storeIdentifier);
+      } else {
+        // Para usuário logado, usar store_id do perfil
+        targetStoreId = profile?.store_id || null;
+      }
       
       if (!targetStoreId) return;
+
+      console.log('Buscando configurações para store ID:', targetStoreId);
 
       const { data, error } = await supabase
         .from('store_settings')
@@ -57,7 +97,12 @@ export const useCatalogSettings = (storeId?: string) => {
       if (error && error.code !== 'PGRST116') throw error;
       
       if (!data) {
-        // Criar configuração padrão
+        // Criar configuração padrão apenas se usuário estiver logado
+        if (!profile) {
+          console.log('Configurações não encontradas e usuário não logado');
+          return;
+        }
+
         const defaultSettings = {
           store_id: targetStoreId,
           retail_catalog_active: true,
@@ -204,10 +249,8 @@ export const useCatalogSettings = (storeId?: string) => {
   };
 
   useEffect(() => {
-    if (profile) {
-      fetchSettings();
-    }
-  }, [profile, storeId]);
+    fetchSettings();
+  }, [storeIdentifier, profile]);
 
   return {
     settings,

@@ -9,6 +9,7 @@ export interface CatalogStore {
   description: string | null;
   owner_id: string;
   is_active: boolean;
+  url_slug: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -38,38 +39,66 @@ export interface CatalogSettings {
 export type CatalogType = 'retail' | 'wholesale';
 export type CheckoutType = 'whatsapp' | 'online' | 'fluid';
 
-export const useCatalog = (storeId?: string) => {
+export const useCatalog = (storeIdentifier?: string) => {
   const [store, setStore] = useState<CatalogStore | null>(null);
   const [settings, setSettings] = useState<CatalogSettings | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
-  const fetchStore = async (id: string) => {
+  const fetchStoreBySlugOrId = async (identifier: string) => {
     try {
-      const { data, error } = await supabase
+      console.log('Buscando loja por identifier:', identifier);
+      
+      // Primeiro tenta buscar por slug
+      let { data, error } = await supabase
         .from('stores')
         .select('*')
-        .eq('id', id)
+        .eq('url_slug', identifier)
         .eq('is_active', true)
         .single();
 
-      if (error) throw error;
+      // Se não encontrou por slug, tenta por ID
+      if (!data || error) {
+        console.log('Não encontrou por slug, tentando por ID...');
+        const result = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', identifier)
+          .eq('is_active', true)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.error('Erro ao buscar loja:', error);
+        throw error;
+      }
+      
+      console.log('Loja encontrada:', data);
       setStore(data);
+      return data.id;
     } catch (error) {
       console.error('Erro ao buscar loja:', error);
+      return null;
     }
   };
 
-  const fetchSettings = async (id: string) => {
+  const fetchSettings = async (storeId: string) => {
     try {
+      console.log('Buscando configurações para store:', storeId);
       const { data, error } = await supabase
         .from('store_settings')
         .select('*')
-        .eq('store_id', id)
+        .eq('store_id', storeId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar configurações:', error);
+        throw error;
+      }
       
       // Converter e validar os dados JSON
       const processedSettings: CatalogSettings = {
@@ -94,19 +123,24 @@ export const useCatalog = (storeId?: string) => {
         }
       };
 
+      console.log('Configurações processadas:', processedSettings);
       setSettings(processedSettings);
+      return processedSettings;
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
+      return null;
     }
   };
 
-  const fetchProducts = async (id: string, catalogType: CatalogType) => {
+  const fetchProducts = async (storeId: string, catalogType: CatalogType) => {
     try {
       setLoading(true);
+      console.log('Buscando produtos para store:', storeId, 'tipo:', catalogType);
+      
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('store_id', id)
+        .eq('store_id', storeId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -120,6 +154,7 @@ export const useCatalog = (storeId?: string) => {
         return true;
       }) || [];
 
+      console.log('Produtos filtrados:', filtered.length);
       setProducts(filtered);
       setFilteredProducts(filtered);
     } catch (error) {
@@ -171,12 +206,41 @@ export const useCatalog = (storeId?: string) => {
     setFilteredProducts(filtered);
   };
 
-  useEffect(() => {
+  const initializeCatalog = async (identifier: string, catalogType: CatalogType) => {
+    console.log('Inicializando catálogo:', identifier, catalogType);
+    const storeId = await fetchStoreBySlugOrId(identifier);
     if (storeId) {
-      fetchStore(storeId);
-      fetchSettings(storeId);
+      const settings = await fetchSettings(storeId);
+      
+      // Verificar se o tipo de catálogo está ativo
+      if (catalogType === 'wholesale' && settings && !settings.wholesale_catalog_active) {
+        console.warn('Catálogo de atacado não está ativo');
+        return false;
+      }
+      
+      if (catalogType === 'retail' && settings && !settings.retail_catalog_active) {
+        console.warn('Catálogo de varejo não está ativo');
+        return false;
+      }
+      
+      await fetchProducts(storeId, catalogType);
+      return true;
     }
-  }, [storeId]);
+    return false;
+  };
+
+  useEffect(() => {
+    if (storeIdentifier) {
+      // Resetar estado
+      setStore(null);
+      setSettings(null);
+      setProducts([]);
+      setFilteredProducts([]);
+      
+      // Inicializar com tipo padrão (será sobrescrito pela página)
+      initializeCatalog(storeIdentifier, 'retail');
+    }
+  }, [storeIdentifier]);
 
   return {
     store,
@@ -184,8 +248,9 @@ export const useCatalog = (storeId?: string) => {
     products,
     filteredProducts,
     loading,
-    fetchProducts,
+    fetchProducts: (storeId: string, catalogType: CatalogType) => fetchProducts(storeId, catalogType),
     searchProducts,
-    filterProducts
+    filterProducts,
+    initializeCatalog
   };
 };

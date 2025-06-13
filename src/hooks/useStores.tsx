@@ -11,6 +11,7 @@ export interface Store {
   is_active: boolean;
   plan_type: string;
   monthly_fee: number | null;
+  url_slug: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface CreateStoreData {
   is_active?: boolean;
   plan_type?: string;
   monthly_fee?: number;
+  url_slug?: string;
 }
 
 export interface UpdateStoreData {
@@ -30,6 +32,7 @@ export interface UpdateStoreData {
   is_active?: boolean;
   plan_type?: string;
   monthly_fee?: number;
+  url_slug?: string;
 }
 
 export const useStores = () => {
@@ -89,6 +92,24 @@ export const useStores = () => {
     }
   };
 
+  const updateStoreSlug = async (id: string, slug: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .update({ url_slug: slug })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      await fetchStores();
+      return { data, error: null };
+    } catch (error) {
+      console.error('Erro ao atualizar slug da loja:', error);
+      return { data: null, error };
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       fetchStores();
@@ -100,6 +121,7 @@ export const useStores = () => {
     loading,
     fetchStores,
     createStore,
-    updateStore
+    updateStore,
+    updateStoreSlug
   };
 };

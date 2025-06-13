@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Filter, Grid, List, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,33 +13,74 @@ import CatalogFooter from '@/components/catalog/CatalogFooter';
 import { useToast } from '@/hooks/use-toast';
 
 const Catalog = () => {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId, storeSlug, catalogType: urlCatalogType } = useParams<{ 
+    storeId?: string; 
+    storeSlug?: string; 
+    catalogType?: string; 
+  }>();
+  const location = useLocation();
   const { toast } = useToast();
+  
+  // Determinar o identificador da loja (slug ou ID)
+  const storeIdentifier = storeSlug || storeId;
+  
+  // Determinar o tipo de catálogo baseado na URL
+  const getCatalogTypeFromUrl = (): CatalogType => {
+    if (urlCatalogType === 'atacado') return 'wholesale';
+    if (urlCatalogType === 'varejo') return 'retail';
+    
+    // Para URLs antigas (/catalog/:storeId), verificar query params ou default
+    const params = new URLSearchParams(location.search);
+    const typeParam = params.get('type');
+    if (typeParam === 'wholesale') return 'wholesale';
+    
+    return 'retail'; // Default
+  };
+
+  const initialCatalogType = getCatalogTypeFromUrl();
   
   const {
     store,
     products,
     filteredProducts,
     loading,
-    fetchProducts,
+    initializeCatalog,
     searchProducts,
     filterProducts
-  } = useCatalog(storeId);
+  } = useCatalog(storeIdentifier);
 
-  const { settings } = useCatalogSettings(storeId);
+  const { settings } = useCatalogSettings(storeIdentifier);
 
-  const [catalogType, setCatalogType] = useState<CatalogType>('retail');
+  const [catalogType, setCatalogType] = useState<CatalogType>(initialCatalogType);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('name');
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(false);
   const [cart, setCart] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
 
+  // Inicializar catálogo quando mudar o identificador ou tipo
   useEffect(() => {
-    if (storeId) {
-      fetchProducts(storeId, catalogType);
+    if (storeIdentifier) {
+      console.log('Inicializando catálogo:', storeIdentifier, catalogType);
+      initializeCatalog(storeIdentifier, catalogType).then((success) => {
+        if (!success) {
+          toast({
+            title: "Catálogo indisponível",
+            description: `O catálogo de ${catalogType === 'retail' ? 'varejo' : 'atacado'} não está disponível.`,
+            variant: "destructive"
+          });
+        }
+      });
     }
-  }, [storeId, catalogType, fetchProducts]);
+  }, [storeIdentifier, catalogType, initializeCatalog]);
+
+  // Atualizar o tipo de catálogo quando a URL mudar
+  useEffect(() => {
+    const newCatalogType = getCatalogTypeFromUrl();
+    if (newCatalogType !== catalogType) {
+      setCatalogType(newCatalogType);
+    }
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (store) {
@@ -48,8 +89,7 @@ const Catalog = () => {
   }, [store, catalogType]);
 
   const handleCatalogTypeChange = (type: CatalogType) => {
-    setCatalogType(type);
-    
+    // Verificar se o tipo de catálogo está ativo
     if (type === 'wholesale' && settings && !settings.wholesale_catalog_active) {
       toast({
         title: "Catálogo indisponível",
@@ -57,6 +97,22 @@ const Catalog = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    if (type === 'retail' && settings && !settings.retail_catalog_active) {
+      toast({
+        title: "Catálogo indisponível",
+        description: "O catálogo de varejo não está disponível no momento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCatalogType(type);
+    
+    // Recarregar produtos para o novo tipo
+    if (storeIdentifier) {
+      initializeCatalog(storeIdentifier, type);
     }
   };
 

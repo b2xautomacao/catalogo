@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useToast } from '@/hooks/use-toast';
+import ShareableLinks from '@/components/settings/ShareableLinks';
 import { 
   ShoppingBag, 
   Package, 
@@ -21,7 +21,8 @@ import {
   Eye,
   CreditCard,
   Truck,
-  MessageSquare
+  MessageSquare,
+  Share2
 } from 'lucide-react';
 
 const CatalogSettings = () => {
@@ -146,8 +147,9 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="catalogs" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="catalogs">Catálogos</TabsTrigger>
+          <TabsTrigger value="sharing">Compartilhar</TabsTrigger>
           <TabsTrigger value="template">Template</TabsTrigger>
           <TabsTrigger value="domain">Domínio</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -298,6 +300,11 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Links Compartilháveis */}
+        <TabsContent value="sharing">
+          <ShareableLinks />
         </TabsContent>
 
         {/* Template */}
