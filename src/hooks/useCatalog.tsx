@@ -1,8 +1,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useProducts } from '@/hooks/useProducts';
+import { useProductsPublic, PublicProduct } from '@/hooks/useProductsPublic';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useStoreData } from '@/hooks/useStoreData';
+import { useAuth } from '@/hooks/useAuth';
 
 export type CatalogType = 'retail' | 'wholesale';
 
@@ -14,13 +17,57 @@ export interface CatalogFilters {
   search?: string;
 }
 
+// Tipo unificado para produtos (com ou sem auth)
+type CatalogProduct = PublicProduct & {
+  // Campos que podem estar presentes apenas em produtos autenticados
+};
+
 export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 'retail') => {
-  const { products, loading: productsLoading } = useProducts();
-  const { settings, loading: settingsLoading } = useStoreSettings();
+  const { profile } = useAuth();
+  
+  // Determinar se deve usar versão pública ou autenticada
+  const usePublicVersion = !!storeIdentifier && !profile;
+  
+  // Hooks condicionais baseados no contexto
+  const { products: authProducts, loading: authProductsLoading } = useProducts(
+    usePublicVersion ? undefined : storeIdentifier
+  );
+  
+  const { products: publicProducts, loading: publicProductsLoading, error: publicProductsError } = useProductsPublic(
+    usePublicVersion ? storeIdentifier : undefined
+  );
+
+  // Usar configurações apropriadas
+  const { settings: storeSettings, loading: storeSettingsLoading } = useStoreSettings(
+    usePublicVersion ? undefined : storeIdentifier
+  );
+  
+  const { settings: catalogSettings, loading: catalogSettingsLoading } = useCatalogSettings(
+    usePublicVersion ? storeIdentifier : undefined
+  );
+
   const { store, loading: storeLoading, error: storeError } = useStoreData(storeIdentifier);
   
   const [filters, setFilters] = useState<CatalogFilters>({});
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Unificar produtos e configurações baseado no contexto
+  const products: CatalogProduct[] = useMemo(() => {
+    if (usePublicVersion) {
+      return publicProducts;
+    }
+    return authProducts;
+  }, [usePublicVersion, publicProducts, authProducts]);
+
+  const settings = useMemo(() => {
+    if (usePublicVersion) {
+      return catalogSettings;
+    }
+    return storeSettings;
+  }, [usePublicVersion, catalogSettings, storeSettings]);
+
+  const productsLoading = usePublicVersion ? publicProductsLoading : authProductsLoading;
+  const settingsLoading = usePublicVersion ? catalogSettingsLoading : storeSettingsLoading;
 
   // Aplicar filtros e busca aos produtos
   const filteredProducts = useMemo(() => {
@@ -30,7 +77,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     if (!products.length) return [];
 
     let filtered = products.filter(product => {
-      // Filtrar apenas produtos ativos
+      // Filtrar apenas produtos ativos (já garantido no público, mas mantendo para auth)
       if (!product.is_active) return false;
 
       // Filtro de categoria
@@ -153,6 +200,9 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   const loading = productsLoading || settingsLoading || storeLoading;
 
+  // Tratamento de erros específico para versão pública
+  const error = usePublicVersion ? publicProductsError : null;
+
   return {
     // Retorno original
     products: filteredProducts,
@@ -170,7 +220,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     
     // Dados da loja (agora reais)
     store,
-    storeError,
+    storeError: storeError || error,
     
     // Compatibilidade com Catalog.tsx
     filteredProducts,
