@@ -9,18 +9,22 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useCategories } from '@/hooks/useCategories';
 
+export interface FilterState {
+  categories: string[];
+  priceRange: [number, number];
+  inStock: boolean;
+}
+
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onFiltersChange: (filters: any) => void;
-  storeId: string;
+  onFilter: (filters: FilterState) => void;
 }
 
 const FilterSidebar: React.FC<FilterSidebarProps> = ({ 
   isOpen, 
   onClose, 
-  onFiltersChange, 
-  storeId 
+  onFilter
 }) => {
   const { categories } = useCategories();
   
@@ -57,7 +61,17 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     const sanitizedFilters = sanitizeFilters(filters);
     console.log('FilterSidebar: Filtros sanitizados:', sanitizedFilters);
     
-    onFiltersChange(sanitizedFilters);
+    // Converter para formato FilterState esperado pelo Catalog.tsx
+    const filterState: FilterState = {
+      categories: sanitizedFilters.category ? [sanitizedFilters.category] : [],
+      priceRange: [
+        sanitizedFilters.minPrice || 0,
+        sanitizedFilters.maxPrice || 99999
+      ],
+      inStock: sanitizedFilters.inStock
+    };
+    
+    onFilter(filterState);
     onClose();
   };
 
@@ -72,16 +86,15 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     setFilters(clearedFilters);
     
     // Aplicar filtros limpos imediatamente
-    const sanitizedFilters = sanitizeFilters(clearedFilters);
-    console.log('FilterSidebar: Limpando filtros:', sanitizedFilters);
-    onFiltersChange(sanitizedFilters);
+    const filterState: FilterState = {
+      categories: [],
+      priceRange: [0, 99999],
+      inStock: false
+    };
+    
+    console.log('FilterSidebar: Limpando filtros:', filterState);
+    onFilter(filterState);
   };
-
-  // Aplicar filtros automaticamente quando houver mudanças
-  useEffect(() => {
-    const sanitizedFilters = sanitizeFilters(filters);
-    onFiltersChange(sanitizedFilters);
-  }, [filters]);
 
   if (!isOpen) return null;
 
