@@ -55,6 +55,14 @@ export const useOrders = () => {
     }
   }, [profile]);
 
+  // Função para converter dados do Supabase para o tipo Order
+  const convertSupabaseToOrder = (supabaseData: any): Order => {
+    return {
+      ...supabaseData,
+      items: Array.isArray(supabaseData.items) ? supabaseData.items : []
+    };
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -78,7 +86,10 @@ export const useOrders = () => {
       if (fetchError) throw fetchError;
       
       console.log('useOrders: Pedidos carregados:', data?.length || 0);
-      setOrders(data || []);
+      
+      // Converter os dados do Supabase para o tipo Order
+      const convertedOrders = data ? data.map(convertSupabaseToOrder) : [];
+      setOrders(convertedOrders);
     } catch (error) {
       console.error('useOrders: Erro ao buscar pedidos:', error);
       setError(error instanceof Error ? error.message : 'Erro ao buscar pedidos');
@@ -137,7 +148,10 @@ export const useOrders = () => {
       }
 
       await fetchOrders();
-      return { data, error: null };
+      
+      // Converter o dado para o tipo Order antes de retornar
+      const convertedOrder = convertSupabaseToOrder(data);
+      return { data: convertedOrder, error: null };
     } catch (error) {
       console.error('useOrders: Erro ao criar pedido:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao criar pedido';
@@ -224,7 +238,10 @@ export const useOrders = () => {
       if (error) throw error;
       
       await fetchOrders();
-      return { data, error: null };
+      
+      // Converter o dado para o tipo Order antes de retornar
+      const convertedOrder = convertSupabaseToOrder(data);
+      return { data: convertedOrder, error: null };
     } catch (error) {
       console.error('useOrders: Erro ao atualizar status:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar status';
