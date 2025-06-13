@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
 import OrdersHeader from '@/components/orders/OrdersHeader';
 import OrderFilters from '@/components/orders/OrderFilters';
@@ -95,6 +96,11 @@ const Orders = () => {
     // Integração com WhatsApp seria implementada aqui
   };
 
+  const handlePrintPickingList = (order: Order) => {
+    toast.success('Romaneio de separação enviado para impressão');
+    // Lógica de impressão aqui
+  };
+
   const handlePrintLabel = async (order: Order) => {
     if (order.label_generated_at) {
       toast.warning('Etiqueta já foi gerada para este pedido');
@@ -111,6 +117,12 @@ const Orders = () => {
 
   const handlePrintDeclaration = (order: Order) => {
     toast.success('Declaração de conteúdo enviada para impressão');
+    // Lógica de impressão aqui
+  };
+
+  const handlePrintReceipt = (order: Order) => {
+    toast.success('Recibo de pagamento enviado para impressão');
+    // Lógica de impressão aqui
   };
 
   const handleMarkPrintedDocument = async (orderId: string, documentType: 'label' | 'picking_list' | 'content_declaration' | 'receipt') => {
@@ -188,13 +200,11 @@ const Orders = () => {
             <OrdersTable
               orders={paginatedOrders}
               onViewOrder={handleViewOrder}
-              onStatusChange={handleStatusChange}
             />
           ) : (
             <OrdersGrid
               orders={paginatedOrders}
               onViewOrder={handleViewOrder}
-              onStatusChange={handleStatusChange}
             />
           )}
 
@@ -218,8 +228,10 @@ const Orders = () => {
         onClose={() => setIsModalOpen(false)}
         onCancelOrder={handleCancelOrder}
         onSendFollowUp={handleSendFollowUp}
+        onPrintPickingList={handlePrintPickingList}
         onPrintLabel={handlePrintLabel}
         onPrintDeclaration={handlePrintDeclaration}
+        onPrintReceipt={handlePrintReceipt}
         onMarkPrintedDocument={handleMarkPrintedDocument}
         onGenerateTrackingCode={handleGenerateTrackingCode}
       />

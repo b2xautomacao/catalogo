@@ -46,8 +46,15 @@ export const usePayments = () => {
 
       if (fetchError) throw fetchError;
       
-      setPayments(data || []);
-      return { data: data || [], error: null };
+      // Type assertion to ensure compatibility
+      const typedPayments = (data || []).map(payment => ({
+        ...payment,
+        payment_method: payment.payment_method as 'pix' | 'money' | 'card' | 'bank_slip',
+        status: payment.status as 'pending' | 'confirmed' | 'failed' | 'refunded'
+      }));
+      
+      setPayments(typedPayments);
+      return { data: typedPayments, error: null };
     } catch (error) {
       console.error('Erro ao buscar pagamentos:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar pagamentos';
