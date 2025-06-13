@@ -101,8 +101,8 @@ export const useOrders = () => {
       setError(null);
       setIsCreatingOrder(true);
       
-      console.log('🚀 useOrders: Iniciando criação de pedido');
-      console.log('📋 useOrders: Dados recebidos:', {
+      console.log('🚀 useOrders: Iniciando criação de pedido via Edge Function');
+      console.log('📋 useOrders: Dados do pedido:', {
         customer_name: orderData.customer_name,
         store_id: orderData.store_id,
         items_count: orderData.items?.length,
@@ -153,15 +153,11 @@ export const useOrders = () => {
 
       console.log('🏪 useOrders: Store ID determinado:', storeId);
 
-      const reservationExpires = new Date();
-      reservationExpires.setMinutes(reservationExpires.getMinutes() + 30);
-
-      const newOrder = {
+      const orderPayload = {
         customer_name: orderData.customer_name,
         customer_email: orderData.customer_email || null,
         customer_phone: orderData.customer_phone || null,
         total_amount: orderData.total_amount,
-        status: 'pending' as const,
         order_type: orderData.order_type,
         items: orderData.items,
         shipping_address: orderData.shipping_address || null,
@@ -169,50 +165,38 @@ export const useOrders = () => {
         payment_method: orderData.payment_method || null,
         shipping_cost: orderData.shipping_cost || 0,
         notes: orderData.notes || null,
-        store_id: storeId,
-        stock_reserved: true,
-        reservation_expires_at: reservationExpires.toISOString()
+        store_id: storeId
       };
 
-      console.log('💾 useOrders: Tentando inserir pedido no banco:', {
-        store_id: newOrder.store_id,
-        customer_name: newOrder.customer_name,
-        total_amount: newOrder.total_amount,
-        items_count: newOrder.items.length
-      });
+      console.log('🔗 useOrders: Chamando Edge Function create-public-order...');
 
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([newOrder])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ useOrders: Erro ao inserir pedido:', error);
-        throw new Error(`Erro ao criar pedido: ${error.message}`);
-      }
-
-      console.log('✅ useOrders: Pedido criado com sucesso:', data);
-
-      console.log('📦 useOrders: Iniciando reserva de estoque para', orderData.items.length, 'itens');
-      
-      for (const item of orderData.items) {
-        try {
-          console.log('🔒 useOrders: Reservando estoque para produto:', item.id || item.product_id);
-          await reserveStock(item.id || item.product_id, item.quantity, data.id, storeId);
-          console.log('✅ useOrders: Estoque reservado para produto:', item.id || item.product_id);
-        } catch (stockError) {
-          console.error('❌ useOrders: Erro ao reservar estoque para produto:', item.id || item.product_id, stockError);
+      // Chamar Edge Function em vez de inserir diretamente
+      const { data: functionResult, error: functionError } = await supabase.functions.invoke(
+        'create-public-order',
+        {
+          body: { orderData: orderPayload }
         }
+      );
+
+      if (functionError) {
+        console.error('❌ useOrders: Erro na Edge Function:', functionError);
+        throw new Error(`Erro ao processar pedido: ${functionError.message}`);
       }
+
+      if (!functionResult?.success) {
+        console.error('❌ useOrders: Edge Function retornou erro:', functionResult?.error);
+        throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
+      }
+
+      console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', functionResult.order);
 
       if (profile?.store_id && profile.store_id === storeId) {
         console.log('🔄 useOrders: Recarregando lista de pedidos...');
         await fetchOrders();
       }
       
-      const convertedOrder = convertSupabaseToOrder(data);
-      console.log('🎉 useOrders: Processo de criação concluído com sucesso');
+      const convertedOrder = convertSupabaseToOrder(functionResult.order);
+      console.log('🎉 useOrders: Processo concluído com sucesso');
       return { data: convertedOrder, error: null };
     } catch (error) {
       console.error('❌ useOrders: Erro geral ao criar pedido:', error);
@@ -230,73 +214,6 @@ export const useOrders = () => {
       throw new Error(result.error || 'Erro ao criar pedido');
     }
     return result.data;
-  };
-
-  const reserveStock = async (productId: string, quantity: number, orderId: string, storeId: string) => {
-    try {
-      console.log('📦 reserveStock: Iniciando reserva:', { productId, quantity, orderId, storeId });
-
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('stock, reserved_stock')
-        .eq('id', productId)
-        .single();
-
-      if (productError) {
-        console.error('❌ reserveStock: Erro ao buscar produto:', productError);
-        throw productError;
-      }
-
-      console.log('📊 reserveStock: Estoque atual do produto:', product);
-
-      const availableStock = (product.stock || 0) - (product.reserved_stock || 0);
-      
-      if (availableStock < quantity) {
-        throw new Error(`Estoque insuficiente para o produto. Disponível: ${availableStock}, Solicitado: ${quantity}`);
-      }
-
-      console.log('🔄 reserveStock: Atualizando estoque reservado...');
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ 
-          reserved_stock: (product.reserved_stock || 0) + quantity 
-        })
-        .eq('id', productId);
-
-      if (updateError) {
-        console.error('❌ reserveStock: Erro ao atualizar estoque:', updateError);
-        throw updateError;
-      }
-
-      console.log('📝 reserveStock: Registrando movimentação de estoque...');
-      const movementData = {
-        product_id: productId,
-        order_id: orderId,
-        movement_type: 'reservation',
-        quantity: quantity,
-        previous_stock: product.stock,
-        new_stock: product.stock,
-        notes: `Reserva para pedido ${orderId}`,
-        store_id: storeId,
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-      };
-
-      console.log('📋 reserveStock: Dados da movimentação:', movementData);
-
-      const { error: movementError } = await supabase
-        .from('stock_movements')
-        .insert([movementData]);
-
-      if (movementError) {
-        console.error('❌ reserveStock: Erro ao registrar movimentação:', movementError);
-        throw movementError;
-      }
-
-      console.log('✅ reserveStock: Estoque reservado com sucesso');
-    } catch (error) {
-      console.error('❌ reserveStock: Erro geral na reserva:', error);
-      throw error;
-    }
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
