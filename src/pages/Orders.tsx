@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -359,7 +360,7 @@ const Orders = () => {
                     <CardTitle className="text-sm">Status</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Badge className={getStatusColor(selectedOrder.status)} size="lg">
+                    <Badge className={getStatusColor(selectedOrder.status)}>
                       {getStatusIcon(selectedOrder.status)}
                       <span className="ml-2">{getStatusText(selectedOrder.status)}</span>
                     </Badge>
@@ -371,7 +372,7 @@ const Orders = () => {
                     <CardTitle className="text-sm">Tipo de Pedido</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Badge variant="outline" size="lg">
+                    <Badge variant="outline">
                       <Tag className="h-4 w-4 mr-2" />
                       {selectedOrder.order_type === 'retail' ? 'Varejo' : 'Atacado'}
                     </Badge>
