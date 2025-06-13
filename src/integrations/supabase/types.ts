@@ -557,37 +557,52 @@ export type Database = {
       }
       stores: {
         Row: {
+          address: string | null
+          cnpj: string | null
           created_at: string
           description: string | null
+          email: string | null
           id: string
           is_active: boolean
+          logo_url: string | null
           monthly_fee: number | null
           name: string
           owner_id: string
+          phone: string | null
           plan_type: string
           updated_at: string
           url_slug: string | null
         }
         Insert: {
+          address?: string | null
+          cnpj?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           monthly_fee?: number | null
           name: string
           owner_id: string
+          phone?: string | null
           plan_type?: string
           updated_at?: string
           url_slug?: string | null
         }
         Update: {
+          address?: string | null
+          cnpj?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           monthly_fee?: number | null
           name?: string
           owner_id?: string
+          phone?: string | null
           plan_type?: string
           updated_at?: string
           url_slug?: string | null

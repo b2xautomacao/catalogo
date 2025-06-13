@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -7,11 +7,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Clock, MapPin, Phone, Mail } from 'lucide-react';
+import { Building, Clock, MapPin, Phone, Mail, FileText, Loader2 } from 'lucide-react';
+import { useStores } from '@/hooks/useStores';
+
+interface StoreInfoFormData {
+  storeName: string;
+  description: string;
+  address: string;
+  phone: string;
+  email: string;
+  cnpj: string;
+  businessHours: {
+    monday: { open: string; close: string; closed: boolean };
+    tuesday: { open: string; close: string; closed: boolean };
+    wednesday: { open: string; close: string; closed: boolean };
+    thursday: { open: string; close: string; closed: boolean };
+    friday: { open: string; close: string; closed: boolean };
+    saturday: { open: string; close: string; closed: boolean };
+    sunday: { open: string; close: string; closed: boolean };
+  };
+}
 
 const StoreInfoSettings = () => {
   const { toast } = useToast();
-  const form = useForm({
+  const { currentStore, updateCurrentStore, loading: storeLoading } = useStores();
+  const [saving, setSaving] = React.useState(false);
+
+  const form = useForm<StoreInfoFormData>({
     defaultValues: {
       storeName: '',
       description: '',
@@ -31,12 +53,62 @@ const StoreInfoSettings = () => {
     }
   });
 
-  const onSubmit = (data: any) => {
-    console.log('Store info:', data);
-    toast({
-      title: "Dados salvos",
-      description: "As informações da loja foram atualizadas com sucesso",
-    });
+  // Carregar dados da loja quando disponível
+  useEffect(() => {
+    if (currentStore) {
+      form.reset({
+        storeName: currentStore.name || '',
+        description: currentStore.description || '',
+        address: currentStore.address || '',
+        phone: currentStore.phone || '',
+        email: currentStore.email || '',
+        cnpj: currentStore.cnpj || '',
+        businessHours: {
+          monday: { open: '09:00', close: '18:00', closed: false },
+          tuesday: { open: '09:00', close: '18:00', closed: false },
+          wednesday: { open: '09:00', close: '18:00', closed: false },
+          thursday: { open: '09:00', close: '18:00', closed: false },
+          friday: { open: '09:00', close: '18:00', closed: false },
+          saturday: { open: '09:00', close: '14:00', closed: false },
+          sunday: { open: '09:00', close: '14:00', closed: true }
+        }
+      });
+    }
+  }, [currentStore, form]);
+
+  const onSubmit = async (data: StoreInfoFormData) => {
+    try {
+      setSaving(true);
+
+      const updates = {
+        name: data.storeName,
+        description: data.description,
+        address: data.address,
+        phone: data.phone,
+        email: data.email,
+        cnpj: data.cnpj
+      };
+
+      const { error } = await updateCurrentStore(updates);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Dados salvos",
+        description: "As informações da loja foram atualizadas com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const days = [
@@ -48,6 +120,15 @@ const StoreInfoSettings = () => {
     { key: 'saturday', label: 'Sábado' },
     { key: 'sunday', label: 'Domingo' }
   ];
+
+  if (storeLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Carregando dados da loja...</span>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -209,7 +290,8 @@ const StoreInfoSettings = () => {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="btn-primary w-full">
+        <Button type="submit" className="btn-primary w-full" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Salvar Configurações da Loja
         </Button>
       </form>

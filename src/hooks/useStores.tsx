@@ -12,6 +12,11 @@ export interface Store {
   plan_type: string;
   monthly_fee: number | null;
   url_slug: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  cnpj: string | null;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +29,11 @@ export interface CreateStoreData {
   plan_type?: string;
   monthly_fee?: number;
   url_slug?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  cnpj?: string;
+  logo_url?: string;
 }
 
 export interface UpdateStoreData {
@@ -33,10 +43,16 @@ export interface UpdateStoreData {
   plan_type?: string;
   monthly_fee?: number;
   url_slug?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  cnpj?: string;
+  logo_url?: string;
 }
 
 export const useStores = () => {
   const [stores, setStores] = useState<Store[]>([]);
+  const [currentStore, setCurrentStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
@@ -54,6 +70,23 @@ export const useStores = () => {
       console.error('Erro ao buscar lojas:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentStore = async () => {
+    try {
+      if (!profile?.store_id) return;
+
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('id', profile.store_id)
+        .single();
+
+      if (error) throw error;
+      setCurrentStore(data);
+    } catch (error) {
+      console.error('Erro ao buscar loja atual:', error);
     }
   };
 
@@ -85,11 +118,19 @@ export const useStores = () => {
 
       if (error) throw error;
       await fetchStores();
+      await fetchCurrentStore();
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar loja:', error);
       return { data: null, error };
     }
+  };
+
+  const updateCurrentStore = async (updates: UpdateStoreData) => {
+    if (!profile?.store_id) {
+      return { data: null, error: 'Store ID não encontrado' };
+    }
+    return updateStore(profile.store_id, updates);
   };
 
   const updateStoreSlug = async (id: string, slug: string) => {
@@ -103,6 +144,7 @@ export const useStores = () => {
 
       if (error) throw error;
       await fetchStores();
+      await fetchCurrentStore();
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar slug da loja:', error);
@@ -112,16 +154,23 @@ export const useStores = () => {
 
   useEffect(() => {
     if (profile) {
-      fetchStores();
+      if (profile.role === 'superadmin') {
+        fetchStores();
+      } else {
+        fetchCurrentStore();
+      }
     }
   }, [profile]);
 
   return {
     stores,
+    currentStore,
     loading,
     fetchStores,
+    fetchCurrentStore,
     createStore,
     updateStore,
+    updateCurrentStore,
     updateStoreSlug
   };
 };

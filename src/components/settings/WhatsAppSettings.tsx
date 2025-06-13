@@ -1,205 +1,141 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, Zap, Phone } from 'lucide-react';
+import { MessageSquare, Phone, Loader2 } from 'lucide-react';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+
+interface WhatsAppFormData {
+  whatsapp_integration_active: boolean;
+  whatsapp_number: string;
+}
 
 const WhatsAppSettings = () => {
   const { toast } = useToast();
-  const form = useForm({
+  const { settings, updateSettings, loading } = useStoreSettings();
+  const [saving, setSaving] = useState(false);
+
+  const form = useForm<WhatsAppFormData>({
     defaultValues: {
-      enabled: true,
-      phoneNumber: '',
-      welcomeMessage: 'Olá! 👋 Bem-vindo à nossa loja. Como posso ajudá-lo?',
-      evolutionApi: { url: '', token: '' },
-      n8nWebhook: '',
-      businessHours: true,
-      autoReply: true
+      whatsapp_integration_active: false,
+      whatsapp_number: ''
     }
   });
 
-  const onSubmit = (data: any) => {
-    console.log('WhatsApp settings:', data);
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações do WhatsApp foram atualizadas",
-    });
+  // Carregar configurações existentes
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        whatsapp_integration_active: settings.whatsapp_integration_active || false,
+        whatsapp_number: settings.whatsapp_number || ''
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: WhatsAppFormData) => {
+    try {
+      setSaving(true);
+
+      const { error } = await updateSettings({
+        whatsapp_integration_active: data.whatsapp_integration_active,
+        whatsapp_number: data.whatsapp_number
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações do WhatsApp foram atualizadas com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const testConnection = () => {
-    toast({
-      title: "Testando conexão",
-      description: "Enviando mensagem de teste...",
-    });
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Carregando configurações...</span>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Configurações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Configurações Básicas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="enabled"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between">
-                    <FormLabel>Ativar WhatsApp</FormLabel>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Integração WhatsApp
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="whatsapp_integration_active"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between">
+                  <FormLabel>Ativar Integração WhatsApp</FormLabel>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número do WhatsApp</FormLabel>
-                    <FormControl>
-                      <Input placeholder="5511999999999" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="whatsapp_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número do WhatsApp</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="5511999999999"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-sm text-muted-foreground">
+                    Insira o número no formato internacional, sem espaços ou símbolos (Ex: 5511999999999)
+                  </p>
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="welcomeMessage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mensagem de Boas-vindas</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Mensagem automática para novos clientes"
-                        className="min-h-20"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">Como configurar:</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Ative a integração usando o switch acima</li>
+                <li>• Insira seu número do WhatsApp Business</li>
+                <li>• Configure as mensagens automáticas</li>
+                <li>• Teste o envio de notificações</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Evolution API */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Evolution API
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="evolutionApi.url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL da API</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://api.evolution.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="evolutionApi.token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Token de Acesso</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Seu token da Evolution API" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="button" onClick={testConnection} variant="outline" className="w-full">
-                Testar Conexão
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* N8N Webhook */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Webhook N8N</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="n8nWebhook"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL do Webhook</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://n8n.exemplo.com/webhook/whatsapp" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Automações */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Automações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="autoReply"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between">
-                    <FormLabel>Resposta Automática</FormLabel>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="businessHours"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between">
-                    <FormLabel>Respeitar Horário Comercial</FormLabel>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <Button type="submit" className="btn-primary w-full">
+        <Button type="submit" className="btn-primary w-full" disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Salvar Configurações do WhatsApp
         </Button>
       </form>
