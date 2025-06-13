@@ -2,16 +2,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useStoreData } from '@/hooks/useStoreData';
 
 export type CatalogType = 'retail' | 'wholesale';
-
-export interface Store {
-  id: string;
-  name: string;
-  description?: string;
-  logo_url?: string;
-  url_slug?: string;
-}
 
 export interface CatalogFilters {
   category?: string | null;
@@ -21,25 +14,13 @@ export interface CatalogFilters {
   search?: string;
 }
 
-export const useCatalog = (storeId: string, catalogType: CatalogType = 'retail') => {
+export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 'retail') => {
   const { products, loading: productsLoading } = useProducts();
   const { settings, loading: settingsLoading } = useStoreSettings();
+  const { store, loading: storeLoading, error: storeError } = useStoreData(storeIdentifier);
   
   const [filters, setFilters] = useState<CatalogFilters>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [store, setStore] = useState<Store | null>(null);
-
-  // Mock store data - em produção viria de um hook específico
-  useEffect(() => {
-    if (storeId) {
-      setStore({
-        id: storeId,
-        name: 'Minha Loja',
-        description: 'Descrição da loja',
-        url_slug: storeId
-      });
-    }
-  }, [storeId]);
 
   // Aplicar filtros e busca aos produtos
   const filteredProducts = useMemo(() => {
@@ -135,9 +116,22 @@ export const useCatalog = (storeId: string, catalogType: CatalogType = 'retail')
   };
 
   // Funções de compatibilidade para Catalog.tsx
-  const initializeCatalog = async (storeIdentifier: string, type: CatalogType) => {
-    console.log('useCatalog: Inicializando catálogo:', storeIdentifier, type);
-    return true; // Sempre retorna sucesso por enquanto
+  const initializeCatalog = async (storeId: string, type: CatalogType) => {
+    console.log('useCatalog: Inicializando catálogo:', storeId, type);
+    
+    // Verificar se o catálogo está ativo nas configurações
+    if (settings) {
+      const isActive = type === 'retail' 
+        ? settings.retail_catalog_active !== false
+        : settings.wholesale_catalog_active === true;
+      
+      if (!isActive) {
+        console.warn('useCatalog: Catálogo não está ativo:', type);
+        return false;
+      }
+    }
+    
+    return true;
   };
 
   const searchProducts = (query: string) => {
@@ -157,7 +151,7 @@ export const useCatalog = (storeId: string, catalogType: CatalogType = 'retail')
       : settings.wholesale_catalog_active === true;
   }, [settings, catalogType]);
 
-  const loading = productsLoading || settingsLoading;
+  const loading = productsLoading || settingsLoading || storeLoading;
 
   return {
     // Retorno original
@@ -174,8 +168,11 @@ export const useCatalog = (storeId: string, catalogType: CatalogType = 'retail')
     clearFilters,
     hasActiveFilters: Object.keys(filters).length > 0 || searchTerm.length > 0,
     
-    // Adicionados para compatibilidade com Catalog.tsx
+    // Dados da loja (agora reais)
     store,
+    storeError,
+    
+    // Compatibilidade com Catalog.tsx
     filteredProducts,
     initializeCatalog,
     searchProducts,

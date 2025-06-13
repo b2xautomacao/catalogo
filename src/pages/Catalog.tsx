@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Filter, Grid, List, ArrowUpDown } from 'lucide-react';
@@ -42,13 +43,14 @@ const CatalogContent = () => {
   
   const {
     store,
+    storeError,
     products,
     filteredProducts,
     loading,
     initializeCatalog,
     searchProducts,
     filterProducts
-  } = useCatalog(storeIdentifier);
+  } = useCatalog(storeIdentifier, initialCatalogType);
 
   const { settings } = useCatalogSettings(storeIdentifier);
 
@@ -178,7 +180,32 @@ const CatalogContent = () => {
     }
   };
 
-  if (!store) {
+  // Verificar erros de carregamento da loja
+  if (storeError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Erro ao carregar loja</h1>
+          <p className="text-gray-600">{storeError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading da loja
+  if (loading && !store) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700">Carregando catálogo...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Loja não encontrada
+  if (!loading && !store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

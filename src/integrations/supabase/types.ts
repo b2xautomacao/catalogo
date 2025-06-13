@@ -144,9 +144,13 @@ export type Database = {
           customer_phone: string | null
           id: string
           items: Json
+          notes: string | null
           order_type: Database["public"]["Enums"]["catalog_type"]
+          payment_method: string | null
           reservation_expires_at: string | null
           shipping_address: Json | null
+          shipping_cost: number | null
+          shipping_method: string | null
           status: Database["public"]["Enums"]["order_status"]
           stock_reserved: boolean
           store_id: string
@@ -160,9 +164,13 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           items?: Json
+          notes?: string | null
           order_type?: Database["public"]["Enums"]["catalog_type"]
+          payment_method?: string | null
           reservation_expires_at?: string | null
           shipping_address?: Json | null
+          shipping_cost?: number | null
+          shipping_method?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_reserved?: boolean
           store_id: string
@@ -176,9 +184,13 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           items?: Json
+          notes?: string | null
           order_type?: Database["public"]["Enums"]["catalog_type"]
+          payment_method?: string | null
           reservation_expires_at?: string | null
           shipping_address?: Json | null
+          shipping_cost?: number | null
+          shipping_method?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_reserved?: boolean
           store_id?: string
