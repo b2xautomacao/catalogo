@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Buscando perfil para usuário:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -45,6 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      console.log('Perfil encontrado:', data);
       setProfile(data);
     } catch (error) {
       console.error('Erro inesperado ao buscar perfil:', error);
@@ -55,6 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Evento de autenticação:', event, session?.user?.id);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -73,6 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Sessão existente:', session?.user?.id);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
