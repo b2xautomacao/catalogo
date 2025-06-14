@@ -1,203 +1,197 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ProductImage {
   id: string;
   product_id: string;
-  variation_id: string | null;
   image_url: string;
-  image_order: number;
-  alt_text: string | null;
-  is_primary: boolean;
-  created_at: string;
-}
-
-export interface CreateImageData {
-  product_id: string;
-  variation_id?: string;
-  image_url: string;
-  image_order: number;
   alt_text?: string;
-  is_primary?: boolean;
+  is_primary: boolean;
+  image_order: number;
+  variation_id?: string;
 }
 
-export const useProductImages = (productId?: string) => {
-  const [images, setImages] = useState<ProductImage[]>([]);
+export const useProductImages = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const fetchImages = async () => {
-    if (!productId) {
-      console.log('useProductImages: sem productId, pulando busca');
-      setImages([]);
-      setLoading(false);
-      return;
-    }
+  const uploadImageToStorage = async (file: File, productId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${productId}/${Date.now()}.${fileExt}`;
     
-    try {
-      console.log('useProductImages: buscando imagens para produto:', productId);
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', productId)
-        .order('image_order', { ascending: true });
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, file);
 
-      if (error) {
-        console.error('useProductImages: erro na busca:', error);
-        throw error;
+    if (error) {
+      throw new Error(`Erro ao fazer upload: ${error.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
+  const createProductImage = async (
+    productId: string,
+    imageUrl: string,
+    isPrimary: boolean = false,
+    order: number = 1,
+    altText?: string,
+    variationId?: string
+  ): Promise<ProductImage> => {
+    const { data, error } = await supabase
+      .from('product_images')
+      .insert({
+        product_id: productId,
+        image_url: imageUrl,
+        is_primary: isPrimary,
+        image_order: order,
+        alt_text: altText,
+        variation_id: variationId
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Erro ao salvar imagem: ${error.message}`);
+    }
+
+    return data;
+  };
+
+  const updateProductMainImage = async (productId: string, imageUrl: string) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ image_url: imageUrl })
+      .eq('id', productId);
+
+    if (error) {
+      throw new Error(`Erro ao atualizar imagem principal: ${error.message}`);
+    }
+  };
+
+  const uploadAndSaveImages = async (
+    files: File[],
+    productId: string
+  ): Promise<ProductImage[]> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!user) {
+        throw new Error('Usuário não autenticado');
       }
-      
-      console.log('useProductImages: imagens encontradas:', data?.length || 0);
-      setImages(data || []);
+
+      const uploadedImages: ProductImage[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const imageUrl = await uploadImageToStorage(file, productId);
+        const isPrimary = i === 0; // Primeira imagem é primária
+        
+        const productImage = await createProductImage(
+          productId,
+          imageUrl,
+          isPrimary,
+          i + 1,
+          `Imagem ${i + 1} do produto`
+        );
+
+        uploadedImages.push(productImage);
+
+        // Se é a primeira imagem, atualizar o campo image_url do produto
+        if (isPrimary) {
+          await updateProductMainImage(productId, imageUrl);
+        }
+      }
+
+      return uploadedImages;
     } catch (error) {
-      console.error('Erro ao buscar imagens:', error);
-      setImages([]);
+      console.error('Erro no upload de imagens:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao fazer upload';
+      setError(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const ensureBucketExists = async () => {
+  const getProductImages = async (productId: string): Promise<ProductImage[]> => {
     try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const productImagesBucket = buckets?.find(bucket => bucket.name === 'product-images');
-      
-      if (!productImagesBucket) {
-        const { error } = await supabase.storage.createBucket('product-images', { 
-          public: true,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-          fileSizeLimit: 5242880 // 5MB
-        });
-        if (error) {
-          console.error('Erro ao criar bucket:', error);
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Erro ao verificar bucket:', error);
-      return false;
-    }
-  };
-
-  const uploadImage = async (file: File, productId: string, imageOrder: number = 1) => {
-    try {
-      console.log('Iniciando upload da imagem:', file.name);
-      
-      // Garantir que o bucket existe
-      await ensureBucketExists();
-
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const fileName = `${productId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      
-      console.log('Nome do arquivo:', fileName);
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Erro no upload:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('Upload realizado:', uploadData);
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName);
-
-      console.log('URL pública:', publicUrl);
-
-      // Verificar se é a primeira imagem para definir como principal
-      const existingImages = await supabase
-        .from('product_images')
-        .select('id')
-        .eq('product_id', productId);
-
-      const isPrimary = !existingImages.data || existingImages.data.length === 0;
-
-      const imageData: CreateImageData = {
-        product_id: productId,
-        image_url: publicUrl,
-        image_order: imageOrder,
-        is_primary: isPrimary,
-        alt_text: file.name
-      };
+      setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from('product_images')
-        .insert([imageData])
-        .select()
-        .single();
+        .select('*')
+        .eq('product_id', productId)
+        .order('image_order');
 
       if (error) {
-        console.error('Erro ao salvar imagem no banco:', error);
-        throw error;
+        throw new Error(`Erro ao buscar imagens: ${error.message}`);
       }
 
-      console.log('Imagem salva no banco:', data);
-      await fetchImages();
-      return { data, error: null };
+      return data || [];
     } catch (error) {
-      console.error('Erro completo no upload:', error);
-      return { data: null, error };
-    }
-  };
-
-  const deleteImage = async (id: string) => {
-    try {
-      // Buscar a imagem para obter a URL
-      const { data: imageData } = await supabase
-        .from('product_images')
-        .select('image_url')
-        .eq('id', id)
-        .single();
-
-      if (imageData?.image_url) {
-        // Extrair o path da URL para deletar do storage
-        const urlParts = imageData.image_url.split('/');
-        const fileName = urlParts.slice(-2).join('/'); // produto_id/arquivo.ext
-        
-        await supabase.storage
-          .from('product-images')
-          .remove([fileName]);
-      }
-
-      const { error } = await supabase
-        .from('product_images')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await fetchImages();
-      return { error: null };
-    } catch (error) {
-      console.error('Erro ao deletar imagem:', error);
-      return { error };
-    }
-  };
-
-  useEffect(() => {
-    // Só buscar se houver productId válido
-    if (productId) {
-      fetchImages();
-    } else {
-      // Se não há productId, limpar estado
-      setImages([]);
+      console.error('Erro ao buscar imagens:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar imagens';
+      setError(errorMessage);
+      return [];
+    } finally {
       setLoading(false);
     }
-  }, [productId]);
+  };
+
+  const deleteProductImage = async (imageId: string, imageUrl: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Extrair o path da URL para deletar do storage
+      const url = new URL(imageUrl);
+      const pathSegments = url.pathname.split('/');
+      const filePath = pathSegments.slice(-2).join('/'); // Pegar últimos 2 segmentos
+
+      // Deletar do storage
+      const { error: storageError } = await supabase.storage
+        .from('product-images')
+        .remove([filePath]);
+
+      if (storageError) {
+        console.warn('Erro ao deletar do storage:', storageError);
+      }
+
+      // Deletar do banco
+      const { error: dbError } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (dbError) {
+        throw new Error(`Erro ao deletar imagem: ${dbError.message}`);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar imagem:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar imagem';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
-    images,
     loading,
-    fetchImages,
-    uploadImage,
-    deleteImage
+    error,
+    uploadAndSaveImages,
+    getProductImages,
+    deleteProductImage,
+    clearError: () => setError(null)
   };
 };

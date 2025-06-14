@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
@@ -105,17 +106,25 @@ const Orders = () => {
     setIsModalOpen(true);
   }, []);
 
+  const handleStatusChange = useCallback(async (orderId: string, newStatus: Order['status']) => {
+    console.log(`📝 Orders: Alterando status do pedido ${orderId} para ${newStatus}`);
+    const result = await updateOrderStatus(orderId, newStatus);
+    if (result.error) {
+      toast.error('Erro ao alterar status: ' + result.error);
+    } else {
+      toast.success(`Status alterado para ${getStatusText(newStatus)}`);
+      // Atualizar pagamentos se necessário
+      if (newStatus === 'cancelled') {
+        refreshPayments();
+      }
+    }
+  }, [updateOrderStatus, refreshPayments]);
+
   const handleCancelOrder = useCallback(async (orderId: string) => {
     console.log('❌ Orders: Cancelando pedido', orderId);
-    const result = await updateOrderStatus(orderId, 'cancelled');
-    if (result.error) {
-      toast.error('Erro ao cancelar pedido: ' + result.error);
-    } else {
-      toast.success('Pedido cancelado com sucesso');
-      setIsModalOpen(false);
-      // Não chamar refreshPayments aqui para evitar loop
-    }
-  }, [updateOrderStatus]);
+    await handleStatusChange(orderId, 'cancelled');
+    setIsModalOpen(false);
+  }, [handleStatusChange]);
 
   const handleSendFollowUp = useCallback((order: Order) => {
     toast.info('Enviando lembrete de pagamento via WhatsApp...');
@@ -288,6 +297,7 @@ const Orders = () => {
               onPrintLabel={handlePrintLabel}
               onPrintDeclaration={handlePrintDeclaration}
               getOrderPaymentStatus={getOrderPaymentStatus}
+              onStatusChange={handleStatusChange}
             />
           ) : (
             <OrdersGridMemo
@@ -386,6 +396,18 @@ const Orders = () => {
       />
     </div>
   );
+};
+
+const getStatusText = (status: string) => {
+  const texts = {
+    pending: 'Pendente',
+    confirmed: 'Confirmado',
+    preparing: 'Preparando',
+    shipping: 'Enviado',
+    delivered: 'Entregue',
+    cancelled: 'Cancelado'
+  };
+  return texts[status as keyof typeof texts] || status;
 };
 
 export default Orders;

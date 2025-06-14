@@ -1,270 +1,142 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { useDraftImages } from '@/hooks/useDraftImages';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useProductImages } from '@/hooks/useProductImages';
 
 interface ProductImagesFormProps {
-  form: UseFormReturn<any>;
-  initialData?: any;
-  mode?: 'create' | 'edit';
+  productId?: string;
+  onImagesChange?: (images: string[]) => void;
+  initialImages?: string[];
 }
 
-const ProductImagesForm = ({ form, initialData, mode }: ProductImagesFormProps) => {
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { draftImages, addDraftImage, removeDraftImage, uploading } = useDraftImages();
-  
-  // Detectar modo e productId de forma mais robusta
-  const isEditMode = mode === 'edit' || !!initialData?.id;
-  const productId = initialData?.id || form.getValues('id') || null;
-  
-  console.log('ProductImagesForm - Debug:', {
-    mode,
-    isEditMode,
-    productId,
-    initialData: initialData?.id,
-    formId: form.getValues('id')
+const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
+  productId,
+  onImagesChange,
+  initialImages = []
+}) => {
+  const [images, setImages] = useState<string[]>(initialImages);
+  const [uploading, setUploading] = useState(false);
+  const { uploadAndSaveImages, loading, error } = useProductImages();
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (!productId) {
+      // Se não tem productId ainda, só armazenar localmente
+      const newImageUrls = acceptedFiles.map(file => URL.createObjectURL(file));
+      const updatedImages = [...images, ...newImageUrls];
+      setImages(updatedImages);
+      onImagesChange?.(updatedImages);
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const uploadedImages = await uploadAndSaveImages(acceptedFiles, productId);
+      const newImageUrls = uploadedImages.map(img => img.image_url);
+      const updatedImages = [...images, ...newImageUrls];
+      setImages(updatedImages);
+      onImagesChange?.(updatedImages);
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+    } finally {
+      setUploading(false);
+    }
+  }, [productId, images, uploadAndSaveImages, onImagesChange]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    },
+    maxSize: 5 * 1024 * 1024, // 5MB
+    multiple: true
   });
-  
-  // Buscar imagens existentes apenas se estivermos no modo edição E houver productId
-  const { images: existingImages, loading: loadingExisting } = useProductImages(
-    isEditMode && productId ? productId : undefined
-  );
 
-  // Log para debug
-  useEffect(() => {
-    console.log('ProductImagesForm - Estado atualizado:', {
-      isEditMode,
-      productId,
-      existingImagesCount: existingImages.length,
-      loadingExisting,
-      draftImagesCount: draftImages.length
-    });
-  }, [isEditMode, productId, existingImages.length, loadingExisting, draftImages.length]);
-
-  // Combinar imagens existentes + draft images para exibição
-  const allImages = [
-    ...existingImages.map(img => ({
-      id: img.id,
-      url: img.image_url,
-      uploaded: true,
-      existing: true,
-      isPrimary: img.is_primary,
-      altText: img.alt_text || `Imagem ${img.image_order}`
-    })),
-    ...draftImages.map((img, index) => ({
-      ...img,
-      existing: false,
-      isPrimary: false,
-      altText: `Nova imagem ${index + 1}`
-    }))
-  ];
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+  const removeImage = (index: number) => {
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    onImagesChange?.(updatedImages);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        addDraftImage(file);
-      }
-    });
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(file => {
-        if (file.type.startsWith('image/')) {
-          addDraftImage(file);
-        }
-      });
-    }
-  };
-
-  const handleRemoveImage = (imageId: string, isExisting: boolean) => {
-    if (isExisting) {
-      console.log('Remover imagem existente:', imageId);
-      // TODO: Implementar remoção de imagens existentes se necessário
-    } else {
-      removeDraftImage(imageId);
-    }
-  };
-
-  // Atualizar image_url principal se houver imagens
-  useEffect(() => {
-    if (allImages.length > 0) {
-      const primaryImage = allImages.find(img => img.isPrimary) || allImages[0];
-      if (primaryImage && primaryImage.url !== form.getValues('image_url')) {
-        form.setValue('image_url', primaryImage.url);
-      }
-    }
-  }, [allImages, form]);
+  const isLoading = loading || uploading;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-2">Imagens do Produto</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Adicione imagens para mostrar seu produto. A primeira imagem será usada como principal.
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Imagens do Produto</label>
+        <p className="text-sm text-gray-600">
+          Adicione até 10 imagens do produto. A primeira imagem será a principal.
         </p>
       </div>
 
-      {/* Debug Info - remover em produção */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-gray-100 p-2 rounded text-xs">
-          <strong>Debug:</strong> Mode: {mode}, EditMode: {isEditMode ? 'true' : 'false'}, 
-          ProductId: {productId || 'null'}, Existing: {existingImages.length}, 
-          Loading: {loadingExisting ? 'true' : 'false'}
-        </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          dragActive 
-            ? 'border-primary bg-primary/5' 
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        onClick={() => !uploading && fileInputRef.current?.click()}
+        {...getRootProps()}
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+          ${isDragActive 
+            ? 'border-blue-400 bg-blue-50' 
+            : 'border-gray-300 hover:border-gray-400'
+          }
+          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
       >
-        {uploading ? (
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Processando imagens...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">
-              Arraste e solte imagens aqui ou clique para selecionar
-            </p>
-            <p className="text-sm text-muted-foreground">
-              PNG, JPG, WebP ou GIF • Máximo 5MB por imagem
-            </p>
-          </div>
+        <input {...getInputProps()} disabled={isLoading} />
+        <Upload className="h-8 w-8 mx-auto mb-4 text-gray-400" />
+        <p className="text-gray-600 mb-2">
+          {isDragActive
+            ? 'Solte as imagens aqui...'
+            : 'Arraste imagens aqui ou clique para selecionar'
+          }
+        </p>
+        <p className="text-sm text-gray-500">
+          Formatos aceitos: JPG, PNG, WebP (máx. 5MB cada)
+        </p>
+        {isLoading && (
+          <p className="text-sm text-blue-600 mt-2">Fazendo upload...</p>
         )}
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileInput}
-        className="hidden"
-        disabled={uploading}
-      />
-
-      {/* Loading State para imagens existentes */}
-      {isEditMode && loadingExisting && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-          <span className="text-muted-foreground">Carregando imagens existentes...</span>
-        </div>
-      )}
-
-      {/* Images Grid */}
-      {allImages.length > 0 && (
+      {images.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-medium">
-            Imagens ({allImages.length})
-            {isEditMode && existingImages.length > 0 && (
-              <span className="text-sm text-muted-foreground ml-2">
-                • {existingImages.length} existente{existingImages.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            {draftImages.length > 0 && (
-              <span className="text-sm text-muted-foreground ml-2">
-                • {draftImages.length} nova{draftImages.length !== 1 ? 's' : ''}
-              </span>
-            )}
-          </h4>
+          <h4 className="font-medium">Imagens Adicionadas ({images.length})</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {allImages.map((image, index) => (
-              <Card key={image.id} className="relative overflow-hidden">
-                <CardContent className="p-2">
-                  <div className="relative aspect-square">
-                    <img
-                      src={image.url}
-                      alt={image.altText || `Produto ${index + 1}`}
-                      className="w-full h-full object-cover rounded"
-                      loading="lazy"
-                    />
-                    
-                    {/* Status Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {image.isPrimary && (
-                        <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
-                          Principal
-                        </span>
-                      )}
-                      {!image.existing && (
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                          Nova
-                        </span>
-                      )}
-                      {image.existing && (
-                        <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded">
-                          Existente
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Remove Button */}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-6 w-6"
-                      onClick={() => handleRemoveImage(image.id, image.existing)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+            {images.map((imageUrl, index) => (
+              <div key={index} className="relative group">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                  <img
+                    src={imageUrl}
+                    alt={`Produto ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeImage(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                {index === 0 && (
+                  <div className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                    Principal
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Info Card */}
-      <div className="bg-muted/50 border border-muted rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <ImageIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Dicas para melhores imagens:</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Use imagens com boa iluminação e alta qualidade</li>
-              <li>• Mostre o produto de diferentes ângulos</li>
-              <li>• A primeira imagem será usada como capa do produto</li>
-              <li>• Imagens quadradas (1:1) funcionam melhor</li>
-              <li>• No modo edição, as imagens existentes são preservadas</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
