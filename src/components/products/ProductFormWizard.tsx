@@ -205,7 +205,26 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
     }
   };
 
-  const CurrentStepComponent = steps[currentStep - 1].component;
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <ProductBasicInfoForm form={form} />;
+      case 2:
+        return <ProductPricingForm form={form} />;
+      case 3:
+        return (
+          <ProductImagesForm 
+            form={form} 
+            productId={initialData?.id}
+            mode={mode}
+          />
+        );
+      case 4:
+        return <ProductAdvancedForm form={form} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -260,11 +279,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
       <Form {...form}>
         <div className="space-y-6">
           <div className="min-h-[400px]">
-            <CurrentStepComponent 
-              form={form} 
-              initialData={initialData}
-              mode={mode}
-            />
+            {renderCurrentStep()}
           </div>
 
           {/* Navigation Buttons */}
