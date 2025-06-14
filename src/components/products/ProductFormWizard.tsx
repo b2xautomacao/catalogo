@@ -227,111 +227,114 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Progress Bar - Compacto */}
+      <div className="space-y-2 mb-3 sm:mb-4 shrink-0">
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>Passo {currentStep} de {steps.length}</span>
-          <span>{Math.round(progress)}% concluído</span>
+          <span>{Math.round(progress)}%</span>
         </div>
-        <Progress value={progress} className="w-full h-2" />
+        <Progress value={progress} className="w-full h-1.5 sm:h-2" />
       </div>
 
-      {/* Step Navigation - Responsivo */}
-      <div className="flex items-center justify-center space-x-2 sm:space-x-4 overflow-x-auto pb-2">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={`flex items-center flex-shrink-0 ${
-              index < steps.length - 1 ? 'mr-2 sm:mr-4' : ''
-            }`}
-          >
-            <div
-              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
-                step.id === currentStep
-                  ? 'bg-primary text-primary-foreground'
-                  : step.id < currentStep
-                  ? 'bg-green-500 text-white'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {step.id}
-            </div>
-            <span
-              className={`ml-1 sm:ml-2 text-xs sm:text-sm font-medium hidden sm:inline ${
-                step.id === currentStep
-                  ? 'text-primary'
-                  : step.id < currentStep
-                  ? 'text-green-600'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {step.name}
-            </span>
-            <span
-              className={`ml-1 text-xs font-medium sm:hidden ${
-                step.id === currentStep
-                  ? 'text-primary'
-                  : step.id < currentStep
-                  ? 'text-green-600'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {step.shortName}
-            </span>
-            {index < steps.length - 1 && (
-              <div className="ml-2 sm:ml-4 w-4 sm:w-8 h-px bg-border" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Form */}
-      <Form {...form}>
-        <div className="space-y-4 sm:space-y-6">
-          <div className="min-h-[350px] sm:min-h-[400px]">
-            {renderCurrentStep()}
-          </div>
-
-          {/* Navigation Buttons - Responsivo */}
-          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 pt-4 sm:pt-6 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className="w-full sm:w-auto order-2 sm:order-1"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Anterior
-            </Button>
-
-            <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-              {currentStep < steps.length ? (
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={!canProceedToNext()}
-                  className="w-full sm:w-auto"
+      {/* Step Navigation - Ultra compacto para mobile */}
+      <div className="mb-3 sm:mb-4 shrink-0">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto scrollbar-hide">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center shrink-0">
+                <div
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
+                    step.id === currentStep
+                      ? 'bg-primary text-primary-foreground'
+                      : step.id < currentStep
+                      ? 'bg-green-500 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
                 >
-                  Próximo
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={() => handleSubmit(form.getValues())}
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto"
+                  {step.id}
+                </div>
+                
+                {/* Texto apenas em telas maiores */}
+                <span
+                  className={`ml-1 sm:ml-2 text-xs sm:text-sm font-medium hidden md:inline transition-colors ${
+                    step.id === currentStep
+                      ? 'text-primary'
+                      : step.id < currentStep
+                      ? 'text-green-600'
+                      : 'text-muted-foreground'
+                  }`}
                 >
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Atualizar Produto' : 'Criar Produto'}
-                </Button>
-              )}
-            </div>
+                  {step.name}
+                </span>
+                
+                {/* Conectores */}
+                {index < steps.length - 1 && (
+                  <div className="ml-1 sm:ml-2 md:ml-4 w-2 sm:w-4 md:w-8 h-px bg-border shrink-0" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
-      </Form>
+      </div>
+
+      {/* Form Content - Scrollável */}
+      <div className="flex-1 overflow-hidden">
+        <Form {...form}>
+          <div className="h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[350px] pb-4">
+                {renderCurrentStep()}
+              </div>
+            </div>
+
+            {/* Navigation Buttons - Fixo no bottom */}
+            <div className="shrink-0 pt-3 sm:pt-4 border-t bg-background">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 1}
+                  className="order-2 sm:order-1 h-9 sm:h-10"
+                  size="sm"
+                >
+                  <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Anterior</span>
+                </Button>
+
+                <div className="flex gap-2 order-1 sm:order-2">
+                  {currentStep < steps.length ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!canProceedToNext()}
+                      className="flex-1 sm:flex-none h-9 sm:h-10"
+                      size="sm"
+                    >
+                      <span className="text-xs sm:text-sm">Próximo</span>
+                      <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => handleSubmit(form.getValues())}
+                      disabled={isSubmitting}
+                      className="flex-1 sm:flex-none h-9 sm:h-10"
+                      size="sm"
+                    >
+                      <Save className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="text-xs sm:text-sm">
+                        {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Atualizar' : 'Criar'}
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 };
