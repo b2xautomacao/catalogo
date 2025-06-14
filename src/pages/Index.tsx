@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SuperadminDashboard from '@/components/dashboard/SuperadminDashboard';
 import StoreDashboard from '@/components/dashboard/StoreDashboard';
 import StoreSetup from '@/components/onboarding/StoreSetup';
+import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -75,64 +76,30 @@ const Index = () => {
     // Se tem store_id, mostrar o dashboard da loja
     console.log('Store admin com loja - mostrando StoreDashboard');
     return (
-      <div className="flex h-screen">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-3xl font-bold">
-                  Bem-vindo, {profile.full_name || profile.email}
-                </h2>
-                <p className="text-muted-foreground">
-                  Administrador da Loja
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="gap-2"
-              >
-                <LogOut size={16} />
-                Sair
-              </Button>
-            </div>
-            
-            <StoreDashboard />
-          </div>
-        </div>
-      </div>
+      <AppLayout 
+        title="Dashboard da Loja"
+        subtitle="Gerencie seus produtos e vendas"
+        breadcrumbs={[
+          { label: 'Dashboard', current: true }
+        ]}
+      >
+        <StoreDashboard />
+      </AppLayout>
     );
   }
 
   // Para superadmin, mostrar dashboard administrativo
   if (profile.role === 'superadmin') {
     return (
-      <div className="flex h-screen">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-3xl font-bold">
-                  Bem-vindo, {profile.full_name || profile.email}
-                </h2>
-                <p className="text-muted-foreground">
-                  Superadministrador
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="gap-2"
-              >
-                <LogOut size={16} />
-                Sair
-              </Button>
-            </div>
-            
-            <SuperadminDashboard />
-          </div>
-        </div>
-      </div>
+      <AppLayout 
+        title="Dashboard Administrativo"
+        subtitle="Visão geral de todas as lojas do sistema"
+        breadcrumbs={[
+          { label: 'Dashboard', current: true }
+        ]}
+      >
+        <SuperadminDashboard />
+      </AppLayout>
     );
   } 
 

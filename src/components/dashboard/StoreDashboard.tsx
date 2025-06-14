@@ -10,8 +10,9 @@ import { useOrders } from '@/hooks/useOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import ProductFormModal from '@/components/products/ProductFormModal';
-import DashboardCard from './DashboardCard';
-import NavigationPanel from './NavigationPanel';
+import ResponsiveDashboardCard from './ResponsiveDashboardCard';
+import MobileNavigationPanel from './MobileNavigationPanel';
+import MobileQuickActions from './MobileQuickActions';
 import QuickSearch from './QuickSearch';
 import ProductFilters from './ProductFilters';
 import QuickActions from './QuickActions';
@@ -126,9 +127,27 @@ const StoreDashboard = () => {
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
 
   return (
-    <div className="space-y-8 animate-fadeInUp">
-      {/* Header com Busca */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <div className="space-y-6 md:space-y-8 animate-fadeInUp">
+      {/* Mobile Header with Search */}
+      <div className="flex flex-col space-y-4 md:hidden">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold gradient-text">Dashboard</h1>
+            <p className="text-sm text-gray-600">Sua loja em números</p>
+          </div>
+          <Button onClick={() => setShowProductForm(true)} size="sm" className="btn-primary">
+            <Plus className="mr-2 h-4 w-4" />
+            Produto
+          </Button>
+        </div>
+        <QuickSearch
+          onProductSelect={handleProductSelect}
+          onOrderSelect={handleOrderSelect}
+        />
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden md:flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold gradient-text">Dashboard da Loja</h1>
           <p className="text-gray-600 mt-2">Gerencie seus produtos e vendas</p>
@@ -145,12 +164,17 @@ const StoreDashboard = () => {
         </div>
       </div>
 
-      {/* Ações Rápidas */}
-      <QuickActions onNewProduct={() => setShowProductForm(true)} />
+      {/* Mobile Quick Actions */}
+      <MobileQuickActions onNewProduct={() => setShowProductForm(true)} />
 
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard
+      {/* Desktop Quick Actions */}
+      <div className="hidden md:block">
+        <QuickActions onNewProduct={() => setShowProductForm(true)} />
+      </div>
+
+      {/* Cards de Métricas - Responsive */}
+      <div className="grid-dashboard">
+        <ResponsiveDashboardCard
           title="Total de Produtos"
           value={totalProducts}
           subtitle={`${activeProducts} ativos`}
@@ -159,7 +183,7 @@ const StoreDashboard = () => {
           trend={{ value: 15.3, isPositive: true }}
         />
 
-        <DashboardCard
+        <ResponsiveDashboardCard
           title="Valor do Estoque"
           value={`R$ ${totalValue.toFixed(2)}`}
           subtitle="Inventário total"
@@ -168,16 +192,16 @@ const StoreDashboard = () => {
           trend={{ value: 8.7, isPositive: true }}
         />
 
-        <DashboardCard
+        <ResponsiveDashboardCard
           title="Estoque Baixo"
           value={lowStockProducts}
-          subtitle="Produtos com ≤ 5 unidades"
+          subtitle="≤ 5 unidades"
           icon={AlertTriangle}
           variant="warning"
           trend={{ value: -12.1, isPositive: false }}
         />
 
-        <DashboardCard
+        <ResponsiveDashboardCard
           title="Pedidos Hoje"
           value={todayOrders}
           subtitle={`${pendingOrders} pendentes`}
@@ -188,30 +212,38 @@ const StoreDashboard = () => {
         />
       </div>
 
-      {/* Painel de Navegação */}
-      <div>
+      {/* Mobile Navigation Panel */}
+      <div className="md:hidden">
+        <h2 className="text-lg font-semibold mb-4">Acesso Rápido</h2>
+        <MobileNavigationPanel />
+      </div>
+
+      {/* Desktop Navigation Panel */}
+      <div className="hidden md:block">
         <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
         <NavigationPanel />
       </div>
 
-      {/* Filtros de Produtos */}
-      <ProductFilters
-        categories={categories}
-        filters={productFilters}
-        onFiltersChange={setProductFilters}
-        onClearFilters={clearFilters}
-      />
+      {/* Filtros de Produtos - Responsive */}
+      <div className="hidden md:block">
+        <ProductFilters
+          categories={categories}
+          filters={productFilters}
+          onFiltersChange={setProductFilters}
+          onClearFilters={clearFilters}
+        />
+      </div>
 
-      {/* Produtos e Pedidos Recentes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Produtos e Pedidos Recentes - Mobile Stack, Desktop Grid */}
+      <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
         {/* Lista de Produtos Recentes */}
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               <Package className="h-5 w-5 text-blue-600" />
               Produtos Recentes
               {Object.keys(productFilters).length > 0 && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="ml-2 text-xs">
                   {filteredProducts.length} de {products.length}
                 </Badge>
               )}
@@ -221,36 +253,38 @@ const StoreDashboard = () => {
             {productsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="loading-spinner"></div>
-                <span className="ml-2">Carregando produtos...</span>
+                <span className="ml-2 mobile-text">Carregando...</span>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {filteredProducts.slice(0, 5).map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer touch-friendly"
                        onClick={() => handleProductSelect(product.id)}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-lg flex items-center justify-center">
-                        <Package className="h-6 w-6 text-white" />
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Package className="h-5 w-5 md:h-6 md:w-6 text-white" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-sm">{product.name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-xs md:text-sm truncate">{product.name}</h3>
                           <Badge variant={product.is_active ? "default" : "secondary"} className="text-xs">
                             {product.is_active ? "Ativo" : "Inativo"}
                           </Badge>
                           {product.stock <= 5 && (
-                            <Badge variant="destructive" className="text-xs">Estoque Baixo</Badge>
+                            <Badge variant="destructive" className="text-xs hidden sm:inline-flex">
+                              Estoque Baixo
+                            </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {product.category || "Sem categoria"} • {product.stock} unidades
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-sm">R$ {product.retail_price.toFixed(2)}</p>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className="font-medium text-xs md:text-sm">R$ {product.retail_price.toFixed(2)}</p>
                       {product.wholesale_price && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground hidden md:block">
                           Atacado: R$ {product.wholesale_price.toFixed(2)}
                         </p>
                       )}
@@ -260,21 +294,19 @@ const StoreDashboard = () => {
                 {filteredProducts.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="mb-2">
+                    <p className="mb-2 mobile-text">
                       {Object.keys(productFilters).length > 0 
-                        ? 'Nenhum produto encontrado com os filtros aplicados'
-                        : 'Nenhum produto cadastrado ainda'
+                        ? 'Nenhum produto encontrado'
+                        : 'Nenhum produto cadastrado'
                       }
                     </p>
-                    {Object.keys(productFilters).length > 0 ? (
-                      <Button onClick={clearFilters} variant="outline">
-                        Limpar Filtros
-                      </Button>
-                    ) : (
-                      <Button onClick={() => setShowProductForm(true)} variant="outline">
-                        Cadastrar Primeiro Produto
-                      </Button>
-                    )}
+                    <Button 
+                      onClick={Object.keys(productFilters).length > 0 ? clearFilters : () => setShowProductForm(true)} 
+                      variant="outline"
+                      size="sm"
+                    >
+                      {Object.keys(productFilters).length > 0 ? 'Limpar Filtros' : 'Cadastrar Produto'}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -285,7 +317,7 @@ const StoreDashboard = () => {
         {/* Pedidos Recentes */}
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               <ShoppingCart className="h-5 w-5 text-green-600" />
               Pedidos Recentes
             </CardTitle>
@@ -294,20 +326,20 @@ const StoreDashboard = () => {
             {ordersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="loading-spinner"></div>
-                <span className="ml-2">Carregando pedidos...</span>
+                <span className="ml-2 mobile-text">Carregando...</span>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {orders.slice(0, 5).map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer touch-friendly"
                        onClick={() => handleOrderSelect(order.id)}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-600 rounded-lg flex items-center justify-center">
-                        <ShoppingCart className="h-6 w-6 text-white" />
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-white" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-sm">{order.customer_name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-xs md:text-sm truncate">{order.customer_name}</h3>
                           <Badge 
                             variant={order.status === 'pending' ? "secondary" : order.status === 'delivered' ? "default" : "outline"} 
                             className="text-xs"
@@ -317,13 +349,13 @@ const StoreDashboard = () => {
                              order.status === 'delivered' ? 'Entregue' : order.status}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {order.items?.length || 0} item(s) • #{order.id.slice(-8)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-sm">R$ {order.total_amount.toFixed(2)}</p>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className="font-medium text-xs md:text-sm">R$ {order.total_amount.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString('pt-BR')}
                       </p>
@@ -333,9 +365,9 @@ const StoreDashboard = () => {
                 {orders.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="mb-2">Nenhum pedido recebido ainda</p>
-                    <Button onClick={() => navigate('/orders')} variant="outline">
-                      Ver Todos os Pedidos
+                    <p className="mb-2 mobile-text">Nenhum pedido recebido</p>
+                    <Button onClick={() => navigate('/orders')} variant="outline" size="sm">
+                      Ver Pedidos
                     </Button>
                   </div>
                 )}
