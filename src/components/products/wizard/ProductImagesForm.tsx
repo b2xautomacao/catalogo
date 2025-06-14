@@ -9,30 +9,42 @@ import { useProductImages } from '@/hooks/useProductImages';
 
 interface ProductImagesFormProps {
   form: UseFormReturn<any>;
+  initialData?: any;
+  mode?: 'create' | 'edit';
 }
 
-const ProductImagesForm = ({ form }: ProductImagesFormProps) => {
+const ProductImagesForm = ({ form, initialData, mode }: ProductImagesFormProps) => {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { draftImages, addDraftImage, removeDraftImage, uploading } = useDraftImages();
   
-  // Para modo edição, buscar imagens existentes apenas se houver ID
-  const formValues = form.getValues();
-  const productId = formValues.id;
-  const isEditMode = !!productId;
+  // Detectar modo e productId de forma mais robusta
+  const isEditMode = mode === 'edit' || !!initialData?.id;
+  const productId = initialData?.id || form.getValues('id') || null;
   
-  // Só buscar imagens se estivermos no modo edição e o productId existir
-  const { images: existingImages, loading: loadingExisting } = useProductImages(isEditMode ? productId : undefined);
+  console.log('ProductImagesForm - Debug:', {
+    mode,
+    isEditMode,
+    productId,
+    initialData: initialData?.id,
+    formId: form.getValues('id')
+  });
+  
+  // Buscar imagens existentes apenas se estivermos no modo edição E houver productId
+  const { images: existingImages, loading: loadingExisting } = useProductImages(
+    isEditMode && productId ? productId : undefined
+  );
 
-  // Log para debug - mais controlado
+  // Log para debug
   useEffect(() => {
-    if (isEditMode && productId) {
-      console.log('ProductImagesForm - Modo edição detectado, ID:', productId);
-      console.log('ProductImagesForm - Imagens existentes encontradas:', existingImages.length);
-    } else {
-      console.log('ProductImagesForm - Modo criação');
-    }
-  }, [isEditMode, productId, existingImages.length]);
+    console.log('ProductImagesForm - Estado atualizado:', {
+      isEditMode,
+      productId,
+      existingImagesCount: existingImages.length,
+      loadingExisting,
+      draftImagesCount: draftImages.length
+    });
+  }, [isEditMode, productId, existingImages.length, loadingExisting, draftImages.length]);
 
   // Combinar imagens existentes + draft images para exibição
   const allImages = [
@@ -88,9 +100,8 @@ const ProductImagesForm = ({ form }: ProductImagesFormProps) => {
 
   const handleRemoveImage = (imageId: string, isExisting: boolean) => {
     if (isExisting) {
-      // Para imagens existentes, marcar para remoção (implementar depois se necessário)
       console.log('Remover imagem existente:', imageId);
-      // TODO: Implementar remoção de imagens existentes
+      // TODO: Implementar remoção de imagens existentes se necessário
     } else {
       removeDraftImage(imageId);
     }
@@ -114,6 +125,15 @@ const ProductImagesForm = ({ form }: ProductImagesFormProps) => {
           Adicione imagens para mostrar seu produto. A primeira imagem será usada como principal.
         </p>
       </div>
+
+      {/* Debug Info - remover em produção */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-gray-100 p-2 rounded text-xs">
+          <strong>Debug:</strong> Mode: {mode}, EditMode: {isEditMode ? 'true' : 'false'}, 
+          ProductId: {productId || 'null'}, Existing: {existingImages.length}, 
+          Loading: {loadingExisting ? 'true' : 'false'}
+        </div>
+      )}
 
       {/* Upload Area */}
       <div
@@ -156,7 +176,7 @@ const ProductImagesForm = ({ form }: ProductImagesFormProps) => {
         disabled={uploading}
       />
 
-      {/* Loading State - só mostrar se estivermos realmente carregando no modo edição */}
+      {/* Loading State para imagens existentes */}
       {isEditMode && loadingExisting && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />

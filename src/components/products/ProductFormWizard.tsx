@@ -87,10 +87,10 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
   // Carregar dados iniciais quando em modo edição
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      console.log('Carregando dados iniciais para edição:', initialData);
+      console.log('ProductFormWizard - Carregando dados iniciais:', initialData);
       
-      // Resetar o formulário com os dados iniciais
       const formData = {
+        id: initialData.id, // Importante: incluir o ID
         name: initialData.name || '',
         description: initialData.description || '',
         category: initialData.category || '',
@@ -107,7 +107,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
         image_url: initialData.image_url || '',
       };
       
-      console.log('Dados processados para o formulário:', formData);
+      console.log('ProductFormWizard - Dados processados:', formData);
       form.reset(formData);
     }
   }, [initialData, mode, form]);
@@ -260,7 +260,11 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
       <Form {...form}>
         <div className="space-y-6">
           <div className="min-h-[400px]">
-            <CurrentStepComponent form={form} />
+            <CurrentStepComponent 
+              form={form} 
+              initialData={initialData}
+              mode={mode}
+            />
           </div>
 
           {/* Navigation Buttons */}
@@ -288,7 +292,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
               ) : (
                 <Button
                   type="button"
-                  onClick={() => form.handleSubmit(handleSubmit)()}
+                  onClick={() => handleSubmit(form.getValues())}
                   disabled={isSubmitting}
                 >
                   <Save className="mr-2 h-4 w-4" />
