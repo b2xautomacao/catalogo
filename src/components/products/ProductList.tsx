@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Edit, Trash2, Eye, Sparkles, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import AIProductToolsModal from './AIProductToolsModal';
 
 interface Product {
   id: string;
@@ -30,6 +30,7 @@ interface ProductListProps {
 
 const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: ProductListProps) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [iaModalProduct, setIaModalProduct] = useState<any | null>(null);
 
   const toggleProductSelection = (id: string) => {
     setSelectedProducts(prev => 
@@ -64,6 +65,7 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
               <th className="text-left py-4 px-4 font-semibold">Preço Atacado</th>
               <th className="text-left py-4 px-4 font-semibold">Estoque</th>
               <th className="text-left py-4 px-4 font-semibold">Status</th>
+              <th className="text-left py-4 px-4 font-semibold">IA</th>
               <th className="text-left py-4 px-4 font-semibold">Ações</th>
             </tr>
           </thead>
@@ -111,6 +113,16 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                   <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
                     {product.status === 'active' ? 'Ativo' : 'Inativo'}
                   </Badge>
+                </td>
+                <td className="py-4 px-4">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setIaModalProduct(product)}
+                    title="Ferramentas de IA"
+                  >
+                    🤖
+                  </Button>
                 </td>
                 <td className="py-4 px-4">
                   <DropdownMenu>
@@ -165,6 +177,14 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
             </div>
           </div>
         </div>
+      )}
+      
+      {iaModalProduct && (
+        <AIProductToolsModal
+          product={iaModalProduct}
+          open={!!iaModalProduct}
+          onClose={() => setIaModalProduct(null)}
+        />
       )}
     </div>
   );

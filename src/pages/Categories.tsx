@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Package, Edit, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Package, Trash2, Search } from 'lucide-react';
+import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -70,19 +71,28 @@ const Categories = () => {
     });
   };
 
+  const breadcrumbs = [
+    { href: '/', label: 'Dashboard' },
+    { label: 'Categorias', current: true },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="p-6">
+    <AppLayout
+      title="Categorias"
+      subtitle="Organize seus produtos em categorias"
+      breadcrumbs={breadcrumbs}
+    >
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar ao Dashboard
             </Button>
             <div>
-              <h1 className="text-3xl font-bold gradient-text">Gestão de Categorias</h1>
-              <p className="text-muted-foreground mt-2">
+              <h1 className="text-2xl md:text-3xl font-bold gradient-text">Gestão de Categorias</h1>
+              <p className="text-muted-foreground mt-2 text-sm md:text-base">
                 Organize seus produtos em categorias para facilitar a navegação
               </p>
             </div>
@@ -257,7 +267,7 @@ const Categories = () => {
         onOpenChange={setShowCreateForm}
         onCategoryCreated={handleCategoryCreated}
       />
-    </div>
+    </AppLayout>
   );
 };
 

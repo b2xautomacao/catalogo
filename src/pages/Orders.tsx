@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { Package } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
@@ -12,6 +11,7 @@ import OrderDetailsModal from '@/components/orders/OrderDetailsModal';
 import ContentDeclarationModal from '@/components/orders/ContentDeclarationModal';
 import { Order } from '@/hooks/useOrders';
 import { toast } from 'sonner';
+import AppLayout from '@/components/layout/AppLayout';
 
 const Orders = () => {
   console.log('🔄 Orders: Component re-render');
@@ -240,161 +240,172 @@ const Orders = () => {
 
   const isLoading = loading || paymentsLoading;
 
+  const breadcrumbs = [
+    { href: '/', label: 'Dashboard' },
+    { label: 'Pedidos', current: true },
+  ];
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <OrdersHeader
-        totalOrders={filteredOrders.length}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onRefresh={handleRefresh}
-        onExport={handleExport}
-        isLoading={isLoading}
-      />
+    <AppLayout
+      title="Pedidos"
+      subtitle="Gerencie e acompanhe todos os pedidos da loja"
+      breadcrumbs={breadcrumbs}
+    >
+      <div className="container mx-auto p-0 md:p-4 space-y-6">
+        <OrdersHeader
+          totalOrders={filteredOrders.length}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRefresh={handleRefresh}
+          onExport={handleExport}
+          isLoading={isLoading}
+        />
 
-      <OrderFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        paymentFilter={paymentFilter}
-        onPaymentFilterChange={setPaymentFilter}
-        typeFilter={typeFilter}
-        onTypeFilterChange={setTypeFilter}
-        shippingFilter={shippingFilter}
-        onShippingFilterChange={setShippingFilter}
-        onClearFilters={handleClearFilters}
-        activeFiltersCount={activeFiltersCount}
-      />
+        <OrderFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          paymentFilter={paymentFilter}
+          onPaymentFilterChange={setPaymentFilter}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          shippingFilter={shippingFilter}
+          onShippingFilterChange={setShippingFilter}
+          onClearFilters={handleClearFilters}
+          activeFiltersCount={activeFiltersCount}
+        />
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando pedidos...</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando pedidos...</p>
+            </div>
           </div>
-        </div>
-      ) : paginatedOrders.length === 0 ? (
-        <div className="text-center py-12">
-          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {filteredOrders.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum resultado'}
-          </h3>
-          <p className="text-gray-600">
-            {filteredOrders.length === 0 
-              ? 'Quando você receber pedidos, eles aparecerão aqui.'
-              : 'Tente ajustar os filtros para encontrar o que procura.'
-            }
-          </p>
-        </div>
-      ) : (
-        <>
-          {viewMode === 'table' ? (
-            <OrdersTableMemo
-              orders={paginatedOrders}
-              onViewOrder={handleViewOrder}
-              onCancelOrder={handleCancelOrder}
-              onSendFollowUp={handleSendFollowUp}
-              onPrintLabel={handlePrintLabel}
-              onPrintDeclaration={handlePrintDeclaration}
-              getOrderPaymentStatus={getOrderPaymentStatus}
-              onStatusChange={handleStatusChange}
+        ) : paginatedOrders.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {filteredOrders.length === 0 ? 'Nenhum pedido encontrado' : 'Nenhum resultado'}
+            </h3>
+            <p className="text-gray-600">
+              {filteredOrders.length === 0 
+                ? 'Quando você receber pedidos, eles aparecerão aqui.'
+                : 'Tente ajustar os filtros para encontrar o que procura.'
+              }
+            </p>
+          </div>
+        ) : (
+          <>
+            {viewMode === 'table' ? (
+              <OrdersTableMemo
+                orders={paginatedOrders}
+                onViewOrder={handleViewOrder}
+                onCancelOrder={handleCancelOrder}
+                onSendFollowUp={handleSendFollowUp}
+                onPrintLabel={handlePrintLabel}
+                onPrintDeclaration={handlePrintDeclaration}
+                getOrderPaymentStatus={getOrderPaymentStatus}
+                onStatusChange={handleStatusChange}
+              />
+            ) : (
+              <OrdersGridMemo
+                orders={paginatedOrders}
+                onViewOrder={handleViewOrder}
+                onCancelOrder={handleCancelOrder}
+                onSendFollowUp={handleSendFollowUp}
+                onPrintLabel={handlePrintLabel}
+                onPrintDeclaration={handlePrintDeclaration}
+                getOrderPaymentStatus={getOrderPaymentStatus}
+              />
+            )}
+
+            <OrdersPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredOrders.length}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newItemsPerPage) => {
+                setItemsPerPage(newItemsPerPage);
+                setCurrentPage(1);
+              }}
             />
-          ) : (
-            <OrdersGridMemo
-              orders={paginatedOrders}
-              onViewOrder={handleViewOrder}
-              onCancelOrder={handleCancelOrder}
-              onSendFollowUp={handleSendFollowUp}
-              onPrintLabel={handlePrintLabel}
-              onPrintDeclaration={handlePrintDeclaration}
-              getOrderPaymentStatus={getOrderPaymentStatus}
-            />
-          )}
+          </>
+        )}
 
-          <OrdersPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredOrders.length}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(newItemsPerPage) => {
-              setItemsPerPage(newItemsPerPage);
-              setCurrentPage(1);
-            }}
-          />
-        </>
-      )}
+        <OrderDetailsModal
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onCancelOrder={handleCancelOrder}
+          onSendFollowUp={handleSendFollowUp}
+          onPrintLabel={handlePrintLabel}
+          onPrintDeclaration={handlePrintDeclaration}
+          onMarkPrintedDocument={markPrintedDocument}
+          onGenerateTrackingCode={generateTrackingCode}
+        />
 
-      <OrderDetailsModal
-        order={selectedOrder}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCancelOrder={handleCancelOrder}
-        onSendFollowUp={handleSendFollowUp}
-        onPrintLabel={handlePrintLabel}
-        onPrintDeclaration={handlePrintDeclaration}
-        onMarkPrintedDocument={markPrintedDocument}
-        onGenerateTrackingCode={generateTrackingCode}
-      />
-
-      <ContentDeclarationModal
-        order={selectedOrder}
-        isOpen={isDeclarationModalOpen}
-        onClose={() => setIsDeclarationModalOpen(false)}
-        onPrint={() => {
-          if (selectedOrder) {
-            // Imprimir o conteúdo da declaração
-            const printWindow = window.open('', '_blank');
-            const declarationContent = document.getElementById('declaration-content');
-            
-            if (printWindow && declarationContent) {
-              printWindow.document.write(`
-                <html>
-                  <head>
-                    <title>Declaração de Conteúdo - Pedido #${selectedOrder.id.slice(-8)}</title>
-                    <style>
-                      body { font-family: Arial, sans-serif; margin: 20px; }
-                      table { border-collapse: collapse; width: 100%; }
-                      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                      th { background-color: #f2f2f2; }
-                      .text-center { text-align: center; }
-                      .text-right { text-align: right; }
-                      .font-bold { font-weight: bold; }
-                      .mt-8 { margin-top: 32px; }
-                      .pt-6 { padding-top: 24px; }
-                      .border-t { border-top: 1px solid #ddd; }
-                      .border-b { border-bottom: 1px solid #ddd; }
-                      .pb-4 { padding-bottom: 16px; }
-                      .mb-2 { margin-bottom: 8px; }
-                      @media print {
-                        body { margin: 0; }
-                        .no-print { display: none; }
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    ${declarationContent.innerHTML}
-                  </body>
-                </html>
-              `);
-              printWindow.document.close();
-              printWindow.print();
+        <ContentDeclarationModal
+          order={selectedOrder}
+          isOpen={isDeclarationModalOpen}
+          onClose={() => setIsDeclarationModalOpen(false)}
+          onPrint={() => {
+            if (selectedOrder) {
+              // Imprimir o conteúdo da declaração
+              const printWindow = window.open('', '_blank');
+              const declarationContent = document.getElementById('declaration-content');
               
-              // Marcar como impresso
-              markPrintedDocument(selectedOrder.id, 'content_declaration');
-              toast.success('Declaração de conteúdo enviada para impressão');
+              if (printWindow && declarationContent) {
+                printWindow.document.write(`
+                  <html>
+                    <head>
+                      <title>Declaração de Conteúdo - Pedido #${selectedOrder.id.slice(-8)}</title>
+                      <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .text-center { text-align: center; }
+                        .text-right { text-align: right; }
+                        .font-bold { font-weight: bold; }
+                        .mt-8 { margin-top: 32px; }
+                        .pt-6 { padding-top: 24px; }
+                        .border-t { border-top: 1px solid #ddd; }
+                        .border-b { border-bottom: 1px solid #ddd; }
+                        .pb-4 { padding-bottom: 16px; }
+                        .mb-2 { margin-bottom: 8px; }
+                        @media print {
+                          body { margin: 0; }
+                          .no-print { display: none; }
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      ${declarationContent.innerHTML}
+                    </body>
+                  </html>
+                `);
+                printWindow.document.close();
+                printWindow.print();
+                
+                // Marcar como impresso
+                markPrintedDocument(selectedOrder.id, 'content_declaration');
+                toast.success('Declaração de conteúdo enviada para impressão');
+              }
             }
-          }
-          setIsDeclarationModalOpen(false);
-        }}
-        onDownloadPdf={() => {
-          if (selectedOrder) {
-            toast.info('Funcionalidade de download em PDF em desenvolvimento');
-            // Aqui seria implementada a geração do PDF
-          }
-        }}
-      />
-    </div>
+            setIsDeclarationModalOpen(false);
+          }}
+          onDownloadPdf={() => {
+            if (selectedOrder) {
+              toast.info('Funcionalidade de download em PDF em desenvolvimento');
+              // Aqui seria implementada a geração do PDF
+            }
+          }}
+        />
+      </div>
+    </AppLayout>
   );
 };
 
