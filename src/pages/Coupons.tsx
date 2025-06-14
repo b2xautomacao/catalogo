@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Tag } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import CouponForm from '@/components/coupons/CouponForm';
@@ -83,8 +83,8 @@ const Coupons = () => {
       breadcrumbs={breadcrumbs}
     >
       <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        {/* Action Button */}
+        <div className="flex justify-end">
           <Button onClick={() => setShowForm(true)} className="btn-primary">
             <Plus className="mr-2 h-5 w-5" />
             Novo Cupom

@@ -21,8 +21,8 @@ const Customers = () => {
       breadcrumbs={breadcrumbs}
     >
       <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        {/* Action Button */}
+        <div className="flex justify-end">
           <Button className="btn-primary" disabled>
             <UserPlus className="mr-2 h-5 w-5" />
             Adicionar Cliente

@@ -52,8 +52,8 @@ const Reports = () => {
       breadcrumbs={breadcrumbs}
     >
       <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-end items-start sm:items-center">
           <div className="flex gap-2">
             <Button variant="outline">
               <Calendar className="mr-2 h-4 w-4" />
