@@ -1,49 +1,73 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useProductImages } from '@/hooks/useProductImages';
+import { useDraftImages } from '@/hooks/useDraftImages';
+import { UseFormReturn } from 'react-hook-form';
 
 interface ProductImagesFormProps {
-  productId?: string;
-  onImagesChange?: (images: string[]) => void;
-  initialImages?: string[];
+  form: UseFormReturn<any>;
+  initialData?: any;
+  mode?: 'create' | 'edit';
 }
 
 const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
-  productId,
-  onImagesChange,
-  initialImages = []
+  form,
+  initialData,
+  mode = 'create'
 }) => {
-  const [images, setImages] = useState<string[]>(initialImages);
+  const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const { uploadAndSaveImages, loading, error } = useProductImages();
+  const { draftImages, addDraftImages, removeDraftImage, clearDraftImages } = useDraftImages();
+
+  // Carregar imagens iniciais se estiver no modo edição
+  useEffect(() => {
+    if (mode === 'edit' && initialData?.image_url) {
+      setImages([initialData.image_url]);
+    }
+  }, [mode, initialData]);
+
+  // Sincronizar draft images com estado local
+  useEffect(() => {
+    if (mode === 'create' && draftImages.length > 0) {
+      const imageUrls = draftImages.map(img => img.url);
+      setImages(imageUrls);
+      
+      // Atualizar o form com a primeira imagem
+      if (imageUrls.length > 0) {
+        form.setValue('image_url', imageUrls[0]);
+      }
+    }
+  }, [draftImages, mode, form]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!productId) {
-      // Se não tem productId ainda, só armazenar localmente
-      const newImageUrls = acceptedFiles.map(file => URL.createObjectURL(file));
-      const updatedImages = [...images, ...newImageUrls];
-      setImages(updatedImages);
-      onImagesChange?.(updatedImages);
-      return;
+    if (mode === 'create') {
+      // No modo criação, usar draft images
+      addDraftImages(acceptedFiles);
+    } else if (mode === 'edit' && initialData?.id) {
+      // No modo edição, fazer upload direto
+      try {
+        setUploading(true);
+        const uploadedImages = await uploadAndSaveImages(acceptedFiles, initialData.id);
+        const newImageUrls = uploadedImages.map(img => img.image_url);
+        const updatedImages = [...images, ...newImageUrls];
+        setImages(updatedImages);
+        
+        // Atualizar o form com a primeira imagem
+        if (updatedImages.length > 0) {
+          form.setValue('image_url', updatedImages[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao fazer upload:', error);
+      } finally {
+        setUploading(false);
+      }
     }
-
-    try {
-      setUploading(true);
-      const uploadedImages = await uploadAndSaveImages(acceptedFiles, productId);
-      const newImageUrls = uploadedImages.map(img => img.image_url);
-      const updatedImages = [...images, ...newImageUrls];
-      setImages(updatedImages);
-      onImagesChange?.(updatedImages);
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-    } finally {
-      setUploading(false);
-    }
-  }, [productId, images, uploadAndSaveImages, onImagesChange]);
+  }, [mode, initialData, addDraftImages, uploadAndSaveImages, images, form]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -55,12 +79,23 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
   });
 
   const removeImage = (index: number) => {
-    const updatedImages = images.filter((_, i) => i !== index);
-    setImages(updatedImages);
-    onImagesChange?.(updatedImages);
+    if (mode === 'create') {
+      removeDraftImage(index);
+    } else {
+      const updatedImages = images.filter((_, i) => i !== index);
+      setImages(updatedImages);
+      
+      // Atualizar o form
+      if (updatedImages.length > 0) {
+        form.setValue('image_url', updatedImages[0]);
+      } else {
+        form.setValue('image_url', '');
+      }
+    }
   };
 
   const isLoading = loading || uploading;
+  const displayImages = mode === 'create' ? draftImages.map(img => img.url) : images;
 
   return (
     <div className="space-y-4">
@@ -105,11 +140,11 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
         )}
       </div>
 
-      {images.length > 0 && (
+      {displayImages.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-medium">Imagens Adicionadas ({images.length})</h4>
+          <h4 className="font-medium">Imagens Adicionadas ({displayImages.length})</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((imageUrl, index) => (
+            {displayImages.map((imageUrl, index) => (
               <div key={index} className="relative group">
                 <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                   <img
