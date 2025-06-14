@@ -24,7 +24,7 @@ const CatalogContent = () => {
   }>();
   const location = useLocation();
   const { toast } = useToast();
-  const { addItem, totalItems } = useCart();
+  const { totalItems } = useCart();
   
   const storeIdentifier = storeSlug || storeId;
   
@@ -155,11 +155,6 @@ const CatalogContent = () => {
     });
   };
 
-  const handleAddToCart = (product: Product) => {
-    const cartItem = createCartItem(product, catalogType);
-    addItem(cartItem);
-  };
-
   const getSortedProducts = () => {
     const sorted = [...filteredProducts];
     
@@ -177,7 +172,6 @@ const CatalogContent = () => {
     }
   };
 
-  // Verificar erros de carregamento da loja
   if (storeError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -189,7 +183,6 @@ const CatalogContent = () => {
     );
   }
 
-  // Loading da loja
   if (loading && !store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -201,7 +194,6 @@ const CatalogContent = () => {
     );
   }
 
-  // Loja não encontrada
   if (!loading && !store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -322,7 +314,6 @@ const CatalogContent = () => {
               loading={loading}
               onAddToWishlist={handleAddToWishlist}
               onQuickView={handleQuickView}
-              onAddToCart={handleAddToCart}
               wishlist={wishlist}
             />
           </div>
