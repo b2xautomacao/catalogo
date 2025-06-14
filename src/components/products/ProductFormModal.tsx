@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import ProductFormComplete from './ProductFormComplete';
+import ProductFormWizard from './ProductFormWizard';
 import { CreateProductData, UpdateProductData } from '@/hooks/useProducts';
 
 interface ProductFormModalProps {
@@ -22,7 +22,7 @@ const ProductFormModal = ({
   const handleSubmit = async (data: CreateProductData | UpdateProductData) => {
     try {
       await onSubmit(data);
-      // O modal será fechado pelo componente pai após sucesso
+      onOpenChange(false);
     } catch (error) {
       console.error('Erro no submit do modal:', error);
       // O erro será tratado pelo componente pai
@@ -31,9 +31,9 @@ const ProductFormModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[95vh] p-0">
+      <DialogContent className="max-w-7xl h-[95vh] p-0">
         <div className="h-full overflow-y-auto p-6">
-          <ProductFormComplete
+          <ProductFormWizard
             onSubmit={handleSubmit}
             initialData={initialData}
             mode={mode}

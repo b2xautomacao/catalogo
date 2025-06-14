@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
@@ -27,6 +26,11 @@ const Products = () => {
 
   const { products, createProduct, updateProduct, deleteProduct, loading } = useProducts();
   const { toast } = useToast();
+
+  const breadcrumbs = [
+    { href: '/', label: 'Dashboard' },
+    { label: 'Produtos', current: true },
+  ];
 
   const handleCreateProduct = async (data: CreateProductData) => {
     setIsSubmitting(true);
@@ -168,7 +172,11 @@ const Products = () => {
   }));
 
   return (
-    <AppLayout title="Produtos" subtitle="Gerencie o catálogo de produtos da sua loja">
+    <AppLayout 
+      title="Produtos" 
+      subtitle="Gerencie o catálogo de produtos da sua loja"
+      breadcrumbs={breadcrumbs}
+    >
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
