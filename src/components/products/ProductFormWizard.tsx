@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -215,7 +214,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
         return (
           <ProductImagesForm 
             form={form} 
-            productId={initialData?.id}
+            initialData={initialData}
             mode={mode}
           />
         );
