@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -17,7 +17,31 @@ export interface UserProfile {
 
 export type UserRole = 'superadmin' | 'store_admin';
 
+interface AuthContextType {
+  user: User | null;
+  session: any;
+  profile: UserProfile | null;
+  loading: boolean;
+  signOut: () => Promise<{ error: any }>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ data: UserProfile | null; error: any }>;
+  createStoreForUser: (userId: string, storeName: string, storeDescription?: string) => Promise<{ data: any; error: any }>;
+  refreshProfile: () => Promise<void>;
+  isSuperadmin: boolean;
+  isStoreAdmin: boolean;
+  refetchProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading: sessionLoading, signOut } = useAuthSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,10 +159,17 @@ export const useAuth = () => {
     }
   };
 
+  const refetchProfile = async () => {
+    if (user) {
+      const userProfile = await fetchProfile(user.id);
+      setProfile(userProfile);
+    }
+  };
+
   const isSuperadmin = profile?.role === 'superadmin';
   const isStoreAdmin = profile?.role === 'store_admin';
 
-  return {
+  const value: AuthContextType = {
     user,
     session,
     profile,
@@ -149,6 +180,12 @@ export const useAuth = () => {
     refreshProfile,
     isSuperadmin,
     isStoreAdmin,
-    refetchProfile: () => user && fetchProfile(user.id).then(setProfile)
+    refetchProfile
   };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
