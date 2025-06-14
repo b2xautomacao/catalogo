@@ -1,49 +1,45 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Package, 
-  ShoppingCart,
-  Download,
-  Calendar
-} from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
+import { useReports } from '@/hooks/useReports';
+import ReportCards from '@/components/reports/ReportCards';
+import SalesChart from '@/components/reports/SalesChart';
+import TopProductsTable from '@/components/reports/TopProductsTable';
+import DateRangeSelector from '@/components/reports/DateRangeSelector';
 
 const Reports = () => {
   const navigate = useNavigate();
+  const [dateRange, setDateRange] = useState('30d');
+  
+  const {
+    salesMetrics,
+    productMetrics,
+    stockMetrics,
+    salesData,
+    isLoadingSales,
+    isLoadingProducts,
+    isLoadingStock,
+    isLoadingSalesData,
+    refetchAll
+  } = useReports(dateRange);
 
   const breadcrumbs = [
     { href: '/', label: 'Dashboard' },
     { label: 'Relatórios', current: true },
   ];
 
-  const reportCards = [
-    {
-      title: 'Vendas por Período',
-      description: 'Análise de vendas diárias, semanais e mensais',
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-    },
-    {
-      title: 'Produtos Mais Vendidos',
-      description: 'Ranking dos produtos com melhor performance',
-      icon: Package,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-    },
-    {
-      title: 'Análise de Pedidos',
-      description: 'Status dos pedidos e tempo médio de processamento',
-      icon: ShoppingCart,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-    },
-  ];
+  const handleExport = () => {
+    // TODO: Implementar exportação de dados
+    console.log('Exportando relatórios...');
+  };
+
+  const handleRefresh = () => {
+    refetchAll();
+  };
 
   return (
     <AppLayout 
@@ -53,69 +49,115 @@ const Reports = () => {
     >
       <div className="space-y-6">
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-end items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <DateRangeSelector value={dateRange} onChange={setDateRange} />
+          
           <div className="flex gap-2">
-            <Button variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
-              Filtrar Período
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Atualizar
             </Button>
-            <Button className="btn-primary">
+            <Button className="btn-primary" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Exportar Dados
             </Button>
           </div>
         </div>
 
-        {/* Cards de Relatórios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reportCards.map((report, index) => {
-            const Icon = report.icon;
-            return (
-              <Card key={index} className="card-modern hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-lg ${report.bgColor} flex items-center justify-center`}>
-                      <Icon className={`h-6 w-6 ${report.color}`} />
+        {/* Cards de Métricas */}
+        <ReportCards
+          salesMetrics={salesMetrics}
+          productMetrics={productMetrics}
+          stockMetrics={stockMetrics}
+          isLoadingSales={isLoadingSales}
+          isLoadingProducts={isLoadingProducts}
+          isLoadingStock={isLoadingStock}
+        />
+
+        {/* Gráficos de Vendas */}
+        <SalesChart 
+          data={salesData}
+          isLoading={isLoadingSalesData}
+          dateRange={dateRange}
+        />
+
+        {/* Tabelas de Produtos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopProductsTable
+            productMetrics={productMetrics}
+            isLoading={isLoadingProducts}
+          />
+
+          {/* Movimentações de Estoque Recentes */}
+          <Card className="card-modern">
+            <CardHeader>
+              <CardTitle>Movimentações Recentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stockMetrics?.recentMovements && stockMetrics.recentMovements.length > 0 ? (
+                <div className="space-y-3">
+                  {stockMetrics.recentMovements.slice(0, 5).map((movement) => (
+                    <div key={movement.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">{movement.product_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {movement.movement_type === 'sale' ? 'Venda' :
+                           movement.movement_type === 'reservation' ? 'Reserva' :
+                           movement.movement_type === 'return' ? 'Devolução' :
+                           movement.movement_type === 'adjustment' ? 'Ajuste' : 'Liberação'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-sm">
+                          {movement.movement_type === 'sale' || movement.movement_type === 'reservation' ? '-' : '+'}
+                          {movement.quantity}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(movement.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{report.title}</CardTitle>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{report.description}</p>
-                  <Button variant="ghost" className="mt-4 p-0 h-auto font-medium text-blue-600">
-                    Ver Relatório →
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Sem movimentações recentes</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Relatório Principal */}
+        {/* Informações Adicionais */}
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
-              Visão Geral das Vendas
-            </CardTitle>
+            <CardTitle>Resumo do Período</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="h-8 w-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Relatórios em Desenvolvimento
-              </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Estamos preparando relatórios detalhados para ajudar você a acompanhar o desempenho da sua loja.
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                <p className="text-sm text-blue-800">
-                  📊 Em breve: Gráficos de vendas, análise de produtos e muito mais!
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">
+                  {salesMetrics?.totalOrders || 0}
                 </p>
+                <p className="text-sm text-blue-800">Total de Pedidos</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">
+                  {salesMetrics ? new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(salesMetrics.totalRevenue) : 'R$ 0,00'}
+                </p>
+                <p className="text-sm text-green-800">Receita Total</p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <p className="text-2xl font-bold text-purple-600">
+                  {salesMetrics ? new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(salesMetrics.avgOrderValue) : 'R$ 0,00'}
+                </p>
+                <p className="text-sm text-purple-800">Ticket Médio</p>
               </div>
             </div>
           </CardContent>

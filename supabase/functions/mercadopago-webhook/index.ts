@@ -97,6 +97,7 @@ serve(async (req) => {
       if (paymentData.status !== payment.mercadopago_status) {
         console.log(`[MP-WEBHOOK] Status mudou de ${payment.mercadopago_status} para ${paymentData.status}`)
         
+        // Usar função RPC para atualizar pagamento e processar estoque
         const { data: updateResult, error: updateError } = await supabase
           .rpc('update_payment_from_mercadopago', {
             _order_id: payment.order_id,
@@ -112,9 +113,172 @@ serve(async (req) => {
 
         console.log(`[MP-WEBHOOK] Pagamento ${paymentId} atualizado com sucesso para status: ${paymentData.status}`)
         
-        // Log adicional para pagamentos aprovados
+        // Se o pagamento foi aprovado, processar estoque
         if (paymentData.status === 'approved') {
-          console.log(`[MP-WEBHOOK] ✅ Pagamento aprovado! Pedido ${payment.order_id} deve estar agora como 'preparing'`)
+          console.log(`[MP-WEBHOOK] ✅ Pagamento aprovado! Processando estoque para pedido ${payment.order_id}`)
+          
+          try {
+            // Buscar detalhes do pedido para processar estoque
+            const { data: orderData, error: orderError } = await supabase
+              .from('orders')
+              .select('items, store_id')
+              .eq('id', payment.order_id)
+              .single()
+
+            if (orderError || !orderData) {
+              console.error('[MP-WEBHOOK] Erro ao buscar pedido:', orderError)
+            } else {
+              // Processar cada item do pedido
+              const items = Array.isArray(orderData.items) ? orderData.items : []
+              
+              for (const item of items) {
+                const productId = item.product_id || item.id
+                if (!productId) continue
+
+                console.log(`[MP-WEBHOOK] Processando estoque para produto ${productId}`)
+
+                // Buscar produto atual
+                const { data: product, error: productError } = await supabase
+                  .from('products')
+                  .select('stock, reserved_stock, name')
+                  .eq('id', productId)
+                  .single()
+
+                if (productError || !product) {
+                  console.error(`[MP-WEBHOOK] Erro ao buscar produto ${productId}:`, productError)
+                  continue
+                }
+
+                // Confirmar venda (reduzir estoque e reserva)
+                const newStock = product.stock - item.quantity
+                const newReservedStock = Math.max(0, (product.reserved_stock || 0) - item.quantity)
+
+                const { error: stockUpdateError } = await supabase
+                  .from('products')
+                  .update({
+                    stock: newStock,
+                    reserved_stock: newReservedStock,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', productId)
+
+                if (stockUpdateError) {
+                  console.error(`[MP-WEBHOOK] Erro ao atualizar estoque do produto ${productId}:`, stockUpdateError)
+                  continue
+                }
+
+                // Registrar movimentação de venda
+                const { error: movementError } = await supabase
+                  .from('stock_movements')
+                  .insert({
+                    product_id: productId,
+                    order_id: payment.order_id,
+                    movement_type: 'sale',
+                    quantity: item.quantity,
+                    previous_stock: product.stock,
+                    new_stock: newStock,
+                    notes: `Venda confirmada via webhook MercadoPago - Payment ID: ${paymentId}`,
+                    store_id: orderData.store_id
+                  })
+
+                if (movementError) {
+                  console.error(`[MP-WEBHOOK] Erro ao registrar movimentação do produto ${productId}:`, movementError)
+                } else {
+                  console.log(`[MP-WEBHOOK] ✅ Estoque processado para produto ${product.name}`)
+                }
+              }
+
+              console.log(`[MP-WEBHOOK] 🎉 Estoque processado completamente para pedido ${payment.order_id}`)
+            }
+          } catch (stockError) {
+            console.error('[MP-WEBHOOK] Erro no processamento de estoque:', stockError)
+          }
+        }
+        
+        // Se o pagamento foi rejeitado, liberar reservas
+        if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
+          console.log(`[MP-WEBHOOK] ❌ Pagamento rejeitado/cancelado! Liberando reservas para pedido ${payment.order_id}`)
+          
+          try {
+            // Atualizar status do pedido para cancelado
+            await supabase
+              .from('orders')
+              .update({ 
+                status: 'cancelled',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', payment.order_id)
+
+            // Buscar detalhes do pedido para liberar reservas
+            const { data: orderData, error: orderError } = await supabase
+              .from('orders')
+              .select('items, store_id')
+              .eq('id', payment.order_id)
+              .single()
+
+            if (orderError || !orderData) {
+              console.error('[MP-WEBHOOK] Erro ao buscar pedido para liberação:', orderError)
+            } else {
+              const items = Array.isArray(orderData.items) ? orderData.items : []
+              
+              for (const item of items) {
+                const productId = item.product_id || item.id
+                if (!productId) continue
+
+                // Buscar produto atual
+                const { data: product, error: productError } = await supabase
+                  .from('products')
+                  .select('reserved_stock, name')
+                  .eq('id', productId)
+                  .single()
+
+                if (productError || !product) {
+                  console.error(`[MP-WEBHOOK] Erro ao buscar produto para liberação ${productId}:`, productError)
+                  continue
+                }
+
+                // Liberar reserva
+                const newReservedStock = Math.max(0, (product.reserved_stock || 0) - item.quantity)
+
+                const { error: releaseError } = await supabase
+                  .from('products')
+                  .update({
+                    reserved_stock: newReservedStock,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', productId)
+
+                if (releaseError) {
+                  console.error(`[MP-WEBHOOK] Erro ao liberar reserva do produto ${productId}:`, releaseError)
+                  continue
+                }
+
+                // Registrar movimentação de liberação
+                const { error: movementError } = await supabase
+                  .from('stock_movements')
+                  .insert({
+                    product_id: productId,
+                    order_id: payment.order_id,
+                    movement_type: 'release',
+                    quantity: item.quantity,
+                    previous_stock: 0, // Não altera estoque real
+                    new_stock: 0,
+                    notes: `Reserva liberada - pagamento rejeitado/cancelado via webhook MercadoPago`,
+                    store_id: orderData.store_id
+                  })
+
+                if (movementError) {
+                  console.error(`[MP-WEBHOOK] Erro ao registrar liberação do produto ${productId}:`, movementError)
+                } else {
+                  console.log(`[MP-WEBHOOK] ✅ Reserva liberada para produto ${product.name}`)
+                }
+              }
+
+              console.log(`[MP-WEBHOOK] 🔓 Reservas liberadas completamente para pedido ${payment.order_id}`)
+            }
+          } catch (releaseError) {
+            console.error('[MP-WEBHOOK] Erro na liberação de reservas:', releaseError)
+          }
         }
       } else {
         console.log(`[MP-WEBHOOK] Status não mudou (${paymentData.status}), ignorando atualização`)
