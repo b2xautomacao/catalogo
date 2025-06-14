@@ -25,7 +25,7 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
   children, 
-  title, 
+  title = 'Dashboard', 
   subtitle, 
   breadcrumbs = [] 
 }) => {
@@ -72,7 +72,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
         {/* Conteúdo principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header />
+          <Header title={title} subtitle={subtitle} />
           
           <main className="flex-1 overflow-auto">
             <div className="p-4 lg:p-6 space-y-6">
@@ -96,18 +96,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
                     ))}
                   </BreadcrumbList>
                 </Breadcrumb>
-              )}
-
-              {/* Título da página */}
-              {(title || subtitle) && (
-                <div className="space-y-1">
-                  {title && (
-                    <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-                  )}
-                  {subtitle && (
-                    <p className="text-muted-foreground">{subtitle}</p>
-                  )}
-                </div>
               )}
 
               {/* Conteúdo da página */}
