@@ -220,7 +220,7 @@ export const useOrders = () => {
 
       console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', functionResult.order);
 
-      // Reservar estoque automaticamente para todos os itens
+      // Reservar estoque automaticamente para todos os itens, agora passando storeId
       const createdOrder = functionResult.order;
       console.log('🔒 useOrders: Iniciando reserva automática de estoque...');
       
@@ -229,7 +229,8 @@ export const useOrders = () => {
           productId: item.product_id,
           quantity: item.quantity,
           orderId: createdOrder.id,
-          expiresInHours: 24 // Reserva expira em 24h
+          expiresInHours: 24, // Reserva expira em 24h
+          storeId: storeId // Passar storeId para ajudar na busca do produto
         });
 
         if (!reserveResult.success) {

@@ -58,9 +58,41 @@ serve(async (req) => {
 
     console.log('✅ create-public-order: Loja validada:', store.id);
 
+    // Validar todos os produtos antes de criar o pedido
+    console.log('🔍 create-public-order: Validando produtos...');
+    for (const item of orderData.items) {
+      const productId = item.id || item.product_id;
+      
+      if (!productId) {
+        throw new Error(`Item sem ID de produto válido: ${JSON.stringify(item)}`);
+      }
+
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id, name, stock, reserved_stock, allow_negative_stock, is_active')
+        .eq('id', productId)
+        .eq('store_id', orderData.store_id)
+        .eq('is_active', true)
+        .single();
+
+      if (productError || !product) {
+        console.error(`❌ create-public-order: Produto não encontrado: ${productId}`, productError);
+        throw new Error(`Produto não encontrado ou inativo: ${productId}`);
+      }
+
+      const availableStock = (product.stock || 0) - (product.reserved_stock || 0);
+      
+      if (availableStock < item.quantity && !product.allow_negative_stock) {
+        console.error(`❌ create-public-order: Estoque insuficiente para ${product.name}`);
+        throw new Error(`Estoque insuficiente para ${product.name}. Disponível: ${availableStock}, Solicitado: ${item.quantity}`);
+      }
+
+      console.log(`✅ create-public-order: Produto validado: ${product.name} (${availableStock} disponível)`);
+    }
+
     // Preparar dados do pedido
     const reservationExpires = new Date();
-    reservationExpires.setMinutes(reservationExpires.getMinutes() + 30);
+    reservationExpires.setHours(reservationExpires.getHours() + 24); // 24h expiration
 
     const newOrder = {
       customer_name: orderData.customer_name,
@@ -76,7 +108,7 @@ serve(async (req) => {
       shipping_cost: orderData.shipping_cost || 0,
       notes: orderData.notes || null,
       store_id: orderData.store_id,
-      stock_reserved: true,
+      stock_reserved: false, // Será marcado como true após reserva bem-sucedida
       reservation_expires_at: reservationExpires.toISOString()
     };
 
@@ -99,28 +131,29 @@ serve(async (req) => {
     // Reservar estoque para cada item
     console.log('📦 create-public-order: Iniciando reserva de estoque...');
     
+    let stockReservationSuccess = true;
+    const reservationErrors: string[] = [];
+
     for (const item of orderData.items) {
       try {
         const productId = item.id || item.product_id;
         console.log('🔒 create-public-order: Reservando estoque para produto:', productId);
         
-        // Buscar produto atual
+        // Buscar produto atual novamente para garantir dados atualizados
         const { data: product, error: productError } = await supabase
           .from('products')
-          .select('stock, reserved_stock')
+          .select('stock, reserved_stock, name')
           .eq('id', productId)
           .single();
 
-        if (productError) {
-          console.error('❌ create-public-order: Erro ao buscar produto:', productError);
-          continue; // Continua com outros produtos
+        if (productError || !product) {
+          throw new Error(`Produto não encontrado durante reserva: ${productId}`);
         }
 
         const availableStock = (product.stock || 0) - (product.reserved_stock || 0);
         
         if (availableStock < item.quantity) {
-          console.warn(`⚠️ create-public-order: Estoque insuficiente para produto ${productId}`);
-          continue; // Continua com outros produtos
+          throw new Error(`Estoque insuficiente para ${product.name}`);
         }
 
         // Atualizar estoque reservado
@@ -132,8 +165,7 @@ serve(async (req) => {
           .eq('id', productId);
 
         if (updateError) {
-          console.error('❌ create-public-order: Erro ao atualizar estoque:', updateError);
-          continue;
+          throw new Error(`Erro ao reservar estoque: ${updateError.message}`);
         }
 
         // Registrar movimentação de estoque
@@ -155,19 +187,37 @@ serve(async (req) => {
 
         if (movementError) {
           console.error('❌ create-public-order: Erro ao registrar movimentação:', movementError);
+          // Não falha o processo, mas registra o erro
+          reservationErrors.push(`Erro ao registrar movimentação para ${productId}: ${movementError.message}`);
         } else {
           console.log('✅ create-public-order: Estoque reservado para produto:', productId);
         }
       } catch (error) {
         console.error('❌ create-public-order: Erro na reserva de estoque:', error);
+        stockReservationSuccess = false;
+        reservationErrors.push(error instanceof Error ? error.message : 'Erro desconhecido');
       }
+    }
+
+    // Marcar pedido como tendo estoque reservado (se todas as reservas foram bem-sucedidas)
+    if (stockReservationSuccess) {
+      await supabase
+        .from('orders')
+        .update({ stock_reserved: true })
+        .eq('id', order.id);
+      
+      console.log('✅ create-public-order: Estoque totalmente reservado');
+    } else {
+      console.warn('⚠️ create-public-order: Algumas reservas falharam:', reservationErrors);
     }
 
     console.log('🎉 create-public-order: Processo concluído com sucesso');
 
     return new Response(JSON.stringify({ 
       success: true, 
-      order: order 
+      order: order,
+      stockReservationSuccess,
+      reservationErrors: reservationErrors.length > 0 ? reservationErrors : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

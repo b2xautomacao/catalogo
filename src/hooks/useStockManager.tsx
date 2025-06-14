@@ -3,12 +3,14 @@ import { useCallback } from 'react';
 import { useStockMovements } from '@/hooks/useStockMovements';
 import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StockReservationParams {
   productId: string;
   quantity: number;
   orderId: string;
   expiresInHours?: number;
+  storeId?: string;
 }
 
 interface StockSaleParams {
@@ -22,12 +24,49 @@ export const useStockManager = () => {
   const { products, fetchProducts } = useProducts();
   const { toast } = useToast();
 
+  // Buscar produto diretamente do banco quando não está na lista local
+  const fetchProductById = useCallback(async (productId: string, storeId?: string) => {
+    try {
+      console.log('🔍 StockManager: Buscando produto diretamente:', { productId, storeId });
+      
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId);
+      
+      if (storeId) {
+        query = query.eq('store_id', storeId);
+      }
+      
+      const { data, error } = await query.single();
+      
+      if (error) {
+        console.error('❌ StockManager: Erro ao buscar produto:', error);
+        throw new Error(`Produto não encontrado: ${error.message}`);
+      }
+      
+      console.log('✅ StockManager: Produto encontrado:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ StockManager: Erro na busca direta do produto:', error);
+      throw error;
+    }
+  }, []);
+
   // Reservar estoque quando pedido é criado
   const reserveStock = useCallback(async (params: StockReservationParams) => {
     try {
       console.log('🔒 StockManager: Reservando estoque:', params);
       
-      const product = products.find(p => p.id === params.productId);
+      // Tentar encontrar produto na lista local primeiro
+      let product = products.find(p => p.id === params.productId);
+      
+      // Se não encontrar na lista local, buscar diretamente do banco
+      if (!product) {
+        console.log('⚠️ StockManager: Produto não encontrado na lista local, buscando no banco...');
+        product = await fetchProductById(params.productId, params.storeId);
+      }
+
       if (!product) {
         throw new Error('Produto não encontrado');
       }
@@ -50,7 +89,11 @@ export const useStockManager = () => {
       });
 
       console.log('✅ StockManager: Estoque reservado com sucesso');
-      await fetchProducts(); // Atualizar dados
+      
+      // Tentar atualizar dados locais se possível
+      if (fetchProducts) {
+        await fetchProducts();
+      }
       
       return { success: true, error: null };
     } catch (error) {
@@ -65,7 +108,7 @@ export const useStockManager = () => {
       
       return { success: false, error: errorMessage };
     }
-  }, [products, createStockMovement, fetchProducts, toast]);
+  }, [products, createStockMovement, fetchProducts, toast, fetchProductById]);
 
   // Confirmar venda quando pagamento é aprovado
   const confirmSale = useCallback(async (params: StockSaleParams) => {
@@ -81,7 +124,11 @@ export const useStockManager = () => {
       });
 
       console.log('✅ StockManager: Venda confirmada com sucesso');
-      await fetchProducts(); // Atualizar dados
+      
+      // Tentar atualizar dados locais se possível
+      if (fetchProducts) {
+        await fetchProducts();
+      }
       
       return { success: true, error: null };
     } catch (error) {
@@ -106,7 +153,11 @@ export const useStockManager = () => {
       });
 
       console.log('✅ StockManager: Reserva liberada com sucesso');
-      await fetchProducts(); // Atualizar dados
+      
+      // Tentar atualizar dados locais se possível
+      if (fetchProducts) {
+        await fetchProducts();
+      }
       
       return { success: true, error: null };
     } catch (error) {
@@ -160,6 +211,7 @@ export const useStockManager = () => {
     reserveStock,
     confirmSale,
     releaseReservation,
-    handleOrderStatusChange
+    handleOrderStatusChange,
+    fetchProductById
   };
 };
