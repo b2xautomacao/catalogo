@@ -7,7 +7,6 @@ import {
   TrendingUp, 
   Package, 
   ShoppingCart,
-  ArrowLeft,
   Download,
   Calendar
 } from 'lucide-react';
@@ -55,16 +54,6 @@ const Reports = () => {
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao Dashboard
-            </Button>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Relatórios e Análises</h2>
-            </div>
-          </div>
           <div className="flex gap-2">
             <Button variant="outline">
               <Calendar className="mr-2 h-4 w-4" />

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ArrowLeft, UserPlus } from 'lucide-react';
+import { Users, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 
@@ -23,16 +23,6 @@ const Customers = () => {
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao Dashboard
-            </Button>
-            <div className="flex items-center gap-2">
-              <Users className="h-6 w-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Base de Clientes</h2>
-            </div>
-          </div>
           <Button className="btn-primary" disabled>
             <UserPlus className="mr-2 h-5 w-5" />
             Adicionar Cliente

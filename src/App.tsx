@@ -23,6 +23,7 @@ import Categories from "./pages/Categories";
 import OrdersImproved from "./pages/OrdersImproved";
 import Customers from "./pages/Customers";
 import Shipping from "./pages/Shipping";
+import Deliveries from "./pages/Deliveries";
 import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,8 @@ function App() {
                         <Route path="/orders" element={<OrdersImproved />} />
                         <Route path="/coupons" element={<Coupons />} />
                         <Route path="/customers" element={<Customers />} />
+                        <Route path="/deliveries" element={<Deliveries />} />
+                        <Route path="/shipping" element={<Shipping />} />
                         <Route path="/reports" element={<Reports />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/users" element={<UserManagement />} />

@@ -11,13 +11,12 @@ import {
   Settings as SettingsIcon,
   Bot,
   Bell,
-  User,
   Shield,
   ShoppingBag,
-  ArrowLeft,
   Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AppLayout from '@/components/layout/AppLayout';
 import StoreInfoSettings from '@/components/settings/StoreInfoSettings';
 import PaymentSettings from '@/components/settings/PaymentSettings';
 import ShippingSettings from '@/components/settings/ShippingSettings';
@@ -31,6 +30,11 @@ import CatalogSettings from '@/components/settings/CatalogSettings';
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('store');
   const navigate = useNavigate();
+
+  const breadcrumbs = [
+    { href: '/', label: 'Dashboard' },
+    { label: 'Configurações', current: true },
+  ];
 
   const tabs = [
     {
@@ -90,19 +94,13 @@ const Settings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao Dashboard
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold gradient-text">Configurações da Loja</h1>
-              <p className="text-muted-foreground mt-2">Gerencie todas as configurações do seu catálogo e loja</p>
-            </div>
-          </div>
+    <AppLayout 
+      title="Configurações da Loja" 
+      subtitle="Gerencie todas as configurações do seu catálogo e loja"
+      breadcrumbs={breadcrumbs}
+    >
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <Button className="btn-primary">
             <SettingsIcon className="mr-2 h-5 w-5" />
             Salvar Todas as Configurações
@@ -146,7 +144,7 @@ const Settings = () => {
           })}
         </Tabs>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
