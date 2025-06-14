@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -301,7 +302,9 @@ export const useOrders = () => {
       if (error) throw error;
       
       // Processar mudança de estoque baseada no novo status
-      await handleOrderStatusChange(orderId, status, currentOrder.items || []);
+      // Garantir que items seja sempre um array válido
+      const orderItems = Array.isArray(currentOrder.items) ? currentOrder.items : [];
+      await handleOrderStatusChange(orderId, status, orderItems);
       
       await fetchOrders();
       
