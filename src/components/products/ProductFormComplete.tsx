@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -81,16 +80,16 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
     setValue('description', description);
   };
 
-  // Corrigido: Função wrapper para aceitar array de arquivos do DraftImageUpload
-  const handleImageAdd = (files: File[]) => {
-    addDraftImages(files);
+  // Corrigido: Função que aceita um único arquivo conforme esperado pelo DraftImageUpload
+  const handleImageAdd = (file: File) => {
+    addDraftImages([file]);
   };
 
-  // Corrigido: Função que aceita string como ID
+  // Corrigido: Função que aceita string como ID conforme esperado pelo DraftImageUpload
   const handleImageRemove = (id: string) => {
-    // Converter string ID para índice numérico
-    const index = parseInt(id, 10);
-    if (!isNaN(index)) {
+    // Encontrar o índice da imagem pelo ID
+    const index = draftImages.findIndex(img => img.id === id);
+    if (index !== -1) {
       removeDraftImage(index);
     }
   };
