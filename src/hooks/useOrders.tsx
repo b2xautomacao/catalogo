@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useStockManager } from '@/hooks/useStockManager';
 
 export interface Order {
   id: string;
@@ -68,6 +69,7 @@ export const useOrders = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profile, user } = useAuth();
+  const { reserveStock, handleOrderStatusChange } = useStockManager();
 
   const waitForProfile = useCallback(async (maxAttempts = 15): Promise<void> => {
     let attempts = 0;
@@ -128,7 +130,7 @@ export const useOrders = () => {
       setError(null);
       setIsCreatingOrder(true);
       
-      console.log('🚀 useOrders: Iniciando criação de pedido via Edge Function');
+      console.log('🚀 useOrders: Iniciando criação de pedido com gestão de estoque');
       console.log('📋 useOrders: Dados do pedido:', {
         customer_name: orderData.customer_name,
         store_id: orderData.store_id,
@@ -217,12 +219,41 @@ export const useOrders = () => {
 
       console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', functionResult.order);
 
+      // Reservar estoque automaticamente para todos os itens
+      const createdOrder = functionResult.order;
+      console.log('🔒 useOrders: Iniciando reserva automática de estoque...');
+      
+      for (const item of orderData.items) {
+        const reserveResult = await reserveStock({
+          productId: item.product_id,
+          quantity: item.quantity,
+          orderId: createdOrder.id,
+          expiresInHours: 24 // Reserva expira em 24h
+        });
+
+        if (!reserveResult.success) {
+          console.warn(`⚠️ useOrders: Falha na reserva para produto ${item.product_id}:`, reserveResult.error);
+          // Continuamos o processo mesmo com falha na reserva
+        }
+      }
+
+      // Marcar pedido como tendo estoque reservado
+      await supabase
+        .from('orders')
+        .update({ 
+          stock_reserved: true,
+          reservation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
+        })
+        .eq('id', createdOrder.id);
+
+      console.log('✅ useOrders: Reserva de estoque concluída');
+
       if (profile?.store_id && profile.store_id === storeId) {
         console.log('🔄 useOrders: Recarregando lista de pedidos...');
         await fetchOrders();
       }
       
-      const convertedOrder = convertSupabaseToOrder(functionResult.order);
+      const convertedOrder = convertSupabaseToOrder(createdOrder);
       console.log('🎉 useOrders: Processo concluído com sucesso');
       return { data: convertedOrder, error: null };
     } catch (error) {
@@ -247,6 +278,19 @@ export const useOrders = () => {
     try {
       setError(null);
       
+      // Buscar o pedido atual para obter os itens
+      const { data: currentOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError || !currentOrder) {
+        throw new Error('Pedido não encontrado');
+      }
+
+      console.log('📋 useOrders: Atualizando status do pedido:', { orderId, status });
+
       const { data, error } = await supabase
         .from('orders')
         .update({ status })
@@ -255,6 +299,9 @@ export const useOrders = () => {
         .single();
 
       if (error) throw error;
+      
+      // Processar mudança de estoque baseada no novo status
+      await handleOrderStatusChange(orderId, status, currentOrder.items || []);
       
       await fetchOrders();
       

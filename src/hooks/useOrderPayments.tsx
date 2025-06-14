@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePayments, Payment } from '@/hooks/usePayments';
 import { Order } from '@/hooks/useOrders';
+import { useStockManager } from '@/hooks/useStockManager';
 
 export interface OrderPaymentStatus {
   orderId: string;
@@ -18,6 +18,7 @@ export const useOrderPayments = (orders: Order[]) => {
   const [loading, setLoading] = useState(false);
   const [lastFetchedOrderIds, setLastFetchedOrderIds] = useState<string>('');
   const { fetchPaymentsByOrder } = usePayments();
+  const { handleOrderStatusChange } = useStockManager();
 
   // Memorizar IDs dos pedidos para evitar re-renders desnecessários
   const orderIds = useMemo(() => {
@@ -42,6 +43,12 @@ export const useOrderPayments = (orders: Order[]) => {
       status = 'pending';
     } else if (totalPaid >= order.total_amount) {
       status = totalPaid > order.total_amount ? 'overpaid' : 'paid';
+      
+      // 💰 AUTOMAÇÃO: Quando pagamento é confirmado, processar estoque
+      if (status === 'paid' && order.status === 'pending') {
+        console.log('💰 OrderPayments: Pagamento confirmado, atualizando estoque...');
+        handleOrderStatusChange(order.id, 'confirmed', order.items || []);
+      }
     } else {
       status = 'partial';
     }
@@ -57,7 +64,7 @@ export const useOrderPayments = (orders: Order[]) => {
       payments,
       lastPaymentMethod: lastPayment?.payment_method
     };
-  }, []);
+  }, [handleOrderStatusChange]);
 
   const loadPaymentsForOrders = useCallback(async (orderIdsToFetch: string[]) => {
     if (orderIdsToFetch.length === 0) return;

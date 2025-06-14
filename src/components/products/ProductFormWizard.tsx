@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,10 +40,10 @@ interface ProductFormWizardProps {
 }
 
 const steps = [
-  { id: 1, name: 'Informações Básicas', component: ProductBasicInfoForm },
-  { id: 2, name: 'Preços e Estoque', component: ProductPricingForm },
-  { id: 3, name: 'Imagens', component: ProductImagesForm },
-  { id: 4, name: 'Configurações Avançadas', component: ProductAdvancedForm },
+  { id: 1, name: 'Informações Básicas', shortName: 'Básicas', component: ProductBasicInfoForm },
+  { id: 2, name: 'Preços e Estoque', shortName: 'Preços', component: ProductPricingForm },
+  { id: 3, name: 'Imagens', shortName: 'Imagens', component: ProductImagesForm },
+  { id: 4, name: 'Configurações Avançadas', shortName: 'Avançadas', component: ProductAdvancedForm },
 ];
 
 // Função para gerar slug a partir do nome
@@ -226,27 +227,27 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress Bar */}
       <div className="space-y-2">
-        <div className="flex justify-between text-sm text-muted-foreground">
+        <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
           <span>Passo {currentStep} de {steps.length}</span>
           <span>{Math.round(progress)}% concluído</span>
         </div>
-        <Progress value={progress} className="w-full" />
+        <Progress value={progress} className="w-full h-2" />
       </div>
 
-      {/* Step Navigation */}
-      <div className="flex items-center justify-center space-x-4 overflow-x-auto pb-2">
+      {/* Step Navigation - Responsivo */}
+      <div className="flex items-center justify-center space-x-2 sm:space-x-4 overflow-x-auto pb-2">
         {steps.map((step, index) => (
           <div
             key={step.id}
-            className={`flex items-center ${
-              index < steps.length - 1 ? 'flex-shrink-0' : ''
+            className={`flex items-center flex-shrink-0 ${
+              index < steps.length - 1 ? 'mr-2 sm:mr-4' : ''
             }`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
                 step.id === currentStep
                   ? 'bg-primary text-primary-foreground'
                   : step.id < currentStep
@@ -257,7 +258,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
               {step.id}
             </div>
             <span
-              className={`ml-2 text-sm font-medium ${
+              className={`ml-1 sm:ml-2 text-xs sm:text-sm font-medium hidden sm:inline ${
                 step.id === currentStep
                   ? 'text-primary'
                   : step.id < currentStep
@@ -267,8 +268,19 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
             >
               {step.name}
             </span>
+            <span
+              className={`ml-1 text-xs font-medium sm:hidden ${
+                step.id === currentStep
+                  ? 'text-primary'
+                  : step.id < currentStep
+                  ? 'text-green-600'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {step.shortName}
+            </span>
             {index < steps.length - 1 && (
-              <div className="ml-4 w-8 h-px bg-border" />
+              <div className="ml-2 sm:ml-4 w-4 sm:w-8 h-px bg-border" />
             )}
           </div>
         ))}
@@ -276,29 +288,31 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
 
       {/* Form */}
       <Form {...form}>
-        <div className="space-y-6">
-          <div className="min-h-[400px]">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="min-h-[350px] sm:min-h-[400px]">
             {renderCurrentStep()}
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-6 border-t">
+          {/* Navigation Buttons - Responsivo */}
+          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 pt-4 sm:pt-6 border-t">
             <Button
               type="button"
               variant="outline"
               onClick={handlePrevious}
               disabled={currentStep === 1}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Anterior
             </Button>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
               {currentStep < steps.length ? (
                 <Button
                   type="button"
                   onClick={handleNext}
                   disabled={!canProceedToNext()}
+                  className="w-full sm:w-auto"
                 >
                   Próximo
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -308,6 +322,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
                   type="button"
                   onClick={() => handleSubmit(form.getValues())}
                   disabled={isSubmitting}
+                  className="w-full sm:w-auto"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Atualizar Produto' : 'Criar Produto'}
