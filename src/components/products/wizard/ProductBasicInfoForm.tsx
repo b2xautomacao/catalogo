@@ -60,23 +60,32 @@ const ProductBasicInfoForm = ({ form }: ProductBasicInfoFormProps) => {
           <FormItem>
             <FormLabel>Categoria *</FormLabel>
             <div className="flex gap-2">
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={categoriesLoading}>
                 <FormControl>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione uma categoria" />
+                    <SelectValue 
+                      placeholder={
+                        categoriesLoading 
+                          ? "Carregando categorias..." 
+                          : categories.length === 0 
+                            ? "Nenhuma categoria encontrada"
+                            : "Selecione uma categoria"
+                      } 
+                    />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categoriesLoading ? (
-                    <SelectItem value="" disabled>Carregando...</SelectItem>
-                  ) : categories.length === 0 ? (
-                    <SelectItem value="" disabled>Nenhuma categoria encontrada</SelectItem>
-                  ) : (
+                  {!categoriesLoading && categories.length > 0 && (
                     categories.map((category) => (
                       <SelectItem key={category.id} value={category.name}>
                         {category.name}
                       </SelectItem>
                     ))
+                  )}
+                  {!categoriesLoading && categories.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Nenhuma categoria encontrada. Crie uma nova categoria.
+                    </div>
                   )}
                 </SelectContent>
               </Select>
