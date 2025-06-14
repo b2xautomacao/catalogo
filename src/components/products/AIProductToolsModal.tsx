@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Loader2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,6 @@ const AIProductToolsModal: React.FC<AIProductToolsModalProps> = ({
           {IA_OPTIONS.map((opt) => (
             <Button
               key={opt.key}
-              block
               size="sm"
               className="w-full shadow-sm flex justify-center"
               onClick={() => handleGenerate(opt.key)}
