@@ -37,13 +37,38 @@ export const useLogoUpload = () => {
 
       console.log('useLogoUpload: Iniciando upload do arquivo:', fileName);
 
-      // Verificar se o bucket existe, senão criar
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const storeLogosBucket = buckets?.find(bucket => bucket.id === 'store-logos');
-      
-      if (!storeLogosBucket) {
-        console.log('useLogoUpload: Bucket store-logos não encontrado');
-        throw new Error('Configuração de storage não encontrada. Entre em contato com o administrador.');
+      // Verificar se o bucket existe com retry
+      let bucketExists = false;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (!bucketExists && retryCount < maxRetries) {
+        try {
+          const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+          
+          if (bucketsError) {
+            console.error('useLogoUpload: Erro ao listar buckets:', bucketsError);
+            if (retryCount === maxRetries - 1) throw bucketsError;
+          } else {
+            const storeLogosBucket = buckets?.find(bucket => bucket.id === 'store-logos');
+            if (storeLogosBucket) {
+              bucketExists = true;
+              console.log('useLogoUpload: Bucket store-logos encontrado');
+            } else if (retryCount === maxRetries - 1) {
+              throw new Error('Bucket store-logos não encontrado. Entre em contato com o administrador.');
+            }
+          }
+          
+          if (!bucketExists) {
+            retryCount++;
+            console.log(`useLogoUpload: Tentativa ${retryCount}/${maxRetries} - Aguardando bucket...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (error) {
+          if (retryCount === maxRetries - 1) throw error;
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
 
       // Upload para o Supabase Storage

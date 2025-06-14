@@ -129,22 +129,28 @@ export const useStores = () => {
         .from('stores')
         .select('*')
         .eq('id', profile.store_id)
-        .single();
+        .maybeSingle(); // Mudado de .single() para .maybeSingle()
 
       if (fetchError) {
         console.error('useStores: Erro ao buscar loja atual:', fetchError);
         throw fetchError;
       }
       
-      console.log('useStores: Loja atual carregada:', data);
-      
-      // Atualizar cache
-      currentStoreCache.current = {
-        data,
-        timestamp: now
-      };
-      
-      setCurrentStore(data);
+      if (data) {
+        console.log('useStores: Loja atual carregada:', data);
+        
+        // Atualizar cache
+        currentStoreCache.current = {
+          data,
+          timestamp: now
+        };
+        
+        setCurrentStore(data);
+      } else {
+        console.log('useStores: Nenhuma loja encontrada para o store_id:', profile.store_id);
+        setCurrentStore(null);
+        setError('Loja não encontrada ou sem permissão de acesso');
+      }
     } catch (error) {
       console.error('Erro ao buscar loja atual:', error);
       setError(error instanceof Error ? error.message : 'Erro ao buscar loja atual');
@@ -182,6 +188,7 @@ export const useStores = () => {
       
       console.log('useStores: Atualizando loja:', { id, updates });
       
+      // Usar maybeSingle() em vez de single() para evitar erro quando não há dados
       const { data, error } = await supabase
         .from('stores')
         .update({
@@ -190,25 +197,32 @@ export const useStores = () => {
         })
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('useStores: Erro na atualização:', error);
         throw error;
       }
       
-      console.log('useStores: Loja atualizada com sucesso:', data);
-      
-      // Invalidar cache e atualizar estado
-      currentStoreCache.current = null;
-      setCurrentStore(data);
-      
-      // Recarregar stores se necessário
-      if (profile?.role === 'superadmin') {
-        await fetchStores();
+      if (data) {
+        console.log('useStores: Loja atualizada com sucesso:', data);
+        
+        // Invalidar cache e atualizar estado
+        currentStoreCache.current = null;
+        setCurrentStore(data);
+        
+        // Recarregar stores se necessário
+        if (profile?.role === 'superadmin') {
+          await fetchStores();
+        }
+        
+        return { data, error: null };
+      } else {
+        console.log('useStores: Nenhuma loja foi atualizada - possível problema de permissão');
+        const errorMessage = 'Não foi possível atualizar a loja. Verifique suas permissões.';
+        setError(errorMessage);
+        return { data: null, error: errorMessage };
       }
-      
-      return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar loja:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar loja';

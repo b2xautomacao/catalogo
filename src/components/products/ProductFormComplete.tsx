@@ -81,12 +81,18 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
     setValue('description', description);
   };
 
+  // Corrigido: Função que aceita array de arquivos
   const handleImageAdd = (files: File[]) => {
     addDraftImages(files);
   };
 
-  const handleImageRemove = (index: number) => {
-    removeDraftImage(index);
+  // Corrigido: Função que aceita string como ID
+  const handleImageRemove = (id: string) => {
+    // Converter string ID para índice numérico
+    const index = parseInt(id, 10);
+    if (!isNaN(index)) {
+      removeDraftImage(index);
+    }
   };
 
   const onFormSubmit = async (data: ProductFormData) => {
