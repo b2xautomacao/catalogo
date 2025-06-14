@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/hooks/useCart';
 import { useOrders } from '@/hooks/useOrders';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +16,7 @@ import ShippingOptionsCard from './checkout/ShippingOptionsCard';
 import PaymentMethodCard from './checkout/PaymentMethodCard';
 import OrderSummary from './checkout/OrderSummary';
 import MercadoPagoPayment from './checkout/MercadoPagoPayment';
+import TestEnvironmentInfo from './checkout/TestEnvironmentInfo';
 import { generateWhatsAppMessage } from './checkout/checkoutUtils';
 
 interface CheckoutModalProps {
@@ -53,7 +55,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
 
+  // Verificar se as credenciais do Mercado Pago estão configuradas
+  const hasMercadoPagoCredentials = React.useMemo(() => {
+    const paymentMethods = storeSettings?.payment_methods as any;
+    return !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
+  }, [storeSettings]);
+
+  // Verificar se está em ambiente de teste
+  const isTestEnvironment = React.useMemo(() => {
+    const paymentMethods = storeSettings?.payment_methods as any;
+    const accessToken = paymentMethods?.mercadopago_access_token || '';
+    const publicKey = paymentMethods?.mercadopago_public_key || '';
+    return accessToken.startsWith('TEST-') || publicKey.startsWith('TEST-');
+  }, [storeSettings]);
+
   const availablePaymentMethods = React.useMemo(() => {
+    if (!hasMercadoPagoCredentials) {
+      return [];
+    }
+
     const methods = [];
     if (storeSettings?.payment_methods?.pix) {
       methods.push({ 
@@ -80,8 +100,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
       });
     }
     return methods;
-  }, [storeSettings]);
+  }, [storeSettings, hasMercadoPagoCredentials]);
 
+  // ... keep existing code (availableShippingMethods useMemo)
   const availableShippingMethods = React.useMemo(() => {
     const methods = [];
     if (storeSettings?.shipping_options?.pickup) {
@@ -295,7 +316,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
     });
   };
 
-  if (availablePaymentMethods.length === 0 || availableShippingMethods.length === 0) {
+  // Renderizar modal de configuração se não houver métodos disponíveis
+  if (!hasMercadoPagoCredentials || (availablePaymentMethods.length === 0 || availableShippingMethods.length === 0)) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
@@ -304,8 +326,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
           </DialogHeader>
           <div className="text-center py-6">
             <p className="text-gray-600 mb-4">
-              Esta loja ainda não configurou os métodos de pagamento e envio. 
-              Entre em contato diretamente com a loja para fazer seu pedido.
+              {!hasMercadoPagoCredentials 
+                ? "As credenciais do Mercado Pago não foram configuradas. Acesse as configurações de pagamento para configurar o Access Token e Public Key."
+                : "Esta loja ainda não configurou os métodos de pagamento e envio. Entre em contato diretamente com a loja para fazer seu pedido."
+              }
             </p>
             <Button onClick={onClose}>Fechar</Button>
           </div>
@@ -318,8 +342,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl w-[98vw] h-[95vh] p-0 gap-0">
         <DialogHeader className="shrink-0 px-6 py-4 border-b bg-gradient-to-r from-primary to-accent">
-          <DialogTitle className="text-2xl font-bold text-white text-center">
+          <DialogTitle className="text-2xl font-bold text-white text-center flex items-center justify-center gap-3">
             {currentStep === 'checkout' ? 'Finalizar Pedido' : 'Pagamento'}
+            {isTestEnvironment && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 font-bold">
+                🧪 TESTE
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -329,6 +358,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
               <div className="lg:col-span-2 h-full">
                 <ScrollArea className="h-full">
                   <div className="p-4 sm:p-6 space-y-6 pb-24 lg:pb-6">
+                    {/* Alerta de ambiente de teste */}
+                    {isTestEnvironment && (
+                      <TestEnvironmentInfo />
+                    )}
+
                     <CustomerDataForm
                       customerData={customerData}
                       onDataChange={setCustomerData}

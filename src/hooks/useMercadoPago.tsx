@@ -48,7 +48,59 @@ export const useMercadoPago = () => {
 
   const getAccessToken = (): string | null => {
     const paymentMethods = settings?.payment_methods as any;
-    return paymentMethods?.mercadopago_access_token || null;
+    const token = paymentMethods?.mercadopago_access_token?.trim();
+    return token || null;
+  };
+
+  const getPublicKey = (): string | null => {
+    const paymentMethods = settings?.payment_methods as any;
+    const key = paymentMethods?.mercadopago_public_key?.trim();
+    return key || null;
+  };
+
+  const isTestEnvironment = (): boolean => {
+    const accessToken = getAccessToken();
+    const publicKey = getPublicKey();
+    return !!((accessToken?.startsWith('TEST-')) || (publicKey?.startsWith('TEST-')));
+  };
+
+  const validateCredentials = (): { isValid: boolean; error?: string } => {
+    const accessToken = getAccessToken();
+    const publicKey = getPublicKey();
+
+    if (!accessToken || !publicKey) {
+      return {
+        isValid: false,
+        error: 'Token de acesso e chave pública do Mercado Pago não configurados. Configure nas configurações de pagamento.'
+      };
+    }
+
+    if (!accessToken.startsWith('APP_USR-') && !accessToken.startsWith('TEST-')) {
+      return {
+        isValid: false,
+        error: 'Access Token inválido. Deve começar com APP_USR- ou TEST-'
+      };
+    }
+
+    if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
+      return {
+        isValid: false,
+        error: 'Public Key inválida. Deve começar com APP_USR- ou TEST-'
+      };
+    }
+
+    // Verificar se ambos são do mesmo ambiente
+    const tokenIsTest = accessToken.startsWith('TEST-');
+    const keyIsTest = publicKey.startsWith('TEST-');
+
+    if (tokenIsTest !== keyIsTest) {
+      return {
+        isValid: false,
+        error: 'Access Token e Public Key devem ser do mesmo ambiente (ambos de teste ou ambos de produção)'
+      };
+    }
+
+    return { isValid: true };
   };
 
   const createCheckout = async (checkoutData: Omit<MercadoPagoCheckout, 'access_token'>): Promise<PaymentResult | null> => {
@@ -56,12 +108,19 @@ export const useMercadoPago = () => {
       setLoading(true);
       setError(null);
       
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        throw new Error('Token de acesso do Mercado Pago não configurado. Configure nas configurações de pagamento.');
+      // Validar credenciais antes de prosseguir
+      const validation = validateCredentials();
+      if (!validation.isValid) {
+        throw new Error(validation.error);
       }
+
+      const accessToken = getAccessToken()!;
       
-      console.log('🚀 Criando checkout no Mercado Pago:', checkoutData);
+      console.log('🚀 Criando checkout no Mercado Pago:', {
+        environment: isTestEnvironment() ? 'TEST' : 'PRODUCTION',
+        itemsCount: checkoutData.items.length,
+        totalAmount: checkoutData.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0)
+      });
       
       const checkoutWithToken = {
         ...checkoutData,
@@ -74,19 +133,32 @@ export const useMercadoPago = () => {
 
       if (functionError) {
         console.error('❌ Erro na edge function:', functionError);
-        setError(functionError.message);
-        throw functionError;
+        
+        // Traduzir erros comuns
+        let userFriendlyError = functionError.message;
+        if (functionError.message.includes('Invalid access_token')) {
+          userFriendlyError = 'Token de acesso inválido. Verifique suas credenciais nas configurações.';
+        } else if (functionError.message.includes('unauthorized')) {
+          userFriendlyError = 'Credenciais não autorizadas. Verifique se o token está ativo.';
+        }
+        
+        setError(userFriendlyError);
+        throw new Error(userFriendlyError);
       }
 
       if (!data) {
-        throw new Error('Nenhum dado retornado da API');
+        throw new Error('Nenhum dado retornado da API do Mercado Pago');
       }
 
-      console.log('✅ Checkout criado com sucesso:', data);
+      console.log('✅ Checkout criado com sucesso:', {
+        preferenceId: data.preference_id,
+        environment: isTestEnvironment() ? 'TEST' : 'PRODUCTION'
+      });
+      
       return data;
     } catch (error) {
       console.error('❌ Erro no checkout Mercado Pago:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao processar pagamento';
       setError(errorMessage);
       return null;
     } finally {
@@ -97,7 +169,12 @@ export const useMercadoPago = () => {
   const openCheckout = async (checkoutData: Omit<MercadoPagoCheckout, 'access_token'>) => {
     const result = await createCheckout(checkoutData);
     if (result?.init_point) {
-      window.open(result.init_point, '_blank');
+      // Usar sandbox_init_point se estiver em ambiente de teste
+      const checkoutUrl = isTestEnvironment() && result.sandbox_init_point 
+        ? result.sandbox_init_point 
+        : result.init_point;
+      
+      window.open(checkoutUrl, '_blank');
       return result;
     }
     return null;
@@ -157,6 +234,8 @@ export const useMercadoPago = () => {
     loading,
     error,
     clearError: () => setError(null),
-    hasCredentials: !!getAccessToken()
+    hasCredentials: !!getAccessToken() && !!getPublicKey(),
+    isTestEnvironment: isTestEnvironment(),
+    validateCredentials
   };
 };
