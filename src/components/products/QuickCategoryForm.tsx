@@ -9,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Sparkles } from 'lucide-react';
-import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
+import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
 
 interface QuickCategoryFormProps {
   onCategoryCreated: (category: any) => void;
@@ -21,9 +22,11 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { createCategory } = useCategories();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { checkFeatureAccess } = usePlanPermissions();
 
   const generateDescription = async () => {
     if (!name.trim()) {
@@ -32,6 +35,12 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
         description: "Digite o nome da categoria antes de gerar a descrição",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Verificar acesso à funcionalidade de IA
+    if (!checkFeatureAccess('ai_agent', false)) {
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -129,44 +138,29 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-gray-50">
-      <div className="flex items-center gap-2 mb-3">
-        <Plus className="h-4 w-4" />
-        <h3 className="font-medium">Cadastro Rápido de Categoria</h3>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="categoryName">Nome da Categoria</Label>
-          <Input
-            id="categoryName"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Roupas, Eletrônicos, Acessórios..."
-            disabled={loading}
-            required
-          />
+    <>
+      <div className="p-4 border rounded-lg bg-gray-50">
+        <div className="flex items-center gap-2 mb-3">
+          <Plus className="h-4 w-4" />
+          <h3 className="font-medium">Cadastro Rápido de Categoria</h3>
         </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="categoryName">Nome da Categoria</Label>
+            <Input
+              id="categoryName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Roupas, Eletrônicos, Acessórios..."
+              disabled={loading}
+              required
+            />
+          </div>
 
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="categoryDescription">Descrição</Label>
-            <AdvancedFeatureGate 
-              feature="ai_agent" 
-              blockInteraction={false}
-              showUpgradeModal={true}
-              fallback={
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={true}
-                >
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  IA (Premium)
-                </Button>
-              }
-            >
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Label htmlFor="categoryDescription">Descrição</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -181,44 +175,49 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
                 )}
                 {generatingDescription ? 'Gerando...' : 'Gerar com IA'}
               </Button>
-            </AdvancedFeatureGate>
+            </div>
+            <Textarea
+              id="categoryDescription"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Breve descrição da categoria..."
+              rows={2}
+              disabled={loading}
+            />
           </div>
-          <Textarea
-            id="categoryDescription"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Breve descrição da categoria..."
-            rows={2}
-            disabled={loading}
-          />
-        </div>
 
-        <div className="flex gap-2">
-          <Button 
-            type="submit" 
-            disabled={loading || !name.trim()}
-            className="flex-1"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              'Criar Categoria'
-            )}
-          </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel} 
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-        </div>
-      </form>
-    </div>
+          <div className="flex gap-2">
+            <Button 
+              type="submit" 
+              disabled={loading || !name.trim()}
+              className="flex-1"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                'Criar Categoria'
+              )}
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onCancel} 
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <PlanUpgradeModal 
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
+    </>
   );
 };
 

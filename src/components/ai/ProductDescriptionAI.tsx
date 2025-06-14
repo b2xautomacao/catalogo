@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
+import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
 
 interface ProductDescriptionAIProps {
   productName: string;
@@ -25,7 +26,9 @@ const ProductDescriptionAI = ({
 }: ProductDescriptionAIProps) => {
   const [loading, setLoading] = useState(false);
   const [loadingSEO, setLoadingSEO] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
+  const { checkFeatureAccess } = usePlanPermissions();
 
   const generateDescription = async () => {
     if (!productName.trim()) {
@@ -34,6 +37,12 @@ const ProductDescriptionAI = ({
         description: "Por favor, insira o nome do produto antes de gerar a descrição",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Verificar acesso à funcionalidade de IA
+    if (!checkFeatureAccess('ai_agent', false)) {
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -80,6 +89,12 @@ const ProductDescriptionAI = ({
       return;
     }
 
+    // Verificar acesso à funcionalidade de IA
+    if (!checkFeatureAccess('ai_agent', false)) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setLoadingSEO(true);
 
     try {
@@ -112,7 +127,7 @@ const ProductDescriptionAI = ({
   };
 
   return (
-    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+    <>
       <div className="flex gap-2">
         <Button 
           type="button"
@@ -148,7 +163,12 @@ const ProductDescriptionAI = ({
           </Button>
         )}
       </div>
-    </AdvancedFeatureGate>
+
+      <PlanUpgradeModal 
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
+    </>
   );
 };
 

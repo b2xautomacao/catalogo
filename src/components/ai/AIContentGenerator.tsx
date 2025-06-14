@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
+import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
 
 interface AIContentGeneratorProps {
   productName: string;
@@ -29,7 +30,17 @@ const AIContentGenerator = ({
 }: AIContentGeneratorProps) => {
   const [loadingDescription, setLoadingDescription] = useState(false);
   const [loadingSEO, setLoadingSEO] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
+  const { checkFeatureAccess } = usePlanPermissions();
+
+  const validateAIAccess = () => {
+    if (!checkFeatureAccess('ai_agent', false)) {
+      setShowUpgradeModal(true);
+      return false;
+    }
+    return true;
+  };
 
   const generateDescription = async () => {
     if (!productName.trim()) {
@@ -40,6 +51,8 @@ const AIContentGenerator = ({
       });
       return;
     }
+
+    if (!validateAIAccess()) return;
 
     setLoadingDescription(true);
 
@@ -90,6 +103,8 @@ const AIContentGenerator = ({
       return;
     }
 
+    if (!validateAIAccess()) return;
+
     setLoadingSEO(true);
 
     try {
@@ -131,12 +146,13 @@ const AIContentGenerator = ({
   };
 
   const generateBoth = async () => {
+    if (!validateAIAccess()) return;
     await generateDescription();
     await generateSEO();
   };
 
   return (
-    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+    <>
       {variant === 'description' && (
         <Button 
           type="button"
@@ -224,7 +240,12 @@ const AIContentGenerator = ({
           </Button>
         </div>
       )}
-    </AdvancedFeatureGate>
+
+      <PlanUpgradeModal 
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
+    </>
   );
 };
 

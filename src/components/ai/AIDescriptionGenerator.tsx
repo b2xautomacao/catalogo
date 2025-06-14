@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
+import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
 
 interface AIDescriptionGeneratorProps {
   productName: string;
@@ -20,7 +21,9 @@ const AIDescriptionGenerator = ({ productName, category, onDescriptionGenerated 
   const [targetAudience, setTargetAudience] = useState('');
   const [generatedDescription, setGeneratedDescription] = useState('');
   const [generatedSEO, setGeneratedSEO] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
+  const { checkFeatureAccess } = usePlanPermissions();
 
   const generateContent = async () => {
     if (!productName.trim()) {
@@ -29,6 +32,12 @@ const AIDescriptionGenerator = ({ productName, category, onDescriptionGenerated 
         description: "Nome do produto é obrigatório para gerar descrição",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Verificar acesso à funcionalidade de IA
+    if (!checkFeatureAccess('ai_agent', false)) {
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -91,7 +100,7 @@ Meta Description: Compre ${productName} com o melhor preço e qualidade. ${categ
   };
 
   return (
-    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+    <>
       <div className="space-y-6 p-6 card-modern">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="text-accent" size={24} />
@@ -198,7 +207,12 @@ Meta Description: Compre ${productName} com o melhor preço e qualidade. ${categ
           </div>
         )}
       </div>
-    </AdvancedFeatureGate>
+
+      <PlanUpgradeModal 
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
+    </>
   );
 };
 
