@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, CreditCard, Smartphone, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -384,7 +385,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] p-0 gap-0 flex flex-col">
         <DialogHeader className="shrink-0 px-6 py-4 border-b bg-gradient-to-r from-primary to-accent">
           <DialogTitle className="text-2xl font-bold text-white text-center flex items-center justify-center gap-3">
             {currentStep === 'checkout' ? 'Finalizar Pedido' : 'Pagamento'}
@@ -396,11 +397,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden min-h-0">
+        <div className="flex-1 min-h-0">
           {currentStep === 'checkout' ? (
             <div className="h-full lg:grid lg:grid-cols-3 lg:gap-0">
-              <div className="lg:col-span-2 h-full overflow-hidden">
-                <ScrollArea className="h-full">
+              <div className="lg:col-span-2 h-full">
+                <ScrollArea className="h-full w-full">
                   <div className="p-4 sm:p-6 space-y-6 pb-24 lg:pb-6">
                     {/* Alerta de ambiente de teste */}
                     {isTestEnvironment && (
@@ -462,50 +463,55 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
                 </ScrollArea>
               </div>
 
-              <OrderSummary
-                items={items}
-                totalAmount={totalAmount}
-                shippingCost={shippingCost}
-                finalTotal={finalTotal}
-                isProcessing={isCreatingOrder}
-                isDisabled={isCreatingOrder || !customerData.name || !customerData.phone}
-                onSubmit={handleCreateOrder}
-              />
+              <div className="hidden lg:block border-l bg-gray-50">
+                <OrderSummary
+                  items={items}
+                  totalAmount={totalAmount}
+                  shippingCost={shippingCost}
+                  finalTotal={finalTotal}
+                  isProcessing={isCreatingOrder}
+                  isDisabled={isCreatingOrder || !customerData.name || !customerData.phone}
+                  onSubmit={handleCreateOrder}
+                />
+              </div>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center p-6 overflow-auto">
-              <div className="max-w-lg w-full">
-                <MercadoPagoPayment
-                  items={items}
-                  totalAmount={finalTotal}
-                  customerData={customerData}
-                  paymentMethod={paymentMethod as 'pix' | 'credit_card' | 'bank_slip'}
-                  orderId={createdOrder?.id}
-                  storeId={storeId}
-                  onPaymentSuccess={handlePaymentSuccess}
-                  onPaymentError={handlePaymentError}
-                />
-                
-                <div className="mt-6 text-center">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setCurrentStep('checkout')}
-                    className="mr-3"
-                  >
-                    ← Voltar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={onClose}
-                  >
-                    Cancelar
-                  </Button>
+            <div className="h-full flex items-center justify-center p-6">
+              <ScrollArea className="h-full w-full">
+                <div className="max-w-lg mx-auto">
+                  <MercadoPagoPayment
+                    items={items}
+                    totalAmount={finalTotal}
+                    customerData={customerData}
+                    paymentMethod={paymentMethod as 'pix' | 'credit_card' | 'bank_slip'}
+                    orderId={createdOrder?.id}
+                    storeId={storeId}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    onPaymentError={handlePaymentError}
+                  />
+                  
+                  <div className="mt-6 text-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentStep('checkout')}
+                      className="mr-3"
+                    >
+                      ← Voltar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={onClose}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </ScrollArea>
             </div>
           )}
         </div>
 
+        {/* Footer mobile apenas para checkout */}
         {currentStep === 'checkout' && (
           <div className="lg:hidden shrink-0 bg-white border-t p-4">
             <div className="space-y-4">
