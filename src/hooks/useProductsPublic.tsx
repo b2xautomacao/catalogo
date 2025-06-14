@@ -39,8 +39,14 @@ export const useProductsPublic = (storeIdentifier?: string) => {
       
       console.log('useProductsPublic: Resolvendo store ID para:', identifier);
       
-      // Resolver store ID
-      const storeId = await resolveStoreId(identifier);
+      // Timeout de segurança
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Resolução do store ID demorou mais de 5 segundos')), 5000)
+      );
+
+      // Resolver store ID com timeout
+      const storeIdPromise = resolveStoreId(identifier);
+      const storeId = await Promise.race([storeIdPromise, timeoutPromise]) as string | null;
       
       if (!storeId) {
         setError('Loja não encontrada');
@@ -50,12 +56,19 @@ export const useProductsPublic = (storeIdentifier?: string) => {
 
       console.log('useProductsPublic: Buscando produtos para loja:', storeId);
 
-      const { data, error: fetchError } = await supabase
+      // Timeout para busca de produtos
+      const productsTimeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Busca de produtos demorou mais de 10 segundos')), 10000)
+      );
+
+      const productsPromise = supabase
         .from('products')
         .select('*')
         .eq('store_id', storeId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
+
+      const { data, error: fetchError } = await Promise.race([productsPromise, productsTimeoutPromise]) as any;
 
       if (fetchError) {
         console.error('useProductsPublic: Erro ao buscar produtos:', fetchError);
@@ -80,6 +93,7 @@ export const useProductsPublic = (storeIdentifier?: string) => {
     } else {
       setProducts([]);
       setLoading(false);
+      setError(null);
     }
   }, [storeIdentifier]);
 

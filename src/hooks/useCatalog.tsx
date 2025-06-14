@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useProductsPublic, PublicProduct } from '@/hooks/useProductsPublic';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
@@ -28,9 +28,11 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   // Determinar se deve usar versão pública ou autenticada
   const usePublicVersion = !!storeIdentifier && !profile;
   
+  console.log('useCatalog: Inicializando com:', { storeIdentifier, catalogType, usePublicVersion });
+  
   // Hooks condicionais baseados no contexto
   const { products: authProducts, loading: authProductsLoading } = useProducts(
-    usePublicVersion ? undefined : storeIdentifier
+    usePublicVersion ? undefined : (profile?.store_id || storeIdentifier)
   );
   
   const { products: publicProducts, loading: publicProductsLoading, error: publicProductsError } = useProductsPublic(
@@ -39,7 +41,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   // Usar configurações apropriadas
   const { settings: storeSettings, loading: storeSettingsLoading } = useStoreSettings(
-    usePublicVersion ? undefined : storeIdentifier
+    usePublicVersion ? undefined : (profile?.store_id || storeIdentifier)
   );
   
   const { settings: catalogSettings, loading: catalogSettingsLoading } = useCatalogSettings(
@@ -137,7 +139,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   }, [products]);
 
   // Função para atualizar filtros com validação
-  const updateFilters = (newFilters: Partial<CatalogFilters>) => {
+  const updateFilters = useCallback((newFilters: Partial<CatalogFilters>) => {
     console.log('useCatalog: Atualizando filtros:', newFilters);
     
     // Sanitizar filtros para evitar valores undefined
@@ -153,17 +155,17 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
       ...prev,
       ...sanitizedFilters
     }));
-  };
+  }, []);
 
   // Função para limpar filtros
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     console.log('useCatalog: Limpando todos os filtros');
     setFilters({});
     setSearchTerm('');
-  };
+  }, []);
 
   // Funções de compatibilidade para Catalog.tsx
-  const initializeCatalog = async (storeId: string, type: CatalogType) => {
+  const initializeCatalog = useCallback(async (storeId: string, type: CatalogType) => {
     console.log('useCatalog: Inicializando catálogo:', storeId, type);
     
     // Verificar se o catálogo está ativo nas configurações
@@ -179,15 +181,15 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     }
     
     return true;
-  };
+  }, [settings]);
 
-  const searchProducts = (query: string) => {
+  const searchProducts = useCallback((query: string) => {
     setSearchTerm(query);
-  };
+  }, []);
 
-  const filterProducts = (filterOptions: any) => {
+  const filterProducts = useCallback((filterOptions: any) => {
     updateFilters(filterOptions);
-  };
+  }, [updateFilters]);
 
   // Verificar se o catálogo está ativo nas configurações
   const isCatalogActive = useMemo(() => {
@@ -201,7 +203,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   const loading = productsLoading || settingsLoading || storeLoading;
 
   // Tratamento de erros específico para versão pública
-  const error = usePublicVersion ? publicProductsError : null;
+  const error = usePublicVersion ? (publicProductsError || storeError) : storeError;
 
   // Obter store_id para uso no CheckoutModal
   const storeId = useMemo(() => {
@@ -228,8 +230,8 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     
     // Dados da loja (agora reais)
     store,
-    storeError: storeError || error,
-    storeId, // Novo campo para CheckoutModal
+    storeError: error,
+    storeId,
     
     // Compatibilidade com Catalog.tsx
     filteredProducts,

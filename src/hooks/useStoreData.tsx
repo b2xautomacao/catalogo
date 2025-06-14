@@ -21,6 +21,8 @@ export const useStoreData = (storeIdentifier?: string) => {
   useEffect(() => {
     const fetchStore = async () => {
       if (!storeIdentifier) {
+        setStore(null);
+        setError(null);
         setLoading(false);
         return;
       }
@@ -30,6 +32,11 @@ export const useStoreData = (storeIdentifier?: string) => {
         setError(null);
 
         console.log('useStoreData: Buscando loja:', storeIdentifier);
+
+        // Timeout de segurança de 10 segundos
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Operação demorou mais de 10 segundos')), 10000)
+        );
 
         // Primeiro, tentar buscar por URL slug
         let query = supabase
@@ -42,25 +49,35 @@ export const useStoreData = (storeIdentifier?: string) => {
         
         if (isUUID) {
           query = query.eq('id', storeIdentifier);
+          console.log('useStoreData: Buscando por UUID:', storeIdentifier);
         } else {
           query = query.eq('url_slug', storeIdentifier);
+          console.log('useStoreData: Buscando por slug:', storeIdentifier);
         }
 
-        const { data, error: fetchError } = await query.single();
+        // Usar Promise.race para implementar timeout
+        const fetchPromise = query.maybeSingle();
+        const { data, error: fetchError } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
         if (fetchError) {
-          if (fetchError.code === 'PGRST116') {
-            setError('Loja não encontrada');
-          } else {
-            throw fetchError;
-          }
+          console.error('useStoreData: Erro na consulta:', fetchError);
+          throw fetchError;
+        }
+
+        if (!data) {
+          console.log('useStoreData: Loja não encontrada para identificador:', storeIdentifier);
+          setError('Loja não encontrada');
+          setStore(null);
         } else {
           console.log('useStoreData: Loja encontrada:', data);
           setStore(data);
+          setError(null);
         }
       } catch (error) {
         console.error('useStoreData: Erro ao buscar loja:', error);
-        setError(error instanceof Error ? error.message : 'Erro ao carregar dados da loja');
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados da loja';
+        setError(errorMessage);
+        setStore(null);
       } finally {
         setLoading(false);
       }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,9 +45,12 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
   // Cache para evitar requests repetidos
   const cacheRef = useRef<Map<string, { data: CatalogSettingsData; timestamp: number }>>(new Map());
   const isFetchingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchStoreIdByIdentifier = useCallback(async (identifier: string): Promise<string | null> => {
     try {
+      console.log('useCatalogSettings: Resolvendo store ID para:', identifier);
+      
       // Verificar se é UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       
@@ -82,11 +84,19 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
   }, []);
 
   const fetchSettings = useCallback(async () => {
+    // Cancelar request anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     if (isFetchingRef.current) return;
     
     try {
       setLoading(true);
       isFetchingRef.current = true;
+      
+      // Criar novo AbortController para este request
+      abortControllerRef.current = new AbortController();
       
       let targetStoreId: string | null = null;
 
@@ -98,24 +108,39 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
       
       if (!targetStoreId) {
         console.log('useCatalogSettings: Nenhum store_id disponível');
+        setSettings(null);
         return;
       }
 
-      // Verificar cache
+      // Verificar cache primeiro
       const cached = cacheRef.current.get(targetStoreId);
-      if (cached && Date.now() - cached.timestamp < 300000) {
-        console.log('useCatalogSettings: Usando cache');
+      if (cached && Date.now() - cached.timestamp < 300000) { // 5 minutos
+        console.log('useCatalogSettings: Usando cache para store ID:', targetStoreId);
         setSettings(cached.data);
         return;
       }
 
       console.log('useCatalogSettings: Buscando configurações para store ID:', targetStoreId);
 
-      const { data, error } = await supabase
+      // Timeout Promise
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: Busca de configurações demorou mais de 8 segundos')), 8000)
+      );
+
+      // Fetch Promise
+      const fetchPromise = supabase
         .from('store_settings')
         .select('*')
         .eq('store_id', targetStoreId)
         .maybeSingle();
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+      // Verificar se request foi cancelado
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('useCatalogSettings: Request cancelado');
+        return;
+      }
 
       if (error && error.code !== 'PGRST116') throw error;
       
@@ -125,8 +150,11 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
         // Criar configuração padrão apenas se usuário estiver logado
         if (!profile) {
           console.log('useCatalogSettings: Configurações não encontradas e usuário não logado');
+          setSettings(null);
           return;
         }
+
+        console.log('useCatalogSettings: Criando configurações padrão para store:', targetStoreId);
 
         const defaultSettings = {
           store_id: targetStoreId,
@@ -217,11 +245,18 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
       });
       
       setSettings(processedSettings);
+      console.log('useCatalogSettings: Configurações carregadas com sucesso');
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('useCatalogSettings: Request abortado');
+        return;
+      }
       console.error('useCatalogSettings: Erro ao buscar configurações:', error);
+      setSettings(null);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
+      abortControllerRef.current = null;
     }
   }, [storeIdentifier, profile, fetchStoreIdByIdentifier]);
 
@@ -284,6 +319,13 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Cleanup function para cancelar requests pendentes
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchSettings]);
 
   return {
