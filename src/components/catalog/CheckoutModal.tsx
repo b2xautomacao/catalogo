@@ -385,7 +385,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] p-0 gap-0 flex flex-col overflow-auto">
         <DialogHeader className="shrink-0 px-6 py-4 border-b bg-gradient-to-r from-primary to-accent">
           <DialogTitle className="text-2xl font-bold text-white text-center flex items-center justify-center gap-3">
             {currentStep === 'checkout' ? 'Finalizar Pedido' : 'Pagamento'}
