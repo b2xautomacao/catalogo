@@ -33,6 +33,9 @@ export interface CatalogSettingsData {
   show_stock: boolean;
   allow_categories_filter: boolean;
   allow_price_filter: boolean;
+  facebook_url: string | null;
+  instagram_url: string | null;
+  twitter_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -183,6 +186,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           show_stock: true,
           allow_categories_filter: true,
           allow_price_filter: true,
+          facebook_url: null,
+          instagram_url: null,
+          twitter_url: null,
         };
 
         const { data: newSettings, error: createError } = await supabase
@@ -203,9 +209,12 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           show_stock: true,
           allow_categories_filter: true,
           allow_price_filter: true,
+          facebook_url: null,
+          instagram_url: null,
+          twitter_url: null,
         };
       } else {
-        // Processar dados existentes incluindo credenciais do Mercado Pago
+        // Processar dados existentes incluindo credenciais do Mercado Pago e redes sociais
         const existingPaymentMethods = typeof data.payment_methods === 'object' && data.payment_methods !== null 
           ? data.payment_methods as any 
           : {};
@@ -235,6 +244,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           show_stock: data.show_stock !== false,
           allow_categories_filter: data.allow_categories_filter !== false,
           allow_price_filter: data.allow_price_filter !== false,
+          facebook_url: data.facebook_url || null,
+          instagram_url: data.instagram_url || null,
+          twitter_url: data.twitter_url || null,
         };
       }
 
@@ -273,7 +285,7 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
 
       if (error) throw error;
       
-      // Processar dados atualizados incluindo credenciais do Mercado Pago
+      // Processar dados atualizados incluindo credenciais do Mercado Pago e redes sociais
       const updatedPaymentMethods = typeof data.payment_methods === 'object' && data.payment_methods !== null 
         ? data.payment_methods as any 
         : settings.payment_methods;
@@ -299,6 +311,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
         show_stock: data.show_stock !== false,
         allow_categories_filter: data.allow_categories_filter !== false,
         allow_price_filter: data.allow_price_filter !== false,
+        facebook_url: data.facebook_url || null,
+        instagram_url: data.instagram_url || null,
+        twitter_url: data.twitter_url || null,
       };
       
       // Atualizar cache

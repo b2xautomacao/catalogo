@@ -626,7 +626,9 @@ export type Database = {
           checkout_type: string | null
           created_at: string
           custom_domain: string | null
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
           payment_methods: Json | null
           retail_catalog_active: boolean | null
           seo_description: string | null
@@ -637,6 +639,7 @@ export type Database = {
           show_stock: boolean | null
           store_id: string
           template_name: string | null
+          twitter_url: string | null
           updated_at: string
           whatsapp_integration_active: boolean | null
           whatsapp_number: string | null
@@ -650,7 +653,9 @@ export type Database = {
           checkout_type?: string | null
           created_at?: string
           custom_domain?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           payment_methods?: Json | null
           retail_catalog_active?: boolean | null
           seo_description?: string | null
@@ -661,6 +666,7 @@ export type Database = {
           show_stock?: boolean | null
           store_id: string
           template_name?: string | null
+          twitter_url?: string | null
           updated_at?: string
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
@@ -674,7 +680,9 @@ export type Database = {
           checkout_type?: string | null
           created_at?: string
           custom_domain?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           payment_methods?: Json | null
           retail_catalog_active?: boolean | null
           seo_description?: string | null
@@ -685,6 +693,7 @@ export type Database = {
           show_stock?: boolean | null
           store_id?: string
           template_name?: string | null
+          twitter_url?: string | null
           updated_at?: string
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null

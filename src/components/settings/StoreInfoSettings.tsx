@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Clock, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { Building, Clock, Phone, Loader2, AlertCircle, Facebook, Instagram, Twitter } from 'lucide-react';
 import { useStores } from '@/hooks/useStores';
+import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import LogoUpload from './LogoUpload';
 
@@ -19,6 +20,9 @@ interface StoreInfoFormData {
   phone: string;
   email: string;
   cnpj: string;
+  facebookUrl: string;
+  instagramUrl: string;
+  twitterUrl: string;
   businessHours: {
     monday: { open: string; close: string; closed: boolean };
     tuesday: { open: string; close: string; closed: boolean };
@@ -33,6 +37,7 @@ interface StoreInfoFormData {
 const StoreInfoSettings = () => {
   const { toast } = useToast();
   const { currentStore, updateCurrentStore, loading, error } = useStores();
+  const { settings: catalogSettings, updateSettings: updateCatalogSettings } = useCatalogSettings();
   const [saving, setSaving] = React.useState(false);
 
   const form = useForm<StoreInfoFormData>({
@@ -43,6 +48,9 @@ const StoreInfoSettings = () => {
       phone: '',
       email: '',
       cnpj: '',
+      facebookUrl: '',
+      instagramUrl: '',
+      twitterUrl: '',
       businessHours: {
         monday: { open: '09:00', close: '18:00', closed: false },
         tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -57,7 +65,7 @@ const StoreInfoSettings = () => {
 
   // Carregar dados da loja quando disponível
   useEffect(() => {
-    if (currentStore) {
+    if (currentStore && catalogSettings) {
       console.log('StoreInfoSettings: Carregando dados da loja:', currentStore);
       
       form.reset({
@@ -67,6 +75,9 @@ const StoreInfoSettings = () => {
         phone: currentStore.phone || '',
         email: currentStore.email || '',
         cnpj: currentStore.cnpj || '',
+        facebookUrl: catalogSettings.facebook_url || '',
+        instagramUrl: catalogSettings.instagram_url || '',
+        twitterUrl: catalogSettings.twitter_url || '',
         businessHours: {
           monday: { open: '09:00', close: '18:00', closed: false },
           tuesday: { open: '09:00', close: '18:00', closed: false },
@@ -78,14 +89,15 @@ const StoreInfoSettings = () => {
         }
       });
     }
-  }, [currentStore, form]);
+  }, [currentStore, catalogSettings, form]);
 
   const onSubmit = async (data: StoreInfoFormData) => {
     try {
       setSaving(true);
       console.log('StoreInfoSettings: Salvando dados:', data);
 
-      const updates = {
+      // Atualizar dados da loja
+      const storeUpdates = {
         name: data.storeName,
         description: data.description,
         address: data.address,
@@ -94,16 +106,34 @@ const StoreInfoSettings = () => {
         cnpj: data.cnpj
       };
 
-      console.log('StoreInfoSettings: Atualizações a serem enviadas:', updates);
+      console.log('StoreInfoSettings: Atualizações da loja a serem enviadas:', storeUpdates);
 
-      const { data: updatedStore, error: updateError } = await updateCurrentStore(updates);
+      const { data: updatedStore, error: updateError } = await updateCurrentStore(storeUpdates);
 
       if (updateError) {
-        console.error('StoreInfoSettings: Erro na atualização:', updateError);
+        console.error('StoreInfoSettings: Erro na atualização da loja:', updateError);
         throw new Error(updateError);
       }
 
-      console.log('StoreInfoSettings: Loja atualizada com sucesso:', updatedStore);
+      // Atualizar redes sociais nas configurações do catálogo
+      if (catalogSettings) {
+        const catalogUpdates = {
+          facebook_url: data.facebookUrl || null,
+          instagram_url: data.instagramUrl || null,
+          twitter_url: data.twitterUrl || null,
+        };
+
+        console.log('StoreInfoSettings: Atualizações do catálogo a serem enviadas:', catalogUpdates);
+
+        const { error: catalogError } = await updateCatalogSettings(catalogUpdates);
+
+        if (catalogError) {
+          console.error('StoreInfoSettings: Erro na atualização das configurações:', catalogError);
+          throw new Error('Erro ao atualizar redes sociais');
+        }
+      }
+
+      console.log('StoreInfoSettings: Dados salvos com sucesso');
 
       toast({
         title: "Dados salvos",
@@ -283,6 +313,70 @@ const StoreInfoSettings = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Redes Sociais */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Facebook className="h-5 w-5" />
+              Redes Sociais
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="facebookUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Facebook className="h-4 w-4" />
+                      Facebook
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://facebook.com/minhaloja" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="instagramUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Instagram className="h-4 w-4" />
+                      Instagram
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://instagram.com/minhaloja" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="twitterUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Twitter className="h-4 w-4" />
+                      Twitter
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://twitter.com/minhaloja" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Horário de Funcionamento */}
         <Card>

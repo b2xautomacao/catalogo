@@ -349,10 +349,11 @@ const CatalogContent = () => {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer com configurações reais */}
       <CatalogFooter
         store={store}
         whatsappNumber={settings?.whatsapp_number || undefined}
+        storeSettings={settings}
       />
 
       {/* Floating Cart */}

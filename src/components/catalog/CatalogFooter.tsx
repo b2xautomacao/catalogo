@@ -1,16 +1,53 @@
+
 import React from 'react';
 import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { StoreData } from '@/hooks/useStoreData';
+import { CatalogSettingsData } from '@/hooks/useCatalogSettings';
 
 interface CatalogFooterProps {
   store: StoreData;
   whatsappNumber?: string;
+  storeSettings?: CatalogSettingsData | null;
 }
 
-const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) => {
+const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber, storeSettings }) => {
   const currentYear = new Date().getFullYear();
+
+  // Extrair dados de pagamento das configurações
+  const getPaymentMethods = () => {
+    if (!storeSettings?.payment_methods) return [];
+    
+    const methods = [];
+    if (storeSettings.payment_methods.pix) methods.push('PIX');
+    if (storeSettings.payment_methods.credit_card) methods.push('Cartão');
+    if (storeSettings.payment_methods.bank_slip) methods.push('Boleto');
+    
+    return methods;
+  };
+
+  // Extrair horário de funcionamento das configurações
+  const getBusinessHours = () => {
+    if (!storeSettings?.business_hours || typeof storeSettings.business_hours !== 'object') {
+      return 'Seg - Sex: 9h às 18h';
+    }
+
+    // Se tiver horários configurados, usar o primeiro disponível como exemplo
+    const hours = storeSettings.business_hours as any;
+    if (hours.monday && !hours.monday.closed) {
+      return `Seg - Sex: ${hours.monday.open} às ${hours.monday.close}`;
+    }
+    
+    return 'Seg - Sex: 9h às 18h';
+  };
+
+  // Verificar se há redes sociais configuradas
+  const hasSocialMedia = () => {
+    return !!(storeSettings?.facebook_url || storeSettings?.instagram_url || storeSettings?.twitter_url);
+  };
+
+  const paymentMethods = getPaymentMethods();
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -20,25 +57,58 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
           {/* Sobre a Loja */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-                {store.name.charAt(0).toUpperCase()}
-              </div>
+              {store.logo_url ? (
+                <img 
+                  src={store.logo_url} 
+                  alt={`Logo ${store.name}`}
+                  className="w-10 h-10 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                  {store.name.charAt(0).toUpperCase()}
+                </div>
+              )}
               <h3 className="text-xl font-bold">{store.name}</h3>
             </div>
             <p className="text-gray-300 mb-4">
               {store.description || 'Oferecemos produtos de qualidade com os melhores preços do mercado.'}
             </p>
-            <div className="flex space-x-3">
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                <Facebook size={20} />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                <Instagram size={20} />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                <Twitter size={20} />
-              </Button>
-            </div>
+            
+            {/* Redes Sociais */}
+            {hasSocialMedia() && (
+              <div className="flex space-x-3">
+                {storeSettings?.facebook_url && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-300 hover:text-white hover:bg-gray-800"
+                    onClick={() => window.open(storeSettings.facebook_url, '_blank')}
+                  >
+                    <Facebook size={20} />
+                  </Button>
+                )}
+                {storeSettings?.instagram_url && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-300 hover:text-white hover:bg-gray-800"
+                    onClick={() => window.open(storeSettings.instagram_url, '_blank')}
+                  >
+                    <Instagram size={20} />
+                  </Button>
+                )}
+                {storeSettings?.twitter_url && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-gray-300 hover:text-white hover:bg-gray-800"
+                    onClick={() => window.open(storeSettings.twitter_url, '_blank')}
+                  >
+                    <Twitter size={20} />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Links Rápidos */}
@@ -56,30 +126,34 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
           <div>
             <h4 className="text-lg font-semibold mb-4">Contato</h4>
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <MapPin size={16} className="text-gray-400" />
-                <span className="text-gray-300">{store.address || 'Rua Exemplo, 123 - São Paulo, SP'}</span>
-              </div>
-              {whatsappNumber && (
+              {store.address && (
+                <div className="flex items-center gap-3">
+                  <MapPin size={16} className="text-gray-400" />
+                  <span className="text-gray-300">{store.address}</span>
+                </div>
+              )}
+              {(whatsappNumber || store.phone) && (
                 <div className="flex items-center gap-3">
                   <Phone size={16} className="text-gray-400" />
-                  <span className="text-gray-300">{whatsappNumber}</span>
+                  <span className="text-gray-300">{whatsappNumber || store.phone}</span>
+                </div>
+              )}
+              {store.email && (
+                <div className="flex items-center gap-3">
+                  <Mail size={16} className="text-gray-400" />
+                  <span className="text-gray-300">{store.email}</span>
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <Mail size={16} className="text-gray-400" />
-                <span className="text-gray-300">{store.email || `contato@${store.name.toLowerCase().replace(/\s+/g, '')}.com.br`}</span>
-              </div>
-              <div className="flex items-center gap-3">
                 <Clock size={16} className="text-gray-400" />
-                <span className="text-gray-300">Seg - Sex: 9h às 18h</span>
+                <span className="text-gray-300">{getBusinessHours()}</span>
               </div>
             </div>
           </div>
 
-          {/* Políticas e Segurança */}
+          {/* Políticas e Formas de Pagamento */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Políticas</h4>
+            <h4 className="text-lg font-semibold mb-4">Informações</h4>
             <ul className="space-y-2 mb-6">
               <li><a href="#privacidade" className="text-gray-300 hover:text-white transition-colors">Política de Privacidade</a></li>
               <li><a href="#termos" className="text-gray-300 hover:text-white transition-colors">Termos de Uso</a></li>
@@ -87,12 +161,19 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
               <li><a href="#entrega" className="text-gray-300 hover:text-white transition-colors">Política de Entrega</a></li>
             </ul>
 
-            {/* Selo de Segurança */}
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <div className="text-2xl mb-1">🔒</div>
-              <p className="text-xs text-gray-300">Site Seguro</p>
-              <p className="text-xs text-gray-400">SSL Certificado</p>
-            </div>
+            {/* Formas de Pagamento - apenas se configuradas */}
+            {paymentMethods.length > 0 && (
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-300 mb-2">Formas de Pagamento:</p>
+                <div className="flex flex-wrap gap-1">
+                  {paymentMethods.map((method) => (
+                    <div key={method} className="bg-gray-700 px-2 py-1 rounded text-xs">
+                      {method}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -106,14 +187,23 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber }) 
             © {currentYear} {store.name}. Todos os direitos reservados.
           </p>
           
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <span>Formas de Pagamento:</span>
-            <div className="flex gap-2">
-              <div className="bg-gray-800 px-2 py-1 rounded text-xs">PIX</div>
-              <div className="bg-gray-800 px-2 py-1 rounded text-xs">Cartão</div>
-              <div className="bg-gray-800 px-2 py-1 rounded text-xs">Boleto</div>
+          {/* Opções de Entrega - se configuradas */}
+          {storeSettings?.shipping_options && (
+            <div className="flex items-center gap-4 text-sm text-gray-400">
+              <span>Opções de Entrega:</span>
+              <div className="flex gap-2">
+                {storeSettings.shipping_options.pickup && (
+                  <div className="bg-gray-800 px-2 py-1 rounded text-xs">Retirada</div>
+                )}
+                {storeSettings.shipping_options.delivery && (
+                  <div className="bg-gray-800 px-2 py-1 rounded text-xs">Entrega</div>
+                )}
+                {storeSettings.shipping_options.shipping && (
+                  <div className="bg-gray-800 px-2 py-1 rounded text-xs">Correios</div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

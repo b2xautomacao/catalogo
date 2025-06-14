@@ -14,12 +14,14 @@ import {
   User,
   Shield,
   ShoppingBag,
-  ArrowLeft
+  ArrowLeft,
+  Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StoreInfoSettings from '@/components/settings/StoreInfoSettings';
 import PaymentSettings from '@/components/settings/PaymentSettings';
 import ShippingSettings from '@/components/settings/ShippingSettings';
+import DeliverySettings from '@/components/settings/DeliverySettings';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
 import AutomationSettings from '@/components/settings/AutomationSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
@@ -54,6 +56,12 @@ const Settings = () => {
       label: 'Envios',
       icon: Truck,
       component: ShippingSettings
+    },
+    {
+      id: 'delivery',
+      label: 'Entregas',
+      icon: Package,
+      component: DeliverySettings
     },
     {
       id: 'whatsapp',
@@ -102,7 +110,7 @@ const Settings = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white rounded-xl shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 gap-2 h-auto p-2 bg-white rounded-xl shadow-sm">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
