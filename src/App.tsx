@@ -1,137 +1,102 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/sonner';
-import { ProtectedLayout } from '@/components/auth/ProtectedLayout';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Products from "./pages/Products";
+import Orders from "./pages/Orders";
+import Coupons from "./pages/Coupons";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import UserManagement from "./pages/UserManagement";
+import Catalog from "./pages/Catalog";
+import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
+import PaymentPending from "./pages/PaymentPending";
 
-// Pages
-import Auth from '@/pages/Auth';
-import Index from '@/pages/Index';
-import Products from '@/pages/Products';
-import Orders from '@/pages/Orders';
-import Coupons from '@/pages/Coupons';
-import Customers from '@/pages/Customers';
-import Reports from '@/pages/Reports';
-import Settings from '@/pages/Settings';
-import UserManagement from '@/pages/UserManagement';
-import Catalog from '@/pages/Catalog';
-import NotFound from '@/pages/NotFound';
-
-import './App.css';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          {/* Rota pública de autenticação */}
-          <Route 
-            path="/auth" 
-            element={
-              <ProtectedLayout requireAuth={false}>
-                <Auth />
-              </ProtectedLayout>
-            } 
-          />
-          
-          {/* Catálogo público */}
-          <Route 
-            path="/catalog/:storeSlug" 
-            element={
-              <ProtectedLayout requireAuth={false}>
-                <Catalog />
-              </ProtectedLayout>
-            } 
-          />
-          
-          {/* Rotas protegidas do dashboard */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedLayout>
-                <Index />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/products" 
-            element={
-              <ProtectedLayout>
-                <Products />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/orders" 
-            element={
-              <ProtectedLayout>
-                <Orders />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/coupons" 
-            element={
-              <ProtectedLayout>
-                <Coupons />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/customers" 
-            element={
-              <ProtectedLayout>
-                <Customers />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/reports" 
-            element={
-              <ProtectedLayout>
-                <Reports />
-              </ProtectedLayout>
-            } 
-          />
-          
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedLayout>
-                <Settings />
-              </ProtectedLayout>
-            } 
-          />
-          
-          {/* Rota apenas para superadmins */}
-          <Route 
-            path="/admin/users" 
-            element={
-              <ProtectedLayout allowedRoles={['superadmin']}>
-                <UserManagement />
-              </ProtectedLayout>
-            } 
-          />
-          
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-      <Toaster position="top-right" />
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/catalog/:storeSlug" element={<Catalog />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-failure" element={<PaymentFailure />} />
+              <Route path="/payment-pending" element={<PaymentPending />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <ProtectedRoute>
+                    <Products />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute>
+                    <Orders />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/coupons"
+                element={
+                  <ProtectedRoute>
+                    <Coupons />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute>
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

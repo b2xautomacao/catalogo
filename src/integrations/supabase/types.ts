@@ -270,6 +270,11 @@ export type Database = {
           created_at: string
           due_date: string | null
           id: string
+          mercadopago_collection_id: string | null
+          mercadopago_payment_id: string | null
+          mercadopago_preference_id: string | null
+          mercadopago_response: Json | null
+          mercadopago_status: string | null
           notes: string | null
           order_id: string
           payment_method: string
@@ -284,6 +289,11 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          mercadopago_collection_id?: string | null
+          mercadopago_payment_id?: string | null
+          mercadopago_preference_id?: string | null
+          mercadopago_response?: Json | null
+          mercadopago_status?: string | null
           notes?: string | null
           order_id: string
           payment_method: string
@@ -298,6 +308,11 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          mercadopago_collection_id?: string | null
+          mercadopago_payment_id?: string | null
+          mercadopago_preference_id?: string | null
+          mercadopago_response?: Json | null
+          mercadopago_status?: string | null
           notes?: string | null
           order_id?: string
           payment_method?: string
@@ -775,6 +790,15 @@ export type Database = {
       release_expired_reservations: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      update_payment_from_mercadopago: {
+        Args: {
+          _order_id: string
+          _mp_payment_id: string
+          _mp_status: string
+          _mp_response?: Json
+        }
+        Returns: string
       }
     }
     Enums: {

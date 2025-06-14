@@ -102,6 +102,17 @@ export const useMercadoPago = (storeId?: string) => {
     return { isValid: true };
   };
 
+  const getReturnUrls = (orderId: string) => {
+    const baseUrl = window.location.origin;
+    const orderParam = `external_reference=${orderId}`;
+    
+    return {
+      success: `${baseUrl}/payment-success?${orderParam}`,
+      failure: `${baseUrl}/payment-failure?${orderParam}`,
+      pending: `${baseUrl}/payment-pending?${orderParam}`
+    };
+  };
+
   const createCheckout = async (checkoutData: Omit<MercadoPagoCheckout, 'access_token'>): Promise<PaymentResult | null> => {
     try {
       setLoading(true);
@@ -115,10 +126,23 @@ export const useMercadoPago = (storeId?: string) => {
 
       const accessToken = getAccessToken()!;
       
+      // Configurar URLs de retorno baseadas no external_reference
+      const orderId = checkoutData.external_reference;
+      if (orderId) {
+        checkoutData.back_urls = getReturnUrls(orderId);
+        checkoutData.auto_return = 'approved';
+        
+        // Configurar webhook URL para notificações automáticas
+        const webhookUrl = `${window.location.origin.replace('https://preview--', 'https://').replace('.lovable.app', '.supabase.co')}/functions/v1/mercadopago-webhook`;
+        checkoutData.notification_url = webhookUrl;
+      }
+      
       console.log('🚀 Criando checkout no Mercado Pago:', {
         environment: isTestEnvironment() ? 'TEST' : 'PRODUCTION',
         itemsCount: checkoutData.items.length,
-        totalAmount: checkoutData.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0)
+        totalAmount: checkoutData.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0),
+        back_urls: checkoutData.back_urls,
+        notification_url: checkoutData.notification_url
       });
       
       const checkoutWithToken = {
@@ -179,57 +203,51 @@ export const useMercadoPago = (storeId?: string) => {
     return null;
   };
 
-  const createPixPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
-    const pixCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
-      ...checkoutData,
-      payment_methods: {
-        excluded_payment_types: [
-          { id: 'credit_card' },
-          { id: 'debit_card' },
-          { id: 'ticket' }
-        ]
-      }
-    };
-    
-    return await createCheckout(pixCheckoutData);
-  };
-
-  const createCardPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
-    const cardCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
-      ...checkoutData,
-      payment_methods: {
-        excluded_payment_types: [
-          { id: 'pix' },
-          { id: 'ticket' }
-        ],
-        installments: 12
-      }
-    };
-    
-    return await createCheckout(cardCheckoutData);
-  };
-
-  const createBankSlipPayment = async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
-    const bankSlipCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
-      ...checkoutData,
-      payment_methods: {
-        excluded_payment_types: [
-          { id: 'pix' },
-          { id: 'credit_card' },
-          { id: 'debit_card' }
-        ]
-      }
-    };
-    
-    return await createCheckout(bankSlipCheckoutData);
-  };
-
   return {
     createCheckout,
     openCheckout,
-    createPixPayment,
-    createCardPayment,
-    createBankSlipPayment,
+    createPixPayment: async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+      const pixCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
+        ...checkoutData,
+        payment_methods: {
+          excluded_payment_types: [
+            { id: 'credit_card' },
+            { id: 'debit_card' },
+            { id: 'ticket' }
+          ]
+        }
+      };
+      
+      return await createCheckout(pixCheckoutData);
+    },
+    createCardPayment: async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+      const cardCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
+        ...checkoutData,
+        payment_methods: {
+          excluded_payment_types: [
+            { id: 'pix' },
+            { id: 'ticket' }
+          ],
+          installments: 12
+        }
+      };
+      
+      return await createCheckout(cardCheckoutData);
+    },
+    createBankSlipPayment: async (checkoutData: Omit<MercadoPagoCheckout, 'payment_methods' | 'access_token'>) => {
+      const bankSlipCheckoutData: Omit<MercadoPagoCheckout, 'access_token'> = {
+        ...checkoutData,
+        payment_methods: {
+          excluded_payment_types: [
+            { id: 'pix' },
+            { id: 'credit_card' },
+            { id: 'debit_card' }
+          ]
+        }
+      };
+      
+      return await createCheckout(bankSlipCheckoutData);
+    },
     loading,
     error,
     clearError: () => setError(null),

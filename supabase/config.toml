@@ -1,1 +1,56 @@
+
 project_id = "uytkhyqwikdpplwsesoz"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+port = 54326
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+
+[edge_functions]
+enabled = true
+
+[functions.ai-product-description]
+verify_jwt = true
+
+[functions.ai-seo-generator]
+verify_jwt = true
+
+[functions.create-public-order]
+verify_jwt = false
+
+[functions.mercadopago-checkout]
+verify_jwt = true
+
+[functions.mercadopago-verify-payment]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.release-expired-stock]
+verify_jwt = true
