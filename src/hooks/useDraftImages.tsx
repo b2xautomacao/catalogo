@@ -13,28 +13,6 @@ export const useDraftImages = () => {
   const [draftImages, setDraftImages] = useState<DraftImage[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const ensureBucketExists = async () => {
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const productImagesBucket = buckets?.find(bucket => bucket.name === 'product-images');
-      
-      if (!productImagesBucket) {
-        const { error } = await supabase.storage.createBucket('product-images', { 
-          public: true,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-          fileSizeLimit: 5242880 // 5MB
-        });
-        if (error) {
-          console.error('Erro ao criar bucket:', error);
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Erro ao verificar bucket:', error);
-      return false;
-    }
-  };
-
   const addDraftImage = (file: File) => {
     const id = Math.random().toString(36).substr(2, 9);
     const url = URL.createObjectURL(file);
@@ -64,8 +42,6 @@ export const useDraftImages = () => {
     if (draftImages.length === 0) return { success: true, urls: [] };
 
     setUploading(true);
-    await ensureBucketExists();
-
     const uploadedUrls: string[] = [];
     const tempProductId = productId || `temp_${Date.now()}`;
     
@@ -76,6 +52,8 @@ export const useDraftImages = () => {
         const fileExt = image.file.name.split('.').pop()?.toLowerCase();
         const fileName = `${tempProductId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
         
+        console.log('Fazendo upload da imagem:', fileName);
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(fileName, image.file, {
@@ -88,11 +66,16 @@ export const useDraftImages = () => {
           continue;
         }
 
+        console.log('Upload bem-sucedido:', uploadData);
+
         const { data: { publicUrl } } = supabase.storage
           .from('product-images')
           .getPublicUrl(fileName);
 
+        console.log('URL pública gerada:', publicUrl);
+
         if (productId) {
+          console.log('Salvando imagem no banco para produto:', productId);
           const { error: dbError } = await supabase
             .from('product_images')
             .insert({
@@ -121,6 +104,7 @@ export const useDraftImages = () => {
         );
       }
 
+      console.log('Upload concluído. URLs:', uploadedUrls);
       return { success: true, urls: uploadedUrls };
     } catch (error) {
       console.error('Erro no upload das imagens:', error);

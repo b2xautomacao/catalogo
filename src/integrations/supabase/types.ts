@@ -441,6 +441,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_featured: boolean | null
           keywords: string | null
           meta_description: string | null
           meta_title: string | null
@@ -463,6 +464,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean | null
           keywords?: string | null
           meta_description?: string | null
           meta_title?: string | null
@@ -485,6 +487,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean | null
           keywords?: string | null
           meta_description?: string | null
           meta_title?: string | null

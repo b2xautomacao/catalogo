@@ -1,26 +1,40 @@
 
-import React, { useState } from 'react';
-import { Upload, X, GripVertical, Star } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { DraftImage } from '@/hooks/useDraftImages';
+import { Card, CardContent } from '@/components/ui/card';
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useDraftImages } from '@/hooks/useDraftImages';
+import { useProductImages } from '@/hooks/useProductImages';
 
 interface ProductImagesFormProps {
-  draftImages: DraftImage[];
-  onImageAdd: (file: File) => void;
-  onImageRemove: (id: string) => void;
-  maxImages?: number;
+  form: UseFormReturn<any>;
 }
 
-const ProductImagesForm = ({ 
-  draftImages, 
-  onImageAdd, 
-  onImageRemove, 
-  maxImages = 10 
-}: ProductImagesFormProps) => {
+const ProductImagesForm = ({ form }: ProductImagesFormProps) => {
   const [dragActive, setDragActive] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { draftImages, addDraftImage, removeDraftImage, uploading } = useDraftImages();
+  
+  // Para modo edição, buscar imagens existentes
+  const productId = form.getValues('id');
+  const { images: existingImages, loading: loadingExisting } = useProductImages(productId);
+
+  // Combinar imagens existentes + draft images para exibição
+  const allImages = [
+    ...existingImages.map(img => ({
+      id: img.id,
+      url: img.image_url,
+      uploaded: true,
+      existing: true,
+      isPrimary: img.is_primary
+    })),
+    ...draftImages.map(img => ({
+      ...img,
+      existing: false,
+      isPrimary: false
+    }))
+  ];
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -38,149 +52,155 @@ const ProductImagesForm = ({
     setDragActive(false);
     
     const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    handleFiles(files);
-  };
-
-  const handleFiles = (files: File[]) => {
-    if (draftImages.length >= maxImages) {
-      toast({
-        title: "Limite atingido",
-        description: `Você pode adicionar no máximo ${maxImages} imagens`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const remainingSlots = maxImages - draftImages.length;
-    const filesToProcess = files.slice(0, remainingSlots);
-
-    filesToProcess.forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Arquivo inválido",
-          description: "Por favor, selecione apenas arquivos de imagem",
-          variant: "destructive",
-        });
-        return;
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        addDraftImage(file);
       }
-
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        toast({
-          title: "Arquivo muito grande",
-          description: "A imagem deve ter no máximo 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      onImageAdd(file);
     });
   };
 
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+          addDraftImage(file);
+        }
+      });
+    }
+  };
+
+  const handleRemoveImage = (imageId: string, isExisting: boolean) => {
+    if (isExisting) {
+      // Para imagens existentes, marcar para remoção (implementar depois se necessário)
+      console.log('Remover imagem existente:', imageId);
+    } else {
+      removeDraftImage(imageId);
+    }
+  };
+
+  // Atualizar image_url principal se houver imagens
+  useEffect(() => {
+    if (allImages.length > 0) {
+      const primaryImage = allImages.find(img => img.isPrimary) || allImages[0];
+      form.setValue('image_url', primaryImage.url);
+    } else {
+      form.setValue('image_url', '');
+    }
+  }, [allImages, form]);
+
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-2">Imagens do Produto</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Adicione imagens para mostrar seu produto. A primeira imagem será usada como principal.
+        </p>
+      </div>
+
       {/* Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
           dragActive 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
+            ? 'border-primary bg-primary/5' 
+            : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={() => document.getElementById('image-upload')?.click()}
+        onClick={() => !uploading && fileInputRef.current?.click()}
       >
-        <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-lg font-medium text-gray-900 mb-2">
-          Arraste e solte suas imagens aqui
-        </p>
-        <p className="text-sm text-gray-500 mb-4">
-          ou clique para selecionar arquivos
-        </p>
-        <p className="text-xs text-gray-400">
-          Máximo {maxImages} imagens • Até 5MB cada • JPG, PNG, WebP
-        </p>
+        {uploading ? (
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Processando imagens...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <Upload className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-2">
+              Arraste e solte imagens aqui ou clique para selecionar
+            </p>
+            <p className="text-sm text-muted-foreground">
+              PNG, JPG, WebP ou GIF • Máximo 5MB por imagem
+            </p>
+          </div>
+        )}
       </div>
 
       <input
-        id="image-upload"
+        ref={fileInputRef}
         type="file"
-        multiple
         accept="image/*"
+        multiple
         onChange={handleFileInput}
         className="hidden"
+        disabled={uploading}
       />
 
       {/* Images Grid */}
-      {draftImages.length > 0 && (
+      {allImages.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900">Imagens do Produto</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {draftImages.map((image, index) => (
-              <div
-                key={image.id}
-                className="relative group aspect-square rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-300 transition-colors"
-                draggable
-                onDragStart={() => setDraggedIndex(index)}
-                onDragEnd={() => setDraggedIndex(null)}
-              >
-                <img
-                  src={image.url}
-                  alt={`Produto ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Principal Badge */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded flex items-center">
-                    <Star className="w-3 h-3 mr-1" />
-                    Principal
+          <h4 className="font-medium">Imagens Adicionadas ({allImages.length})</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {allImages.map((image, index) => (
+              <Card key={image.id} className="relative overflow-hidden">
+                <CardContent className="p-2">
+                  <div className="relative aspect-square">
+                    <img
+                      src={image.url}
+                      alt={`Produto ${index + 1}`}
+                      className="w-full h-full object-cover rounded"
+                    />
+                    
+                    {/* Status Badge */}
+                    <div className="absolute top-2 left-2">
+                      {image.isPrimary && (
+                        <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
+                          Principal
+                        </span>
+                      )}
+                      {!image.existing && (
+                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                          Nova
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={() => handleRemoveImage(image.id, image.existing)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
-                )}
-                
-                {/* Uploaded Badge */}
-                {image.uploaded && (
-                  <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                    ✓
-                  </div>
-                )}
-                
-                {/* Remove Button */}
-                <button
-                  onClick={() => onImageRemove(image.id)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={12} />
-                </button>
-                
-                {/* Drag Handle */}
-                <div className="absolute bottom-1 right-1 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-move">
-                  <GripVertical size={16} />
-                </div>
-                
-                {/* Order Number */}
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                  {index + 1}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
-          </div>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <Star className="w-4 h-4 inline mr-1" />
-              A primeira imagem será a imagem principal do produto. Arraste para reordenar.
-            </p>
           </div>
         </div>
       )}
+
+      {/* Info Card */}
+      <div className="bg-muted/50 border border-muted rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <ImageIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Dicas para melhores imagens:</p>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Use imagens com boa iluminação e alta qualidade</li>
+              <li>• Mostre o produto de diferentes ângulos</li>
+              <li>• A primeira imagem será usada como capa do produto</li>
+              <li>• Imagens quadradas (1:1) funcionam melhor</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
