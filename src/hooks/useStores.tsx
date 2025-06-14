@@ -96,7 +96,6 @@ export const useStores = () => {
   };
 
   const fetchCurrentStore = useCallback(async (forceRefresh = false) => {
-    // Evitar requests simultâneos
     if (requestInProgress.current && !forceRefresh) {
       console.log('useStores: Request já em andamento, aguardando...');
       return;
@@ -107,7 +106,6 @@ export const useStores = () => {
       setLoading(true);
       setError(null);
       
-      // Aguardar profile estar disponível
       await waitForProfile();
       
       if (!profile?.store_id) {
@@ -116,10 +114,10 @@ export const useStores = () => {
         return;
       }
 
-      // Verificar cache (válido por 2 minutos)
+      // Verificar cache (válido por 30 segundos para garantir dados atuais)
       const cached = currentStoreCache.current;
       const now = Date.now();
-      if (!forceRefresh && cached && now - cached.timestamp < 120000) {
+      if (!forceRefresh && cached && now - cached.timestamp < 30000) {
         console.log('useStores: Usando dados do cache');
         setCurrentStore(cached.data);
         return;
@@ -182,20 +180,34 @@ export const useStores = () => {
     try {
       setError(null);
       
+      console.log('useStores: Atualizando loja:', { id, updates });
+      
       const { data, error } = await supabase
         .from('stores')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('useStores: Erro na atualização:', error);
+        throw error;
+      }
       
-      // Invalidar cache
+      console.log('useStores: Loja atualizada com sucesso:', data);
+      
+      // Invalidar cache e atualizar estado
       currentStoreCache.current = null;
+      setCurrentStore(data);
       
-      await fetchStores();
-      await fetchCurrentStore(true);
+      // Recarregar stores se necessário
+      if (profile?.role === 'superadmin') {
+        await fetchStores();
+      }
+      
       return { data, error: null };
     } catch (error) {
       console.error('Erro ao atualizar loja:', error);
@@ -211,6 +223,8 @@ export const useStores = () => {
       setError(errorMessage);
       return { data: null, error: errorMessage };
     }
+    
+    console.log('useStores: Atualizando loja atual:', updates);
     return updateStore(profile.store_id, updates);
   };
 
@@ -252,7 +266,6 @@ export const useStores = () => {
       }
     } else if (user && !profile) {
       console.log('useStores: Usuário logado mas profile ainda não disponível');
-      // Aguardar um pouco e tentar novamente
       const timer = setTimeout(() => {
         if (profile?.store_id && !requestInProgress.current) {
           fetchCurrentStore();

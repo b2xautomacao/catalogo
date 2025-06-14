@@ -37,6 +37,15 @@ export const useLogoUpload = () => {
 
       console.log('useLogoUpload: Iniciando upload do arquivo:', fileName);
 
+      // Verificar se o bucket existe, senão criar
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const storeLogosBucket = buckets?.find(bucket => bucket.id === 'store-logos');
+      
+      if (!storeLogosBucket) {
+        console.log('useLogoUpload: Bucket store-logos não encontrado');
+        throw new Error('Configuração de storage não encontrada. Entre em contato com o administrador.');
+      }
+
       // Upload para o Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('store-logos')
@@ -47,7 +56,7 @@ export const useLogoUpload = () => {
 
       if (uploadError) {
         console.error('useLogoUpload: Erro no upload:', uploadError);
-        throw uploadError;
+        throw new Error(`Erro no upload: ${uploadError.message}`);
       }
 
       // Obter URL pública da imagem

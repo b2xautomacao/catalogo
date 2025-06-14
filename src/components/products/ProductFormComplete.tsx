@@ -44,7 +44,7 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
   const [uploading, setUploading] = useState(false);
   
   const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
-  const { draftImages, addDraftImage, removeDraftImage, uploadDraftImages, clearDraftImages } = useDraftImages();
+  const { draftImages, addDraftImages, removeDraftImage, uploadDraftImages, clearDraftImages } = useDraftImages();
 
   const {
     register,
@@ -73,14 +73,20 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
 
   const handleCategoryCreated = async (newCategory: any) => {
     console.log('ProductFormComplete: Nova categoria criada:', newCategory);
-    // Recarregar categorias para atualizar a lista
     await fetchCategories();
-    // Definir a nova categoria como selecionada
     setValue('category', newCategory.name);
   };
 
   const handleDescriptionGenerated = (description: string) => {
     setValue('description', description);
+  };
+
+  const handleImageAdd = (files: File[]) => {
+    addDraftImages(files);
+  };
+
+  const handleImageRemove = (index: number) => {
+    removeDraftImage(index);
   };
 
   const onFormSubmit = async (data: ProductFormData) => {
@@ -284,8 +290,8 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
         <CardContent>
           <DraftImageUpload
             draftImages={draftImages}
-            onImageAdd={addDraftImage}
-            onImageRemove={removeDraftImage}
+            onImageAdd={handleImageAdd}
+            onImageRemove={handleImageRemove}
             uploading={uploading}
           />
         </CardContent>

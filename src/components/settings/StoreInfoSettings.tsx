@@ -94,11 +94,16 @@ const StoreInfoSettings = () => {
         cnpj: data.cnpj
       };
 
-      const { error: updateError } = await updateCurrentStore(updates);
+      console.log('StoreInfoSettings: Atualizações a serem enviadas:', updates);
+
+      const { data: updatedStore, error: updateError } = await updateCurrentStore(updates);
 
       if (updateError) {
+        console.error('StoreInfoSettings: Erro na atualização:', updateError);
         throw new Error(updateError);
       }
+
+      console.log('StoreInfoSettings: Loja atualizada com sucesso:', updatedStore);
 
       toast({
         title: "Dados salvos",
