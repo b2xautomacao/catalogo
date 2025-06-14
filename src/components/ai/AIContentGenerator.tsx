@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
 
 interface AIContentGeneratorProps {
   productName: string;
@@ -134,96 +135,96 @@ const AIContentGenerator = ({
     await generateSEO();
   };
 
-  if (variant === 'description') {
-    return (
-      <Button 
-        type="button"
-        variant="outline" 
-        size={size}
-        onClick={generateDescription}
-        disabled={disabled || loadingDescription || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {loadingDescription ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {loadingDescription ? 'Gerando...' : 'Gerar com IA'}
-      </Button>
-    );
-  }
-
-  if (variant === 'seo') {
-    return (
-      <Button 
-        type="button"
-        variant="outline" 
-        size={size}
-        onClick={generateSEO}
-        disabled={disabled || loadingSEO || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {loadingSEO ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {loadingSEO ? 'Gerando...' : 'Gerar SEO'}
-      </Button>
-    );
-  }
-
   return (
-    <div className="flex gap-2">
-      <Button 
-        type="button"
-        variant="outline" 
-        size={size}
-        onClick={generateDescription}
-        disabled={disabled || loadingDescription || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {loadingDescription ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {loadingDescription ? 'Gerando...' : 'Descrição'}
-      </Button>
+    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+      {variant === 'description' && (
+        <Button 
+          type="button"
+          variant="outline" 
+          size={size}
+          onClick={generateDescription}
+          disabled={disabled || loadingDescription || !productName.trim()}
+          className="flex items-center gap-2"
+        >
+          {loadingDescription ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          {loadingDescription ? 'Gerando...' : 'Gerar com IA'}
+        </Button>
+      )}
 
-      <Button 
-        type="button"
-        variant="outline" 
-        size={size}
-        onClick={generateSEO}
-        disabled={disabled || loadingSEO || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {loadingSEO ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {loadingSEO ? 'Gerando...' : 'SEO'}
-      </Button>
+      {variant === 'seo' && (
+        <Button 
+          type="button"
+          variant="outline" 
+          size={size}
+          onClick={generateSEO}
+          disabled={disabled || loadingSEO || !productName.trim()}
+          className="flex items-center gap-2"
+        >
+          {loadingSEO ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          {loadingSEO ? 'Gerando...' : 'Gerar SEO'}
+        </Button>
+      )}
 
-      <Button 
-        type="button"
-        variant="default" 
-        size={size}
-        onClick={generateBoth}
-        disabled={disabled || loadingDescription || loadingSEO || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {(loadingDescription || loadingSEO) ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {(loadingDescription || loadingSEO) ? 'Gerando...' : 'Gerar Tudo'}
-      </Button>
-    </div>
+      {variant === 'both' && (
+        <div className="flex gap-2">
+          <Button 
+            type="button"
+            variant="outline" 
+            size={size}
+            onClick={generateDescription}
+            disabled={disabled || loadingDescription || !productName.trim()}
+            className="flex items-center gap-2"
+          >
+            {loadingDescription ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {loadingDescription ? 'Gerando...' : 'Descrição'}
+          </Button>
+
+          <Button 
+            type="button"
+            variant="outline" 
+            size={size}
+            onClick={generateSEO}
+            disabled={disabled || loadingSEO || !productName.trim()}
+            className="flex items-center gap-2"
+          >
+            {loadingSEO ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {loadingSEO ? 'Gerando...' : 'SEO'}
+          </Button>
+
+          <Button 
+            type="button"
+            variant="default" 
+            size={size}
+            onClick={generateBoth}
+            disabled={disabled || loadingDescription || loadingSEO || !productName.trim()}
+            className="flex items-center gap-2"
+          >
+            {(loadingDescription || loadingSEO) ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {(loadingDescription || loadingSEO) ? 'Gerando...' : 'Gerar Tudo'}
+          </Button>
+        </div>
+      )}
+    </AdvancedFeatureGate>
   );
 };
 

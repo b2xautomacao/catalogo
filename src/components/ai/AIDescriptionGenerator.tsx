@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
 
 interface AIDescriptionGeneratorProps {
   productName: string;
@@ -90,112 +91,114 @@ Meta Description: Compre ${productName} com o melhor preço e qualidade. ${categ
   };
 
   return (
-    <div className="space-y-6 p-6 card-modern">
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="text-accent" size={24} />
-        <h3 className="text-lg font-semibold">Gerador de Descrição com IA</h3>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="keywords">Palavras-chave (opcional)</Label>
-          <Input
-            id="keywords"
-            placeholder="Ex: durável, moderno, econômico"
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            className="input-modern"
-          />
+    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+      <div className="space-y-6 p-6 card-modern">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="text-accent" size={24} />
+          <h3 className="text-lg font-semibold">Gerador de Descrição com IA</h3>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="audience">Público-alvo (opcional)</Label>
-          <Input
-            id="audience"
-            placeholder="Ex: jovens, profissionais, famílias"
-            value={targetAudience}
-            onChange={(e) => setTargetAudience(e.target.value)}
-            className="input-modern"
-          />
-        </div>
-      </div>
 
-      <Button 
-        onClick={generateContent} 
-        disabled={isGenerating}
-        className="btn-accent w-full"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Gerando conteúdo...
-          </>
-        ) : (
-          <>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Gerar Descrição e SEO
-          </>
-        )}
-      </Button>
-
-      {generatedDescription && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Descrição Gerada</Label>
-              <div className="flex gap-2">
+            <Label htmlFor="keywords">Palavras-chave (opcional)</Label>
+            <Input
+              id="keywords"
+              placeholder="Ex: durável, moderno, econômico"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              className="input-modern"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="audience">Público-alvo (opcional)</Label>
+            <Input
+              id="audience"
+              placeholder="Ex: jovens, profissionais, famílias"
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              className="input-modern"
+            />
+          </div>
+        </div>
+
+        <Button 
+          onClick={generateContent} 
+          disabled={isGenerating}
+          className="btn-accent w-full"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Gerando conteúdo...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Gerar Descrição e SEO
+            </>
+          )}
+        </Button>
+
+        {generatedDescription && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Descrição Gerada</Label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(generatedDescription, 'Descrição')}
+                  >
+                    <Copy className="mr-1 h-3 w-3" />
+                    Copiar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={generateContent}
+                  >
+                    <RefreshCw className="mr-1 h-3 w-3" />
+                    Regenerar
+                  </Button>
+                </div>
+              </div>
+              <Textarea
+                value={generatedDescription}
+                onChange={(e) => setGeneratedDescription(e.target.value)}
+                rows={8}
+                className="input-modern"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>SEO Gerado</Label>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(generatedDescription, 'Descrição')}
+                  onClick={() => copyToClipboard(generatedSEO, 'SEO')}
                 >
                   <Copy className="mr-1 h-3 w-3" />
                   Copiar
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={generateContent}
-                >
-                  <RefreshCw className="mr-1 h-3 w-3" />
-                  Regenerar
-                </Button>
               </div>
+              <Textarea
+                value={generatedSEO}
+                onChange={(e) => setGeneratedSEO(e.target.value)}
+                rows={4}
+                className="input-modern"
+              />
             </div>
-            <Textarea
-              value={generatedDescription}
-              onChange={(e) => setGeneratedDescription(e.target.value)}
-              rows={8}
-              className="input-modern"
-            />
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>SEO Gerado</Label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(generatedSEO, 'SEO')}
-              >
-                <Copy className="mr-1 h-3 w-3" />
-                Copiar
-              </Button>
-            </div>
-            <Textarea
-              value={generatedSEO}
-              onChange={(e) => setGeneratedSEO(e.target.value)}
-              rows={4}
-              className="input-modern"
-            />
+            <Button onClick={applyGenerated} className="btn-primary w-full">
+              Aplicar ao Produto
+            </Button>
           </div>
-
-          <Button onClick={applyGenerated} className="btn-primary w-full">
-            Aplicar ao Produto
-          </Button>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AdvancedFeatureGate>
   );
 };
 

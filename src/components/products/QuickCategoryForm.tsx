@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Sparkles } from 'lucide-react';
+import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
 
 interface QuickCategoryFormProps {
   onCategoryCreated: (category: any) => void;
@@ -150,20 +151,37 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Label htmlFor="categoryDescription">Descrição</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={generateDescription}
-              disabled={!name.trim() || generatingDescription}
+            <AdvancedFeatureGate 
+              feature="ai_agent" 
+              blockInteraction={false}
+              showUpgradeModal={true}
+              fallback={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={true}
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  IA (Premium)
+                </Button>
+              }
             >
-              {generatingDescription ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-1" />
-              )}
-              {generatingDescription ? 'Gerando...' : 'Gerar com IA'}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateDescription}
+                disabled={!name.trim() || generatingDescription}
+              >
+                {generatingDescription ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                {generatingDescription ? 'Gerando...' : 'Gerar com IA'}
+              </Button>
+            </AdvancedFeatureGate>
           </div>
           <Textarea
             id="categoryDescription"

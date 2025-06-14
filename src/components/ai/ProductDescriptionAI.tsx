@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AdvancedFeatureGate } from '@/components/billing/AdvancedFeatureGate';
 
 interface ProductDescriptionAIProps {
   productName: string;
@@ -111,41 +112,43 @@ const ProductDescriptionAI = ({
   };
 
   return (
-    <div className="flex gap-2">
-      <Button 
-        type="button"
-        variant="outline" 
-        size="sm"
-        onClick={generateDescription}
-        disabled={disabled || loading || !productName.trim()}
-        className="flex items-center gap-2"
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-        {loading ? 'Gerando...' : 'Gerar Descrição'}
-      </Button>
-
-      {showSEOButton && (
+    <AdvancedFeatureGate feature="ai_agent" blockInteraction={true}>
+      <div className="flex gap-2">
         <Button 
           type="button"
           variant="outline" 
           size="sm"
-          onClick={generateSEO}
-          disabled={disabled || loadingSEO || !productName.trim()}
+          onClick={generateDescription}
+          disabled={disabled || loading || !productName.trim()}
           className="flex items-center gap-2"
         >
-          {loadingSEO ? (
+          {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          {loadingSEO ? 'Gerando...' : 'Gerar SEO'}
+          {loading ? 'Gerando...' : 'Gerar Descrição'}
         </Button>
-      )}
-    </div>
+
+        {showSEOButton && (
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm"
+            onClick={generateSEO}
+            disabled={disabled || loadingSEO || !productName.trim()}
+            className="flex items-center gap-2"
+          >
+            {loadingSEO ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {loadingSEO ? 'Gerando...' : 'Gerar SEO'}
+          </Button>
+        )}
+      </div>
+    </AdvancedFeatureGate>
   );
 };
 

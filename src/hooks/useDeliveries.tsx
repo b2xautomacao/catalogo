@@ -60,7 +60,7 @@ export const useDeliveries = () => {
         orderId: order.id,
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
-        delivery_status: order.delivery_status || 'preparing',
+        delivery_status: (order.delivery_status || 'preparing') as Delivery['delivery_status'],
         estimated_delivery_date: order.estimated_delivery_date,
         carrier: order.carrier,
         delivery_address: order.delivery_address,

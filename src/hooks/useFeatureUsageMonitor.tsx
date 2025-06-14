@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 
 export interface FeatureUsageData {
@@ -17,7 +17,7 @@ export const useFeatureUsageMonitor = () => {
   const [usageData, setUsageData] = useState<Record<string, FeatureUsageData>>({});
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
-  const { subscription, getFeatureLimit, hasFeature } = usePlanPermissions();
+  const { subscription, getFeatureLimit, hasFeature } = useSubscription();
 
   const fetchUsageData = useCallback(async () => {
     if (!profile?.store_id || !subscription) return;
@@ -44,8 +44,7 @@ export const useFeatureUsageMonitor = () => {
 
       featuresToMonitor.forEach(featureType => {
         const currentUsage = usage?.find(u => u.feature_type === featureType)?.current_usage || 0;
-        const limitStr = getFeatureLimit(featureType) || '0';
-        const limit = parseInt(limitStr);
+        const limit = getFeatureLimit(featureType);
         const canUse = hasFeature(featureType) && (limit === 0 || currentUsage < limit);
         const percentage = limit > 0 ? (currentUsage / limit) * 100 : 0;
 
@@ -80,7 +79,7 @@ export const useFeatureUsageMonitor = () => {
         .from('feature_usage')
         .upsert({
           store_id: profile.store_id,
-          feature_type: featureType,
+          feature_type: featureType as any,
           current_usage: currentData.currentUsage + increment,
           period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
           period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()
