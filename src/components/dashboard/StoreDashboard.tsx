@@ -13,6 +13,7 @@ import ProductFormModal from '@/components/products/ProductFormModal';
 import ResponsiveDashboardCard from './ResponsiveDashboardCard';
 import MobileNavigationPanel from './MobileNavigationPanel';
 import MobileQuickActions from './MobileQuickActions';
+import NavigationPanel from './NavigationPanel';
 import QuickSearch from './QuickSearch';
 import ProductFilters from './ProductFilters';
 import QuickActions from './QuickActions';
