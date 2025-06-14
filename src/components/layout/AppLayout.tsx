@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileNavigation from './MobileNavigation';
+import Footer from './Footer';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -55,7 +55,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Wizard de Onboarding */}
       {needsOnboarding && (
         <OnboardingWizard
@@ -67,13 +67,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Header fixo no topo */}
       <Header title={title} subtitle={subtitle} />
 
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden pt-16">
+      <div className="flex flex-1 overflow-hidden pt-16">
         {/* Sidebar para desktop */}
         <Sidebar />
 
         {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto lg:ml-64">
-          <div className="p-4 lg:p-6 space-y-6">
+        <main className="flex-1 overflow-auto lg:ml-64 flex flex-col">
+          <div className="flex-1 p-4 lg:p-6 space-y-6">
             {/* Breadcrumbs */}
             {breadcrumbs.length > 0 && (
               <Breadcrumb>
@@ -99,6 +99,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             {/* Conteúdo da página */}
             {children}
           </div>
+
+          {/* Footer */}
+          <Footer />
         </main>
       </div>
 

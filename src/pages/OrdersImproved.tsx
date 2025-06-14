@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Search, Filter, Calendar, Package2, 
+  Search, Filter, Calendar, Package2, 
   Truck, CheckCircle, Clock, AlertCircle, Printer,
   FileText, Eye, MoreHorizontal, Tag, RefreshCw,
   Download, CreditCard, DollarSign
@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import AppLayout from '@/components/layout/AppLayout';
 
 interface OrderItem {
   id: string;
@@ -256,333 +257,326 @@ const OrdersImproved = () => {
     }, 2000);
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Dashboard
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold gradient-text">Pedidos</h1>
-                <p className="text-muted-foreground">Gerencie todos os pedidos da sua loja</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={handleBulkRecovery}
-                disabled={loading || unpaidOrders.length === 0}
-              >
-                {loading ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CreditCard className="mr-2 h-4 w-4" />
-                )}
-                Recuperar Não Pagos ({unpaidOrders.length})
-              </Button>
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
-              <Input
-                type="text"
-                placeholder="Buscar por número do pedido ou cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-modern pl-10"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="preparing">Preparando</SelectItem>
-                  <SelectItem value="shipped">Enviado</SelectItem>
-                  <SelectItem value="delivered">Entregue</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="unpaid">Não Pago</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="retail">Varejo</SelectItem>
-                  <SelectItem value="wholesale">Atacado</SelectItem>
-                </SelectContent>
-              </Select>
+  const breadcrumbs = [
+    { href: '/', label: 'Dashboard' },
+    { label: 'Pedidos', current: true }
+  ];
 
-              <Select value={filterPayment} onValueChange={setFilterPayment}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="failed">Falhou</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+  return (
+    <AppLayout 
+      title="Pedidos" 
+      subtitle="Gerencie todos os pedidos da sua loja"
+      breadcrumbs={breadcrumbs}
+    >
+      {/* Actions Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleBulkRecovery}
+            disabled={loading || unpaidOrders.length === 0}
+          >
+            {loading ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="mr-2 h-4 w-4" />
+            )}
+            Recuperar Não Pagos ({unpaidOrders.length})
+          </Button>
+          <Button variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
+      </div>
+      
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
+          <Input
+            type="text"
+            placeholder="Buscar por número do pedido ou cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <div className="flex gap-2">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="confirmed">Confirmado</SelectItem>
+              <SelectItem value="preparing">Preparando</SelectItem>
+              <SelectItem value="shipped">Enviado</SelectItem>
+              <SelectItem value="delivered">Entregue</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+              <SelectItem value="unpaid">Não Pago</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="retail">Varejo</SelectItem>
+              <SelectItem value="wholesale">Atacado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPayment} onValueChange={setFilterPayment}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="paid">Pago</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="failed">Falhou</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Tabs de Navegação */}
-      <div className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">
-              Todos ({mockOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="unpaid" className="text-red-600">
-              Não Pagos ({unpaidOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending">
-              Pendentes ({mockOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').length})
-            </TabsTrigger>
-            <TabsTrigger value="shipped">
-              Enviados ({mockOrders.filter(o => o.status === 'shipped' || o.status === 'delivered').length})
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">
+            Todos ({mockOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="unpaid" className="text-red-600">
+            Não Pagos ({unpaidOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            Pendentes ({mockOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').length})
+          </TabsTrigger>
+          <TabsTrigger value="shipped">
+            Enviados ({mockOrders.filter(o => o.status === 'shipped' || o.status === 'delivered').length})
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-4">
-            {/* Vista Desktop - Tabela */}
-            <div className="hidden lg:block">
-              <Card className="card-modern">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Pedido</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Pagamento</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">
-                          {order.order_number}
-                          {order.tracking_code && (
-                            <div className="text-xs text-muted-foreground">
-                              {order.tracking_code}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{order.customer_name}</div>
-                            {order.customer_phone && (
-                              <div className="text-xs text-muted-foreground">{order.customer_phone}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(order.status)}>
-                            {getStatusIcon(order.status)}
-                            <span className="ml-1">{getStatusText(order.status)}</span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getPaymentStatusColor(order.payment_status)}>
-                            {getPaymentStatusText(order.payment_status)}
-                          </Badge>
-                          {order.payment_method && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {order.payment_method}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {order.order_type === 'retail' ? 'Varejo' : 'Atacado'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">R$ {order.total_amount.toFixed(2)}</div>
-                          {order.shipping_cost > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              + R$ {order.shipping_cost.toFixed(2)} frete
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                          </div>
+        <TabsContent value={activeTab} className="space-y-4">
+          {/* Vista Desktop - Tabela */}
+          <div className="hidden lg:block">
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pedido</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        {order.order_number}
+                        {order.tracking_code && (
                           <div className="text-xs text-muted-foreground">
-                            {new Date(order.created_at).toLocaleTimeString('pt-BR')}
+                            {order.tracking_code}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewOrder(order)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {(order.payment_status === 'pending' || order.status === 'unpaid') && (
-                                  <DropdownMenuItem onClick={() => handleRecoverUnpaidOrder(order)}>
-                                    <CreditCard className="h-4 w-4 mr-2" />
-                                    Cobrar Pagamento
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => handlePrintLabel(order)}>
-                                  <Printer className="h-4 w-4 mr-2" />
-                                  Etiqueta
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handlePrintDeclaration(order)}>
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  Declaração
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-
-            {/* Vista Mobile - Cards */}
-            <div className="lg:hidden space-y-4">
-              {filteredOrders.map((order) => (
-                <Card key={order.id} className="card-modern hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{order.order_number}</h3>
-                        <div className="flex gap-2">
-                          <Badge className={getStatusColor(order.status)}>
-                            {getStatusIcon(order.status)}
-                            <span className="ml-1">{getStatusText(order.status)}</span>
-                          </Badge>
-                          <Badge className={getPaymentStatusColor(order.payment_status)}>
-                            {getPaymentStatusText(order.payment_status)}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div>
-                          <p className="text-muted-foreground">Cliente</p>
-                          <p className="font-medium">{order.customer_name}</p>
+                          <div className="font-medium">{order.customer_name}</div>
                           {order.customer_phone && (
-                            <p className="text-xs text-muted-foreground">{order.customer_phone}</p>
+                            <div className="text-xs text-muted-foreground">{order.customer_phone}</div>
                           )}
                         </div>
-                        
-                        <div className="text-right">
-                          <p className="text-muted-foreground">Total</p>
-                          <p className="font-bold text-lg">R$ {order.total_amount.toFixed(2)}</p>
-                          {order.shipping_cost > 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              + R$ {order.shipping_cost.toFixed(2)} frete
-                            </p>
-                          )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(order.status)}>
+                          {getStatusIcon(order.status)}
+                          <span className="ml-1">{getStatusText(order.status)}</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getPaymentStatusColor(order.payment_status)}>
+                          {getPaymentStatusText(order.payment_status)}
+                        </Badge>
+                        {order.payment_method && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {order.payment_method}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {order.order_type === 'retail' ? 'Varejo' : 'Atacado'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">R$ {order.total_amount.toFixed(2)}</div>
+                        {order.shipping_cost > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            + R$ {order.shipping_cost.toFixed(2)} frete
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(order.created_at).toLocaleDateString('pt-BR')}
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2 pt-2 border-t">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewOrder(order)}
-                          className="flex-1"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Detalhes
-                        </Button>
-                        
-                        {(order.payment_status === 'pending' || order.status === 'unpaid') && (
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(order.created_at).toLocaleTimeString('pt-BR')}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRecoverUnpaidOrder(order)}
-                            className="text-red-600"
+                            onClick={() => handleViewOrder(order)}
                           >
-                            <CreditCard className="h-4 w-4 mr-1" />
-                            Cobrar
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handlePrintLabel(order)}>
-                              <Printer className="h-4 w-4 mr-2" />
-                              Etiqueta
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePrintDeclaration(order)}>
-                              <FileText className="h-4 w-4 mr-2" />
-                              Declaração
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {(order.payment_status === 'pending' || order.status === 'unpaid') && (
+                                <DropdownMenuItem onClick={() => handleRecoverUnpaidOrder(order)}>
+                                  <CreditCard className="h-4 w-4 mr-2" />
+                                  Cobrar Pagamento
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => handlePrintLabel(order)}>
+                                <Printer className="h-4 w-4 mr-2" />
+                                Etiqueta
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePrintDeclaration(order)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Declaração
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+
+          {/* Vista Mobile - Cards */}
+          <div className="lg:hidden space-y-4">
+            {filteredOrders.map((order) => (
+              <Card key={order.id} className="hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">{order.order_number}</h3>
+                      <div className="flex gap-2">
+                        <Badge className={getStatusColor(order.status)}>
+                          {getStatusIcon(order.status)}
+                          <span className="ml-1">{getStatusText(order.status)}</span>
+                        </Badge>
+                        <Badge className={getPaymentStatusColor(order.payment_status)}>
+                          {getPaymentStatusText(order.payment_status)}
+                        </Badge>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Cliente</p>
+                        <p className="font-medium">{order.customer_name}</p>
+                        {order.customer_phone && (
+                          <p className="text-xs text-muted-foreground">{order.customer_phone}</p>
+                        )}
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className="text-muted-foreground">Total</p>
+                        <p className="font-bold text-lg">R$ {order.total_amount.toFixed(2)}</p>
+                        {order.shipping_cost > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            + R$ {order.shipping_cost.toFixed(2)} frete
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewOrder(order)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Detalhes
+                      </Button>
+                      
+                      {(order.payment_status === 'pending' || order.status === 'unpaid') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRecoverUnpaidOrder(order)}
+                          className="text-red-600"
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Cobrar
+                        </Button>
+                      )}
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handlePrintLabel(order)}>
+                            <Printer className="h-4 w-4 mr-2" />
+                            Etiqueta
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintDeclaration(order)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Declaração
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          {filteredOrders.length === 0 && (
+            <div className="text-center py-12">
+              <Package2 size={48} className="mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum pedido encontrado</h3>
+              <p className="text-muted-foreground">
+                {searchTerm || filterStatus !== 'all' || filterType !== 'all' || filterPayment !== 'all'
+                  ? 'Tente ajustar os filtros de busca'
+                  : 'Aguardando os primeiros pedidos da sua loja'
+                }
+              </p>
             </div>
-            
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-12">
-                <Package2 size={48} className="mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum pedido encontrado</h3>
-                <p className="text-muted-foreground">
-                  {searchTerm || filterStatus !== 'all' || filterType !== 'all' || filterPayment !== 'all'
-                    ? 'Tente ajustar os filtros de busca'
-                    : 'Aguardando os primeiros pedidos da sua loja'
-                  }
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Modal de Detalhes do Pedido */}
       <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
@@ -756,7 +750,7 @@ const OrdersImproved = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 };
 
