@@ -40,6 +40,18 @@ verify_jwt = true
 [functions.ai-seo-generator]
 verify_jwt = true
 
+[functions.ai-headline-generator]
+verify_jwt = true
+
+[functions.ai-hashtag-generator]
+verify_jwt = true
+
+[functions.ai-ad-copy-generator]
+verify_jwt = true
+
+[functions.ai-social-media-generator]
+verify_jwt = true
+
 [functions.create-public-order]
 verify_jwt = false
 
