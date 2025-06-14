@@ -30,7 +30,7 @@ interface CheckoutModalProps {
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSettings, storeId }) => {
   const { items, totalAmount, clearCart } = useCart();
   const { createOrderAsync, isCreatingOrder } = useOrders();
-  const { settings: catalogSettings } = useCatalogSettings(storeId);
+  const { settings: catalogSettings, loading: catalogLoading } = useCatalogSettings(storeId);
   const { toast } = useToast();
   
   const [customerData, setCustomerData] = useState({
@@ -57,14 +57,35 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
 
-  // Usar configurações do catalogSettings se disponível, senão usar storeSettings
+  // SEMPRE usar catalogSettings como prioridade, fallback para storeSettings apenas se não houver catalogSettings
   const effectiveSettings = catalogSettings || storeSettings;
 
-  // Verificar se as credenciais do Mercado Pago estão configuradas
+  // Log para debug das credenciais
+  console.log('CheckoutModal Debug:', {
+    catalogSettings: catalogSettings?.payment_methods,
+    storeSettings: storeSettings?.payment_methods,
+    effectiveSettings: effectiveSettings?.payment_methods,
+    catalogLoading
+  });
+
+  // Verificar credenciais do Mercado Pago - SEMPRE usar catalogSettings primeiro
   const hasMercadoPagoCredentials = React.useMemo(() => {
+    if (catalogLoading || !effectiveSettings) {
+      console.log('CheckoutModal: Ainda carregando configurações...');
+      return false;
+    }
+
     const paymentMethods = effectiveSettings?.payment_methods;
-    return !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
-  }, [effectiveSettings]);
+    const hasCredentials = !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
+    
+    console.log('CheckoutModal: Verificação de credenciais MP:', {
+      accessToken: paymentMethods?.mercadopago_access_token ? 'presente' : 'ausente',
+      publicKey: paymentMethods?.mercadopago_public_key ? 'presente' : 'ausente',
+      hasCredentials
+    });
+    
+    return hasCredentials;
+  }, [effectiveSettings, catalogLoading]);
 
   // Verificar se está em ambiente de teste
   const isTestEnvironment = React.useMemo(() => {
@@ -76,6 +97,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
 
   const availablePaymentMethods = React.useMemo(() => {
     if (!hasMercadoPagoCredentials) {
+      console.log('CheckoutModal: Sem credenciais MP, nenhum método disponível');
       return [];
     }
 
@@ -104,10 +126,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
         description: 'Vencimento em 3 dias úteis'
       });
     }
+    
+    console.log('CheckoutModal: Métodos de pagamento disponíveis:', methods.length);
     return methods;
   }, [effectiveSettings, hasMercadoPagoCredentials]);
 
-  // ... keep existing code (availableShippingMethods useMemo)
   const availableShippingMethods = React.useMemo(() => {
     const methods = [];
     if (effectiveSettings?.shipping_options?.pickup) {
@@ -321,6 +344,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
     });
   };
 
+  // Aguardar carregamento das configurações do catálogo antes de renderizar
+  if (catalogLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Carregando...</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <p className="text-gray-600">Carregando configurações do catálogo...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // Renderizar modal de configuração se não houver métodos disponíveis
   if (!hasMercadoPagoCredentials || (availablePaymentMethods.length === 0 || availableShippingMethods.length === 0)) {
     return (
@@ -345,7 +384,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0 px-6 py-4 border-b bg-gradient-to-r from-primary to-accent">
           <DialogTitle className="text-2xl font-bold text-white text-center flex items-center justify-center gap-3">
             {currentStep === 'checkout' ? 'Finalizar Pedido' : 'Pagamento'}
