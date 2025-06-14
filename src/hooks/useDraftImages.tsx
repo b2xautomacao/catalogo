@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,13 +27,30 @@ export const useDraftImages = () => {
     return id;
   };
 
-  const removeDraftImage = (id: string) => {
+  const addDraftImages = (files: File[]) => {
+    const newImages = files.map(file => {
+      const id = Math.random().toString(36).substr(2, 9);
+      const url = URL.createObjectURL(file);
+      
+      return {
+        id,
+        url,
+        file,
+        uploaded: false
+      };
+    });
+
+    setDraftImages(prev => [...prev, ...newImages]);
+    return newImages.map(img => img.id);
+  };
+
+  const removeDraftImage = (index: number) => {
     setDraftImages(prev => {
-      const image = prev.find(img => img.id === id);
-      if (image && !image.uploaded) {
-        URL.revokeObjectURL(image.url);
+      const imageToRemove = prev[index];
+      if (imageToRemove && !imageToRemove.uploaded) {
+        URL.revokeObjectURL(imageToRemove.url);
       }
-      return prev.filter(img => img.id !== id);
+      return prev.filter((_, i) => i !== index);
     });
   };
 
@@ -127,6 +143,7 @@ export const useDraftImages = () => {
     draftImages,
     uploading,
     addDraftImage,
+    addDraftImages,
     removeDraftImage,
     uploadDraftImages,
     clearDraftImages

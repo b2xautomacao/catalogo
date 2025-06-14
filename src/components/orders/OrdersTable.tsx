@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -125,8 +124,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <PaymentStatusBadge
-                    status={paymentStatus?.status || 'pending'}
-                    method={paymentStatus?.lastPaymentMethod}
+                    paymentStatus={paymentStatus}
+                    fallbackStatus="pending"
                   />
                 </TableCell>
                 <TableCell>

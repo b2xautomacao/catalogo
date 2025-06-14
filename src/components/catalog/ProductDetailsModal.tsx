@@ -92,11 +92,17 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   const handleAddToCart = () => {
     addItem({
-      productId: product.id,
-      name: product.name,
-      price: price,
+      id: `${product.id}-${Date.now()}`,
+      product: {
+        id: product.id,
+        name: product.name,
+        retail_price: product.retail_price,
+        wholesale_price: product.wholesale_price,
+        image_url: product.image_url
+      },
       quantity: quantity,
-      variation: selectedVariation,
+      price: price,
+      variations: selectedVariation,
       catalogType: catalogType
     });
     onClose();

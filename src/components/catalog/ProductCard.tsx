@@ -1,4 +1,3 @@
-
 import React, { useState, memo, useCallback } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -256,8 +255,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
         catalogType={catalogType}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        onAddToWishlist={onAddToWishlist}
-        isInWishlist={isInWishlist}
       />
     </>
   );
