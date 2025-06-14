@@ -17,24 +17,22 @@ import CheckoutModal from '@/components/catalog/CheckoutModal';
 import { useToast } from '@/hooks/use-toast';
 
 const CatalogContent = () => {
-  const { storeId, storeSlug, catalogType: urlCatalogType } = useParams<{ 
-    storeId?: string; 
-    storeSlug?: string; 
-    catalogType?: string; 
-  }>();
+  const { storeIdentifier } = useParams<{ storeIdentifier: string }>();
   const location = useLocation();
   const { toast } = useToast();
   const { totalItems } = useCart();
   
-  const storeIdentifier = storeSlug || storeId;
+  console.log('Catalog: Parâmetros da URL:', { storeIdentifier, pathname: location.pathname });
   
   const getCatalogTypeFromUrl = (): CatalogType => {
-    if (urlCatalogType === 'atacado') return 'wholesale';
-    if (urlCatalogType === 'varejo') return 'retail';
-    
     const params = new URLSearchParams(location.search);
     const typeParam = params.get('type');
     if (typeParam === 'wholesale') return 'wholesale';
+    
+    // Verificar se a URL contém "atacado" ou "wholesale"
+    if (location.pathname.includes('atacado') || location.pathname.includes('wholesale')) {
+      return 'wholesale';
+    }
     
     return 'retail';
   };
@@ -62,9 +60,12 @@ const CatalogContent = () => {
   const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
+    console.log('Catalog: Verificando inicialização:', { storeIdentifier, catalogType });
+    
     if (storeIdentifier) {
-      console.log('Inicializando catálogo:', storeIdentifier, catalogType);
+      console.log('Catalog: Inicializando catálogo para loja:', storeIdentifier);
       initializeCatalog(storeIdentifier, catalogType).then((success) => {
+        console.log('Catalog: Resultado da inicialização:', success);
         if (!success) {
           toast({
             title: "Catálogo indisponível",
@@ -73,19 +74,24 @@ const CatalogContent = () => {
           });
         }
       });
+    } else {
+      console.log('Catalog: storeIdentifier não disponível');
     }
-  }, [storeIdentifier, catalogType, initializeCatalog]);
+  }, [storeIdentifier, catalogType, initializeCatalog, toast]);
 
   useEffect(() => {
     const newCatalogType = getCatalogTypeFromUrl();
     if (newCatalogType !== catalogType) {
+      console.log('Catalog: Mudando tipo de catálogo:', { from: catalogType, to: newCatalogType });
       setCatalogType(newCatalogType);
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, catalogType]);
 
   useEffect(() => {
     if (store) {
-      document.title = `${store.name} - Catálogo ${catalogType === 'retail' ? 'Varejo' : 'Atacado'}`;
+      const pageTitle = `${store.name} - Catálogo ${catalogType === 'retail' ? 'Varejo' : 'Atacado'}`;
+      console.log('Catalog: Definindo título da página:', pageTitle);
+      document.title = pageTitle;
     }
   }, [store, catalogType]);
 
@@ -172,7 +178,20 @@ const CatalogContent = () => {
     }
   };
 
+  // Verificar se não há storeIdentifier
+  if (!storeIdentifier) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">URL inválida</h1>
+          <p className="text-gray-600">O identificador da loja não foi encontrado na URL.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (storeError) {
+    console.log('Catalog: Erro da loja:', storeError);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -184,22 +203,26 @@ const CatalogContent = () => {
   }
 
   if (loading && !store) {
+    console.log('Catalog: Carregando loja...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-700">Carregando catálogo...</h2>
+          <p className="text-sm text-gray-500 mt-2">Buscando loja: {storeIdentifier}</p>
         </div>
       </div>
     );
   }
 
   if (!loading && !store) {
+    console.log('Catalog: Loja não encontrada');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja não encontrada</h1>
           <p className="text-gray-600">A loja que você está procurando não existe ou não está mais ativa.</p>
+          <p className="text-sm text-gray-500 mt-2">Identificador buscado: {storeIdentifier}</p>
         </div>
       </div>
     );
@@ -209,6 +232,12 @@ const CatalogContent = () => {
   const showCategoryFilter = settings?.allow_categories_filter !== false;
   const showPriceFilter = settings?.allow_price_filter !== false;
   const showFilters = showCategoryFilter || showPriceFilter;
+
+  console.log('Catalog: Renderizando catálogo:', { 
+    store: store?.name, 
+    productsCount: sortedProducts.length, 
+    loading 
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">

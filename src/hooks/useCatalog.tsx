@@ -25,11 +25,28 @@ type CatalogProduct = PublicProduct & {
 export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 'retail') => {
   const { profile } = useAuth();
   
+  // Log inicial para debug
+  console.log('useCatalog: Inicializando com:', { 
+    storeIdentifier, 
+    catalogType, 
+    hasProfile: !!profile,
+    profileStoreId: profile?.store_id 
+  });
+  
   // Determinar se deve usar versão pública ou autenticada
-  const usePublicVersion = !!storeIdentifier && !profile;
+  const usePublicVersion = useMemo(() => {
+    const shouldUsePublic = !!storeIdentifier && !profile;
+    console.log('useCatalog: Determinando versão:', { 
+      storeIdentifier: !!storeIdentifier, 
+      hasProfile: !!profile, 
+      usePublicVersion: shouldUsePublic 
+    });
+    return shouldUsePublic;
+  }, [storeIdentifier, profile]);
   
-  console.log('useCatalog: Inicializando com:', { storeIdentifier, catalogType, usePublicVersion });
-  
+  const [filters, setFilters] = useState<CatalogFilters>({});
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Hooks condicionais baseados no contexto
   const { products: authProducts, loading: authProductsLoading } = useProducts(
     usePublicVersion ? undefined : (profile?.store_id || storeIdentifier)
@@ -49,23 +66,39 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   );
 
   const { store, loading: storeLoading, error: storeError } = useStoreData(storeIdentifier);
-  
-  const [filters, setFilters] = useState<CatalogFilters>({});
-  const [searchTerm, setSearchTerm] = useState('');
+
+  // Log do estado dos dados
+  console.log('useCatalog: Estado dos dados:', {
+    usePublicVersion,
+    authProductsCount: authProducts.length,
+    publicProductsCount: publicProducts.length,
+    hasStoreSettings: !!storeSettings,
+    hasCatalogSettings: !!catalogSettings,
+    hasStore: !!store,
+    authProductsLoading,
+    publicProductsLoading,
+    storeSettingsLoading,
+    catalogSettingsLoading,
+    storeLoading
+  });
 
   // Unificar produtos e configurações baseado no contexto
   const products: CatalogProduct[] = useMemo(() => {
-    if (usePublicVersion) {
-      return publicProducts;
-    }
-    return authProducts;
+    const result = usePublicVersion ? publicProducts : authProducts;
+    console.log('useCatalog: Produtos unificados:', { 
+      usePublicVersion, 
+      count: result.length 
+    });
+    return result;
   }, [usePublicVersion, publicProducts, authProducts]);
 
   const settings = useMemo(() => {
-    if (usePublicVersion) {
-      return catalogSettings;
-    }
-    return storeSettings;
+    const result = usePublicVersion ? catalogSettings : storeSettings;
+    console.log('useCatalog: Configurações unificadas:', { 
+      usePublicVersion, 
+      hasSettings: !!result 
+    });
+    return result;
   }, [usePublicVersion, catalogSettings, storeSettings]);
 
   const productsLoading = usePublicVersion ? publicProductsLoading : authProductsLoading;
@@ -73,8 +106,11 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   // Aplicar filtros e busca aos produtos
   const filteredProducts = useMemo(() => {
-    console.log('useCatalog: Aplicando filtros:', filters);
-    console.log('useCatalog: Produtos disponíveis:', products.length);
+    console.log('useCatalog: Aplicando filtros:', { 
+      filters, 
+      searchTerm, 
+      productsCount: products.length 
+    });
     
     if (!products.length) return [];
 
@@ -135,6 +171,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
         .map(product => product.category!)
     ));
     
+    console.log('useCatalog: Categorias encontradas:', uniqueCategories);
     return uniqueCategories.sort();
   }, [products]);
 
@@ -166,7 +203,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   // Funções de compatibilidade para Catalog.tsx
   const initializeCatalog = useCallback(async (storeId: string, type: CatalogType) => {
-    console.log('useCatalog: Inicializando catálogo:', storeId, type);
+    console.log('useCatalog: Inicializando catálogo:', { storeId, type });
     
     // Verificar se o catálogo está ativo nas configurações
     if (settings) {
@@ -174,30 +211,42 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
         ? settings.retail_catalog_active !== false
         : settings.wholesale_catalog_active === true;
       
+      console.log('useCatalog: Status do catálogo:', { type, isActive });
+      
       if (!isActive) {
         console.warn('useCatalog: Catálogo não está ativo:', type);
         return false;
       }
+    } else {
+      console.log('useCatalog: Configurações ainda não carregadas, assumindo ativo');
     }
     
     return true;
   }, [settings]);
 
   const searchProducts = useCallback((query: string) => {
+    console.log('useCatalog: Buscando produtos:', query);
     setSearchTerm(query);
   }, []);
 
   const filterProducts = useCallback((filterOptions: any) => {
+    console.log('useCatalog: Aplicando filtros de produtos:', filterOptions);
     updateFilters(filterOptions);
   }, [updateFilters]);
 
   // Verificar se o catálogo está ativo nas configurações
   const isCatalogActive = useMemo(() => {
-    if (!settings) return true; // Default para ativo se não há configurações
+    if (!settings) {
+      console.log('useCatalog: Configurações não disponíveis, assumindo catálogo ativo');
+      return true; // Default para ativo se não há configurações
+    }
     
-    return catalogType === 'retail' 
+    const isActive = catalogType === 'retail' 
       ? settings.retail_catalog_active !== false
       : settings.wholesale_catalog_active === true;
+    
+    console.log('useCatalog: Status do catálogo:', { catalogType, isActive });
+    return isActive;
   }, [settings, catalogType]);
 
   const loading = productsLoading || settingsLoading || storeLoading;
@@ -207,11 +256,21 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   // Obter store_id para uso no CheckoutModal
   const storeId = useMemo(() => {
-    if (usePublicVersion && store) {
-      return store.id;
-    }
-    return profile?.store_id;
+    const result = usePublicVersion && store ? store.id : profile?.store_id;
+    console.log('useCatalog: Store ID para checkout:', { usePublicVersion, storeId: result });
+    return result;
   }, [usePublicVersion, store, profile?.store_id]);
+
+  // Log final do estado
+  console.log('useCatalog: Estado final:', {
+    filteredProductsCount: filteredProducts.length,
+    allProductsCount: products.length,
+    categoriesCount: categories.length,
+    loading,
+    hasError: !!error,
+    isCatalogActive,
+    storeId
+  });
 
   return {
     // Retorno original
