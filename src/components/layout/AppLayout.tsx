@@ -64,51 +64,46 @@ const AppLayout: React.FC<AppLayoutProps> = ({
         />
       )}
 
-      <div className="flex h-screen overflow-hidden">
+      {/* Header fixo no topo */}
+      <Header title={title} subtitle={subtitle} />
+
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden pt-16">
         {/* Sidebar para desktop */}
-        <div className="hidden lg:block">
-          <Sidebar />
-        </div>
+        <Sidebar />
 
         {/* Conteúdo principal */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title={title} subtitle={subtitle} />
-          
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 lg:p-6 space-y-6">
-              {/* Breadcrumbs */}
-              {breadcrumbs.length > 0 && (
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    {breadcrumbs.map((item, index) => (
-                      <React.Fragment key={index}>
-                        <BreadcrumbItem>
-                          {item.current ? (
-                            <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                          ) : (
-                            <BreadcrumbLink href={item.href || '#'}>
-                              {item.label}
-                            </BreadcrumbLink>
-                          )}
-                        </BreadcrumbItem>
-                        {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
-                      </React.Fragment>
-                    ))}
-                  </BreadcrumbList>
-                </Breadcrumb>
-              )}
+        <main className="flex-1 overflow-auto lg:ml-64">
+          <div className="p-4 lg:p-6 space-y-6">
+            {/* Breadcrumbs */}
+            {breadcrumbs.length > 0 && (
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumbs.map((item, index) => (
+                    <React.Fragment key={index}>
+                      <BreadcrumbItem>
+                        {item.current ? (
+                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink href={item.href || '#'}>
+                            {item.label}
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            )}
 
-              {/* Conteúdo da página */}
-              {children}
-            </div>
-          </main>
-        </div>
-
-        {/* Navegação mobile */}
-        <div className="lg:hidden">
-          <MobileNavigation />
-        </div>
+            {/* Conteúdo da página */}
+            {children}
+          </div>
+        </main>
       </div>
+
+      {/* Navegação mobile fixa na parte inferior */}
+      <MobileNavigation />
     </div>
   );
 };

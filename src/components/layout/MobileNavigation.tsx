@@ -3,99 +3,50 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { 
-  Home, Package, ShoppingCart, Users, Settings, Tag, 
-  BarChart3, Store, UserCheck, Grid3X3, Truck, MapPin 
+  Home, Package, ShoppingCart, Users, Settings
 } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
 
 const MobileNavigation = () => {
   const location = useLocation();
   const { profile } = useAuth();
 
-  const menuItems = [
-    { path: '/', icon: Home, label: 'Dashboard', roles: ['superadmin', 'store_admin'] },
+  // Menu simplificado para navegação inferior mobile
+  const mobileMenuItems = [
+    { path: '/', icon: Home, label: 'Início', roles: ['superadmin', 'store_admin'] },
     { path: '/products', icon: Package, label: 'Produtos', roles: ['store_admin'] },
-    { path: '/categories', icon: Grid3X3, label: 'Categorias', roles: ['store_admin'] },
     { path: '/orders', icon: ShoppingCart, label: 'Pedidos', roles: ['store_admin'] },
     { path: '/customers', icon: Users, label: 'Clientes', roles: ['store_admin'] },
-    { path: '/coupons', icon: Tag, label: 'Cupons', roles: ['store_admin'] },
-    { path: '/deliveries', icon: MapPin, label: 'Gestão de Entregas', roles: ['store_admin'] },
-    { path: '/shipping', icon: Truck, label: 'Envios', roles: ['store_admin'] },
-    { path: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['superadmin', 'store_admin'] },
-    { path: '/stores', icon: Store, label: 'Lojas', roles: ['superadmin'] },
-    { path: '/users', icon: UserCheck, label: 'Usuários', roles: ['superadmin'] },
-    { path: '/settings', icon: Settings, label: 'Configurações', roles: ['superadmin', 'store_admin'] },
+    { path: '/settings', icon: Settings, label: 'Config', roles: ['superadmin', 'store_admin'] },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => 
+  const filteredMenuItems = mobileMenuItems.filter(item => 
     item.roles.includes(profile?.role || 'store_admin')
   );
 
   return (
-    <Drawer>
-      <DrawerTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-6 w-6" />
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent className="h-[80vh]">
-        <DrawerHeader>
-          <DrawerTitle>Menu de Navegação</DrawerTitle>
-        </DrawerHeader>
-        <div className="px-4 pb-6">
-          <nav className="space-y-2">
-            {filteredMenuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+      <nav className="flex justify-around py-2">
+        {filteredMenuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
           
-          {/* User Info Mobile */}
-          <div className="mt-6 pt-6 border-t">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">
-                    {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {profile?.full_name || 'Usuário'}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {profile?.role === 'superadmin' ? 'Super Admin' : 'Admin da Loja'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DrawerContent>
-    </Drawer>
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex flex-col items-center justify-center px-3 py-2 min-w-0 flex-1 text-center ${
+                isActive
+                  ? 'text-blue-600'
+                  : 'text-gray-600'
+              }`}
+            >
+              <Icon size={20} className="mb-1" />
+              <span className="text-xs font-medium truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 };
 
