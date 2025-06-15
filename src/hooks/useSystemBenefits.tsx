@@ -177,6 +177,19 @@ export const useSystemBenefits = () => {
     }
   }, [fetchBenefits, invalidateAll]);
 
+  const getBenefitsByCategory = useCallback(() => {
+    const categorizedBenefits: Record<string, SystemBenefit[]> = {};
+    
+    benefits.forEach(benefit => {
+      if (!categorizedBenefits[benefit.category]) {
+        categorizedBenefits[benefit.category] = [];
+      }
+      categorizedBenefits[benefit.category].push(benefit);
+    });
+    
+    return categorizedBenefits;
+  }, [benefits]);
+
   useEffect(() => {
     fetchBenefits();
   }, [fetchBenefits]);
@@ -187,6 +200,7 @@ export const useSystemBenefits = () => {
     createBenefit,
     updateBenefit,
     deleteBenefit,
+    getBenefitsByCategory,
     refetch: useCallback(() => fetchBenefits(false), [fetchBenefits])
   };
 };

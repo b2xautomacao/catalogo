@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { SubscriptionPlansManager } from '@/components/admin/SubscriptionPlansManager';
+import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import { SystemBenefitsManager } from '@/components/admin/SystemBenefitsManager';
 import { TenantMonitoringDashboard } from '@/components/admin/TenantMonitoringDashboard';
 
