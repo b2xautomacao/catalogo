@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useStores, CreateStoreData } from '@/hooks/useStores';
+import { useUsers } from '@/hooks/useUsers';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import StoreForm from '@/components/stores/StoreForm';
@@ -12,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import DashboardCard from './DashboardCard';
 
 const SuperadminDashboard = () => {
-  const { stores, loading, createStore } = useStores();
+  const { stores, loading: storesLoading, createStore } = useStores();
+  const { users, loading: usersLoading } = useUsers();
   const { profile } = useAuth();
   const [showStoreForm, setShowStoreForm] = useState(false);
   const { toast } = useToast();
@@ -48,10 +50,16 @@ const SuperadminDashboard = () => {
     }
   };
 
+  // Métricas calculadas
   const totalStores = stores.length;
   const activeStores = stores.filter(store => store.is_active).length;
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => user.is_active).length;
   const totalRevenue = stores.reduce((sum, store) => sum + (store.monthly_fee || 0), 0);
   const growthRate = 12.5; // Simulado
+
+  // Loading state para métricas individuais
+  const metricsLoading = storesLoading || usersLoading;
 
   return (
     <div className="space-y-8 animate-fadeInUp">
@@ -71,38 +79,38 @@ const SuperadminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Total de Lojas"
-          value={totalStores}
-          subtitle={`${activeStores} ativas`}
+          value={metricsLoading ? "..." : totalStores}
+          subtitle={metricsLoading ? "carregando..." : `${activeStores} ativas`}
           icon={Store}
           variant="primary"
-          trend={{ value: 8.2, isPositive: true }}
+          trend={metricsLoading ? undefined : { value: 8.2, isPositive: true }}
         />
 
         <DashboardCard
           title="Receita Mensal"
-          value={`R$ ${totalRevenue.toFixed(2)}`}
+          value={metricsLoading ? "..." : `R$ ${totalRevenue.toFixed(2)}`}
           subtitle="Receita recorrente"
           icon={DollarSign}
           variant="success"
-          trend={{ value: growthRate, isPositive: true }}
+          trend={metricsLoading ? undefined : { value: growthRate, isPositive: true }}
         />
 
         <DashboardCard
           title="Lojas Ativas"
-          value={activeStores}
-          subtitle={`${((activeStores / totalStores) * 100 || 0).toFixed(1)}% do total`}
+          value={metricsLoading ? "..." : activeStores}
+          subtitle={metricsLoading ? "carregando..." : `${((activeStores / totalStores) * 100 || 0).toFixed(1)}% do total`}
           icon={Building2}
           variant="warning"
-          trend={{ value: 5.1, isPositive: true }}
+          trend={metricsLoading ? undefined : { value: 5.1, isPositive: true }}
         />
 
         <DashboardCard
           title="Usuários Ativos"
-          value={totalStores}
-          subtitle="Administradores"
+          value={metricsLoading ? "..." : activeUsers}
+          subtitle={metricsLoading ? "carregando..." : `de ${totalUsers} usuários`}
           icon={Users}
           variant="secondary"
-          trend={{ value: 3.2, isPositive: false }}
+          trend={metricsLoading ? undefined : { value: 3.2, isPositive: false }}
         />
       </div>
 
@@ -116,25 +124,37 @@ const SuperadminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {stores.slice(0, 5).map((store, index) => (
-                <div key={store.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span className="font-medium">{store.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">R$ {(store.monthly_fee || 0).toFixed(2)}</div>
-                    <div className="w-24 h-2 bg-gray-200 rounded-full">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full" 
-                        style={{ width: `${Math.random() * 100}%` }}
-                      ></div>
+            {storesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="loading-spinner"></div>
+                <span className="ml-2">Carregando lojas...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {stores.slice(0, 5).map((store, index) => (
+                  <div key={store.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <span className="font-medium">{store.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">R$ {(store.monthly_fee || 0).toFixed(2)}</div>
+                      <div className="w-24 h-2 bg-gray-200 rounded-full">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full" 
+                          style={{ width: `${Math.random() * 100}%` }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+                {stores.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    Nenhuma loja encontrada
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -179,7 +199,7 @@ const SuperadminDashboard = () => {
           <CardTitle>Gestão de Lojas</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {storesLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="loading-spinner"></div>
               <span className="ml-2">Carregando lojas...</span>

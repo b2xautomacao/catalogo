@@ -10,7 +10,7 @@ export const useUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('Buscando usuários...');
+      console.log('useUsers: Buscando usuários...');
       
       const { data, error } = await supabase
         .from('profiles')
@@ -22,10 +22,11 @@ export const useUsers = () => {
         throw error;
       }
       
-      console.log('Usuários encontrados:', data);
+      console.log('useUsers: Usuários encontrados:', data?.length);
       setUsers(data || []);
     } catch (error) {
       console.error('Erro inesperado ao buscar usuários:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -33,28 +34,8 @@ export const useUsers = () => {
 
   const updateUserStore = async (userId: string, storeId: string | null) => {
     try {
-      console.log('Iniciando atualização do usuário:', userId, 'para loja:', storeId);
+      console.log('useUsers: Atualizando usuário:', userId, 'para loja:', storeId);
       
-      // Primeiro, verificar se o usuário existe
-      const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Erro ao verificar usuário existente:', checkError);
-        throw checkError;
-      }
-
-      if (!existingUser) {
-        console.error('Usuário não encontrado:', userId);
-        throw new Error('Usuário não encontrado');
-      }
-
-      console.log('Usuário encontrado:', existingUser);
-
-      // Realizar a atualização
       const { data, error } = await supabase
         .from('profiles')
         .update({ store_id: storeId })
@@ -66,14 +47,12 @@ export const useUsers = () => {
         throw error;
       }
 
-      console.log('Resultado da atualização:', data);
-
       if (!data || data.length === 0) {
         console.error('Nenhuma linha foi atualizada');
         throw new Error('Falha ao atualizar usuário - nenhuma linha afetada');
       }
 
-      console.log('Usuário atualizado com sucesso:', data[0]);
+      console.log('useUsers: Usuário atualizado com sucesso:', data[0]);
       
       // Atualizar o estado local imediatamente
       setUsers(prevUsers => 
@@ -83,30 +62,6 @@ export const useUsers = () => {
             : user
         )
       );
-      
-      // Verificar se a atualização persistiu no banco
-      setTimeout(async () => {
-        try {
-          const { data: verifyData, error: verifyError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-          
-          if (verifyError) {
-            console.error('Erro ao verificar atualização:', verifyError);
-          } else {
-            console.log('Verificação da atualização:', verifyData);
-            if (verifyData?.store_id !== storeId) {
-              console.error('Atualização não persistiu corretamente!');
-              // Refetch para garantir consistência
-              fetchUsers();
-            }
-          }
-        } catch (verifyErr) {
-          console.error('Erro na verificação:', verifyErr);
-        }
-      }, 1000);
 
       return { error: null };
     } catch (error) {
@@ -117,25 +72,8 @@ export const useUsers = () => {
 
   const updateUserRole = async (userId: string, role: 'superadmin' | 'store_admin') => {
     try {
-      console.log('Atualizando papel do usuário:', userId, 'para:', role);
+      console.log('useUsers: Atualizando papel do usuário:', userId, 'para:', role);
       
-      // Verificar se o usuário existe primeiro
-      const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Erro ao verificar usuário existente:', checkError);
-        throw checkError;
-      }
-
-      if (!existingUser) {
-        console.error('Usuário não encontrado:', userId);
-        throw new Error('Usuário não encontrado');
-      }
-
       const { data, error } = await supabase
         .from('profiles')
         .update({ role })
@@ -152,7 +90,7 @@ export const useUsers = () => {
         throw new Error('Falha ao atualizar papel do usuário');
       }
 
-      console.log('Papel do usuário atualizado com sucesso:', data[0]);
+      console.log('useUsers: Papel do usuário atualizado com sucesso:', data[0]);
       
       // Atualizar o estado local imediatamente
       setUsers(prevUsers => 
@@ -170,6 +108,7 @@ export const useUsers = () => {
     }
   };
 
+  // Carregar usuários apenas uma vez na inicialização
   useEffect(() => {
     fetchUsers();
   }, []);
