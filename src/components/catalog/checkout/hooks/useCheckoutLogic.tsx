@@ -5,6 +5,7 @@ import { generateWhatsAppMessage } from '../checkoutUtils';
 import { useStoreData } from '@/hooks/useStoreData';
 import { useCheckoutContext } from '../context/CheckoutProvider';
 import { usePublicCustomer } from "./usePublicCustomer";
+import { useMobileWhatsApp } from './useMobileWhatsApp';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useCheckoutLogic = () => {
@@ -31,16 +32,14 @@ export const useCheckoutLogic = () => {
   } = useCheckoutContext();
 
   const { store: basicStoreData } = useStoreData();
-
   const { saveCustomer } = usePublicCustomer();
+  const { isMobile, openWhatsApp } = useMobileWhatsApp();
 
   const handleShippingCalculated = useCallback((options: any[]) => {
     setShippingOptions(options);
     
-    // Auto-selecionar primeira opção se não houver seleção
     if (options.length > 0 && !shippingMethod) {
       const firstOption = options[0];
-      // setShippingMethod será chamado pelo componente pai
       setShippingCost(firstOption.price);
     }
   }, [shippingMethod, setShippingOptions, setShippingCost]);
@@ -48,7 +47,6 @@ export const useCheckoutLogic = () => {
   const handleShippingMethodChange = useCallback((methodId: string) => {
     const selectedOption = shippingOptions.find(opt => opt.id === methodId);
     if (selectedOption) {
-      // Verificar se é frete grátis
       const freeDeliveryAmount = settings?.shipping_options?.free_delivery_amount || 0;
       const isFreeDelivery = freeDeliveryAmount > 0 && 
                            totalAmount >= freeDeliveryAmount && 
@@ -58,12 +56,11 @@ export const useCheckoutLogic = () => {
     }
   }, [shippingOptions, settings, totalAmount, setShippingCost]);
 
-  // Envia para o WhatsApp o resumo do pedido, abrindo no navegador do cliente
+  // Função para fechar modal após sucesso
   const handleWhatsAppCheckout = React.useCallback(
-    (order: any) => {
-      console.log('🚀 handleWhatsAppCheckout: Iniciando envio para WhatsApp', { order });
+    (order: any, onClose?: () => void) => {
+      console.log('🚀 handleWhatsAppCheckout: Iniciando envio para WhatsApp', { order, isMobile });
       
-      // Gera o resumo (já pronto após criar pedido e salvar cliente)
       const orderData = {
         customer_name: customerData.name,
         customer_phone: customerData.phone,
@@ -85,11 +82,9 @@ export const useCheckoutLogic = () => {
 
       console.log('📋 handleWhatsAppCheckout: Dados do pedido para WhatsApp', orderData);
 
-      // Gera mensagem de texto formatada (mantém função existente)
       const message = generateWhatsAppMessage(orderData);
       console.log('💬 handleWhatsAppCheckout: Mensagem gerada', message);
 
-      // Telefone da loja - usar múltiplas fontes
       const storePhone = currentStore?.phone || basicStoreData?.phone || settings?.whatsapp_number || '';
       console.log('📞 handleWhatsAppCheckout: Telefone da loja obtido', { 
         currentStore: currentStore?.phone, 
@@ -98,25 +93,22 @@ export const useCheckoutLogic = () => {
         final: storePhone 
       });
 
-      const formattedPhone = storePhone.replace(/\D/g, '');
-      const phoneForLink =
-        formattedPhone.length >= 10
-          ? formattedPhone.startsWith('55')
-            ? formattedPhone
-            : `55${formattedPhone}`
-          : '';
-
-      console.log('📱 handleWhatsAppCheckout: Telefone formatado', { formattedPhone, phoneForLink });
-
-      // Notifica usuário
+      // Notifica usuário com feedback específico para mobile/desktop
       toast({
         title: "Pedido enviado!",
-        description: "Redirecionando para o WhatsApp da loja.",
+        description: isMobile 
+          ? "Abrindo WhatsApp no seu celular..."
+          : "Redirecionando para o WhatsApp da loja.",
         duration: 4000
       });
 
+      // Delay menor para mobile
+      const redirectDelay = isMobile ? 800 : 1200;
+
       setTimeout(() => {
-        if (!phoneForLink) {
+        const success = openWhatsApp(storePhone, message);
+        
+        if (!success) {
           console.error('❌ handleWhatsAppCheckout: WhatsApp não configurado');
           toast({
             title: "WhatsApp da loja não configurado",
@@ -125,15 +117,18 @@ export const useCheckoutLogic = () => {
           });
           return;
         }
-        
-        // Abrir WhatsApp com o resumo do pedido no navegador do cliente
-        const whatsappUrl = `https://wa.me/${phoneForLink}?text=${encodeURIComponent(message)}`;
-        console.log('🔗 handleWhatsAppCheckout: Abrindo WhatsApp', whatsappUrl);
-        window.open(whatsappUrl, '_blank');
-      }, 1200);
 
-      clearCart(); // Limpar carrinho ao final
-      console.log('🛒 handleWhatsAppCheckout: Carrinho limpo');
+        // Fechar modal após sucesso
+        if (onClose) {
+          console.log('🚪 handleWhatsAppCheckout: Fechando modal');
+          setTimeout(() => {
+            onClose();
+          }, isMobile ? 500 : 1000);
+        }
+
+        clearCart();
+        console.log('🛒 handleWhatsAppCheckout: Carrinho limpo');
+      }, redirectDelay);
     },
     [
       customerData,
@@ -146,11 +141,12 @@ export const useCheckoutLogic = () => {
       currentStore,
       settings,
       toast,
-      clearCart
+      clearCart,
+      isMobile,
+      openWhatsApp
     ]
   );
 
-  // Função para criar pedido diretamente (público)
   const createPublicOrder = React.useCallback(async (orderData: any) => {
     console.log('🔨 createPublicOrder: Criando pedido público diretamente', orderData);
     
@@ -174,9 +170,8 @@ export const useCheckoutLogic = () => {
     }
   }, []);
 
-  // --------- FLUXO PRINCIPAL DE CHECKOUT ---------------
-  const handleCreateOrder = React.useCallback(async () => {
-    console.log('🚀 handleCreateOrder: Iniciando processo de checkout');
+  const handleCreateOrder = React.useCallback(async (onClose?: () => void) => {
+    console.log('🚀 handleCreateOrder: Iniciando processo de checkout', { isMobile });
     console.log('📊 handleCreateOrder: Estado atual', {
       customerData,
       cartItems: cartItems.length,
@@ -186,7 +181,7 @@ export const useCheckoutLogic = () => {
     });
 
     try {
-      // Validação básica antes de tudo
+      // Validação básica
       if (!customerData.name.trim()) {
         console.warn('⚠️ handleCreateOrder: Nome não informado');
         toast({
@@ -197,7 +192,6 @@ export const useCheckoutLogic = () => {
         return;
       }
 
-      // Validação de telefone mais flexível
       const phoneNumbers = customerData.phone.replace(/\D/g, '');
       if (!phoneNumbers || phoneNumbers.length < 10) {
         console.warn('⚠️ handleCreateOrder: Telefone inválido', { phone: customerData.phone, numbers: phoneNumbers });
@@ -219,7 +213,6 @@ export const useCheckoutLogic = () => {
         return;
       }
 
-      // Determinar store_id (múltiplas fontes)
       const storeId = currentStore?.id || basicStoreData?.id;
       console.log('🏪 handleCreateOrder: Store ID determinado', { 
         currentStore: currentStore?.id, 
@@ -237,7 +230,7 @@ export const useCheckoutLogic = () => {
         return;
       }
 
-      // ------- Salvar cliente ANTES de criar pedido -------
+      // Salvar cliente ANTES de criar pedido
       console.log('👤 handleCreateOrder: Salvando cliente...');
       const savedCustomer = await saveCustomer({
         name: customerData.name.trim(),
@@ -258,26 +251,23 @@ export const useCheckoutLogic = () => {
 
       console.log('✅ handleCreateOrder: Cliente salvo com sucesso', savedCustomer);
 
-      // ------- Cria pedido normalmente -------
+      // Loading específico para mobile/desktop
       toast({
         title: "Criando seu pedido...",
-        description: "Só um instante! Preparando para enviar ao WhatsApp...",
+        description: isMobile 
+          ? "Preparando para abrir WhatsApp..." 
+          : "Só um instante! Preparando para enviar ao WhatsApp...",
       });
 
-      // Corrigir estrutura dos itens - usar product_id em vez de id
-      const orderItems = cartItems.map(item => {
-        const orderItem = {
-          product_id: item.product.id, // CORREÇÃO: usar product_id
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          variation: item.variations
-            ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim()
-            : undefined
-        };
-        console.log('📦 handleCreateOrder: Item do pedido processado', { original: item, processed: orderItem });
-        return orderItem;
-      });
+      const orderItems = cartItems.map(item => ({
+        product_id: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        variation: item.variations
+          ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim()
+          : undefined
+      }));
 
       const orderData = {
         customer_name: customerData.name.trim(),
@@ -307,17 +297,16 @@ export const useCheckoutLogic = () => {
 
       console.log('📋 handleCreateOrder: Dados finais do pedido', orderData);
 
-      // Para checkout público, usar inserção direta
+      // Criar pedido e aguardar confirmação
       const savedOrder = await createPublicOrder(orderData);
       setCreatedOrder(savedOrder);
 
       console.log('✅ handleCreateOrder: Pedido criado com sucesso', savedOrder);
 
-      // Agora trata os fluxos de acordo com o tipo de checkout
+      // Tratar fluxos de acordo com o tipo de checkout
       if (checkoutType === "whatsapp_only") {
-        // Checkout público: redireciona WhatsApp imediatamente
         console.log('📱 handleCreateOrder: Redirecionando para WhatsApp...');
-        handleWhatsAppCheckout(savedOrder);
+        handleWhatsAppCheckout(savedOrder, onClose);
       } else if (["pix", "credit_card", "bank_slip"].includes(paymentMethod)) {
         console.log('💳 handleCreateOrder: Redirecionando para pagamento...');
         setCurrentStep("payment");
@@ -350,13 +339,15 @@ export const useCheckoutLogic = () => {
     currentStore,
     basicStoreData,
     handleWhatsAppCheckout,
-    createPublicOrder
+    createPublicOrder,
+    isMobile
   ]);
 
   return {
     handleCreateOrder,
     handleWhatsAppCheckout,
     handleShippingCalculated,
-    handleShippingMethodChange
+    handleShippingMethodChange,
+    isMobile
   };
 };

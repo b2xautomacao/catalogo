@@ -1,63 +1,106 @@
 
 import React from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import EnhancedCustomerDataForm from '../EnhancedCustomerDataForm';
-import EnhancedWhatsAppCheckout from '../EnhancedWhatsAppCheckout';
 import { useCheckoutContext } from '../context/CheckoutProvider';
 import { useCheckoutLogic } from '../hooks/useCheckoutLogic';
+import CheckoutConfiguration from './CheckoutConfiguration';
+import EnhancedCustomerDataForm from '../EnhancedCustomerDataForm';
+import ShippingOptionsCard from '../ShippingOptionsCard';
+import EnhancedWhatsAppCheckout from '../EnhancedWhatsAppCheckout';
+import OrderSummary from '../OrderSummary';
+import MercadoPagoPayment from '../MercadoPagoPayment';
+import PixPaymentModal from '../PixPaymentModal';
 
-const CheckoutContent: React.FC = () => {
+interface CheckoutContentProps {
+  onClose?: () => void;
+}
+
+const CheckoutContent: React.FC<CheckoutContentProps> = ({ onClose }) => {
   const {
-    customerData,
-    setCustomerData,
-    notes,
-    setNotes,
-    settings,
+    currentStep,
+    checkoutType,
     cartItems,
+    customerData,
     totalAmount,
     shippingCost,
-    isCreatingOrder
+    notes,
+    createdOrder,
+    pixData,
+    showPixModal,
+    setShowPixModal,
+    toast
   } = useCheckoutContext();
 
-  const { handleCreateOrder } = useCheckoutLogic();
+  const {
+    handleCreateOrder,
+    handleShippingCalculated,
+    handleShippingMethodChange,
+    isMobile
+  } = useCheckoutLogic();
+
+  console.log('🖥️ CheckoutContent: Renderizando', { currentStep, checkoutType, isMobile });
+
+  // Função wrapper para incluir onClose
+  const handleOrderCreation = () => {
+    handleCreateOrder(onClose);
+  };
+
+  if (currentStep === 'config') {
+    return <CheckoutConfiguration />;
+  }
+
+  if (currentStep === 'payment' && createdOrder) {
+    return (
+      <div className="p-6">
+        <MercadoPagoPayment
+          order={createdOrder}
+          onSuccess={() => {
+            toast({
+              title: "Pagamento processado!",
+              description: "Seu pedido foi confirmado com sucesso.",
+            });
+            onClose?.();
+          }}
+        />
+        
+        {showPixModal && pixData && (
+          <PixPaymentModal
+            isOpen={showPixModal}
+            onClose={() => setShowPixModal(false)}
+            pixData={pixData}
+            orderId={createdOrder.id}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="lg:col-span-2 h-full">
-      <ScrollArea className="h-full w-full">
-        <div className="p-4 sm:p-6 space-y-6 pb-24 lg:pb-6">
-          <EnhancedCustomerDataForm
-            customerData={customerData}
-            onDataChange={setCustomerData}
-          />
-
+    <div className="flex flex-col lg:flex-row h-full">
+      <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+        <EnhancedCustomerDataForm />
+        
+        <ShippingOptionsCard 
+          onShippingCalculated={handleShippingCalculated}
+          onShippingMethodChange={handleShippingMethodChange}
+        />
+        
+        {checkoutType === 'whatsapp_only' && (
           <EnhancedWhatsAppCheckout
-            whatsappNumber={settings?.phone || ''}
-            onConfirmOrder={handleCreateOrder}
-            isProcessing={isCreatingOrder}
+            whatsappNumber="00000000000"
+            onConfirmOrder={handleOrderCreation}
+            isProcessing={false}
             customerData={customerData}
             items={cartItems}
             totalAmount={totalAmount}
             shippingCost={shippingCost}
             notes={notes}
           />
+        )}
+      </div>
 
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Observações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Observações sobre o pedido (opcional)"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </ScrollArea>
+      <div className="w-full lg:w-80 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto">
+        <OrderSummary />
+      </div>
     </div>
   );
 };

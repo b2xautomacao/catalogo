@@ -15,7 +15,6 @@ interface CheckoutModalProps {
 const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { catalogLoading } = useCheckoutContext();
 
-  // Aguardar carregamento das configurações do catálogo
   if (catalogLoading) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -41,7 +40,7 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         </DialogHeader>
 
         <div className="flex-1 min-h-0">
-          <CheckoutContent />
+          <CheckoutContent onClose={onClose} />
         </div>
       </DialogContent>
     </Dialog>
