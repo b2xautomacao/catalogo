@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,6 +16,7 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { cn } from '@/lib/utils'; // para classes condicionais
 
+// Definição tipada usada para validação e formulário
 interface StoreInfoFormData {
   storeName: string;
   description: string;
@@ -36,11 +38,11 @@ interface StoreInfoFormData {
   };
 }
 
-// Esquema de validação YUP exato do objeto acima
+// Regex Brasil
 const BR_PHONE_REGEX = /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/;
 const BR_CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
 
-const storeInfoSchema: yup.SchemaOf<StoreInfoFormData> = yup.object({
+const storeInfoSchema = yup.object({
   storeName: yup.string().required('Nome é obrigatório'),
   description: yup.string().nullable().default(''),
   address: yup.string().nullable().default(''),
@@ -56,7 +58,7 @@ const storeInfoSchema: yup.SchemaOf<StoreInfoFormData> = yup.object({
   cnpj: yup
     .string()
     .nullable()
-    .test('is-cnpj', 'Formato inválido (00.000.000/0000-00)', v => !v || BR_CNPJ_REGEX.test(v))
+    .test('is-cnpj', 'Formato inválido (00.000.000/0000-00)', v => !v || BR_CNPJ_REGEX.test(v || ''))
     .default(''),
   facebookUrl: yup.string().nullable().default(''),
   instagramUrl: yup.string().nullable().default(''),
@@ -98,15 +100,14 @@ const storeInfoSchema: yup.SchemaOf<StoreInfoFormData> = yup.object({
       closed: yup.boolean().required(),
     }),
   })
-});
+}).required();
 
-const StoreInfoSettings = () => {
+const StoreInfoSettings: React.FC = () => {
   const { toast } = useToast();
   const { currentStore, updateCurrentStore, loading, error } = useStores();
   const { settings: catalogSettings, updateSettings: updateCatalogSettings } = useCatalogSettings();
   const [saving, setSaving] = React.useState(false);
 
-  // Iniciar formulário com validação YUP
   const form = useForm<StoreInfoFormData>({
     resolver: yupResolver(storeInfoSchema),
     defaultValues: {
@@ -131,11 +132,8 @@ const StoreInfoSettings = () => {
     }
   });
 
-  // Carregar dados da loja quando disponível
   useEffect(() => {
     if (currentStore && catalogSettings) {
-      console.log('StoreInfoSettings: Carregando dados da loja:', currentStore);
-      
       form.reset({
         storeName: currentStore.name || '',
         description: currentStore.description || '',
@@ -162,9 +160,7 @@ const StoreInfoSettings = () => {
   const onSubmit = async (data: StoreInfoFormData) => {
     try {
       setSaving(true);
-      console.log('StoreInfoSettings: Salvando dados:', data);
-
-      // Atualizar dados da loja
+      // Atualização dos dados da loja
       const storeUpdates = {
         name: data.storeName,
         description: data.description,
@@ -173,45 +169,28 @@ const StoreInfoSettings = () => {
         email: data.email,
         cnpj: data.cnpj
       };
+      const { error: updateError } = await updateCurrentStore(storeUpdates);
+      if (updateError) throw new Error(updateError);
 
-      console.log('StoreInfoSettings: Atualizações da loja a serem enviadas:', storeUpdates);
-
-      const { data: updatedStore, error: updateError } = await updateCurrentStore(storeUpdates);
-
-      if (updateError) {
-        console.error('StoreInfoSettings: Erro na atualização da loja:', updateError);
-        throw new Error(updateError);
-      }
-
-      // Atualizar redes sociais nas configurações do catálogo
+      // Atualização das redes sociais
       if (catalogSettings) {
         const catalogUpdates = {
           facebook_url: data.facebookUrl || null,
           instagram_url: data.instagramUrl || null,
-          twitter_url: data.twitterUrl || null,
+          twitter_url: data.twitterUrl || null
         };
-
-        console.log('StoreInfoSettings: Atualizações do catálogo a serem enviadas:', catalogUpdates);
-
         const { error: catalogError } = await updateCatalogSettings(catalogUpdates);
-
-        if (catalogError) {
-          console.error('StoreInfoSettings: Erro na atualização das configurações:', catalogError);
-          throw new Error('Erro ao atualizar redes sociais');
-        }
+        if (catalogError) throw new Error('Erro ao atualizar redes sociais');
       }
 
-      console.log('StoreInfoSettings: Dados salvos com sucesso');
-
       toast({
-        title: "Dados salvos",
-        description: "As informações da loja foram atualizadas com sucesso",
+        title: "✅ Dados salvos!",
+        description: "As informações da loja foram atualizadas com sucesso.",
       });
-    } catch (error) {
-      console.error('StoreInfoSettings: Erro ao salvar configurações:', error);
+    } catch (error: any) {
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações. Tente novamente.",
+        description: error?.message || "Não foi possível salvar as configurações.",
         variant: "destructive",
       });
     } finally {
@@ -264,7 +243,6 @@ const StoreInfoSettings = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Logo da Loja */}
           <LogoUpload />
 
           {/* Informações Básicas */}
@@ -276,7 +254,6 @@ const StoreInfoSettings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Nome */}
               <FormField
                 control={form.control}
                 name="storeName"
@@ -290,8 +267,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-
-              {/* Descrição */}
               <FormField
                 control={form.control}
                 name="description"
@@ -305,8 +280,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-
-              {/* CNPJ */}
               <FormField
                 control={form.control}
                 name="cnpj"
@@ -319,7 +292,7 @@ const StoreInfoSettings = () => {
                         placeholder="00.000.000/0000-00"
                         maxLength={18}
                         onChange={e => {
-                          // Mudança: auto-máscara para CNPJ
+                          // auto-máscara
                           let v = e.target.value.replace(/\D/g, '').slice(0,14);
                           if (v.length > 12) {
                             v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5");
@@ -341,7 +314,7 @@ const StoreInfoSettings = () => {
             </CardContent>
           </Card>
 
-          {/* Contato: Telefone destacado como WhatsApp básico */}
+          {/* Contato */}
           <Card className="rounded-2xl shadow-lg border-0 bg-gradient-to-tr from-green-50 to-white p-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-700">
@@ -350,7 +323,6 @@ const StoreInfoSettings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Telefone com máscara e dica de uso */}
               <FormField
                 control={form.control}
                 name="phone"
@@ -368,7 +340,6 @@ const StoreInfoSettings = () => {
                         placeholder="(11) 91234-5678"
                         maxLength={15}
                         onChange={e => {
-                          // Máscara simples de telefone
                           let v = e.target.value.replace(/\D/g, '').slice(0,11);
                           if (v.length > 10) {
                             v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
@@ -385,7 +356,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-              {/* ... resto dos campos de contato (email, endereço) ... */}
               <FormField
                 control={form.control}
                 name="email"
@@ -399,7 +369,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="address"
@@ -416,7 +385,6 @@ const StoreInfoSettings = () => {
             </CardContent>
           </Card>
         </div>
-        {/* Continuação: redes sociais, horário... */}
         {/* Redes Sociais */}
         <Card>
           <CardHeader>
@@ -443,7 +411,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="instagramUrl"
@@ -460,7 +427,6 @@ const StoreInfoSettings = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="twitterUrl"
@@ -480,7 +446,6 @@ const StoreInfoSettings = () => {
             </div>
           </CardContent>
         </Card>
-
         {/* Horário de Funcionamento */}
         <Card>
           <CardHeader>
@@ -500,18 +465,18 @@ const StoreInfoSettings = () => {
                     <Input
                       type="time"
                       className="w-24"
-                      {...form.register(`businessHours.${day.key}.open` as any)}
+                      {...form.register(`businessHours.${day.key}.open` as const)}
                     />
                     <span>às</span>
                     <Input
                       type="time"
                       className="w-24"
-                      {...form.register(`businessHours.${day.key}.close` as any)}
+                      {...form.register(`businessHours.${day.key}.close` as const)}
                     />
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        {...form.register(`businessHours.${day.key}.closed` as any)}
+                        {...form.register(`businessHours.${day.key}.closed` as const)}
                       />
                       <span className="text-sm">Fechado</span>
                     </label>
@@ -521,13 +486,16 @@ const StoreInfoSettings = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Button type="submit" className={cn(
-          "btn-primary w-full py-4 text-lg font-bold rounded-xl shadow-lg transition-all",
-          saving && "opacity-70 pointer-events-none"
-        )} disabled={saving}>
+        <Button
+          type="submit"
+          className={cn(
+            "w-full py-3 text-base font-semibold rounded-xl shadow-lg transition-all",
+            saving ? "opacity-70 pointer-events-none" : "bg-primary text-white hover:bg-primary/90"
+          )}
+          disabled={saving}
+        >
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Salvar Configurações da Loja
+          {saving ? "Salvando..." : "Salvar Configurações da Loja"}
         </Button>
       </form>
     </Form>
