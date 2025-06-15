@@ -1,5 +1,5 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Smartphone, CreditCard, FileText, MapPin, Truck } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useOrders } from '@/hooks/useOrders';
 import { useToast } from '@/hooks/use-toast';
@@ -85,7 +85,7 @@ interface CheckoutProviderProps {
   children: ReactNode;
   storeId?: string;
   storeSettings: any;
-  storeData?: any; // Dados da loja no contexto público
+  storeData?: any;
 }
 
 export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
@@ -103,16 +103,16 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
   // Preferir storeData (catálogo público), senão o contexto autenticado
   const currentStore = storeData || authenticatedStore;
 
-  // Estado local, definir tudo logo no início!
+  // Estado local
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: '',
     email: '',
     phone: ''
   });
 
-  const [checkoutType, setCheckoutType] = useState<'whatsapp_only' | 'online_payment'>('whatsapp_only');
-  const [shippingMethod, setShippingMethod] = useState('pickup');
-  const [paymentMethod, setPaymentMethod] = useState('pix');
+  const [checkoutType] = useState<'whatsapp_only' | 'online_payment'>('whatsapp_only');
+  const [shippingMethod] = useState('pickup');
+  const [paymentMethod] = useState('whatsapp');
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     zipCode: '',
     street: '',
@@ -123,129 +123,42 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     state: ''
   });
 
-  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingCost] = useState(0);
   const [notes, setNotes] = useState('');
   const [currentStep, setCurrentStep] = useState<'checkout' | 'payment'>('checkout');
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
 
-  // Lógica para identificar Whatsapp, pagamentos e métodos
-  const whatsAppNumber = settings?.whatsapp_number?.trim() || currentStore?.phone?.trim() || '';
-  const hasWhatsAppConfigured = Boolean(whatsAppNumber);
-
   // Unir as configurações
   const effectiveSettings = settings || storeSettings || {};
 
-  // Teste de amb. de teste
-  const isTestEnvironment = React.useMemo(() => {
-    const paymentMethods = effectiveSettings?.payment_methods;
-    const accessToken = paymentMethods?.mercadopago_access_token || '';
-    const publicKey = paymentMethods?.mercadopago_public_key || '';
-    return accessToken.startsWith('TEST-') || publicKey.startsWith('TEST-');
-  }, [effectiveSettings]);
+  // Para checkout público, sempre usar apenas WhatsApp
+  const isWhatsappOnly = true;
+  const canUseOnlinePayment = false;
+  const hasWhatsAppConfigured = true;
+  const isTestEnvironment = false;
 
-  // Verifica se há credenciais MercadoPago
-  const hasMercadoPagoCredentials = React.useMemo(() => {
-    if (catalogLoading || !effectiveSettings || checkoutType === 'whatsapp_only') {
-      return false;
-    }
-    const paymentMethods = effectiveSettings?.payment_methods;
-    return !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
-  }, [effectiveSettings, catalogLoading, checkoutType]);
-
-  // Pode usar pagamento online?
-  const canUseOnlinePayment = React.useMemo(() => {
-    const paymentMethods = effectiveSettings?.payment_methods || {};
-    return (
-      hasMercadoPagoCredentials &&
-      (paymentMethods?.pix || paymentMethods?.credit_card || paymentMethods?.bank_slip)
-    );
-  }, [effectiveSettings, hasMercadoPagoCredentials]);
-
-  // Métodos de pagamento disponíveis (usando configurações)
-  const availablePaymentMethods = React.useMemo(() => {
-    const paymentMethods = effectiveSettings?.payment_methods || {};
-    const list: any[] = [];
-    if (paymentMethods?.pix) list.push({ id: 'pix', label: 'Pix' });
-    if (paymentMethods?.credit_card) list.push({ id: 'credit_card', label: 'Cartão de Crédito' });
-    if (paymentMethods?.bank_slip) list.push({ id: 'bank_slip', label: 'Boleto Bancário' });
-    return list;
-  }, [effectiveSettings]);
-
-  // Métodos de entrega disponíveis (simulação simples)
-  const availableShippingMethods = React.useMemo(() => {
-    const shippingConfig = effectiveSettings?.shipping_options || {};
-    // Exemplos: retirada, entrega, correios, customizados...
-    let list: any[] = [];
-    if (shippingConfig?.allow_pickup !== false) {
-      list.push({ id: 'pickup', label: 'Retirar na loja' });
-    }
-    if (shippingConfig?.allow_delivery) {
-      list.push({ id: 'delivery', label: 'Entrega (loja)' });
-    }
-    if (shippingConfig?.allow_mail) {
-      list.push({ id: 'mail', label: 'Correios/Transportadora' });
-    }
-    // ...adicionar mais lógicas conforme necessário
-    return list;
-  }, [effectiveSettings]);
-
-  // Checkout options e variantes
-  const checkoutOptions = React.useMemo(() => {
-    const opts: Array<{ key: string; label: string; type: 'whatsapp_only' | 'online_payment' }> = [];
-    if (canUseOnlinePayment) {
-      opts.push({
-        key: 'online_payment',
-        label: 'Pagamento Online',
-        type: 'online_payment'
-      });
-    }
-    if (hasWhatsAppConfigured) {
-      opts.push({
-        key: 'whatsapp_only',
-        label: 'WhatsApp',
-        type: 'whatsapp_only'
-      });
-    }
-    return opts;
-  }, [canUseOnlinePayment, hasWhatsAppConfigured]);
-
-  const availableOptions = React.useMemo(() => checkoutOptions.map(opt => opt.type), [checkoutOptions]);
-  const defaultOption = React.useMemo(
-    () => (canUseOnlinePayment ? 'online_payment' : hasWhatsAppConfigured ? 'whatsapp_only' : ''),
-    [canUseOnlinePayment, hasWhatsAppConfigured]
-  );
-
-  // Sincronizar seleção de métodos default ao atualizar listas
-  React.useEffect(() => {
-    if (availablePaymentMethods.length > 0) {
-      setPaymentMethod(availablePaymentMethods[0].id);
-    }
-    if (availableShippingMethods.length > 0) {
-      setShippingMethod(availableShippingMethods[0].id);
-    }
-  }, [availablePaymentMethods, availableShippingMethods]);
-
-  React.useEffect(() => {
-    if (availableOptions.length > 0) {
-      setCheckoutType(defaultOption as 'whatsapp_only' | 'online_payment');
-    }
-  }, [availableOptions, defaultOption]);
+  // Métodos vazios para compatibilidade
+  const availablePaymentMethods: any[] = [];
+  const availableShippingMethods = [{ id: 'pickup', label: 'Retirar na loja' }];
+  const checkoutOptions = [{ key: 'whatsapp_only', label: 'WhatsApp', type: 'whatsapp_only' as const }];
+  const availableOptions = ['whatsapp_only'];
+  const defaultOption = 'whatsapp_only';
 
   const value: CheckoutContextType = {
     // Estado
     customerData,
     setCustomerData,
     checkoutType,
-    setCheckoutType,
+    setCheckoutType: () => {}, // não-op para checkout público
     shippingMethod,
-    setShippingMethod,
+    setShippingMethod: () => {}, // não-op para checkout público
     paymentMethod,
-    setPaymentMethod,
+    setPaymentMethod: () => {}, // não-op para checkout público
     shippingAddress,
     setShippingAddress,
     shippingCost,
-    setShippingCost,
+    setShippingCost: () => {}, // não-op para checkout público
     notes,
     setNotes,
     currentStep,
@@ -257,7 +170,7 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
 
     // Dados computados
     finalTotal: totalAmount + shippingCost,
-    isWhatsappOnly: !canUseOnlinePayment,
+    isWhatsappOnly,
     availablePaymentMethods,
     availableShippingMethods,
     isTestEnvironment,
@@ -277,7 +190,7 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     canUseOnlinePayment,
     hasWhatsAppConfigured,
     
-    // Store data (público ou autenticado)
+    // Store data
     currentStore,
   };
 
