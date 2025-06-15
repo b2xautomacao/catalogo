@@ -22,6 +22,7 @@ import NotFound from '@/pages/NotFound';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 import PlanManagement from '@/pages/PlanManagement';
+import GlobalIntegrations from '@/pages/GlobalIntegrations';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
         <Route path="/plan-management" element={<ProtectedRoute><PlanManagement /></ProtectedRoute>} />
+        <Route path="/global-integrations" element={<ProtectedRoute><GlobalIntegrations /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
