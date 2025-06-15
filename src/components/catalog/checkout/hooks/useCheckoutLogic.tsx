@@ -56,99 +56,8 @@ export const useCheckoutLogic = () => {
     }
   }, [shippingOptions, settings, totalAmount, setShippingCost]);
 
-  // Função para fechar modal após sucesso
-  const handleWhatsAppCheckout = React.useCallback(
-    (order: any, onClose?: () => void) => {
-      console.log('🚀 handleWhatsAppCheckout: Iniciando envio para WhatsApp', { order, isMobile });
-      
-      const orderData = {
-        customer_name: customerData.name,
-        customer_phone: customerData.phone,
-        customer_email: customerData.email,
-        total_amount: totalAmount + shippingCost,
-        items: cartItems.map(item => ({
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          variation: item.variations
-            ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim()
-            : undefined
-        })),
-        shipping_method: shippingMethod,
-        payment_method: 'whatsapp',
-        shipping_cost: shippingCost,
-        notes: notes
-      };
-
-      console.log('📋 handleWhatsAppCheckout: Dados do pedido para WhatsApp', orderData);
-
-      const message = generateWhatsAppMessage(orderData);
-      console.log('💬 handleWhatsAppCheckout: Mensagem gerada', message);
-
-      const storePhone = currentStore?.phone || basicStoreData?.phone || settings?.whatsapp_number || '';
-      console.log('📞 handleWhatsAppCheckout: Telefone da loja obtido', { 
-        currentStore: currentStore?.phone, 
-        basicStoreData: basicStoreData?.phone, 
-        settings: settings?.whatsapp_number,
-        final: storePhone 
-      });
-
-      // Notifica usuário com feedback específico para mobile/desktop
-      toast({
-        title: "Pedido enviado!",
-        description: isMobile 
-          ? "Abrindo WhatsApp no seu celular..."
-          : "Redirecionando para o WhatsApp da loja.",
-        duration: 4000
-      });
-
-      // Delay menor para mobile
-      const redirectDelay = isMobile ? 800 : 1200;
-
-      setTimeout(() => {
-        const success = openWhatsApp(storePhone, message);
-        
-        if (!success) {
-          console.error('❌ handleWhatsAppCheckout: WhatsApp não configurado');
-          toast({
-            title: "WhatsApp da loja não configurado",
-            description: "A loja não configurou o WhatsApp corretamente.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // Fechar modal após sucesso
-        if (onClose) {
-          console.log('🚪 handleWhatsAppCheckout: Fechando modal');
-          setTimeout(() => {
-            onClose();
-          }, isMobile ? 500 : 1000);
-        }
-
-        clearCart();
-        console.log('🛒 handleWhatsAppCheckout: Carrinho limpo');
-      }, redirectDelay);
-    },
-    [
-      customerData,
-      cartItems,
-      totalAmount,
-      shippingCost,
-      shippingMethod,
-      notes,
-      basicStoreData,
-      currentStore,
-      settings,
-      toast,
-      clearCart,
-      isMobile,
-      openWhatsApp
-    ]
-  );
-
   const createPublicOrder = React.useCallback(async (orderData: any) => {
-    console.log('🔨 createPublicOrder: Criando pedido público diretamente', orderData);
+    console.log('🔨 createPublicOrder: Criando pedido público', orderData);
     
     try {
       const { data, error } = await supabase
@@ -171,13 +80,16 @@ export const useCheckoutLogic = () => {
   }, []);
 
   const handleCreateOrder = React.useCallback(async (onClose?: () => void) => {
-    console.log('🚀 handleCreateOrder: Iniciando processo de checkout', { isMobile });
-    console.log('📊 handleCreateOrder: Estado atual', {
-      customerData,
-      cartItems: cartItems.length,
+    console.log('🚀 handleCreateOrder: Iniciando processo de checkout');
+    console.log('📊 handleCreateOrder: Estado do contexto', {
+      customerName: customerData.name,
+      customerPhone: customerData.phone,
+      cartItemsCount: cartItems.length,
       totalAmount,
-      currentStore: currentStore?.id,
-      basicStoreData: basicStoreData?.id
+      storeId: currentStore?.id || basicStoreData?.id,
+      currentStorePhone: currentStore?.phone,
+      basicStorePhone: basicStoreData?.phone,
+      settingsWhatsApp: settings?.whatsapp_number
     });
 
     try {
@@ -214,23 +126,41 @@ export const useCheckoutLogic = () => {
       }
 
       const storeId = currentStore?.id || basicStoreData?.id;
-      console.log('🏪 handleCreateOrder: Store ID determinado', { 
-        currentStore: currentStore?.id, 
-        basicStoreData: basicStoreData?.id, 
-        final: storeId 
-      });
+      console.log('🏪 handleCreateOrder: Store ID determinado', storeId);
 
       if (!storeId) {
         console.error('❌ handleCreateOrder: Store ID não encontrado');
         toast({
           title: "Erro de configuração",
-          description: "Não foi possível identificar a loja. Tente recarregar a página.",
+          description: "Não foi possível identificar a loja.",
           variant: "destructive"
         });
         return;
       }
 
-      // Salvar cliente ANTES de criar pedido
+      // Determinar telefone da loja com prioridade
+      const storePhone = currentStore?.phone || basicStoreData?.phone || settings?.whatsapp_number || '';
+      console.log('📞 handleCreateOrder: Telefone da loja obtido', { 
+        storePhone: storePhone ? storePhone.substring(0, 5) + '***' : 'não encontrado',
+        source: currentStore?.phone ? 'currentStore' : basicStoreData?.phone ? 'basicStoreData' : settings?.whatsapp_number ? 'settings' : 'nenhuma'
+      });
+
+      if (!storePhone) {
+        console.error('❌ handleCreateOrder: WhatsApp da loja não configurado');
+        toast({
+          title: "WhatsApp não configurado",
+          description: "A loja não configurou o WhatsApp.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Criando seu pedido...",
+        description: "Preparando para enviar ao WhatsApp...",
+      });
+
+      // Salvar cliente
       console.log('👤 handleCreateOrder: Salvando cliente...');
       const savedCustomer = await saveCustomer({
         name: customerData.name.trim(),
@@ -243,22 +173,15 @@ export const useCheckoutLogic = () => {
         console.error('❌ handleCreateOrder: Falha ao salvar cliente');
         toast({
           title: "Erro ao salvar cliente",
-          description: "Não foi possível salvar os dados do cliente. Tente novamente.",
+          description: "Tente novamente.",
           variant: "destructive"
         });
         return;
       }
 
-      console.log('✅ handleCreateOrder: Cliente salvo com sucesso', savedCustomer);
+      console.log('✅ handleCreateOrder: Cliente salvo', savedCustomer.id);
 
-      // Loading específico para mobile/desktop
-      toast({
-        title: "Criando seu pedido...",
-        description: isMobile 
-          ? "Preparando para abrir WhatsApp..." 
-          : "Só um instante! Preparando para enviar ao WhatsApp...",
-      });
-
+      // Preparar dados do pedido
       const orderItems = cartItems.map(item => ({
         product_id: item.product.id,
         name: item.product.name,
@@ -289,35 +212,84 @@ export const useCheckoutLogic = () => {
               }
             : null,
         shipping_method: shippingMethod,
-        payment_method: checkoutType === "whatsapp_only" ? "whatsapp" : paymentMethod,
+        payment_method: "whatsapp",
         shipping_cost: shippingCost,
         notes: notes.trim() || null,
         store_id: storeId
       };
 
-      console.log('📋 handleCreateOrder: Dados finais do pedido', orderData);
+      console.log('📋 handleCreateOrder: Criando pedido com dados', {
+        customer_name: orderData.customer_name,
+        total_amount: orderData.total_amount,
+        items_count: orderData.items.length,
+        store_id: orderData.store_id
+      });
 
-      // Criar pedido e aguardar confirmação
+      // Criar pedido
       const savedOrder = await createPublicOrder(orderData);
       setCreatedOrder(savedOrder);
+      console.log('✅ handleCreateOrder: Pedido criado com sucesso', savedOrder.id);
 
-      console.log('✅ handleCreateOrder: Pedido criado com sucesso', savedOrder);
+      // Preparar dados para WhatsApp
+      const whatsappOrderData = {
+        customer_name: customerData.name,
+        customer_phone: customerData.phone,
+        customer_email: customerData.email,
+        total_amount: totalAmount + shippingCost,
+        items: cartItems.map(item => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          variation: item.variations
+            ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim()
+            : undefined
+        })),
+        shipping_method: shippingMethod,
+        payment_method: 'whatsapp',
+        shipping_cost: shippingCost,
+        notes: notes
+      };
 
-      // Tratar fluxos de acordo com o tipo de checkout
-      if (checkoutType === "whatsapp_only") {
-        console.log('📱 handleCreateOrder: Redirecionando para WhatsApp...');
-        handleWhatsAppCheckout(savedOrder, onClose);
-      } else if (["pix", "credit_card", "bank_slip"].includes(paymentMethod)) {
-        console.log('💳 handleCreateOrder: Redirecionando para pagamento...');
-        setCurrentStep("payment");
+      const message = generateWhatsAppMessage(whatsappOrderData);
+      console.log('💬 handleCreateOrder: Mensagem WhatsApp gerada', { messageLength: message.length });
+
+      // Abrir WhatsApp
+      toast({
+        title: "Pedido criado com sucesso!",
+        description: "Redirecionando para o WhatsApp...",
+        duration: 3000
+      });
+
+      const success = openWhatsApp(storePhone, message);
+      
+      if (success) {
+        console.log('✅ handleCreateOrder: WhatsApp aberto com sucesso');
+        
+        // Limpar carrinho e fechar modal
+        clearCart();
+        console.log('🛒 handleCreateOrder: Carrinho limpo');
+        
+        if (onClose) {
+          console.log('🚪 handleCreateOrder: Fechando modal');
+          setTimeout(() => {
+            onClose();
+          }, 1000);
+        }
+      } else {
+        console.error('❌ handleCreateOrder: Falha ao abrir WhatsApp');
+        toast({
+          title: "Erro ao abrir WhatsApp",
+          description: "Não foi possível abrir o WhatsApp.",
+          variant: "destructive"
+        });
       }
       
     } catch (error) {
-      console.error('❌ handleCreateOrder: Erro geral no processo', error);
+      console.error('❌ handleCreateOrder: Erro geral', error);
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
-        title: "❌ Erro ao criar pedido",
-        description: `Não foi possível criar seu pedido: ${errorMessage}. Tente novamente.`,
+        title: "Erro ao criar pedido",
+        description: `${errorMessage}. Tente novamente.`,
         variant: "destructive",
         duration: 7000
       });
@@ -328,24 +300,21 @@ export const useCheckoutLogic = () => {
     totalAmount,
     shippingCost,
     shippingMethod,
-    paymentMethod,
-    checkoutType,
-    shippingAddress,
     notes,
-    toast,
-    setCreatedOrder,
-    setCurrentStep,
+    shippingAddress,
     saveCustomer,
+    createPublicOrder,
+    setCreatedOrder,
     currentStore,
     basicStoreData,
-    handleWhatsAppCheckout,
-    createPublicOrder,
-    isMobile
+    settings,
+    openWhatsApp,
+    clearCart,
+    toast
   ]);
 
   return {
     handleCreateOrder,
-    handleWhatsAppCheckout,
     handleShippingCalculated,
     handleShippingMethodChange,
     isMobile
