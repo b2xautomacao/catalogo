@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useCoupons } from '@/hooks/useCoupons';
 
 const ProtectedCoupons = () => {
-  const { coupons, isLoading, updateCoupon, deleteCoupon } = useCoupons();
+  const { coupons, loading, updateCoupon, deleteCoupon } = useCoupons();
 
   const breadcrumbs = [
     { href: '/', label: 'Dashboard' },
@@ -17,15 +17,20 @@ const ProtectedCoupons = () => {
     console.log('Edit coupon:', couponId);
   };
 
-  const handleDelete = (couponId: string) => {
-    deleteCoupon.mutate(couponId);
+  const handleDelete = async (couponId: string) => {
+    const result = await deleteCoupon(couponId);
+    if (result.error) {
+      console.error('Erro ao deletar cupom:', result.error);
+    }
   };
 
-  const handleToggleStatus = (couponId: string, isActive: boolean) => {
-    updateCoupon.mutate({
-      id: couponId,
+  const handleToggleStatus = async (couponId: string, isActive: boolean) => {
+    const result = await updateCoupon(couponId, {
       is_active: !isActive
     });
+    if (result.error) {
+      console.error('Erro ao atualizar cupom:', result.error);
+    }
   };
 
   return (
@@ -39,7 +44,7 @@ const ProtectedCoupons = () => {
         customMessage="Os cupons de desconto estão disponíveis apenas no plano Premium. Faça upgrade para criar promoções personalizadas!"
       >
         <div className="space-y-6">
-          {isLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center p-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>

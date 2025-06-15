@@ -7,18 +7,33 @@ import ProtectedMobileNavigationPanel from './ProtectedMobileNavigationPanel';
 import ProductFormModal from '@/components/products/ProductFormModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProducts } from '@/hooks/useProducts';
+import { toast } from 'sonner';
 
 const StoreDashboard = () => {
   const [showProductModal, setShowProductModal] = useState(false);
+  const { isSuperadmin } = useAuth();
+  const { createProduct } = useProducts();
 
   const handleNewProduct = () => {
     setShowProductModal(true);
   };
 
+  const handleCreateProduct = async (data: any) => {
+    try {
+      await createProduct.mutateAsync(data);
+      toast.success('Produto criado com sucesso!');
+      setShowProductModal(false);
+    } catch (error) {
+      toast.error('Erro ao criar produto');
+    }
+  };
+
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Cards principais */}
-      <DashboardCards />
+      <DashboardCards userRole={isSuperadmin ? 'superadmin' : 'admin'} />
 
       {/* Ações rápidas - apenas em desktop */}
       <div className="hidden lg:block">
@@ -59,6 +74,7 @@ const StoreDashboard = () => {
       <ProductFormModal
         open={showProductModal}
         onOpenChange={setShowProductModal}
+        onSubmit={handleCreateProduct}
         mode="create"
       />
     </div>

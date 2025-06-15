@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useReports } from '@/hooks/useReports';
 
 const ProtectedReports = () => {
-  const { salesData, topProducts, isLoadingSales, isLoadingProducts } = useReports();
+  const { salesMetrics, productMetrics, isLoadingSales, isLoadingProducts } = useReports();
 
   const breadcrumbs = [
     { href: '/', label: 'Dashboard' },
@@ -31,24 +31,27 @@ const ProtectedReports = () => {
                 <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-3xl font-bold text-green-600">
-                  R$ {salesData?.total || '0,00'}
+                  R$ {salesMetrics ? new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(salesMetrics.totalRevenue) : '0,00'}
                 </p>
               )}
             </div>
             <div className="bg-white rounded-lg border p-6">
-              <h3 className="text-lg font-medium mb-2">Produtos Vendidos</h3>
+              <h3 className="text-lg font-medium mb-2">Produtos Ativos</h3>
               {isLoadingProducts ? (
                 <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
               ) : (
                 <p className="text-3xl font-bold text-blue-600">
-                  {topProducts?.length || 0}
+                  {productMetrics?.totalProducts || 0}
                 </p>
               )}
             </div>
             <div className="bg-white rounded-lg border p-6">
               <h3 className="text-lg font-medium mb-2">Pedidos</h3>
               <p className="text-3xl font-bold text-purple-600">
-                {salesData?.orders || 0}
+                {salesMetrics?.totalOrders || 0}
               </p>
             </div>
           </div>
@@ -80,11 +83,11 @@ const ProtectedReports = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {topProducts && topProducts.length > 0 ? (
-                    topProducts.slice(0, 5).map((product, index) => (
+                  {productMetrics?.topSellingProducts && productMetrics.topSellingProducts.length > 0 ? (
+                    productMetrics.topSellingProducts.slice(0, 5).map((product, index) => (
                       <div key={product.id} className="flex items-center justify-between py-2 border-b">
                         <span className="text-sm">{index + 1}. {product.name}</span>
-                        <span className="text-sm font-medium">{product.quantity || 0} vendas</span>
+                        <span className="text-sm font-medium">{product.sales || 0} vendas</span>
                       </div>
                     ))
                   ) : (
