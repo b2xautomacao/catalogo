@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { usePlanPermissions } from './usePlanPermissions';
 import { useCatalogSettings } from './useCatalogSettings';
+import { useStores } from './useStores';
 
 export interface CheckoutOption {
   type: 'whatsapp_only' | 'online_payment';
@@ -14,9 +15,15 @@ export interface CheckoutOption {
 export const useCheckoutOptions = (storeId?: string) => {
   const { hasBenefit, isSuperadmin } = usePlanPermissions();
   const { settings } = useCatalogSettings(storeId);
+  const { currentStore } = useStores();
 
   const checkoutOptions = useMemo((): CheckoutOption[] => {
-    const hasWhatsAppNumber = !!settings?.whatsapp_number?.trim();
+    // Para plano básico, usar telefone da loja (stores.phone)
+    // Para plano premium, usar whatsapp_number das configurações
+    const basicWhatsAppNumber = currentStore?.phone?.trim();
+    const premiumWhatsAppNumber = settings?.whatsapp_number?.trim();
+    
+    const hasWhatsAppNumber = !!basicWhatsAppNumber || !!premiumWhatsAppNumber;
     const hasPaymentAccess = isSuperadmin || hasBenefit('payment_credit_card');
     
     return [
@@ -34,13 +41,15 @@ export const useCheckoutOptions = (storeId?: string) => {
         requiresUpgrade: !hasPaymentAccess,
       }
     ];
-  }, [settings, hasBenefit, isSuperadmin]);
+  }, [settings, currentStore, hasBenefit, isSuperadmin]);
 
   const availableOptions = checkoutOptions.filter(option => option.available);
   const defaultOption = availableOptions[0]?.type || 'whatsapp_only';
   
   const canUseOnlinePayment = isSuperadmin || hasBenefit('payment_credit_card');
-  const hasWhatsAppConfigured = !!settings?.whatsapp_number?.trim();
+  
+  // Verificar se tem WhatsApp configurado (telefone da loja OU integração premium)
+  const hasWhatsAppConfigured = !!(currentStore?.phone?.trim() || settings?.whatsapp_number?.trim());
 
   return {
     checkoutOptions,
