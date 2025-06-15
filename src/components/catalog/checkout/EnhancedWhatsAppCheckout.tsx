@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, CheckCircle, ShoppingBag, ArrowRight } from 'lucide-react';
 import CartItemThumbnail from './CartItemThumbnail';
-import OrderPreviewCard from './OrderPreviewCard';
 import { CartItem } from '@/hooks/useCart';
 
 interface EnhancedWhatsAppCheckoutProps {
@@ -32,29 +31,11 @@ const EnhancedWhatsAppCheckout: React.FC<EnhancedWhatsAppCheckoutProps> = ({
   shippingCost = 0,
   notes
 }) => {
-  const [showPreview, setShowPreview] = useState(false);
   const finalTotal = totalAmount + shippingCost;
 
-  const orderData = {
-    customer_name: customerData.name,
-    customer_phone: customerData.phone,
-    customer_email: customerData.email,
-    total_amount: finalTotal,
-    items: items.map(item => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.price,
-      variation: item.variations ? 
-        `${item.variations.size || ''} ${item.variations.color || ''}`.trim() : 
-        undefined
-    })),
-    shipping_method: 'pickup',
-    shipping_cost: shippingCost,
-    notes: notes
-  };
-
-  const canConfirm = customerData.name.length >= 2 && 
-                    /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(customerData.phone);
+  const canConfirm =
+    customerData.name.length >= 2 &&
+    /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(customerData.phone);
 
   return (
     <div className="space-y-6">
@@ -160,16 +141,7 @@ const EnhancedWhatsAppCheckout: React.FC<EnhancedWhatsAppCheckoutProps> = ({
             </div>
           </div>
 
-          {/* Botões de ação */}
           <div className="space-y-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview(!showPreview)}
-              className="w-full bg-white hover:bg-blue-50 border-blue-300 text-blue-700"
-            >
-              {showPreview ? 'Ocultar' : 'Ver'} Preview da Mensagem
-            </Button>
-
             <Button
               onClick={onConfirmOrder}
               disabled={isProcessing || !canConfirm}
@@ -199,15 +171,9 @@ const EnhancedWhatsAppCheckout: React.FC<EnhancedWhatsAppCheckoutProps> = ({
           </p>
         </CardContent>
       </Card>
-
-      {/* Preview da mensagem */}
-      {showPreview && (
-        <div className="animate-fade-in">
-          <OrderPreviewCard orderData={orderData} />
-        </div>
-      )}
     </div>
   );
 };
 
 export default EnhancedWhatsAppCheckout;
+
