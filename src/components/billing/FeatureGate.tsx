@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { usePlanPermissions } from '@/hooks/usePlanPermissions';
-import { PlanUpgradeModal } from './PlanUpgradeModal';
+import PlanUpgradeModal from './PlanUpgradeModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lock, TrendingUp } from 'lucide-react';

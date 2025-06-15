@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanPermissions } from '@/hooks/usePlanPermissions';
-import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
+import PlanUpgradeModal from '@/components/billing/PlanUpgradeModal';
 
 interface AIContentGeneratorProps {
   productName: string;

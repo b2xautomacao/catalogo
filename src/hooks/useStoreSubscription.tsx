@@ -7,7 +7,7 @@ export interface StoreSubscription {
   id: string;
   store_id: string;
   plan_id: string;
-  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete';
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'inactive';
   starts_at: string;
   ends_at: string | null;
   trial_ends_at: string | null;
@@ -20,6 +20,12 @@ export interface StoreSubscription {
     type: string;
     price_monthly: number;
     price_yearly?: number;
+    description?: string;
+    is_active?: boolean;
+    trial_days?: number;
+    sort_order?: number;
+    created_at?: string;
+    updated_at?: string;
   };
 }
 
@@ -45,7 +51,13 @@ export const useStoreSubscription = () => {
             name,
             type,
             price_monthly,
-            price_yearly
+            price_yearly,
+            description,
+            is_active,
+            trial_days,
+            sort_order,
+            created_at,
+            updated_at
           )
         `)
         .eq('store_id', profile.store_id)
