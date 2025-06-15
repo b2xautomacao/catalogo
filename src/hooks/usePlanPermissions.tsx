@@ -1,6 +1,7 @@
 
 import { useBenefitValidation } from './useBenefitValidation';
 import { useSubscription } from './useSubscription';
+import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 export const usePlanPermissions = () => {
@@ -11,27 +12,41 @@ export const usePlanPermissions = () => {
     getBenefitLimit, 
     getBenefitInfo 
   } = useBenefitValidation();
+  const { profile } = useAuth();
 
-  // Manter compatibilidade com sistema antigo
+  // Para superadmin, sempre retornar true (acesso total)
+  const isSuperadmin = profile?.role === 'superadmin';
+
+  // Verificação principal de acesso a funcionalidades
   const checkFeatureAccess = (featureType: string, showUpgradeMessage = true): boolean => {
-    // Tentar primeiro o novo sistema de benefícios
+    // Superadmin tem acesso total
+    if (isSuperadmin) return true;
+
+    // Mapear feature para benefit_key
     const benefitKey = mapFeatureToBenefit(featureType);
+    
     if (benefitKey) {
-      return hasBenefit(benefitKey);
+      const hasAccess = hasBenefit(benefitKey);
+      
+      if (!hasAccess && showUpgradeMessage) {
+        const planName = subscription?.plan.type === 'basic' ? 'Premium' : 'Enterprise';
+        toast.error(`Esta funcionalidade está disponível apenas no plano ${planName}. Faça upgrade para ter acesso!`);
+      }
+      
+      return hasAccess;
     }
     
-    // Fallback para sistema antigo
-    const hasAccess = hasFeature(featureType);
-    
-    if (!hasAccess && showUpgradeMessage) {
-      const planName = subscription?.plan.type === 'basic' ? 'Premium' : 'superior';
-      toast.error(`Esta funcionalidade está disponível apenas no plano ${planName}. Faça upgrade para ter acesso!`);
+    // Se não tem mapeamento, bloquear por padrão (segurança)
+    if (showUpgradeMessage) {
+      toast.error('Esta funcionalidade requer um plano premium. Entre em contato para mais informações.');
     }
-    
-    return hasAccess;
+    return false;
   };
 
   const checkFeatureUsage = (featureType: string, currentUsage?: number, showLimitMessage = true): boolean => {
+    // Superadmin tem uso ilimitado
+    if (isSuperadmin) return true;
+
     const canUse = canUseFeature(featureType, currentUsage);
     
     if (!canUse && showLimitMessage) {
@@ -111,6 +126,9 @@ export const usePlanPermissions = () => {
 
   // Novo método para validar benefícios
   const checkBenefitAccess = async (benefitKey: string, showUpgradeMessage = true): Promise<boolean> => {
+    // Superadmin tem acesso total
+    if (isSuperadmin) return true;
+    
     return await validateBenefitAccess(benefitKey, showUpgradeMessage);
   };
 
@@ -120,14 +138,15 @@ export const usePlanPermissions = () => {
     checkFeatureUsage,
     getFeatureDisplayInfo,
     getPlanBadgeInfo,
-    hasFeature,
-    canUseFeature,
+    hasFeature: isSuperadmin ? () => true : hasFeature,
+    canUseFeature: isSuperadmin ? () => true : canUseFeature,
     isTrialing,
     // Novos métodos para benefícios
     checkBenefitAccess,
-    hasBenefit,
-    getBenefitLimit,
-    getBenefitInfo
+    hasBenefit: isSuperadmin ? () => true : hasBenefit,
+    getBenefitLimit: isSuperadmin ? () => 'unlimited' : getBenefitLimit,
+    getBenefitInfo: isSuperadmin ? (key: string) => ({ name: 'Ilimitado', hasAccess: true }) : getBenefitInfo,
+    isSuperadmin
   };
 };
 

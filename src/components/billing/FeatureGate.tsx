@@ -19,10 +19,15 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   fallback,
   showUpgradeModal = false
 }) => {
-  const { hasFeature, subscription } = usePlanPermissions();
+  const { hasBenefit, subscription, isSuperadmin } = usePlanPermissions();
   const [showModal, setShowModal] = React.useState(false);
 
-  const hasAccess = hasFeature(feature);
+  // Superadmin sempre tem acesso
+  if (isSuperadmin) {
+    return <>{children}</>;
+  }
+
+  const hasAccess = hasBenefit(feature);
 
   if (hasAccess) {
     return <>{children}</>;
@@ -32,18 +37,18 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
     return <>{fallback}</>;
   }
 
-  const planName = subscription?.plan.type === 'basic' ? 'Premium' : 'superior';
+  const planName = subscription?.plan.type === 'basic' ? 'Premium' : 'Enterprise';
 
   return (
     <>
-      <Card className="border-dashed border-2">
+      <Card className="border-dashed border-2 border-orange-200">
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <Lock className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold mb-2">Funcionalidade Premium</h3>
-          <p className="text-muted-foreground mb-4">
+          <Lock className="h-12 w-12 text-orange-500 mb-4" />
+          <h3 className="font-semibold mb-2 text-gray-900">Funcionalidade Premium</h3>
+          <p className="text-gray-600 mb-4">
             Esta funcionalidade está disponível apenas no plano {planName}.
           </p>
-          <Button onClick={() => setShowModal(true)}>
+          <Button onClick={() => setShowModal(true)} className="bg-orange-500 hover:bg-orange-600">
             <TrendingUp className="h-4 w-4 mr-2" />
             Fazer Upgrade
           </Button>

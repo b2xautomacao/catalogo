@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -16,8 +16,8 @@ import {
   Zap,
   Globe
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { ProtectedMenuItem } from '@/components/billing/ProtectedMenuItem';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -27,9 +27,27 @@ const Sidebar = () => {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Produtos', href: '/products', icon: Package },
     { name: 'Pedidos', href: '/orders', icon: ShoppingCart },
-    { name: 'Cupons', href: '/coupons', icon: Tag },
-    { name: 'Entrega', href: '/deliveries', icon: Truck },
-    { name: 'Relatórios', href: '/reports', icon: BarChart3 },
+    { 
+      name: 'Cupons', 
+      href: '/coupons', 
+      icon: Tag,
+      benefitKey: 'discount_coupons',
+      requiresPremium: true
+    },
+    { 
+      name: 'Entrega', 
+      href: '/deliveries', 
+      icon: Truck,
+      benefitKey: 'shipping_calculator',
+      requiresPremium: true
+    },
+    { 
+      name: 'Relatórios', 
+      href: '/reports', 
+      icon: BarChart3,
+      benefitKey: 'dedicated_support',
+      requiresPremium: true
+    },
     { name: 'Configurações', href: '/settings', icon: Settings },
   ];
 
@@ -55,29 +73,16 @@ const Sidebar = () => {
           </div>
         </div>
         <nav className="flex-1 space-y-1 px-2">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
-                  isActive
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    'mr-3 h-5 w-5 flex-shrink-0',
-                    isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
-                  )}
-                />
-                {item.name}
-              </Link>
-            );
-          })}
+          {navigation.map((item) => (
+            <ProtectedMenuItem
+              key={item.name}
+              name={item.name}
+              href={item.href}
+              icon={item.icon}
+              benefitKey={item.benefitKey}
+              requiresPremium={item.requiresPremium}
+            />
+          ))}
         </nav>
       </div>
     </div>
