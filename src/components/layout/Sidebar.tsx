@@ -44,15 +44,15 @@ const Sidebar = () => {
   const navigation = isSuperadmin ? superadminNavigation : storeAdminNavigation;
 
   return (
-    <div className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
-      <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-        <div className="flex flex-shrink-0 items-center px-4">
+    <div className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-40 hidden lg:flex lg:flex-col">
+      <div className="flex flex-1 flex-col overflow-y-auto py-4">
+        <div className="flex flex-shrink-0 items-center px-4 mb-8">
           <div className="flex items-center gap-2">
             <Zap className="h-8 w-8 text-blue-600" />
             <span className="text-xl font-bold text-gray-900">CatalogoAI</span>
           </div>
         </div>
-        <nav className="mt-8 flex-1 space-y-1 px-2">
+        <nav className="flex-1 space-y-1 px-2">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
