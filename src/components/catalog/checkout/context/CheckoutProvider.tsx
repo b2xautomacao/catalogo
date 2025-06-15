@@ -110,9 +110,9 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     phone: ''
   });
 
-  const [checkoutType] = useState<'whatsapp_only' | 'online_payment'>('whatsapp_only');
-  const [shippingMethod] = useState('pickup');
-  const [paymentMethod] = useState('whatsapp');
+  const [checkoutType, setCheckoutType] = useState<'whatsapp_only' | 'online_payment'>('whatsapp_only');
+  const [shippingMethod, setShippingMethod] = useState('pickup');
+  const [paymentMethod, setPaymentMethod] = useState('whatsapp');
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     zipCode: '',
     street: '',
@@ -123,7 +123,7 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     state: ''
   });
 
-  const [shippingCost] = useState(0);
+  const [shippingCost, setShippingCost] = useState(0);
   const [notes, setNotes] = useState('');
   const [currentStep, setCurrentStep] = useState<'checkout' | 'payment'>('checkout');
   const [createdOrder, setCreatedOrder] = useState<any>(null);
@@ -150,15 +150,15 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     customerData,
     setCustomerData,
     checkoutType,
-    setCheckoutType: () => {}, // não-op para checkout público
+    setCheckoutType,
     shippingMethod,
-    setShippingMethod: () => {}, // não-op para checkout público
+    setShippingMethod,
     paymentMethod,
-    setPaymentMethod: () => {}, // não-op para checkout público
+    setPaymentMethod,
     shippingAddress,
     setShippingAddress,
     shippingCost,
-    setShippingCost: () => {}, // não-op para checkout público
+    setShippingCost,
     notes,
     setNotes,
     currentStep,
