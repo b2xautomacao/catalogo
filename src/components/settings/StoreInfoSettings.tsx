@@ -13,7 +13,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import LogoUpload from './LogoUpload';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { MaskedInput } from 'react-hook-mask';
 import { cn } from '@/lib/utils'; // para classes condicionais
 
 interface StoreInfoFormData {
@@ -37,14 +36,14 @@ interface StoreInfoFormData {
   };
 }
 
-// Esquema de validação com regras brasileiras
+// Esquema de validação YUP exato do objeto acima
 const BR_PHONE_REGEX = /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/;
 const BR_CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
 
-const storeInfoSchema = yup.object().shape({
+const storeInfoSchema: yup.SchemaOf<StoreInfoFormData> = yup.object({
   storeName: yup.string().required('Nome é obrigatório'),
-  description: yup.string().nullable(),
-  address: yup.string().nullable(),
+  description: yup.string().nullable().default(''),
+  address: yup.string().nullable().default(''),
   phone: yup
     .string()
     .required('Telefone é obrigatório')
@@ -52,15 +51,53 @@ const storeInfoSchema = yup.object().shape({
   email: yup
     .string()
     .nullable()
-    .email('E-mail inválido'),
+    .email('E-mail inválido')
+    .default(''),
   cnpj: yup
     .string()
     .nullable()
-    .test('is-cnpj', 'Formato inválido (00.000.000/0000-00)', v => !v || BR_CNPJ_REGEX.test(v)),
-  facebookUrl: yup.string().nullable(),
-  instagramUrl: yup.string().nullable(),
-  twitterUrl: yup.string().nullable(),
-  businessHours: yup.object(),
+    .test('is-cnpj', 'Formato inválido (00.000.000/0000-00)', v => !v || BR_CNPJ_REGEX.test(v))
+    .default(''),
+  facebookUrl: yup.string().nullable().default(''),
+  instagramUrl: yup.string().nullable().default(''),
+  twitterUrl: yup.string().nullable().default(''),
+  businessHours: yup.object({
+    monday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    tuesday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    wednesday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    thursday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    friday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    saturday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+    sunday: yup.object({
+      open: yup.string().required(),
+      close: yup.string().required(),
+      closed: yup.boolean().required(),
+    }),
+  })
 });
 
 const StoreInfoSettings = () => {
