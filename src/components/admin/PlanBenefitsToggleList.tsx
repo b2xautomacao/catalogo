@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sparkles, Zap, Users, Plug, CreditCard, Palette, Megaphone, Truck, Headphones, Settings } from 'lucide-react';
 import { useSystemBenefits } from '@/hooks/useSystemBenefits';
 import { usePlanBenefits } from '@/hooks/usePlanBenefits';
 import { usePlanBenefitsAutoSave } from '@/hooks/usePlanBenefitsAutoSave';
 import { BenefitsCategoryCard } from '@/components/admin/BenefitsCategoryCard';
+import { toast } from 'sonner';
 
 interface PlanBenefitsToggleListProps {
   planId: string;
@@ -15,11 +16,25 @@ export const PlanBenefitsToggleList: React.FC<PlanBenefitsToggleListProps> = ({
   planId,
   planName
 }) => {
-  const { benefits: systemBenefits, loading: loadingSystem } = useSystemBenefits();
-  const { getPlanBenefits, loading: loadingPlan } = usePlanBenefits();
+  const { benefits: systemBenefits, loading: loadingSystem, refetch: refetchSystemBenefits } = useSystemBenefits();
+  const { getPlanBenefits, loading: loadingPlan, refetch: refetchPlanBenefits } = usePlanBenefits();
   const { toggleBenefit, updateBenefitLimit } = usePlanBenefitsAutoSave(planId);
 
   const planBenefits = getPlanBenefits(planId);
+
+  console.log(`📊 PlanBenefitsToggleList - Plan: ${planId}`, {
+    systemBenefits: systemBenefits.length,
+    planBenefits: planBenefits.length,
+    loadingSystem,
+    loadingPlan
+  });
+
+  // Refresh data when component mounts or planId changes
+  useEffect(() => {
+    console.log(`🔄 Refreshing data for plan: ${planId}`);
+    refetchSystemBenefits();
+    refetchPlanBenefits(planId);
+  }, [planId, refetchSystemBenefits, refetchPlanBenefits]);
 
   const categories = [
     { value: 'ai', label: 'Inteligência Artificial', icon: <Sparkles className="h-5 w-5 text-purple-600" /> },
@@ -50,7 +65,13 @@ export const PlanBenefitsToggleList: React.FC<PlanBenefitsToggleListProps> = ({
     isEnabled: boolean, 
     existingPlanBenefitId?: string
   ) => {
-    await toggleBenefit(benefitId, isEnabled, existingPlanBenefitId);
+    console.log(`🎯 PlanBenefitsToggleList: Handling toggle for benefit ${benefitId}`);
+    try {
+      await toggleBenefit(benefitId, isEnabled, existingPlanBenefitId);
+    } catch (error) {
+      console.error('❌ Error in handleToggleBenefit:', error);
+      toast.error('Erro ao atualizar benefício. Tente novamente.');
+    }
   };
 
   const handleUpdateLimit = async (planBenefitId: string, limitValue: string | null) => {
@@ -60,8 +81,8 @@ export const PlanBenefitsToggleList: React.FC<PlanBenefitsToggleListProps> = ({
     }, 1000);
   };
 
-  const totalBenefits = systemBenefits.filter(b => b.is_active).length;
-  const enabledBenefits = planBenefits.filter(pb => pb.is_enabled).length;
+  const activeBenefits = systemBenefits.filter(b => b.is_active);
+  const enabledBenefits = planBenefits.filter(pb => pb.is_enabled);
 
   return (
     <div className="space-y-6">
@@ -69,15 +90,15 @@ export const PlanBenefitsToggleList: React.FC<PlanBenefitsToggleListProps> = ({
         <div>
           <h3 className="text-xl font-semibold">Benefícios do Plano {planName}</h3>
           <p className="text-gray-600">
-            Configure quais benefícios este plano oferece ({enabledBenefits}/{totalBenefits} ativos)
+            Configure quais benefícios este plano oferece ({enabledBenefits.length}/{activeBenefits.length} ativos)
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
-          const categoryBenefits = systemBenefits.filter(
-            b => b.category === category.value && b.is_active
+          const categoryBenefits = activeBenefits.filter(
+            b => b.category === category.value
           );
           
           if (categoryBenefits.length === 0) return null;
@@ -95,7 +116,7 @@ export const PlanBenefitsToggleList: React.FC<PlanBenefitsToggleListProps> = ({
         })}
       </div>
 
-      {systemBenefits.length === 0 && (
+      {activeBenefits.length === 0 && (
         <div className="text-center py-12">
           <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">

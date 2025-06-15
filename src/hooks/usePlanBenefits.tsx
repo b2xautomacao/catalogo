@@ -37,6 +37,8 @@ export const usePlanBenefits = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchPlanBenefits = useCallback(async (planId?: string) => {
+    console.log(`🔄 Fetching plan benefits${planId ? ` for plan: ${planId}` : ' (all)'}`);
+    
     try {
       let query = supabase
         .from('plan_benefits')
@@ -52,7 +54,12 @@ export const usePlanBenefits = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching plan benefits:', error);
+        throw error;
+      }
+
+      console.log(`✅ Fetched ${data?.length || 0} plan benefits`, data);
 
       if (planId) {
         setPlanBenefits(prev => ({
@@ -72,7 +79,7 @@ export const usePlanBenefits = () => {
         setPlanBenefits(groupedBenefits);
       }
     } catch (error) {
-      console.error('Erro ao buscar benefícios do plano:', error);
+      console.error('💥 Error in fetchPlanBenefits:', error);
       toast.error('Erro ao carregar benefícios do plano');
     } finally {
       setLoading(false);
@@ -80,6 +87,8 @@ export const usePlanBenefits = () => {
   }, []);
 
   const addBenefitToPlan = useCallback(async (data: CreatePlanBenefitData) => {
+    console.log('➕ Adding benefit to plan:', data);
+    
     try {
       const { data: newBenefit, error } = await supabase
         .from('plan_benefits')
@@ -90,23 +99,28 @@ export const usePlanBenefits = () => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error adding benefit to plan:', error);
+        throw error;
+      }
+
+      console.log('✅ Benefit added successfully:', newBenefit);
 
       setPlanBenefits(prev => ({
         ...prev,
         [data.plan_id]: [...(prev[data.plan_id] || []), newBenefit]
       }));
 
-      toast.success('Benefício adicionado ao plano');
       return { data: newBenefit, error: null };
     } catch (error) {
-      console.error('Erro ao adicionar benefício ao plano:', error);
-      toast.error('Erro ao adicionar benefício ao plano');
+      console.error('💥 Error in addBenefitToPlan:', error);
       return { data: null, error };
     }
   }, []);
 
   const updatePlanBenefit = useCallback(async (id: string, data: UpdatePlanBenefitData) => {
+    console.log(`🔄 Updating plan benefit ${id}:`, data);
+    
     try {
       const { data: updatedBenefit, error } = await supabase
         .from('plan_benefits')
@@ -118,7 +132,12 @@ export const usePlanBenefits = () => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error updating plan benefit:', error);
+        throw error;
+      }
+
+      console.log('✅ Benefit updated successfully:', updatedBenefit);
 
       setPlanBenefits(prev => {
         const newBenefits = { ...prev };
@@ -130,23 +149,28 @@ export const usePlanBenefits = () => {
         return newBenefits;
       });
 
-      toast.success('Benefício atualizado');
       return { data: updatedBenefit, error: null };
     } catch (error) {
-      console.error('Erro ao atualizar benefício do plano:', error);
-      toast.error('Erro ao atualizar benefício');
+      console.error('💥 Error in updatePlanBenefit:', error);
       return { data: null, error };
     }
   }, []);
 
   const removeBenefitFromPlan = useCallback(async (id: string) => {
+    console.log(`🗑️ Removing plan benefit: ${id}`);
+    
     try {
       const { error } = await supabase
         .from('plan_benefits')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error removing plan benefit:', error);
+        throw error;
+      }
+
+      console.log('✅ Benefit removed successfully');
 
       setPlanBenefits(prev => {
         const newBenefits = { ...prev };
@@ -156,17 +180,17 @@ export const usePlanBenefits = () => {
         return newBenefits;
       });
 
-      toast.success('Benefício removido do plano');
       return { error: null };
     } catch (error) {
-      console.error('Erro ao remover benefício do plano:', error);
-      toast.error('Erro ao remover benefício');
+      console.error('💥 Error in removeBenefitFromPlan:', error);
       return { error };
     }
   }, []);
 
   const getPlanBenefits = useCallback((planId: string) => {
-    return planBenefits[planId] || [];
+    const benefits = planBenefits[planId] || [];
+    console.log(`📋 Getting benefits for plan ${planId}:`, benefits.length);
+    return benefits;
   }, [planBenefits]);
 
   useEffect(() => {
