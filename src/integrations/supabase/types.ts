@@ -177,6 +177,36 @@ export type Database = {
           },
         ]
       }
+      n8n_webhooks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          webhook_type?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           carrier: string | null
@@ -1033,11 +1063,62 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_integrations: {
+        Row: {
+          connection_status: string | null
+          created_at: string
+          evolution_api_token: string | null
+          evolution_api_url: string | null
+          id: string
+          instance_name: string
+          last_connected_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          connection_status?: string | null
+          created_at?: string
+          evolution_api_token?: string | null
+          evolution_api_url?: string | null
+          id?: string
+          instance_name: string
+          last_connected_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          connection_status?: string | null
+          created_at?: string
+          evolution_api_token?: string | null
+          evolution_api_url?: string | null
+          id?: string
+          instance_name?: string
+          last_connected_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_integrations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_store_slug: {
+        Args: { store_name: string; store_id: string }
+        Returns: string
+      }
       get_available_stock: {
         Args: { product_uuid: string }
         Returns: number
@@ -1086,6 +1167,14 @@ export type Database = {
       release_expired_reservations: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      unaccent: {
+        Args: { "": string }
+        Returns: string
+      }
+      unaccent_init: {
+        Args: { "": unknown }
+        Returns: unknown
       }
       update_payment_from_mercadopago: {
         Args: {

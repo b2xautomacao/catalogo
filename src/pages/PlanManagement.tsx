@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import { SystemBenefitsManager } from '@/components/admin/SystemBenefitsManager';
 import { TenantMonitoringDashboard } from '@/components/admin/TenantMonitoringDashboard';
+import { N8NWebhooksManager } from '@/components/admin/N8NWebhooksManager';
 
 const PlanManagement = () => {
   const { profile } = useAuth();
@@ -33,10 +34,11 @@ const PlanManagement = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="plans">Planos</TabsTrigger>
           <TabsTrigger value="benefits">Benefícios</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoramento</TabsTrigger>
+          <TabsTrigger value="n8n">Webhooks N8N</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         
@@ -50,6 +52,10 @@ const PlanManagement = () => {
         
         <TabsContent value="monitoring" className="mt-6">
           <TenantMonitoringDashboard />
+        </TabsContent>
+        
+        <TabsContent value="n8n" className="mt-6">
+          <N8NWebhooksManager />
         </TabsContent>
         
         <TabsContent value="analytics" className="mt-6">

@@ -66,3 +66,9 @@ verify_jwt = false
 
 [functions.release-expired-stock]
 verify_jwt = true
+
+[functions.whatsapp-integration-manager]
+verify_jwt = true
+
+[functions.n8n-webhook-sender]
+verify_jwt = false
