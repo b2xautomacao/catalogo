@@ -10,25 +10,42 @@ interface CheckoutConfigurationProps {
 }
 
 const CheckoutConfiguration: React.FC<CheckoutConfigurationProps> = ({ isOpen, onClose }) => {
-  const { availableOptions, canUseOnlinePayment, hasWhatsAppConfigured, settings } = useCheckoutContext();
+  const { availableOptions, canUseOnlinePayment, hasWhatsAppConfigured, settings, currentStore } = useCheckoutContext();
 
-  // Verificar se deve mostrar apenas WhatsApp (basic)
+  console.log('CheckoutConfiguration - Debug valores:', {
+    'currentStore?.phone': currentStore?.phone,
+    'settings.whatsapp_number': settings?.whatsapp_number,
+    'hasWhatsAppConfigured': hasWhatsAppConfigured,
+    'availableOptions.length': availableOptions.length,
+    'canUseOnlinePayment': canUseOnlinePayment
+  });
+
+  // Verificar se deve mostrar apenas WhatsApp (basic) - usar mesma lógica do useCheckoutOptions
   const showWhatsAppSuggestion = React.useMemo(() => {
+    const basicPhoneNumber = currentStore?.phone?.trim();
+    const premiumWhatsAppNumber = settings?.whatsapp_number?.trim();
+    const hasAnyWhatsAppNumber = !!(basicPhoneNumber || premiumWhatsAppNumber);
+    
     return (
       availableOptions.length === 0 &&
       !canUseOnlinePayment &&
-      (!settings.whatsapp_number || settings.whatsapp_number.trim() === "")
+      !hasAnyWhatsAppNumber
     );
-  }, [availableOptions, canUseOnlinePayment, settings.whatsapp_number]);
+  }, [availableOptions, canUseOnlinePayment, currentStore?.phone, settings?.whatsapp_number]);
 
   const showPaymentSuggestion = React.useMemo(() => {
-    const pm = settings.payment_methods || {};
+    const pm = settings?.payment_methods || {};
     return (
       availableOptions.length === 0 &&
       canUseOnlinePayment &&
       (!pm.pix && !pm.credit_card && !pm.bank_slip)
     );
-  }, [availableOptions, canUseOnlinePayment, settings.payment_methods]);
+  }, [availableOptions, canUseOnlinePayment, settings?.payment_methods]);
+
+  console.log('CheckoutConfiguration - Condições:', {
+    showWhatsAppSuggestion,
+    showPaymentSuggestion
+  });
 
   if (availableOptions.length > 0) {
     return null;

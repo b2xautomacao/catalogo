@@ -5,6 +5,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { useToast } from '@/hooks/use-toast';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useCheckoutOptions } from '@/hooks/useCheckoutOptions';
+import { useStores } from '@/hooks/useStores';
 
 interface CustomerData {
   name: string;
@@ -66,6 +67,9 @@ interface CheckoutContextType {
   defaultOption: string;
   canUseOnlinePayment: boolean;
   hasWhatsAppConfigured: boolean;
+  
+  // Adicionar currentStore ao contexto
+  currentStore: any;
 }
 
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined);
@@ -93,6 +97,7 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
   const { createOrderAsync, isCreatingOrder } = useOrders();
   const { settings, loading: catalogLoading } = useCatalogSettings(storeId);
   const { toast } = useToast();
+  const { currentStore } = useStores();
   
   const {
     checkoutOptions,
@@ -275,6 +280,9 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     defaultOption,
     canUseOnlinePayment,
     hasWhatsAppConfigured,
+    
+    // Adicionar currentStore
+    currentStore,
   };
 
   return (
