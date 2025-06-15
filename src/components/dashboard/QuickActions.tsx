@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +11,8 @@ import {
   ExternalLink,
   Palette,
   Users,
-  Lock
+  Lock,
+  Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,12 +75,12 @@ const QuickActions = ({ onNewProduct }: QuickActionsProps) => {
       requiresBenefit: 'discount_coupons'
     },
     {
-      title: 'Categorias',
-      description: 'Organizar produtos',
-      icon: Package,
+      title: 'Calculadora de Frete',
+      description: 'Configurar entrega',
+      icon: Truck,
       color: 'bg-indigo-100 text-indigo-600',
-      onClick: () => navigate('/categories'),
-      requiresBenefit: null
+      onClick: () => navigate('/deliveries'),
+      requiresBenefit: 'shipping_calculator'
     }
   ];
 

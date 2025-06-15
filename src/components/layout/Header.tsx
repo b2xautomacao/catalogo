@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +11,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Menu } from 'lucide-react';
 import ProfileDropdown from '@/components/billing/ProfileDropdown';
+import { PlanStatusBadge } from '@/components/billing/PlanStatusBadge';
 
 interface HeaderProps {
   title: string;
@@ -91,6 +91,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
         </div>
         
         {profile && <ProfileDropdown />}
+        {profile && <PlanStatusBadge />}
       </div>
     </header>
   );

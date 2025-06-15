@@ -24,9 +24,21 @@ const Sidebar = () => {
   const { isSuperadmin } = useAuth();
 
   const storeAdminNavigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Produtos', href: '/products', icon: Package },
-    { name: 'Pedidos', href: '/orders', icon: ShoppingCart },
+    { 
+      name: 'Dashboard', 
+      href: '/', 
+      icon: LayoutDashboard 
+    },
+    { 
+      name: 'Produtos', 
+      href: '/products', 
+      icon: Package 
+    },
+    { 
+      name: 'Pedidos', 
+      href: '/orders', 
+      icon: ShoppingCart 
+    },
     { 
       name: 'Cupons', 
       href: '/coupons', 
@@ -48,7 +60,11 @@ const Sidebar = () => {
       benefitKey: 'dedicated_support',
       requiresPremium: true
     },
-    { name: 'Configurações', href: '/settings', icon: Settings },
+    { 
+      name: 'Configurações', 
+      href: '/settings', 
+      icon: Settings 
+    },
   ];
 
   const superadminNavigation = [

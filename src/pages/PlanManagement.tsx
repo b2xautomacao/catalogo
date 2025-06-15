@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/layout/AppLayout';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import { SystemBenefitsManager } from '@/components/admin/SystemBenefitsManager';
+import { PlanBenefitsSelector } from '@/components/admin/PlanBenefitsSelector';
 
 const PlanManagement = () => {
   const { profile } = useAuth();
@@ -35,9 +36,10 @@ const PlanManagement = () => {
       breadcrumbs={breadcrumbs}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="plans">Planos de Assinatura</TabsTrigger>
           <TabsTrigger value="benefits">Benefícios do Sistema</TabsTrigger>
+          <TabsTrigger value="config">Configuração de Benefícios</TabsTrigger>
         </TabsList>
         
         <TabsContent value="plans" className="mt-6">
@@ -46,6 +48,10 @@ const PlanManagement = () => {
         
         <TabsContent value="benefits" className="mt-6">
           <SystemBenefitsManager />
+        </TabsContent>
+
+        <TabsContent value="config" className="mt-6">
+          <PlanBenefitsSelector />
         </TabsContent>
       </Tabs>
     </AppLayout>

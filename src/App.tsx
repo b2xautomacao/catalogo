@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Auth from '@/pages/Auth';
@@ -20,6 +19,9 @@ import PaymentFailure from '@/pages/PaymentFailure';
 import PaymentPending from '@/pages/PaymentPending';
 import NotFound from '@/pages/NotFound';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ProtectedCoupons from '@/pages/ProtectedCoupons';
+import ProtectedReports from '@/pages/ProtectedReports';
+import ProtectedDeliveries from '@/pages/ProtectedDeliveries';
 
 import Stores from '@/pages/Stores';
 import PlanManagement from '@/pages/PlanManagement';
@@ -33,10 +35,10 @@ function App() {
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
         <Route path="/orders" element={<ProtectedRoute><OrdersImproved /></ProtectedRoute>} />
-        <Route path="/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
-        <Route path="/deliveries" element={<ProtectedRoute><Deliveries /></ProtectedRoute>} />
+        <Route path="/coupons" element={<ProtectedCoupons />} />
+        <Route path="/deliveries" element={<ProtectedDeliveries />} />
         <Route path="/shipping" element={<ProtectedRoute><Shipping /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedReports />} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/stores" element={<ProtectedRoute><Stores /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
