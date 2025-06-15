@@ -390,6 +390,48 @@ export type Database = {
           },
         ]
       }
+      plan_benefits: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          id: string
+          is_enabled: boolean
+          limit_value: string | null
+          plan_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          limit_value?: string | null
+          plan_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          limit_value?: string | null
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_benefits_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "system_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_benefits_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_features: {
         Row: {
           created_at: string
@@ -958,6 +1000,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_benefits: {
+        Row: {
+          benefit_key: string
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          benefit_key: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          benefit_key?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -966,6 +1041,10 @@ export type Database = {
       get_available_stock: {
         Args: { product_uuid: string }
         Returns: number
+      }
+      get_benefit_limit: {
+        Args: { _store_id: string; _benefit_key: string }
+        Returns: string
       }
       get_feature_limit: {
         Args: {
@@ -977,6 +1056,10 @@ export type Database = {
       get_user_store_id: {
         Args: { _user_id: string }
         Returns: string
+      }
+      has_benefit_access: {
+        Args: { _store_id: string; _benefit_key: string }
+        Returns: boolean
       }
       has_feature_access: {
         Args: {

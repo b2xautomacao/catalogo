@@ -1,11 +1,26 @@
 
+import { useBenefitValidation } from './useBenefitValidation';
 import { useSubscription } from './useSubscription';
 import { toast } from 'sonner';
 
 export const usePlanPermissions = () => {
   const { subscription, hasFeature, canUseFeature, getFeatureLimit, isTrialing } = useSubscription();
+  const { 
+    validateBenefitAccess, 
+    hasBenefit, 
+    getBenefitLimit, 
+    getBenefitInfo 
+  } = useBenefitValidation();
 
+  // Manter compatibilidade com sistema antigo
   const checkFeatureAccess = (featureType: string, showUpgradeMessage = true): boolean => {
+    // Tentar primeiro o novo sistema de benefícios
+    const benefitKey = mapFeatureToBenefit(featureType);
+    if (benefitKey) {
+      return hasBenefit(benefitKey);
+    }
+    
+    // Fallback para sistema antigo
     const hasAccess = hasFeature(featureType);
     
     if (!hasAccess && showUpgradeMessage) {
@@ -30,6 +45,16 @@ export const usePlanPermissions = () => {
   };
 
   const getFeatureDisplayInfo = (featureType: string) => {
+    // Tentar primeiro o novo sistema
+    const benefitKey = mapFeatureToBenefit(featureType);
+    if (benefitKey) {
+      const benefitInfo = getBenefitInfo(benefitKey);
+      if (benefitInfo) {
+        return benefitInfo.name;
+      }
+    }
+
+    // Fallback para nomes manuais
     const featureNames: Record<string, string> = {
       'max_images_per_product': 'Imagens por Produto',
       'max_team_members': 'Membros da Equipe',
@@ -84,6 +109,11 @@ export const usePlanPermissions = () => {
     };
   };
 
+  // Novo método para validar benefícios
+  const checkBenefitAccess = async (benefitKey: string, showUpgradeMessage = true): Promise<boolean> => {
+    return await validateBenefitAccess(benefitKey, showUpgradeMessage);
+  };
+
   return {
     subscription,
     checkFeatureAccess,
@@ -92,6 +122,33 @@ export const usePlanPermissions = () => {
     getPlanBadgeInfo,
     hasFeature,
     canUseFeature,
-    isTrialing
+    isTrialing,
+    // Novos métodos para benefícios
+    checkBenefitAccess,
+    hasBenefit,
+    getBenefitLimit,
+    getBenefitInfo
   };
+};
+
+// Mapear features antigas para benefit_keys
+const mapFeatureToBenefit = (featureType: string): string | null => {
+  const mapping: Record<string, string> = {
+    'ai_agent': 'ai_agent',
+    'max_images_per_product': 'max_images_per_product',
+    'max_team_members': 'max_team_members',
+    'whatsapp_integration': 'whatsapp_integration',
+    'payment_pix': 'payment_pix',
+    'payment_credit_card': 'payment_credit_card',
+    'custom_domain': 'custom_domain',
+    'api_access': 'api_access',
+    'discount_coupons': 'discount_coupons',
+    'abandoned_cart_recovery': 'abandoned_cart_recovery',
+    'multi_variations': 'multi_variations',
+    'shipping_calculator': 'shipping_calculator',
+    'dedicated_support': 'dedicated_support',
+    'team_management': 'team_management'
+  };
+
+  return mapping[featureType] || null;
 };

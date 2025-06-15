@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { useBenefitValidation } from '@/hooks/useBenefitValidation';
 import { PlanUpgradeModal } from '@/components/billing/PlanUpgradeModal';
 
 interface ProductDescriptionAIProps {
@@ -28,7 +28,7 @@ const ProductDescriptionAI = ({
   const [loadingSEO, setLoadingSEO] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
-  const { checkFeatureAccess } = usePlanPermissions();
+  const { validateBenefitAccess } = useBenefitValidation();
 
   const generateDescription = async () => {
     if (!productName.trim()) {
@@ -40,8 +40,9 @@ const ProductDescriptionAI = ({
       return;
     }
 
-    // Verificar acesso à funcionalidade de IA
-    if (!checkFeatureAccess('ai_agent', false)) {
+    // Verificar acesso ao benefício de IA
+    const hasAccess = await validateBenefitAccess('ai_agent', false);
+    if (!hasAccess) {
       setShowUpgradeModal(true);
       return;
     }
@@ -89,8 +90,9 @@ const ProductDescriptionAI = ({
       return;
     }
 
-    // Verificar acesso à funcionalidade de IA
-    if (!checkFeatureAccess('ai_agent', false)) {
+    // Verificar acesso ao benefício de IA
+    const hasAccess = await validateBenefitAccess('ai_agent', false);
+    if (!hasAccess) {
       setShowUpgradeModal(true);
       return;
     }

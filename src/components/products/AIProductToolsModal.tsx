@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Loader2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { usePlanPermissions } from "@/hooks/usePlanPermissions";
+import { useBenefitValidation } from "@/hooks/useBenefitValidation";
 import { PlanUpgradeModal } from "@/components/billing/PlanUpgradeModal";
 
 interface AIProductToolsModalProps {
@@ -25,14 +25,15 @@ const AIProductToolsModal: React.FC<AIProductToolsModalProps> = ({
   product, open, onClose, onContentGenerated
 }) => {
   const { toast } = useToast();
-  const { checkFeatureAccess } = usePlanPermissions();
+  const { validateBenefitAccess } = useBenefitValidation();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [results, setResults] = useState<{ [key: string]: string }>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleGenerate = async (optionKey: string) => {
-    // Verificar acesso à funcionalidade de IA
-    if (!checkFeatureAccess('ai_agent', false)) {
+    // Verificar acesso ao benefício de IA
+    const hasAccess = await validateBenefitAccess('ai_agent', false);
+    if (!hasAccess) {
       setShowUpgradeModal(true);
       return;
     }
