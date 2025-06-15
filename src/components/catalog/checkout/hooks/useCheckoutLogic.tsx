@@ -54,7 +54,56 @@ export const useCheckoutLogic = () => {
     }
   }, [shippingOptions, settings, totalAmount, setShippingCost]);
 
-  const handleCreateOrder = useCallback(async () => {
+  const handleWhatsAppCheckout = React.useCallback((order: any) => {
+    const orderData = {
+      customer_name: customerData.name,
+      customer_phone: customerData.phone,
+      customer_email: customerData.email,
+      total_amount: totalAmount + shippingCost,
+      items: cartItems.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        variation: item.variations ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim() : undefined
+      })),
+      shipping_method: shippingMethod,
+      payment_method: 'whatsapp',
+      shipping_cost: shippingCost,
+      notes: notes
+    };
+
+    const message = generateWhatsAppMessage(orderData);
+
+    const basicPhoneRaw = basicStoreData?.phone || '';
+    const formattedPhone = basicPhoneRaw.replace(/\D/g, '');
+    const phoneForLink = formattedPhone.length >= 10
+      ? (formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`)
+      : '';
+
+    const destinationNumber = phoneForLink;
+
+    toast({
+      title: "Pedido enviado!",
+      description: "Seu pedido foi registrado e redirecionaremos você para o WhatsApp.",
+      duration: 5000,
+    });
+
+    setTimeout(() => {
+      if (!destinationNumber) {
+        toast({
+          title: 'WhatsApp da loja não configurado',
+          description: 'A loja não configurou o WhatsApp corretamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      window.open(`https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    }, 1000);
+
+    clearCart(); // sempre limpar o carrinho ao final
+  }, [customerData, cartItems, totalAmount, shippingCost, shippingMethod, notes, basicStoreData, toast, clearCart]);
+
+  const handleCreateOrder = React.useCallback(async () => {
     try {
       if (!customerData.name.trim()) {
         toast({
@@ -116,19 +165,18 @@ export const useCheckoutLogic = () => {
         shipping_method: shippingMethod,
         payment_method: checkoutType === 'whatsapp_only' ? 'whatsapp' : paymentMethod,
         shipping_cost: shippingCost,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        store_id: basicStoreData?.id
       };
 
-      // Cria o pedido normalmente
       toast({
         title: "Enviando seu pedido...",
-        description: "Só um instante: vamos lhe direcionar ao WhatsApp.",
+        description: "Só um instante! Redirecionando para o WhatsApp...",
       });
 
       const savedOrder = await createOrderAsync(orderData);
       setCreatedOrder(savedOrder);
 
-      // Tudo no BASICO (checkoutType whatsapp_only), já abre whatsapp
       if (checkoutType === 'whatsapp_only') {
         handleWhatsAppCheckout(savedOrder);
       } else if (['pix', 'credit_card', 'bank_slip'].includes(paymentMethod)) {
@@ -158,60 +206,10 @@ export const useCheckoutLogic = () => {
     toast,
     setCreatedOrder,
     setCurrentStep,
-    saveCustomer, // novo!
+    saveCustomer,
     basicStoreData,
     handleWhatsAppCheckout
   ]);
-
-  const handleWhatsAppCheckout = useCallback((order: any) => {
-    const orderData = {
-      customer_name: customerData.name,
-      customer_phone: customerData.phone,
-      customer_email: customerData.email,
-      total_amount: totalAmount + shippingCost,
-      items: cartItems.map(item => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        variation: item.variations ? `${item.variations.size || ''} ${item.variations.color || ''}`.trim() : undefined
-      })),
-      shipping_method: shippingMethod,
-      payment_method: 'whatsapp',
-      shipping_cost: shippingCost,
-      notes: notes
-    };
-
-    const message = generateWhatsAppMessage(orderData);
-
-    // Definir número correto: plano básico = telefone cadastrado na loja
-    const basicPhoneRaw = basicStoreData?.phone || '';
-    const formattedPhone = basicPhoneRaw.replace(/\D/g, '');
-    const phoneForLink = formattedPhone.length >= 10
-      ? (formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`)
-      : '';
-
-    const destinationNumber = phoneForLink;
-
-    toast({
-      title: "Pedido enviado!",
-      description: "Seu pedido foi registrado, agora abra seu WhatsApp para finalizá-lo.",
-      duration: 5000,
-    });
-
-    setTimeout(() => {
-      if (!destinationNumber) {
-        toast({
-          title: 'WhatsApp da loja não configurado',
-          description: 'A loja não configurou o WhatsApp corretamente.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      window.open(`https://wa.me/${destinationNumber}?text=${encodeURIComponent(message)}`, '_blank');
-    }, 1000);
-
-    clearCart(); // Limpa o carrinho sempre!
-  }, [customerData, cartItems, totalAmount, shippingCost, shippingMethod, notes, basicStoreData, toast, clearCart]);
 
   return {
     handleCreateOrder,
