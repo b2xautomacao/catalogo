@@ -76,9 +76,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
     return catalogSettings || storeSettings || {};
   }, [catalogSettings, storeSettings]);
 
-  // Ajuste dos hooks useMemo para evitar uso inválido
+  // Ajuste dos hooks useMemo para evitar uso inválido — DEFINE SÓ UMA VEZ!
   const showWhatsAppSuggestion = React.useMemo(() => {
-    // Somente se effectiveSettings está seguro
     return (
       availableOptions.length === 0 &&
       !canUseOnlinePayment &&
@@ -87,7 +86,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
   }, [availableOptions, canUseOnlinePayment, effectiveSettings.whatsapp_number]);
 
   const showPaymentSuggestion = React.useMemo(() => {
-    // Premium, mas sem métodos de pagamento ativos/configurados
     const pm = effectiveSettings.payment_methods || {};
     return (
       availableOptions.length === 0 &&
@@ -388,30 +386,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, storeSet
       </Dialog>
     );
   }
-
-  // BLOCO NOVO: sugestões dinâmicas conforme configuração do checkout
-  const showWhatsAppSuggestion = React.useMemo(() => {
-    // Plano Básico, WhatsApp ausência
-    return (
-      availableOptions.length === 0 &&
-      !canUseOnlinePayment &&
-      (!effectiveSettings?.whatsapp_number || effectiveSettings.whatsapp_number.trim() === "")
-    );
-  }, [availableOptions, canUseOnlinePayment, effectiveSettings]);
-
-  const showPaymentSuggestion = React.useMemo(() => {
-    // Premium, mas sem métodos de pagamento ativos/configurados
-    return (
-      availableOptions.length === 0 &&
-      canUseOnlinePayment &&
-      (
-        !effectiveSettings?.payment_methods ||
-        !effectiveSettings.payment_methods.pix &&
-        !effectiveSettings.payment_methods.credit_card &&
-        !effectiveSettings.payment_methods.bank_slip
-      )
-    );
-  }, [availableOptions, canUseOnlinePayment, effectiveSettings]);
 
   // Renderizar modal de configuração se não houver opções disponíveis
   if (availableOptions.length === 0) {
