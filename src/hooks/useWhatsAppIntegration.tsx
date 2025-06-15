@@ -20,6 +20,26 @@ export interface QRCodeData {
   expires_at: number;
 }
 
+// Função helper para validar e converter dados do banco
+const validateIntegrationData = (data: any): WhatsAppIntegration | null => {
+  if (!data) return null;
+  
+  // Validar e garantir que o status é um dos valores válidos
+  const validStatuses = ['disconnected', 'connecting', 'connected', 'error'];
+  const status = validStatuses.includes(data.status) ? data.status : 'disconnected';
+  
+  return {
+    id: data.id,
+    store_id: data.store_id,
+    instance_name: data.instance_name,
+    status: status as WhatsAppIntegration['status'],
+    connection_status: data.connection_status || 'disconnected',
+    last_connected_at: data.last_connected_at,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+};
+
 export const useWhatsAppIntegration = (storeId?: string) => {
   const { profile } = useAuth();
   const [integration, setIntegration] = useState<WhatsAppIntegration | null>(null);
@@ -44,8 +64,9 @@ export const useWhatsAppIntegration = (storeId?: string) => {
         return;
       }
 
-      setIntegration(data);
-      console.log('📱 WhatsApp integration loaded:', data?.status || 'not configured');
+      const validatedData = validateIntegrationData(data);
+      setIntegration(validatedData);
+      console.log('📱 WhatsApp integration loaded:', validatedData?.status || 'not configured');
     } catch (error) {
       console.error('💥 Error in fetchIntegration:', error);
     }
@@ -139,7 +160,13 @@ export const useWhatsAppIntegration = (storeId?: string) => {
       if (data && data.status === 'connected') {
         setConnecting(false);
         setQrCode(null);
-        setIntegration(prev => prev ? { ...prev, ...data } : null);
+        
+        // Atualizar integração com dados validados
+        const validatedData = validateIntegrationData({ ...integration, ...data });
+        if (validatedData) {
+          setIntegration(validatedData);
+        }
+        
         toast.success('WhatsApp conectado com sucesso!');
       }
     }, 3000);
