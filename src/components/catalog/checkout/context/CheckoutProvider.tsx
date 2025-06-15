@@ -61,7 +61,7 @@ interface CheckoutContextType {
   toast: any;
   settings: any;
   catalogLoading: boolean;
-  checkoutOptions: any;
+  checkoutOptions: any[];
   availableOptions: any[];
   defaultOption: string;
   canUseOnlinePayment: boolean;
@@ -116,36 +116,54 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
   const whatsAppNumber = settings?.whatsapp_number?.trim() || currentStore?.phone?.trim() || '';
   const hasWhatsAppConfigured = Boolean(whatsAppNumber);
 
-  // Verificação de pagamentos online
-  const paymentMethods = settings?.payment_methods || storeSettings?.payment_methods || {};
-  const hasMercadoPagoCredentials =
-    !!paymentMethods?.mercadopago_access_token?.trim() && !!paymentMethods?.mercadopago_public_key?.trim();
-
+  // Verificação de pagamentos online (agora só dentro do useMemo!)
   // Plano premium permite ambos, basic só WhatsApp
-  let checkoutOptions: Array<{ key: string; label: string; type: 'whatsapp_only' | 'online_payment' }> = [];
-  let canUseOnlinePayment = false;
+  const effectiveSettings = settings || storeSettings || {};
 
-  if (hasMercadoPagoCredentials && (paymentMethods?.pix || paymentMethods?.credit_card || paymentMethods?.bank_slip)) {
-    canUseOnlinePayment = true;
-    checkoutOptions.push({
-      key: 'online_payment',
-      label: 'Pagamento Online',
-      type: 'online_payment'
-    });
-  }
+  // Calcular credenciais de pagamento só no useMemo
+  const hasMercadoPagoCredentials = React.useMemo(() => {
+    if (catalogLoading || !effectiveSettings || checkoutType === 'whatsapp_only') {
+      return false;
+    }
+    const paymentMethods = effectiveSettings?.payment_methods;
+    const hasCredentials = !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
+    return hasCredentials;
+  }, [effectiveSettings, catalogLoading, checkoutType]);
 
-  if (hasWhatsAppConfigured) {
-    checkoutOptions.push({
-      key: 'whatsapp_only',
-      label: 'WhatsApp',
-      type: 'whatsapp_only'
-    });
-  }
+  // Calcular se é possível usar pagamento online, e checkoutOptions
+  const canUseOnlinePayment = React.useMemo(() => {
+    const paymentMethods = effectiveSettings?.payment_methods || {};
+    return (
+      hasMercadoPagoCredentials &&
+      (paymentMethods?.pix || paymentMethods?.credit_card || paymentMethods?.bank_slip)
+    );
+  }, [effectiveSettings, hasMercadoPagoCredentials]);
+
+  const checkoutOptions = React.useMemo(() => {
+    const opts: Array<{ key: string; label: string; type: 'whatsapp_only' | 'online_payment' }> = [];
+    if (canUseOnlinePayment) {
+      opts.push({
+        key: 'online_payment',
+        label: 'Pagamento Online',
+        type: 'online_payment'
+      });
+    }
+    if (hasWhatsAppConfigured) {
+      opts.push({
+        key: 'whatsapp_only',
+        label: 'WhatsApp',
+        type: 'whatsapp_only'
+      });
+    }
+    return opts;
+  }, [canUseOnlinePayment, hasWhatsAppConfigured]);
 
   // availableOptions, defaultOption (mantendo compatibilidade anterior)
-  const availableOptions = checkoutOptions.map(opt => opt.type);
-  // Prioriza o online se disponível, senão WhatsApp
-  const defaultOption = canUseOnlinePayment ? 'online_payment' : hasWhatsAppConfigured ? 'whatsapp_only' : '';
+  const availableOptions = React.useMemo(() => checkoutOptions.map(opt => opt.type), [checkoutOptions]);
+  const defaultOption = React.useMemo(
+    () => (canUseOnlinePayment ? 'online_payment' : hasWhatsAppConfigured ? 'whatsapp_only' : ''),
+    [canUseOnlinePayment, hasWhatsAppConfigured]
+  );
 
   // Estado local
   const [customerData, setCustomerData] = useState<CustomerData>({
@@ -173,93 +191,8 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
 
-  // Configurações efetivas
-  const effectiveSettings = settings || storeSettings || {};
+  // Remover redefinição de effectiveSettings (já mantida acima)
 
-  // Verificar credenciais do Mercado Pago apenas para checkout online
-  const hasMercadoPagoCredentials = React.useMemo(() => {
-    if (catalogLoading || !effectiveSettings || checkoutType === 'whatsapp_only') {
-      return false;
-    }
-
-    const paymentMethods = effectiveSettings?.payment_methods;
-    const hasCredentials = !!(paymentMethods?.mercadopago_access_token?.trim() && paymentMethods?.mercadopago_public_key?.trim());
-    
-    return hasCredentials;
-  }, [effectiveSettings, catalogLoading, checkoutType]);
-
-  // Verificar se está em ambiente de teste
-  const isTestEnvironment = React.useMemo(() => {
-    const paymentMethods = effectiveSettings?.payment_methods;
-    const accessToken = paymentMethods?.mercadopago_access_token || '';
-    const publicKey = paymentMethods?.mercadopago_public_key || '';
-    return accessToken.startsWith('TEST-') || publicKey.startsWith('TEST-');
-  }, [effectiveSettings]);
-
-  const availablePaymentMethods = React.useMemo(() => {
-    if (checkoutType === 'whatsapp_only' || !hasMercadoPagoCredentials) {
-      return [];
-    }
-
-    const methods = [];
-    if (effectiveSettings?.payment_methods?.pix) {
-      methods.push({ 
-        id: 'pix', 
-        name: 'PIX', 
-        icon: Smartphone,
-        description: 'Pagamento instantâneo'
-      });
-    }
-    if (effectiveSettings?.payment_methods?.credit_card) {
-      methods.push({ 
-        id: 'credit_card', 
-        name: 'Cartão de Crédito', 
-        icon: CreditCard,
-        description: 'Parcelamento em até 12x'
-      });
-    }
-    if (effectiveSettings?.payment_methods?.bank_slip) {
-      methods.push({ 
-        id: 'bank_slip', 
-        name: 'Boleto Bancário', 
-        icon: FileText,
-        description: 'Vencimento em 3 dias úteis'
-      });
-    }
-    
-    return methods;
-  }, [effectiveSettings, hasMercadoPagoCredentials, checkoutType]);
-
-  const availableShippingMethods = React.useMemo(() => {
-    const methods = [];
-    if (effectiveSettings?.shipping_options?.pickup) {
-      methods.push({ 
-        id: 'pickup', 
-        name: 'Retirar na Loja', 
-        cost: 0, 
-        icon: MapPin 
-      });
-    }
-    if (effectiveSettings?.shipping_options?.delivery) {
-      methods.push({ 
-        id: 'delivery', 
-        name: 'Entrega Local', 
-        cost: effectiveSettings.shipping_options.delivery_fee || 0, 
-        icon: Truck 
-      });
-    }
-    if (effectiveSettings?.shipping_options?.shipping) {
-      methods.push({ 
-        id: 'shipping', 
-        name: 'Correios', 
-        cost: 0, 
-        icon: Truck 
-      });
-    }
-    return methods;
-  }, [effectiveSettings]);
-
-  // Definir métodos padrão
   React.useEffect(() => {
     if (availablePaymentMethods.length > 0) {
       setPaymentMethod(availablePaymentMethods[0].id);
@@ -269,12 +202,13 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     }
   }, [availablePaymentMethods, availableShippingMethods]);
 
-  // Definir tipo de checkout padrão baseado nas opções disponíveis
   React.useEffect(() => {
     if (availableOptions.length > 0) {
       setCheckoutType(defaultOption as 'whatsapp_only' | 'online_payment');
     }
   }, [availableOptions, defaultOption]);
+
+  // Ao propagar, PROPAGAR hasWhatsAppConfigured, canUseOnlinePayment, checkoutOptions como valores do contexto.
 
   const value: CheckoutContextType = {
     // Estado
