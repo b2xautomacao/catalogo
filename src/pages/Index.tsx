@@ -3,7 +3,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SuperadminDashboard from '@/components/dashboard/SuperadminDashboard';
 import StoreDashboard from '@/components/dashboard/StoreDashboard';
-import StoreSetup from '@/components/onboarding/StoreSetup';
+import { ImprovedStoreWizard } from '@/components/onboarding/ImprovedStoreWizard';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import { LogOut, Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { profile, signOut, loading } = useAuth();
+  const { needsOnboarding, loading: onboardingLoading, completeOnboarding } = useOnboarding();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -32,13 +34,13 @@ const Index = () => {
     }
   };
 
-  // Mostrar loading enquanto carrega o perfil
-  if (loading) {
+  // Mostrar loading enquanto carrega o perfil e onboarding
+  if (loading || onboardingLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando perfil...</p>
+          <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
     );
@@ -63,18 +65,24 @@ const Index = () => {
 
   console.log('Renderizando Index - Perfil:', profile);
 
-  // Para store_admin, verificar se tem loja associada
+  // Para store_admin, verificar se precisa de onboarding
   if (profile.role === 'store_admin') {
     console.log('Store admin detectado - store_id:', profile.store_id);
+    console.log('Needs onboarding:', needsOnboarding);
     
-    // Se não tem store_id, mostrar o wizard de configuração
-    if (!profile.store_id) {
-      console.log('Store admin sem loja - mostrando StoreSetup');
-      return <StoreSetup />;
+    // Se precisa de onboarding, mostrar o wizard melhorado
+    if (needsOnboarding) {
+      console.log('Store admin precisa de onboarding - mostrando ImprovedStoreWizard');
+      return (
+        <ImprovedStoreWizard
+          open={true}
+          onComplete={completeOnboarding}
+        />
+      );
     }
 
-    // Se tem store_id, mostrar o dashboard da loja
-    console.log('Store admin com loja - mostrando StoreDashboard');
+    // Se tem tudo configurado, mostrar o dashboard da loja
+    console.log('Store admin com loja configurada - mostrando StoreDashboard');
     return (
       <AppLayout 
         title="Dashboard da Loja"
