@@ -1,13 +1,15 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
+import { useAuth } from '@/hooks/useAuth';
+import { useStoreSubscription } from '@/hooks/useStoreSubscription';
 import { Crown, Clock, AlertCircle } from 'lucide-react';
 
 export const PlanStatusBadge = () => {
-  const { subscription, isTrialing, isSuperadmin } = usePlanPermissions();
+  const { profile } = useAuth();
+  const { subscription, loading } = useStoreSubscription();
 
-  if (isSuperadmin) {
+  if (profile?.role === 'superadmin') {
     return (
       <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-200">
         <Crown className="h-3 w-3 mr-1" />
@@ -16,10 +18,18 @@ export const PlanStatusBadge = () => {
     );
   }
 
-  if (!subscription) {
+  if (loading) {
     return (
       <Badge variant="outline" className="bg-gray-50 text-gray-600">
         Carregando...
+      </Badge>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <Badge variant="outline" className="bg-gray-50 text-gray-600">
+        Gratuito
       </Badge>
     );
   }
@@ -30,9 +40,9 @@ export const PlanStatusBadge = () => {
     enterprise: 'Enterprise'
   };
 
-  const planName = planLabels[subscription.plan.type] || subscription.plan.type;
+  const planName = planLabels[subscription.plan?.type as keyof typeof planLabels] || 'Básico';
 
-  if (isTrialing) {
+  if (subscription.status === 'trialing') {
     return (
       <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
         <Clock className="h-3 w-3 mr-1" />

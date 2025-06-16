@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedMenuItem } from '@/components/billing/ProtectedMenuItem';
+import SidebarUserProfile from './SidebarUserProfile';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -81,13 +82,14 @@ const Sidebar = () => {
 
   return (
     <div className="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-40 hidden lg:flex lg:flex-col">
-      <div className="flex flex-1 flex-col overflow-y-auto py-4">
-        <div className="flex flex-shrink-0 items-center px-4 mb-8">
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-shrink-0 items-center px-4 py-6">
           <div className="flex items-center gap-2">
             <Zap className="h-8 w-8 text-blue-600" />
             <span className="text-xl font-bold text-gray-900">CatalogoAI</span>
           </div>
         </div>
+        
         <nav className="flex-1 space-y-1 px-2">
           {navigation.map((item) => (
             <ProtectedMenuItem
@@ -100,6 +102,9 @@ const Sidebar = () => {
             />
           ))}
         </nav>
+
+        {/* Perfil do usuário no footer da sidebar */}
+        <SidebarUserProfile />
       </div>
     </div>
   );

@@ -21,6 +21,18 @@ export interface FeatureUsage {
   percentage: number;
 }
 
+// Plano padrão para usuários sem assinatura
+const DEFAULT_FREE_PLAN = {
+  id: 'free',
+  name: 'Gratuito',
+  type: 'basic' as const,
+  description: 'Plano básico gratuito',
+  price_monthly: 0,
+  price_yearly: 0,
+  is_active: true,
+  trial_days: 0
+};
+
 export const useSubscription = () => {
   const { profile } = useAuth();
   const { subscription, loading: subscriptionLoading, error: subscriptionError } = useStoreSubscription();
@@ -90,8 +102,24 @@ export const useSubscription = () => {
     return Math.max(0, diffDays);
   };
 
+  // Retornar plano atual ou plano gratuito como fallback
+  const currentSubscription = subscription || {
+    ...DEFAULT_FREE_PLAN,
+    id: 'free-default',
+    store_id: profile?.store_id || '',
+    plan_id: 'free',
+    status: 'active' as const,
+    starts_at: new Date().toISOString(),
+    ends_at: null,
+    trial_ends_at: null,
+    canceled_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    plan: DEFAULT_FREE_PLAN
+  };
+
   return {
-    subscription,
+    subscription: currentSubscription,
     featureUsage,
     loading,
     error,
