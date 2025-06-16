@@ -71,15 +71,22 @@ const SmartPlanUpgradeModal: React.FC<SmartPlanUpgradeModalProps> = ({
       return;
     }
 
-    // Verificar se tem credenciais válidas para Mercado Pago
-    if (activeGateway.name === 'mercadopago' || activeGateway.name === 'asaas') {
+    // Verificar se tem credenciais válidas baseado no gateway ativo
+    if (activeGateway.name === 'mercadopago') {
       if (!hasCredentials) {
         toast.error('Credenciais do Mercado Pago não configuradas. Configure nas configurações de pagamento.');
         return;
       }
-    } else if (!hasValidCredentials(activeGateway)) {
-      toast.error(`Credenciais do ${activeGateway.name} não configuradas adequadamente.`);
-      return;
+    } else if (activeGateway.name === 'asaas') {
+      if (!hasValidCredentials(activeGateway)) {
+        toast.error('Credenciais do Asaas não configuradas adequadamente.');
+        return;
+      }
+    } else if (activeGateway.name === 'stripe') {
+      if (!hasValidCredentials(activeGateway)) {
+        toast.error('Credenciais do Stripe não configuradas adequadamente.');
+        return;
+      }
     }
 
     setProcessing(true);
@@ -87,7 +94,7 @@ const SmartPlanUpgradeModal: React.FC<SmartPlanUpgradeModalProps> = ({
     try {
       const upgradeValue = calculateUpgradeValue(plan);
       
-      if (activeGateway.name === 'mercadopago' || !activeGateway.name) {
+      if (activeGateway.name === 'mercadopago') {
         // Usar Mercado Pago
         const checkoutData = {
           items: [{
@@ -100,7 +107,7 @@ const SmartPlanUpgradeModal: React.FC<SmartPlanUpgradeModalProps> = ({
           payer: {
             name: profile.full_name || 'Cliente',
             email: profile.email,
-            phone: profile.phone || '11999999999'
+            phone: '11999999999' // Valor padrão já que phone não existe no UserProfile
           },
           back_urls: {
             success: `${window.location.origin}/payment-success?plan_id=${plan.id}`,
@@ -215,7 +222,7 @@ const SmartPlanUpgradeModal: React.FC<SmartPlanUpgradeModalProps> = ({
           <div className="flex items-center gap-2">
             <Info className="h-4 w-4 text-blue-600" />
             <span className="text-sm text-blue-800">
-              Pagamentos processados via: <strong>{activeGateway.name.toUpperCase()}</strong>
+              Pagamentos processados via: <strong>{activeGateway?.name.toUpperCase()}</strong>
             </span>
           </div>
         </div>

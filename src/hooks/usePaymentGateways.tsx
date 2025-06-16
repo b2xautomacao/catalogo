@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 export interface PaymentGateway {
   id: string;
-  name: 'stripe' | 'asaas';
+  name: 'stripe' | 'asaas' | 'mercadopago';
   is_active: boolean;
   config: {
     public_key?: string;
