@@ -1,3 +1,4 @@
+
 import React, { useState, memo, useCallback } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -187,42 +188,42 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
           </div>
 
           {/* Product Info */}
-          <div className="p-5">
+          <div className="p-3">
             {/* Category */}
             {product.category && (
-              <p className="text-xs text-blue-600 uppercase tracking-wider mb-2 font-semibold">
+              <p className="text-xs text-blue-600 uppercase tracking-wider mb-1 font-semibold">
                 {product.category}
               </p>
             )}
 
             {/* Name */}
-            <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors text-lg">
+            <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors text-base">
               {product.name}
             </h3>
 
             {/* Description */}
             {product.description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-relaxed">
                 {product.description}
               </p>
             )}
 
             {/* Rating (Mock) */}
-            <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-1 mb-3">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={14} className="text-yellow-400" fill="currentColor" />
+                <Star key={i} size={12} className="text-yellow-400" fill="currentColor" />
               ))}
-              <span className="text-xs text-gray-500 ml-2">(24 avaliações)</span>
+              <span className="text-xs text-gray-500 ml-1">(24)</span>
             </div>
 
             {/* Price */}
-            <div className="mb-5">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl font-bold text-gray-900">
+            <div className="mb-3">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-lg font-bold text-gray-900">
                   R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 {catalogType === 'wholesale' && product.wholesale_price && (
-                  <span className="text-sm text-gray-500 line-through">
+                  <span className="text-xs text-gray-500 line-through">
                     R$ {product.retail_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 )}
@@ -230,7 +231,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               
               {catalogType === 'wholesale' && minQuantity > 1 && (
                 <p className="text-xs text-gray-600">
-                  Mín. {minQuantity} unidades
+                  Mín. {minQuantity} un.
                 </p>
               )}
             </div>
@@ -239,11 +240,10 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             <Button
               onClick={handleAddToCart}
               disabled={product.stock === 0}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              size="lg"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium text-xs py-2 px-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed h-9"
             >
-              <ShoppingCart size={18} className="mr-2" />
-              {product.stock === 0 ? 'Esgotado' : variations.length > 0 ? 'Ver Opções' : 'Adicionar ao Carrinho'}
+              <ShoppingCart size={14} className="mr-1" />
+              {product.stock === 0 ? 'Esgotado' : variations.length > 0 ? 'Ver Opções' : 'Adicionar'}
             </Button>
           </div>
         </CardContent>
