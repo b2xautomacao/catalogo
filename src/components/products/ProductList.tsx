@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import StockIndicator from './StockIndicator';
 
 interface Product {
   id: string;
@@ -47,6 +46,18 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
     const uniqueCategories = [...new Set(products.map(p => p.category))];
     return uniqueCategories.filter(Boolean);
   }, [products]);
+
+  const getStockColor = (stock: number) => {
+    if (stock <= 0) return 'bg-red-100 text-red-800';
+    if (stock <= 5) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  const getStockText = (stock: number) => {
+    if (stock <= 0) return 'Esgotado';
+    if (stock <= 5) return `Estoque baixo (${stock})`;
+    return `Em estoque (${stock})`;
+  };
 
   return (
     <div className="space-y-4">
@@ -133,7 +144,9 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                             )}
                           </div>
                           
-                          <StockIndicator stock={product.stock} />
+                          <Badge className={getStockColor(product.stock)}>
+                            {getStockText(product.stock)}
+                          </Badge>
                           
                           <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
                             <div className="flex items-center gap-1">

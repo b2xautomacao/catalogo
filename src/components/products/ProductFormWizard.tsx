@@ -10,9 +10,11 @@ import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import ProductBasicInfoForm from './wizard/ProductBasicInfoForm';
 import ProductPricingForm from './wizard/ProductPricingForm';
 import ProductImagesForm from './wizard/ProductImagesForm';
+import ProductVariationsForm from './wizard/ProductVariationsForm';
 import ProductAdvancedForm from './wizard/ProductAdvancedForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useDraftImages } from '@/hooks/useDraftImages';
+import { ProductVariation } from './ProductVariationsManager';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -43,7 +45,8 @@ const steps = [
   { id: 1, name: 'Informações Básicas', shortName: 'Básicas', component: ProductBasicInfoForm },
   { id: 2, name: 'Preços e Estoque', shortName: 'Preços', component: ProductPricingForm },
   { id: 3, name: 'Imagens', shortName: 'Imagens', component: ProductImagesForm },
-  { id: 4, name: 'Configurações Avançadas', shortName: 'Avançadas', component: ProductAdvancedForm },
+  { id: 4, name: 'Variações', shortName: 'Variações', component: ProductVariationsForm },
+  { id: 5, name: 'Configurações Avançadas', shortName: 'Avançadas', component: ProductAdvancedForm },
 ];
 
 // Função para gerar slug a partir do nome
@@ -61,6 +64,7 @@ const generateSlug = (name: string): string => {
 const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
   const { profile } = useAuth();
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
 
@@ -90,7 +94,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
       console.log('ProductFormWizard - Carregando dados iniciais:', initialData);
       
       const formData = {
-        id: initialData.id, // Importante: incluir o ID
+        id: initialData.id,
         name: initialData.name || '',
         description: initialData.description || '',
         category: initialData.category || '',
@@ -106,6 +110,11 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
         seo_slug: initialData.seo_slug || '',
         image_url: initialData.image_url || '',
       };
+      
+      // Carregar variações se existirem
+      if (initialData.variations) {
+        setVariations(initialData.variations);
+      }
       
       console.log('ProductFormWizard - Dados processados:', formData);
       form.reset(formData);
@@ -132,12 +141,13 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
       case 2:
         return values.retail_price > 0 && values.stock >= 0;
       case 3:
-        // Para edição, não exigir imagens (pode já ter ou não)
-        // Para criação, aceitar tanto draft images quanto image_url
         if (mode === 'edit') return true;
         return draftImages.length > 0 || !!values.image_url;
       case 4:
-        // Passo 4 sempre é válido - configurações avançadas são opcionais
+        // Variações são opcionais
+        return true;
+      case 5:
+        // Configurações avançadas são opcionais
         return true;
       default:
         return true;
@@ -176,7 +186,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
         console.log('Fazendo upload das imagens draft...');
         const uploadResult = await uploadDraftImages();
         if (uploadResult.success && uploadResult.urls.length > 0) {
-          imageUrl = uploadResult.urls[0]; // Primeira imagem como principal
+          imageUrl = uploadResult.urls[0];
           console.log('Upload concluído, URL principal:', imageUrl);
         }
       }
@@ -185,18 +195,21 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
         ...data,
         store_id: profile.store_id,
         image_url: imageUrl,
-        // Garantir que valores numéricos sejam válidos
+        variations: variations.length > 0 ? variations : undefined,
+        wholesale_price: data.wholesale_price || null,
+        min_wholesale_qty: data.min_wholesale_qty || 1,
         retail_price: Number(data.retail_price),
-        wholesale_price: data.wholesale_price ? Number(data.wholesale_price) : null,
         stock: Number(data.stock),
-        min_wholesale_qty: data.min_wholesale_qty ? Number(data.min_wholesale_qty) : 1,
       };
 
       console.log('Submetendo dados do produto:', productData);
       await onSubmit(productData);
       
-      // Limpar imagens draft apenas em caso de sucesso
-      clearDraftImages();
+      // Limpar dados apenas em caso de sucesso
+      if (mode === 'create') {
+        clearDraftImages();
+        setVariations([]);
+      }
       
     } catch (error) {
       console.error('Erro ao submeter produto:', error);
@@ -220,6 +233,14 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
           />
         );
       case 4:
+        return (
+          <ProductVariationsForm 
+            form={form}
+            variations={variations}
+            onVariationsChange={setVariations}
+          />
+        );
+      case 5:
         return <ProductAdvancedForm form={form} />;
       default:
         return null;
