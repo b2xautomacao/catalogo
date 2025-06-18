@@ -13,7 +13,10 @@ interface PermissionCheck {
 export const usePlanPermissions = () => {
   const { profile, isSuperadmin } = useAuth();
   const { subscription, loading: subscriptionLoading } = useStoreSubscription();
-  const { benefits, loading: benefitsLoading } = usePlanBenefits();
+  const { planBenefits, loading: benefitsLoading } = usePlanBenefits();
+
+  // Extrair benefits do planBenefits
+  const benefits = planBenefits[subscription?.plan?.id || ''] || [];
 
   // Superadmins sempre têm acesso total
   if (isSuperadmin) {
@@ -33,6 +36,7 @@ export const usePlanPermissions = () => {
       isTrialing: () => false,
       isSuperadmin: true,
       getPlanBadgeInfo: () => ({ label: 'Superadmin', variant: 'default' as const }),
+      getFeatureDisplayInfo: () => ({ name: 'Acesso Total', isEnabled: true }),
       loading: false
     };
   }
@@ -51,7 +55,7 @@ export const usePlanPermissions = () => {
     }
 
     // Verificar se o benefício está habilitado para o plano atual
-    const benefit = benefits.find(b => b.benefit_key === featureKey);
+    const benefit = benefits.find(b => b.benefit?.benefit_key === featureKey);
     
     if (!benefit || !benefit.is_enabled) {
       return { 
@@ -71,7 +75,7 @@ export const usePlanPermissions = () => {
   const checkProductLimit = (): PermissionCheck => {
     if (loading) return { hasAccess: false, loading: true };
     
-    const productBenefit = benefits.find(b => b.benefit_key === 'max_products');
+    const productBenefit = benefits.find(b => b.benefit?.benefit_key === 'max_products');
     
     if (!productBenefit || !productBenefit.is_enabled) {
       return { 
@@ -94,7 +98,7 @@ export const usePlanPermissions = () => {
   const checkImageLimit = (): PermissionCheck => {
     if (loading) return { hasAccess: false, loading: true };
     
-    const imageBenefit = benefits.find(b => b.benefit_key === 'max_product_images');
+    const imageBenefit = benefits.find(b => b.benefit?.benefit_key === 'max_product_images');
     
     if (!imageBenefit || !imageBenefit.is_enabled) {
       return { 
@@ -110,7 +114,7 @@ export const usePlanPermissions = () => {
   const checkVariationLimit = (): PermissionCheck => {
     if (loading) return { hasAccess: false, loading: true };
     
-    const variationBenefit = benefits.find(b => b.benefit_key === 'product_variations');
+    const variationBenefit = benefits.find(b => b.benefit?.benefit_key === 'product_variations');
     
     if (!variationBenefit || !variationBenefit.is_enabled) {
       return { 
@@ -126,7 +130,7 @@ export const usePlanPermissions = () => {
   const checkAIUsage = (): PermissionCheck => {
     if (loading) return { hasAccess: false, loading: true };
     
-    const aiBenefit = benefits.find(b => b.benefit_key === 'ai_product_descriptions');
+    const aiBenefit = benefits.find(b => b.benefit?.benefit_key === 'ai_product_descriptions');
     
     if (!aiBenefit || !aiBenefit.is_enabled) {
       return { 
@@ -168,6 +172,14 @@ export const usePlanPermissions = () => {
     return planLabels[subscription.plan.type] || { label: 'Básico', variant: 'outline' as const };
   };
 
+  const getFeatureDisplayInfo = (featureKey: string) => {
+    const benefit = benefits.find(b => b.benefit?.benefit_key === featureKey);
+    return {
+      name: benefit?.benefit?.name || featureKey,
+      isEnabled: benefit?.is_enabled || false
+    };
+  };
+
   return {
     // Funções específicas (nova interface)
     hasFeatureAccess,
@@ -184,6 +196,7 @@ export const usePlanPermissions = () => {
     isTrialing,
     isSuperadmin: false,
     getPlanBadgeInfo,
+    getFeatureDisplayInfo,
     loading
   };
 };

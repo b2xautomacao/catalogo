@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ export const useRealtimeBenefits = (
   onPlanBenefitsChange?: () => void
 ) => {
   const { profile } = useAuth();
+  const channelsRef = useRef<{ system: any; plan: any }>({ system: null, plan: null });
 
   const handleSystemBenefitsChange = useCallback((payload: any) => {
     console.log('🔄 System benefits changed:', payload);
@@ -40,9 +41,23 @@ export const useRealtimeBenefits = (
   }, [onPlanBenefitsChange]);
 
   useEffect(() => {
+    // Limpar canais existentes se houver
+    if (channelsRef.current.system) {
+      supabase.removeChannel(channelsRef.current.system);
+      channelsRef.current.system = null;
+    }
+    if (channelsRef.current.plan) {
+      supabase.removeChannel(channelsRef.current.plan);
+      channelsRef.current.plan = null;
+    }
+
+    // Criar novos canais com IDs únicos
+    const systemChannelId = `system-benefits-${Date.now()}-${Math.random()}`;
+    const planChannelId = `plan-benefits-${Date.now()}-${Math.random()}`;
+
     // Subscription para mudanças em system_benefits
     const systemBenefitsChannel = supabase
-      .channel('system-benefits-changes')
+      .channel(systemChannelId)
       .on(
         'postgres_changes',
         {
@@ -56,7 +71,7 @@ export const useRealtimeBenefits = (
 
     // Subscription para mudanças em plan_benefits
     const planBenefitsChannel = supabase
-      .channel('plan-benefits-changes')
+      .channel(planChannelId)
       .on(
         'postgres_changes',
         {
@@ -68,12 +83,19 @@ export const useRealtimeBenefits = (
       )
       .subscribe();
 
-    console.log('📡 Realtime subscriptions initialized');
+    channelsRef.current.system = systemBenefitsChannel;
+    channelsRef.current.plan = planBenefitsChannel;
+
+    console.log('📡 Realtime subscriptions initialized with unique IDs');
 
     return () => {
       console.log('📡 Cleaning up realtime subscriptions');
-      supabase.removeChannel(systemBenefitsChannel);
-      supabase.removeChannel(planBenefitsChannel);
+      if (channelsRef.current.system) {
+        supabase.removeChannel(channelsRef.current.system);
+      }
+      if (channelsRef.current.plan) {
+        supabase.removeChannel(channelsRef.current.plan);
+      }
     };
   }, [handleSystemBenefitsChange, handlePlanBenefitsChange]);
 
