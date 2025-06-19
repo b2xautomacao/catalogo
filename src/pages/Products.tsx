@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/components/layout/AppLayout';
 import ProductList from '@/components/products/ProductList';
-import ProductFormWizard from '@/components/products/ProductFormWizard';
+import ProductFormModal from '@/components/products/ProductFormModal';
 import ImprovedAIToolsModal from '@/components/products/ImprovedAIToolsModal';
 import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 const Products = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const { products, loading, deleteProduct, fetchProducts } = useProducts();
   const { toast } = useToast();
@@ -45,7 +46,8 @@ const Products = () => {
   };
 
   const handleGenerateDescription = (productId: string) => {
-    setSelectedProductId(productId);
+    const product = products.find(p => p.id === productId);
+    setSelectedProduct(product);
     setShowAIModal(true);
   };
 
@@ -135,23 +137,38 @@ const Products = () => {
           onGenerateDescription={handleGenerateDescription}
         />
 
-        {/* Modal do formulário de produto com props corretas */}
-        {showProductForm && (
-          <ProductFormWizard
-            initialData={editingProduct}
-            onSubmit={handleProductSubmit}
-            mode={editingProduct ? 'edit' : 'create'}
-          />
-        )}
+        {/* Modal do formulário de produto */}
+        <ProductFormModal
+          open={showProductForm}
+          onOpenChange={setShowProductForm}
+          onSubmit={handleProductSubmit}
+          initialData={editingProduct}
+          mode={editingProduct ? 'edit' : 'create'}
+        />
 
-        {/* Modal de IA com props corretas */}
-        {showAIModal && selectedProductId && (
+        {/* Modal de IA com informações do produto */}
+        {showAIModal && selectedProduct && (
           <ImprovedAIToolsModal
             open={showAIModal}
             onOpenChange={setShowAIModal}
-            productName="Produto Selecionado"
-            category="Categoria"
-            onContentApply={handleAIContentApply}
+            productName={selectedProduct.name || 'Produto'}
+            category={selectedProduct.category || 'Categoria'}
+            onDescriptionGenerated={(description) => {
+              console.log('Descrição gerada:', description);
+              handleAIContentApply({ description });
+            }}
+            onTitleGenerated={(title) => {
+              console.log('Título gerado:', title);
+              handleAIContentApply({ title });
+            }}
+            onKeywordsGenerated={(keywords) => {
+              console.log('Palavras-chave geradas:', keywords);
+              handleAIContentApply({ keywords });
+            }}
+            onAdCopyGenerated={(adCopy) => {
+              console.log('Texto de anúncio gerado:', adCopy);
+              handleAIContentApply({ adCopy });
+            }}
           />
         )}
       </div>
