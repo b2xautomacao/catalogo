@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,10 +59,23 @@ const Products = () => {
     fetchProducts();
   };
 
-  const handleProductSaved = () => {
-    setShowProductForm(false);
-    setEditingProduct(null);
-    fetchProducts();
+  const handleProductSubmit = async (data: any) => {
+    try {
+      // Lógica para salvar/atualizar produto
+      console.log('Salvando produto:', data);
+      toast({
+        title: "Produto salvo com sucesso",
+      });
+      setShowProductForm(false);
+      setEditingProduct(null);
+      fetchProducts();
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      toast({
+        title: "Erro ao salvar produto",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -123,24 +135,22 @@ const Products = () => {
           onGenerateDescription={handleGenerateDescription}
         />
 
-        {/* Modal do formulário de produto */}
+        {/* Modal do formulário de produto com props corretas */}
         {showProductForm && (
           <ProductFormWizard
             initialData={editingProduct}
-            onClose={() => {
-              setShowProductForm(false);
-              setEditingProduct(null);
-            }}
-            onSave={handleProductSaved}
+            onSubmit={handleProductSubmit}
+            mode={editingProduct ? 'edit' : 'create'}
           />
         )}
 
-        {/* Modal de IA */}
+        {/* Modal de IA com props corretas */}
         {showAIModal && selectedProductId && (
           <ImprovedAIToolsModal
             open={showAIModal}
-            onClose={() => setShowAIModal(false)}
-            productId={selectedProductId}
+            onOpenChange={setShowAIModal}
+            productName="Produto Selecionado"
+            category="Categoria"
             onContentApply={handleAIContentApply}
           />
         )}

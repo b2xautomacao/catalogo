@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -170,17 +169,12 @@ const Categories = () => {
           </div>
         )}
 
-        {/* Dialog de categoria */}
-        {showCategoryDialog && (
-          <SimpleCategoryDialog
-            initialData={editingCategory}
-            onClose={() => {
-              setShowCategoryDialog(false);
-              setEditingCategory(null);
-            }}
-            onSave={handleCategorySaved}
-          />
-        )}
+        {/* Dialog de categoria com props corretas */}
+        <SimpleCategoryDialog
+          open={showCategoryDialog}
+          onOpenChange={setShowCategoryDialog}
+          onCategoryCreated={handleCategorySaved}
+        />
       </div>
     </AppLayout>
   );
