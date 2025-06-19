@@ -15,6 +15,7 @@ interface Product {
   stock: number;
   status: 'active' | 'inactive';
   image?: string;
+  image_url?: string;
   wholesalePrice?: number;
 }
 
@@ -55,6 +56,10 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
       return <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Baixo ({stock})</Badge>;
     }
     return <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">Estoque ({stock})</Badge>;
+  };
+
+  const getProductImage = (product: Product) => {
+    return product.image_url || product.image || '/placeholder.svg';
   };
 
   return (
@@ -111,35 +116,33 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
               <Card key={product.id}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    {/* Imagem */}
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      {product.image ? (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <span className="text-xs">Sem foto</span>
-                        </div>
-                      )}
+                    {/* Imagem com fallback melhorado */}
+                    <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border">
+                      <img
+                        src={getProductImage(product)}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder.svg';
+                        }}
+                      />
                     </div>
 
                     {/* Informações */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
-                          <p className="text-sm text-gray-500">{product.category}</p>
+                          <h3 className="font-semibold text-gray-900 text-base mb-1">{product.name}</h3>
+                          <p className="text-sm text-gray-600 mb-2">{product.category}</p>
                           
-                          <div className="flex items-center gap-4 mt-2">
+                          <div className="flex items-center gap-4">
                             <div className="text-sm">
-                              <span className="font-medium text-green-600">
+                              <span className="font-semibold text-green-600 text-base">
                                 R$ {product.price.toFixed(2)}
                               </span>
                               {product.wholesalePrice && (
-                                <span className="text-gray-500 ml-2">
+                                <span className="text-gray-500 ml-2 text-sm">
                                   Atacado: R$ {product.wholesalePrice.toFixed(2)}
                                 </span>
                               )}
@@ -166,6 +169,7 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                             variant="outline"
                             size="sm"
                             onClick={() => onGenerateDescription(product.id)}
+                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
                           >
                             <Sparkles className="h-4 w-4" />
                           </Button>
@@ -182,7 +186,7 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                             variant="outline"
                             size="sm"
                             onClick={() => onDelete(product.id)}
-                            className="text-red-600 border-red-200"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -195,34 +199,37 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
             ))}
           </div>
 
-          {/* Layout Mobile */}
+          {/* Layout Mobile melhorado */}
           <div className="lg:hidden space-y-4">
             {filteredProducts.map((product) => (
-              <Card key={product.id}>
+              <Card key={product.id} className="overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* Header com imagem e info básica */}
-                    <div className="flex gap-3">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <span className="text-xs">Sem foto</span>
-                          </div>
-                        )}
+                    <div className="flex gap-4">
+                      <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border">
+                        <img
+                          src={getProductImage(product)}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/placeholder.svg';
+                          }}
+                        />
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
-                        <p className="text-sm text-gray-500">{product.category}</p>
-                        <div className="text-sm font-medium text-green-600 mt-1">
+                        <h3 className="font-semibold text-gray-900 text-base mb-1 line-clamp-2">{product.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{product.category}</p>
+                        <div className="text-lg font-semibold text-green-600">
                           R$ {product.price.toFixed(2)}
                         </div>
+                        {product.wholesalePrice && (
+                          <div className="text-sm text-gray-500">
+                            Atacado: R$ {product.wholesalePrice.toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -239,20 +246,15 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                           {product.status === 'active' ? 'Ativo' : 'Inativo'}
                         </div>
                       </Badge>
-                      {product.wholesalePrice && (
-                        <Badge variant="outline" className="text-xs">
-                          Atacado: R$ {product.wholesalePrice.toFixed(2)}
-                        </Badge>
-                      )}
                     </div>
 
-                    {/* Ações - Empilhadas no mobile */}
-                    <div className="flex gap-2">
+                    {/* Ações - Layout melhorado para mobile */}
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => onGenerateDescription(product.id)}
-                        className="flex-1"
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
                       >
                         <Sparkles className="h-4 w-4 mr-1" />
                         IA
@@ -262,7 +264,6 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                         variant="outline"
                         size="sm"
                         onClick={() => onEdit(product)}
-                        className="flex-1"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
@@ -272,9 +273,10 @@ const ProductList = ({ products, onEdit, onDelete, onGenerateDescription }: Prod
                         variant="outline"
                         size="sm"
                         onClick={() => onDelete(product.id)}
-                        className="text-red-600 border-red-200"
+                        className="text-red-600 border-red-200 hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Excluir
                       </Button>
                     </div>
                   </div>
