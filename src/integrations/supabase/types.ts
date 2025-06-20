@@ -921,6 +921,14 @@ export type Database = {
           template_name: string | null
           twitter_url: string | null
           updated_at: string
+          watermark_color: string | null
+          watermark_enabled: boolean | null
+          watermark_logo_url: string | null
+          watermark_opacity: number | null
+          watermark_position: string | null
+          watermark_size: number | null
+          watermark_text: string | null
+          watermark_type: string | null
           whatsapp_integration_active: boolean | null
           whatsapp_number: string | null
           wholesale_catalog_active: boolean | null
@@ -949,6 +957,14 @@ export type Database = {
           template_name?: string | null
           twitter_url?: string | null
           updated_at?: string
+          watermark_color?: string | null
+          watermark_enabled?: boolean | null
+          watermark_logo_url?: string | null
+          watermark_opacity?: number | null
+          watermark_position?: string | null
+          watermark_size?: number | null
+          watermark_text?: string | null
+          watermark_type?: string | null
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
           wholesale_catalog_active?: boolean | null
@@ -977,6 +993,14 @@ export type Database = {
           template_name?: string | null
           twitter_url?: string | null
           updated_at?: string
+          watermark_color?: string | null
+          watermark_enabled?: boolean | null
+          watermark_logo_url?: string | null
+          watermark_opacity?: number | null
+          watermark_position?: string | null
+          watermark_size?: number | null
+          watermark_text?: string | null
+          watermark_type?: string | null
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
           wholesale_catalog_active?: boolean | null

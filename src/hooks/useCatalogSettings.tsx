@@ -36,6 +36,15 @@ export interface CatalogSettingsData {
   facebook_url: string | null;
   instagram_url: string | null;
   twitter_url: string | null;
+  // Configurações de marca d'água
+  watermark_enabled: boolean;
+  watermark_type: 'text' | 'logo';
+  watermark_text: string;
+  watermark_logo_url: string | null;
+  watermark_position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+  watermark_opacity: number;
+  watermark_size: number;
+  watermark_color: string;
   created_at: string;
   updated_at: string;
 }
@@ -189,6 +198,15 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: null,
           instagram_url: null,
           twitter_url: null,
+          // Configurações padrão de marca d'água
+          watermark_enabled: false,
+          watermark_type: 'text' as const,
+          watermark_text: 'Minha Loja',
+          watermark_logo_url: null,
+          watermark_position: 'bottom-right' as const,
+          watermark_opacity: 0.7,
+          watermark_size: 24,
+          watermark_color: '#ffffff',
         };
 
         const { data: newSettings, error: createError } = await supabase
@@ -212,6 +230,15 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: null,
           instagram_url: null,
           twitter_url: null,
+          // Configurações de marca d'água
+          watermark_enabled: false,
+          watermark_type: 'text' as const,
+          watermark_text: 'Minha Loja',
+          watermark_logo_url: null,
+          watermark_position: 'bottom-right' as const,
+          watermark_opacity: 0.7,
+          watermark_size: 24,
+          watermark_color: '#ffffff',
         };
       } else {
         // Processar dados existentes incluindo credenciais do Mercado Pago e redes sociais
@@ -247,6 +274,15 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: data.facebook_url || null,
           instagram_url: data.instagram_url || null,
           twitter_url: data.twitter_url || null,
+          // Configurações de marca d'água
+          watermark_enabled: data.watermark_enabled || false,
+          watermark_type: data.watermark_type || 'text',
+          watermark_text: data.watermark_text || 'Minha Loja',
+          watermark_logo_url: data.watermark_logo_url || null,
+          watermark_position: data.watermark_position || 'bottom-right',
+          watermark_opacity: data.watermark_opacity || 0.7,
+          watermark_size: data.watermark_size || 24,
+          watermark_color: data.watermark_color || '#ffffff',
         };
       }
 
@@ -285,7 +321,6 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
 
       if (error) throw error;
       
-      // Processar dados atualizados incluindo credenciais do Mercado Pago e redes sociais
       const updatedPaymentMethods = typeof data.payment_methods === 'object' && data.payment_methods !== null 
         ? data.payment_methods as any 
         : settings.payment_methods;
@@ -314,9 +349,17 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
         facebook_url: data.facebook_url || null,
         instagram_url: data.instagram_url || null,
         twitter_url: data.twitter_url || null,
+        // Configurações de marca d'água
+        watermark_enabled: data.watermark_enabled || false,
+        watermark_type: data.watermark_type || 'text',
+        watermark_text: data.watermark_text || 'Minha Loja',
+        watermark_logo_url: data.watermark_logo_url || null,
+        watermark_position: data.watermark_position || 'bottom-right',
+        watermark_opacity: data.watermark_opacity || 0.7,
+        watermark_size: data.watermark_size || 24,
+        watermark_color: data.watermark_color || '#ffffff',
       };
       
-      // Atualizar cache
       if (settings.store_id) {
         cacheRef.current.set(settings.store_id, {
           data: processedSettings,

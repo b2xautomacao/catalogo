@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 
 export interface WatermarkConfig {
   text?: string;
@@ -14,13 +15,40 @@ export interface WatermarkConfig {
 
 export const useImageWatermark = () => {
   const [processing, setProcessing] = useState(false);
+  const { settings } = useCatalogSettings();
+
+  // Função para obter configurações da loja
+  const getStoreWatermarkConfig = (): WatermarkConfig | null => {
+    if (!settings?.watermark_enabled) return null;
+
+    return {
+      text: settings.watermark_text,
+      logoUrl: settings.watermark_logo_url,
+      position: settings.watermark_position,
+      opacity: settings.watermark_opacity,
+      fontSize: settings.watermark_size,
+      color: settings.watermark_color,
+      logoSize: settings.watermark_size,
+      useStoreLogo: settings.watermark_type === 'logo' && !!settings.watermark_logo_url
+    };
+  };
 
   const applyWatermark = async (
     imageFile: File, 
-    config: WatermarkConfig
+    config?: WatermarkConfig
   ): Promise<File> => {
     return new Promise((resolve, reject) => {
       setProcessing(true);
+      
+      // Usar configurações da loja se não fornecidas
+      const watermarkConfig = config || getStoreWatermarkConfig();
+      
+      if (!watermarkConfig) {
+        // Retornar arquivo original se marca d'água não está configurada
+        setProcessing(false);
+        resolve(imageFile);
+        return;
+      }
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -35,16 +63,16 @@ export const useImageWatermark = () => {
           ctx!.drawImage(img, 0, 0);
           
           // Configurar marca d'água
-          ctx!.globalAlpha = config.opacity;
+          ctx!.globalAlpha = watermarkConfig.opacity;
           
           // Se há logo para usar
-          if (config.logoUrl && config.useStoreLogo) {
-            await applyLogoWatermark(ctx!, canvas, config);
+          if (watermarkConfig.logoUrl && watermarkConfig.useStoreLogo) {
+            await applyLogoWatermark(ctx!, canvas, watermarkConfig);
           }
           
           // Se há texto para usar
-          if (config.text && !config.useStoreLogo) {
-            applyTextWatermark(ctx!, canvas, config);
+          if (watermarkConfig.text && !watermarkConfig.useStoreLogo) {
+            applyTextWatermark(ctx!, canvas, watermarkConfig);
           }
           
           // Converter canvas para blob e depois para File
@@ -174,6 +202,8 @@ export const useImageWatermark = () => {
 
   return {
     applyWatermark,
-    processing
+    processing,
+    getStoreWatermarkConfig,
+    isWatermarkEnabled: settings?.watermark_enabled || false
   };
 };

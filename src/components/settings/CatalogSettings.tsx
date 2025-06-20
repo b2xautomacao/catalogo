@@ -12,6 +12,7 @@ import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
 import ShareableLinks from '@/components/settings/ShareableLinks';
+import WatermarkSettings from '@/components/settings/WatermarkSettings';
 import ModernTemplate from '@/components/catalog/templates/ModernTemplate';
 import MinimalTemplate from '@/components/catalog/templates/MinimalTemplate';
 import ElegantTemplate from '@/components/catalog/templates/ElegantTemplate';
@@ -28,7 +29,8 @@ import {
   Truck,
   MessageSquare,
   Share2,
-  Check
+  Check,
+  Droplet
 } from 'lucide-react';
 
 const CatalogSettings = () => {
@@ -225,9 +227,10 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="catalogs" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="catalogs">Catálogos</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="watermark">Marca d'água</TabsTrigger>
           <TabsTrigger value="sharing">Compartilhar</TabsTrigger>
           <TabsTrigger value="domain">Domínio</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -477,6 +480,11 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Marca d'água */}
+        <TabsContent value="watermark">
+          <WatermarkSettings />
         </TabsContent>
 
         {/* Links Compartilháveis */}
