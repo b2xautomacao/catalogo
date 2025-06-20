@@ -135,7 +135,8 @@ const CatalogContent = () => {
       category: filters.categories.length > 0 ? filters.categories[0] : undefined,
       minPrice: filters.priceRange[0],
       maxPrice: filters.priceRange[1],
-      inStock: filters.inStock
+      inStock: filters.inStock,
+      variations: filters.variations
     };
     
     filterProducts(filterOptions);
@@ -276,6 +277,7 @@ const CatalogContent = () => {
                 onFilter={handleFilter}
                 isOpen={true}
                 onClose={() => {}}
+                products={products}
               />
             </div>
           )}
@@ -286,6 +288,7 @@ const CatalogContent = () => {
               onFilter={handleFilter}
               isOpen={filterSidebarOpen}
               onClose={() => setFilterSidebarOpen(false)}
+              products={products}
             />
           )}
 

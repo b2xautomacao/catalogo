@@ -141,8 +141,8 @@ const ProductFormWizard = ({ onSubmit, initialData, mode }: ProductFormWizardPro
       case 2:
         return values.retail_price > 0 && values.stock >= 0;
       case 3:
-        if (mode === 'edit') return true;
-        return draftImages.length > 0 || !!values.image_url;
+        // Imagens são opcionais - sempre permitir próximo
+        return true;
       case 4:
         // Variações são opcionais
         return true;

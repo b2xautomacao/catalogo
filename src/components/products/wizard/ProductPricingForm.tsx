@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 interface ProductPricingFormProps {
   form: UseFormReturn<any>;
@@ -24,14 +25,12 @@ const ProductPricingForm = ({ form }: ProductPricingFormProps) => {
         name="retail_price"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Preço de Varejo (R$) *</FormLabel>
+            <FormLabel>Preço de Varejo *</FormLabel>
             <FormControl>
-              <Input
-                type="number"
-                step="0.01"
+              <CurrencyInput
+                value={field.value || 0}
+                onChange={field.onChange}
                 placeholder="0,00"
-                {...field}
-                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
               />
             </FormControl>
             <FormDescription>Preço para venda no varejo</FormDescription>
@@ -45,14 +44,12 @@ const ProductPricingForm = ({ form }: ProductPricingFormProps) => {
         name="wholesale_price"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Preço de Atacado (R$)</FormLabel>
+            <FormLabel>Preço de Atacado</FormLabel>
             <FormControl>
-              <Input
-                type="number"
-                step="0.01"
+              <CurrencyInput
+                value={field.value || 0}
+                onChange={field.onChange}
                 placeholder="0,00"
-                {...field}
-                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
               />
             </FormControl>
             <FormDescription>Preço para venda no atacado (opcional)</FormDescription>
