@@ -22,15 +22,24 @@ interface ProductBasicInfoFormProps {
 }
 
 const ProductBasicInfoForm = ({ form }: ProductBasicInfoFormProps) => {
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
 
   const productName = form.watch('name');
   const selectedCategory = form.watch('category');
 
-  const handleCategoryCreated = (newCategory: any) => {
+  const handleCategoryCreated = async (newCategory: any) => {
+    console.log('Nova categoria criada:', newCategory);
     form.setValue('category', newCategory.name);
     setShowCategoryDialog(false);
+    
+    // Recarregar categorias para atualizar o select
+    try {
+      await fetchCategories();
+      console.log('Categorias recarregadas com sucesso');
+    } catch (error) {
+      console.error('Erro ao recarregar categorias:', error);
+    }
   };
 
   const handleDescriptionGenerated = (description: string) => {

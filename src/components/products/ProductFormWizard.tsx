@@ -44,7 +44,6 @@ interface ProductFormWizardProps {
   onClose?: () => void;
 }
 
-// Remover o step de marca d'água - agora são apenas 4 steps
 const steps = [
   { id: 1, name: 'Informações Básicas', icon: '📝', component: ProductBasicInfoForm },
   { id: 2, name: 'Preços e Estoque', icon: '💰', component: ProductPricingForm },
@@ -184,17 +183,19 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   };
 
   const handleBypassSave = async () => {
-    if (!profile?.store_id || !hasUnsavedChanges) return;
+    if (!profile?.store_id) return;
 
     setIsSubmitting(true);
 
     try {
       let imageUrl = form.getValues('image_url');
       
-      if (draftImages.length > 0) {
+      if (mode === 'create' && draftImages.length > 0) {
+        console.log('Fazendo upload de imagens rascunho...');
         const uploadResult = await uploadDraftImages();
         if (uploadResult.success && uploadResult.urls.length > 0) {
           imageUrl = uploadResult.urls[0];
+          console.log('Upload concluído, URL principal:', imageUrl);
         }
       }
 
@@ -209,6 +210,8 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         stock: Number(form.getValues('stock')),
       };
 
+      console.log('Salvando produto com dados:', productData);
+
       await onSubmit(productData);
       markAsSaved();
       
@@ -217,6 +220,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         setVariations([]);
       }
       
+      onClose?.();
     } catch (error) {
       console.error('Erro ao salvar produto:', error);
     } finally {
@@ -224,7 +228,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     }
   };
 
-  const handleFinalSubmit = async () => {
+  const handleFinalSubmit = async () =>  {
     await handleBypassSave();
   };
 
@@ -292,7 +296,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                 <div key={step.id} className="flex items-center shrink-0">
                   <div
                     className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200
+                      w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 cursor-pointer hover:scale-105
                       ${step.id === currentStep
                         ? 'bg-primary text-primary-foreground shadow-lg scale-110'
                         : step.id < currentStep
@@ -300,6 +304,11 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                         : 'bg-muted text-muted-foreground'
                       }
                     `}
+                    onClick={() => {
+                      if (step.id <= currentStep || canProceedToNext()) {
+                        setCurrentStep(step.id);
+                      }
+                    }}
                   >
                     {step.id < currentStep ? (
                       <CheckCircle className="w-4 h-4" />
@@ -347,8 +356,8 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                   </Button>
 
                   <div className="flex gap-2">
-                    {/* Botão de salvamento bypass */}
-                    {mode === 'edit' && hasUnsavedChanges && (
+                    {/* Botão de salvamento bypass - sempre visível se há mudanças */}
+                    {hasUnsavedChanges && (
                       <Button
                         type="button"
                         onClick={handleBypassSave}
@@ -390,7 +399,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
 
         {/* Indicador de mudanças não salvas */}
         {hasUnsavedChanges && (
-          <div className="fixed bottom-4 left-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm">
+          <div className="fixed bottom-4 left-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm z-50">
             <AlertTriangle className="h-4 w-4" />
             Alterações não salvas
           </div>
@@ -411,6 +420,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
               variant="outline"
               onClick={() => {
                 setShowUnsavedDialog(false);
+                reset();
                 onClose?.();
               }}
             >
@@ -420,7 +430,6 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
               onClick={async () => {
                 setShowUnsavedDialog(false);
                 await handleBypassSave();
-                onClose?.();
               }}
               disabled={isSubmitting}
             >

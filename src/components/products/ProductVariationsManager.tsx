@@ -2,237 +2,313 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Package } from 'lucide-react';
+import { Trash2, Plus, Edit, Check, X } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 export interface ProductVariation {
   id?: string;
-  name: string;
-  type: 'size' | 'color' | 'material' | 'other';
+  color?: string;
+  size?: string;
   sku?: string;
-  price_adjustment: number;
   stock: number;
+  price_adjustment: number;
   is_active: boolean;
 }
 
 interface ProductVariationsManagerProps {
   variations: ProductVariation[];
   onChange: (variations: ProductVariation[]) => void;
-  disabled?: boolean;
 }
 
 const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   variations,
-  onChange,
-  disabled = false
+  onChange
 }) => {
-  const [newVariation, setNewVariation] = useState<Partial<ProductVariation>>({
-    name: '',
-    type: 'other',
-    price_adjustment: 0,
+  const [newVariation, setNewVariation] = useState<ProductVariation>({
+    color: '',
+    size: '',
+    sku: '',
     stock: 0,
+    price_adjustment: 0,
     is_active: true
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingVariation, setEditingVariation] = useState<ProductVariation | null>(null);
 
-  const handleAddVariation = () => {
-    if (!newVariation.name?.trim()) return;
+  const addVariation = () => {
+    if (!newVariation.color && !newVariation.size) {
+      return;
+    }
 
-    const variation: ProductVariation = {
-      id: `temp-${Date.now()}`,
-      name: newVariation.name.trim(),
-      type: newVariation.type as ProductVariation['type'],
-      price_adjustment: Number(newVariation.price_adjustment) || 0,
-      stock: Number(newVariation.stock) || 0,
-      is_active: true
+    const variationToAdd = {
+      ...newVariation,
+      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    onChange([...variations, variation]);
+    console.log('Adicionando variação:', variationToAdd);
+    onChange([...variations, variationToAdd]);
+    
     setNewVariation({
-      name: '',
-      type: 'other',
-      price_adjustment: 0,
+      color: '',
+      size: '',
+      sku: '',
       stock: 0,
+      price_adjustment: 0,
       is_active: true
     });
   };
 
-  const handleRemoveVariation = (index: number) => {
-    const updated = variations.filter((_, i) => i !== index);
-    onChange(updated);
+  const removeVariation = (index: number) => {
+    const updatedVariations = variations.filter((_, i) => i !== index);
+    console.log('Removendo variação, nova lista:', updatedVariations);
+    onChange(updatedVariations);
   };
 
-  const handleUpdateVariation = (index: number, field: keyof ProductVariation, value: any) => {
-    const updated = [...variations];
-    updated[index] = { ...updated[index], [field]: value };
-    onChange(updated);
+  const startEdit = (index: number) => {
+    setEditingIndex(index);
+    setEditingVariation({ ...variations[index] });
   };
 
-  const getVariationTypeLabel = (type: string) => {
-    const labels = {
-      size: 'Tamanho',
-      color: 'Cor',
-      material: 'Material',
-      other: 'Outro'
-    };
-    return labels[type as keyof typeof labels] || 'Outro';
+  const saveEdit = () => {
+    if (editingIndex !== null && editingVariation) {
+      const updatedVariations = [...variations];
+      updatedVariations[editingIndex] = editingVariation;
+      console.log('Salvando edição da variação:', editingVariation);
+      onChange(updatedVariations);
+      setEditingIndex(null);
+      setEditingVariation(null);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+    setEditingVariation(null);
+  };
+
+  const formatVariationName = (variation: ProductVariation) => {
+    const parts = [];
+    if (variation.color) parts.push(variation.color);
+    if (variation.size) parts.push(variation.size);
+    return parts.join(' - ') || 'Variação';
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Variações do Produto
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Lista de variações existentes */}
-        {variations.length > 0 && (
-          <div className="space-y-3">
-            {variations.map((variation, index) => (
-              <div key={variation.id || index} className="border rounded-lg p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {getVariationTypeLabel(variation.type)}
-                    </Badge>
-                    <span className="font-medium">{variation.name}</span>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveVariation(index)}
-                    disabled={disabled}
-                    className="transition-none"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <Label className="text-xs">Ajuste de Preço (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={variation.price_adjustment}
-                      onChange={(e) => handleUpdateVariation(index, 'price_adjustment', Number(e.target.value))}
-                      disabled={disabled}
-                      placeholder="0.00"
-                      className="transition-none"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Estoque</Label>
-                    <Input
-                      type="number"
-                      value={variation.stock}
-                      onChange={(e) => handleUpdateVariation(index, 'stock', Number(e.target.value))}
-                      disabled={disabled}
-                      placeholder="0"
-                      className="transition-none"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">SKU (Opcional)</Label>
-                    <Input
-                      value={variation.sku || ''}
-                      onChange={(e) => handleUpdateVariation(index, 'sku', e.target.value)}
-                      disabled={disabled}
-                      placeholder="SKU-001"
-                      className="transition-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Formulário para nova variação */}
-        <div className="border-t pt-4">
-          <h4 className="font-medium mb-3">Adicionar Nova Variação</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+    <div className="space-y-6">
+      {/* Form para adicionar nova variação */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Adicionar Nova Variação</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Tipo de Variação</Label>
-              <Select 
-                value={newVariation.type} 
-                onValueChange={(value) => setNewVariation(prev => ({ ...prev, type: value as ProductVariation['type'] }))}
-                disabled={disabled}
-              >
-                <SelectTrigger className="transition-none">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="size">Tamanho</SelectItem>
-                  <SelectItem value="color">Cor</SelectItem>
-                  <SelectItem value="material">Material</SelectItem>
-                  <SelectItem value="other">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Nome da Variação</Label>
+              <Label htmlFor="new-color">Cor</Label>
               <Input
-                value={newVariation.name || ''}
-                onChange={(e) => setNewVariation(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: P, Azul, Algodão..."
-                disabled={disabled}
-                className="transition-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <div>
-              <Label>Ajuste de Preço (R$)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={newVariation.price_adjustment || 0}
-                onChange={(e) => setNewVariation(prev => ({ ...prev, price_adjustment: Number(e.target.value) }))}
-                placeholder="0.00"
-                disabled={disabled}
-                className="transition-none"
+                id="new-color"
+                placeholder="Ex: Azul, Vermelho"
+                value={newVariation.color}
+                onChange={(e) => setNewVariation({ ...newVariation, color: e.target.value })}
               />
             </div>
             <div>
-              <Label>Estoque Inicial</Label>
+              <Label htmlFor="new-size">Tamanho</Label>
               <Input
+                id="new-size"
+                placeholder="Ex: P, M, G, XG"
+                value={newVariation.size}
+                onChange={(e) => setNewVariation({ ...newVariation, size: e.target.value })}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="new-sku">SKU</Label>
+              <Input
+                id="new-sku"
+                placeholder="Código interno"
+                value={newVariation.sku}
+                onChange={(e) => setNewVariation({ ...newVariation, sku: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-stock">Estoque</Label>
+              <Input
+                id="new-stock"
                 type="number"
-                value={newVariation.stock || 0}
-                onChange={(e) => setNewVariation(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                min="0"
+                step="1"
                 placeholder="0"
-                disabled={disabled}
-                className="transition-none"
+                value={newVariation.stock || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewVariation({ 
+                    ...newVariation, 
+                    stock: value === '' ? 0 : parseInt(value) || 0 
+                  });
+                }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-price-adjustment">Ajuste de Preço</Label>
+              <CurrencyInput
+                value={newVariation.price_adjustment || 0}
+                onChange={(value) => setNewVariation({ ...newVariation, price_adjustment: value })}
+                placeholder="0,00"
               />
             </div>
           </div>
-
+          
           <Button
             type="button"
-            onClick={handleAddVariation}
-            disabled={!newVariation.name?.trim() || disabled}
-            className="w-full transition-none"
+            onClick={addVariation}
+            disabled={!newVariation.color && !newVariation.size}
+            className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Variação
           </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {variations.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma variação adicionada</p>
-            <p className="text-sm">Adicione variações como tamanhos, cores ou materiais</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Lista de variações existentes */}
+      {variations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Variações Cadastradas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {variations.map((variation, index) => (
+                <div key={variation.id || index} className="border rounded-lg p-4">
+                  {editingIndex === index ? (
+                    // Modo de edição
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Cor</Label>
+                          <Input
+                            value={editingVariation?.color || ''}
+                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, color: e.target.value } : null)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Tamanho</Label>
+                          <Input
+                            value={editingVariation?.size || ''}
+                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, size: e.target.value } : null)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label>SKU</Label>
+                          <Input
+                            value={editingVariation?.sku || ''}
+                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, sku: e.target.value } : null)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Estoque</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editingVariation?.stock || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setEditingVariation(prev => prev ? { 
+                                ...prev, 
+                                stock: value === '' ? 0 : parseInt(value) || 0 
+                              } : null);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label>Ajuste de Preço</Label>
+                          <CurrencyInput
+                            value={editingVariation?.price_adjustment || 0}
+                            onChange={(value) => setEditingVariation(prev => prev ? { ...prev, price_adjustment: value } : null)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={saveEdit}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Salvar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={cancelEdit}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Modo de visualização
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">
+                            {formatVariationName(variation)}
+                          </Badge>
+                          {variation.sku && (
+                            <Badge variant="secondary">
+                              SKU: {variation.sku}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground flex gap-4">
+                          <span>Estoque: {variation.stock}</span>
+                          <span>
+                            Ajuste: {variation.price_adjustment > 0 ? '+' : ''}
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(variation.price_adjustment)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEdit(index)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeVariation(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 
