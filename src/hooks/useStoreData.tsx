@@ -38,7 +38,7 @@ export const useStoreData = (storeIdentifier?: string) => {
           setTimeout(() => reject(new Error('Timeout: Operação demorou mais de 10 segundos')), 10000)
         );
 
-        // Primeiro, tentar buscar por URL slug
+        // Primeiro, tentar buscar por URL slug, depois por ID
         let query = supabase
           .from('stores')
           .select('id, name, description, logo_url, url_slug, phone, email, address')
@@ -57,7 +57,9 @@ export const useStoreData = (storeIdentifier?: string) => {
 
         // Usar Promise.race para implementar timeout
         const fetchPromise = query.maybeSingle();
-        const { data, error: fetchError } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        
+        const { data, error: fetchError } = result;
 
         if (fetchError) {
           console.error('useStoreData: Erro na consulta:', fetchError);
@@ -65,9 +67,31 @@ export const useStoreData = (storeIdentifier?: string) => {
         }
 
         if (!data) {
-          console.log('useStoreData: Loja não encontrada para identificador:', storeIdentifier);
-          setError('Loja não encontrada');
-          setStore(null);
+          // Se não encontrou por slug/UUID, tentar busca flexível por nome semelhante
+          console.log('useStoreData: Tentativa de busca flexível por nome:', storeIdentifier);
+          
+          const flexibleQuery = supabase
+            .from('stores')
+            .select('id, name, description, logo_url, url_slug, phone, email, address')
+            .eq('is_active', true)
+            .ilike('name', `%${storeIdentifier.replace(/[-_]/g, ' ')}%`)
+            .limit(1);
+          
+          const { data: flexibleData, error: flexibleError } = await flexibleQuery.maybeSingle();
+          
+          if (flexibleError) {
+            console.error('useStoreData: Erro na busca flexível:', flexibleError);
+            setError('Loja não encontrada');
+            setStore(null);
+          } else if (flexibleData) {
+            console.log('useStoreData: Loja encontrada via busca flexível:', flexibleData);
+            setStore(flexibleData);
+            setError(null);
+          } else {
+            console.log('useStoreData: Loja não encontrada para identificador:', storeIdentifier);
+            setError('Loja não encontrada');
+            setStore(null);
+          }
         } else {
           console.log('useStoreData: Loja encontrada:', data);
           setStore(data);

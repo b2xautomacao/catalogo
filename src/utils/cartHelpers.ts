@@ -20,10 +20,12 @@ export const createCartItem = (
       name: product.name,
       retail_price: product.retail_price,
       wholesale_price: product.wholesale_price,
+      min_wholesale_qty: product.min_wholesale_qty,
       image_url: product.image_url
     },
     quantity,
     price,
+    originalPrice: product.retail_price, // Adicionar originalPrice obrigatório
     variations,
     catalogType
   };

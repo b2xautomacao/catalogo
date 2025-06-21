@@ -66,7 +66,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
             </SheetHeader>
 
             {/* Indicadores de Economia */}
-            {canGetWholesalePrice && (
+            {canGetWholesalePrice && potentialSavings > 0 && (
               <div className="px-6 py-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-b">
                 <div className="flex items-center gap-2 text-orange-700">
                   <TrendingUp size={16} />
@@ -176,7 +176,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                           <p className="text-xs text-gray-500">
                             R$ {item.price.toFixed(2)} cada
                           </p>
-                          {item.isWholesalePrice && (
+                          {item.isWholesalePrice && item.originalPrice && (
                             <p className="text-xs text-green-600 font-medium">
                               Economia: R$ {((item.originalPrice - item.price) * item.quantity).toFixed(2)}
                             </p>

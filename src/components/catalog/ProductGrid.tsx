@@ -12,6 +12,7 @@ interface ProductGridProps {
   onAddToWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
   wishlist: Product[];
+  storeIdentifier?: string; // Adicionar esta propriedade
 }
 
 const ProductGrid: React.FC<ProductGridProps> = memo(({
@@ -20,7 +21,8 @@ const ProductGrid: React.FC<ProductGridProps> = memo(({
   loading = false,
   onAddToWishlist,
   onQuickView,
-  wishlist
+  wishlist,
+  storeIdentifier
 }) => {
   if (loading) {
     return (
@@ -65,6 +67,7 @@ const ProductGrid: React.FC<ProductGridProps> = memo(({
           onAddToWishlist={onAddToWishlist}
           onQuickView={onQuickView}
           isInWishlist={wishlist.some(item => item.id === product.id)}
+          storeIdentifier={storeIdentifier}
         />
       ))}
     </div>
