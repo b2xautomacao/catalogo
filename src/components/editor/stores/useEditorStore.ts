@@ -60,7 +60,7 @@ export interface EditorConfiguration {
     allowFilters: boolean;
     
     // Upsells e Cross-sells
-    upsells?: {
+    upsells: {
       showRelated: boolean;
       minimumValueOffers: boolean;
       freeShippingThreshold: string;
@@ -68,7 +68,7 @@ export interface EditorConfiguration {
     };
     
     // Elementos de Urgência
-    urgency?: {
+    urgency: {
       lowStockCounter: boolean;
       lowStockThreshold: string;
       offerTimer: boolean;
@@ -76,8 +76,8 @@ export interface EditorConfiguration {
     };
     
     // Prova Social
-    socialProof?: {
-      show Reviews: boolean;
+    socialProof: {
+      showReviews: boolean;
       recentSales: boolean;
       salesMessage: string;
       bestSellerBadge: boolean;
