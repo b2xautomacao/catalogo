@@ -24,7 +24,7 @@ const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
       <Button
         onClick={handleWhatsAppClick}
         size="lg"
-        className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center p-0 animate-pulse"
+        className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center p-0"
       >
         <MessageCircle className="h-8 w-8 text-white" />
       </Button>

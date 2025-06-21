@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckoutProvider, useCheckoutContext } from './checkout/context/CheckoutProvider';
 import CheckoutContent from './checkout/components/CheckoutContent';
@@ -16,6 +16,27 @@ interface CheckoutModalProps {
 const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { catalogLoading } = useCheckoutContext();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Aplicar cores do template ao modal de checkout
+    if (typeof document !== 'undefined') {
+      const style = document.createElement('style');
+      style.textContent = `
+        .checkout-modal-header {
+          background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
+        }
+        
+        .checkout-modal-content {
+          background: var(--template-surface, #FFFFFF);
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
 
   if (catalogLoading) {
     return (
@@ -39,9 +60,9 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           isMobile 
             ? 'max-w-full w-full h-full m-0 rounded-none' 
             : 'max-w-4xl w-[95vw] h-[90vh]'
-        } p-0 gap-0 flex flex-col overflow-hidden`}
+        } p-0 gap-0 flex flex-col overflow-hidden checkout-modal-content`}
       >
-        <DialogHeader className="shrink-0 px-6 py-4 border-b bg-gradient-to-r from-primary to-accent">
+        <DialogHeader className="checkout-modal-header shrink-0 px-6 py-4 border-b">
           <DialogTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white text-center`}>
             🛒 Finalizar Pedido
           </DialogTitle>

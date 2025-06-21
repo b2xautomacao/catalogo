@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ShoppingCart, Trash2, Plus, Minus, X, TrendingUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +8,7 @@ import CartItemThumbnail from './checkout/CartItemThumbnail';
 
 interface FloatingCartProps {
   onCheckout?: () => void;
+  storeId?: string;
 }
 
 // Função utilitária para formatar valores monetários com segurança
@@ -26,7 +26,7 @@ const safeCalculate = (a: number | undefined | null, b: number | undefined | nul
   return numA * numB;
 };
 
-const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
+const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
   const {
     items,
     totalItems,
@@ -40,6 +40,55 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
     canGetWholesalePrice,
     itemsToWholesale
   } = useCart();
+
+  useEffect(() => {
+    // Aplicar cores do template
+    if (typeof document !== 'undefined') {
+      const style = document.createElement('style');
+      style.textContent = `
+        .floating-cart-button {
+          background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
+          transition: all 0.3s ease;
+        }
+        
+        .floating-cart-button:hover {
+          background: linear-gradient(135deg, var(--template-secondary, #FF6F00), var(--template-accent, #8E2DE2));
+          transform: scale(1.05);
+        }
+        
+        .cart-header-gradient {
+          background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
+        }
+        
+        .cart-checkout-button {
+          background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
+        }
+        
+        .cart-checkout-button:hover {
+          background: linear-gradient(135deg, var(--template-secondary, #FF6F00), var(--template-accent, #8E2DE2));
+          transform: scale(1.05);
+        }
+        
+        .cart-item-card {
+          background: var(--template-surface, #FFFFFF);
+          border: 1px solid var(--template-border, #E2E8F0);
+        }
+        
+        .cart-item-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cart-price-text {
+          color: var(--template-primary, #0057FF);
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
 
   const handleCheckout = () => {
     closeCart();
@@ -58,7 +107,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
         <SheetTrigger asChild>
           <Button
             size="lg"
-            className="relative h-16 w-16 rounded-full bg-gradient-to-r from-primary to-accent hover:from-blue-700 hover:to-purple-700 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center p-0"
+            className="floating-cart-button relative h-16 w-16 rounded-full shadow-2xl hover:shadow-xl flex items-center justify-center p-0"
           >
             <ShoppingCart className="h-6 w-6 text-white" />
             {totalItems > 0 && (
@@ -74,7 +123,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
 
         <SheetContent className="w-full sm:max-w-lg overflow-hidden p-0">
           <div className="flex flex-col h-full">
-            <SheetHeader className="px-6 py-4 bg-gradient-to-r from-primary to-accent">
+            <SheetHeader className="cart-header-gradient px-6 py-4">
               <SheetTitle className="text-xl font-bold text-white text-center">
                 🛒 Carrinho de Compras
               </SheetTitle>
@@ -114,7 +163,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                     const itemTotal = safeCalculate(itemPrice, itemQuantity);
                     
                     return (
-                      <div key={item.id} className="bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition-all">
+                      <div key={item.id} className="cart-item-card rounded-xl shadow-sm p-4 hover:shadow-md transition-all">
                         <div className="flex items-start gap-4">
                           <CartItemThumbnail 
                             imageUrl={item.product?.image_url}
@@ -194,7 +243,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                           </div>
                           
                           <div className="text-right">
-                            <p className="font-bold text-primary text-lg">
+                            <p className="cart-price-text font-bold text-lg">
                               {formatCurrency(itemTotal)}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -235,14 +284,14 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
 
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-2xl font-bold text-primary">
+                  <span className="cart-price-text text-2xl font-bold">
                     {formatCurrency(totalAmount)}
                   </span>
                 </div>
                 
                 <Button
                   onClick={handleCheckout}
-                  className="w-full bg-gradient-to-r from-primary to-accent hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 text-lg rounded-xl shadow-lg transition-all transform hover:scale-105"
+                  className="cart-checkout-button w-full text-white font-bold py-4 text-lg rounded-xl shadow-lg transition-all"
                   size="lg"
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
