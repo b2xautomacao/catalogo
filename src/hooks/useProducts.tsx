@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +17,7 @@ export interface Product {
   min_wholesale_qty: number | null;
   image_url: string | null;
   is_active: boolean;
+  is_featured: boolean | null;
   allow_negative_stock: boolean;
   stock_alert_threshold: number | null;
   meta_title: string | null;

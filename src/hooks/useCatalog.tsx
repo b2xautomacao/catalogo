@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type CatalogType = 'retail' | 'wholesale';
 
-// Interface para variações no catálogo
+// Interface para variações no catálogo - compatível com ProductVariation
 export interface CatalogProductVariation {
   id: string;
+  product_id: string;
   color: string | null;
   size: string | null;
   sku: string | null;
@@ -14,9 +15,11 @@ export interface CatalogProductVariation {
   price_adjustment: number;
   is_active: boolean;
   image_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-// Usar o tipo Product atualizado para incluir variações
+// Interface Product compatível com useProducts
 export interface Product {
   id: string;
   store_id: string;

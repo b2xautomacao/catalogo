@@ -1,10 +1,9 @@
-
 import React, { useState, memo, useCallback } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Product } from '@/hooks/useProducts';
+import { Product } from '@/hooks/useCatalog';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useProductVariations } from '@/hooks/useProductVariations';
 import { useCart } from '@/hooks/useCart';
@@ -33,6 +32,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   const { variations } = useProductVariations(product.id);
   const { addItem } = useCart();
   const { toast } = useToast();
+
+  // Usar variações do produto se disponíveis, senão usar do hook
+  const productVariations = product.variations || variations;
 
   const price = catalogType === 'wholesale' && product.wholesale_price 
     ? product.wholesale_price 
@@ -66,7 +68,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
 
   const handleAddToCart = useCallback(() => {
     // Se o produto tem variações, abrir modal de detalhes
-    if (variations.length > 0) {
+    if (productVariations.length > 0) {
       setShowDetailsModal(true);
     } else {
       // Se não tem variações, adicionar diretamente ao carrinho
@@ -77,7 +79,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       const cartItem = createCartItem(product, catalogType, minQuantity);
       addItem(cartItem);
     }
-  }, [variations.length, product, catalogType, addItem]);
+  }, [productVariations.length, product, catalogType, addItem]);
 
   const handleAddToWishlist = useCallback(() => {
     onAddToWishlist(product);
@@ -169,9 +171,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                   {stockStatus.text}
                 </Badge>
               )}
-              {variations.length > 0 && (
+              {productVariations.length > 0 && (
                 <Badge className="bg-blue-500 text-white shadow-lg">
-                  {variations.length} variações
+                  {productVariations.length} variações
                 </Badge>
               )}
             </div>
@@ -243,7 +245,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium text-xs py-2 px-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed h-9"
             >
               <ShoppingCart size={14} className="mr-1" />
-              {product.stock === 0 ? 'Esgotado' : variations.length > 0 ? 'Ver Opções' : 'Adicionar'}
+              {product.stock === 0 ? 'Esgotado' : productVariations.length > 0 ? 'Ver Opções' : 'Adicionar'}
             </Button>
           </div>
         </CardContent>
