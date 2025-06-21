@@ -18,6 +18,7 @@ interface ElegantCatalogTemplateProps {
   onToggleFilters: () => void;
   onCartClick: () => void;
   children: React.ReactNode;
+  editorSettings?: any;
 }
 
 const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
@@ -29,49 +30,80 @@ const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
   onSearch,
   onToggleFilters,
   onCartClick,
-  children
+  children,
+  editorSettings
 }) => {
-  const { applyColorsToDocument } = useTemplateColors(store.url_slug || store.id);
+  const { applyColorsToDocument, colorScheme } = useTemplateColors(store.url_slug || store.id);
 
   useEffect(() => {
     applyColorsToDocument();
   }, [applyColorsToDocument]);
 
+  const backgroundTexture = colorScheme ? 
+    `radial-gradient(circle at 20% 80%, ${colorScheme.background}22 0%, transparent 50%), radial-gradient(circle at 80% 20%, ${colorScheme.primary}11 0%, transparent 50%), radial-gradient(circle at 40% 40%, ${colorScheme.secondary}08 0%, transparent 50%)` :
+    'radial-gradient(circle at 20% 80%, #fffbeb22 0%, transparent 50%), radial-gradient(circle at 80% 20%, #d9770611 0%, transparent 50%), radial-gradient(circle at 40% 40%, #92400e08 0%, transparent 50%)';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50">
+    <div className="min-h-screen" style={{ 
+      backgroundColor: colorScheme?.background || '#fffbeb',
+      backgroundImage: backgroundTexture
+    }}>
       <style>{`
         .btn-primary {
-          background: linear-gradient(135deg, var(--template-primary), var(--template-secondary));
-          border: 2px solid var(--template-primary);
+          background: linear-gradient(135deg, var(--template-primary, #D97706), var(--template-secondary, #92400E));
+          border: none;
           color: white;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          transition: all 0.4s ease;
+          transition: all 0.3s ease;
+          border-radius: var(--template-border-radius, 8px);
+          font-weight: 500;
+          box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+          text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .btn-primary:hover {
-          background: linear-gradient(135deg, var(--template-secondary), var(--template-accent));
-          border-color: var(--template-secondary);
-          transform: translateY(-3px);
-          box-shadow: 0 12px 24px rgba(217, 119, 6, 0.3);
+          background: linear-gradient(135deg, var(--template-secondary, #92400E), var(--template-accent, #7C2D12));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(217, 119, 6, 0.3);
         }
         .template-card {
-          background: linear-gradient(135deg, var(--template-surface), rgba(255, 251, 235, 0.8));
-          border: 2px solid var(--template-border);
-          box-shadow: 0 8px 16px rgba(217, 119, 6, 0.1);
-          transition: all 0.4s ease;
+          background: var(--template-surface, #ffffff);
+          border: 1px solid var(--template-border, #fde68a);
+          box-shadow: 0 4px 6px rgba(217, 119, 6, 0.1);
+          transition: all 0.3s ease;
+          border-radius: var(--template-border-radius, 12px);
+          backdrop-filter: blur(10px);
         }
         .template-card:hover {
-          box-shadow: 0 20px 40px rgba(217, 119, 6, 0.2);
-          transform: translateY(-8px);
-          border-color: var(--template-primary);
+          box-shadow: 0 8px 16px rgba(217, 119, 6, 0.2);
+          transform: translateY(-2px);
+          border-color: var(--template-primary, #D97706);
         }
-        .elegant-pattern {
-          background-image: radial-gradient(circle at 2px 2px, rgba(217, 119, 6, 0.15) 1px, transparent 0);
-          background-size: 20px 20px;
+        .catalog-header {
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid var(--template-border, #fde68a);
+        }
+        .text-primary {
+          color: var(--template-primary, #D97706) !important;
+        }
+        .bg-primary {
+          background-color: var(--template-primary, #D97706) !important;
+        }
+        .border-primary {
+          border-color: var(--template-primary, #D97706) !important;
+        }
+        .elegant-gold-accent {
+          background: linear-gradient(45deg, var(--template-primary, #D97706), var(--template-secondary, #92400E));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-weight: 700;
+        }
+        .elegant-shadow {
+          text-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);
         }
       `}</style>
       
-      <div className="elegant-pattern">
+      <div className="catalog-header">
         <CatalogHeader 
           store={store}
           catalogType={catalogType}
@@ -82,13 +114,13 @@ const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
           onToggleFilters={onToggleFilters}
           onCartClick={onCartClick}
         />
-        
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
-
-        <CatalogFooter store={store} />
       </div>
+      
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+
+      <CatalogFooter store={store} />
       
       <FloatingCart onCheckout={onCartClick} />
       {whatsappNumber && <FloatingWhatsApp phoneNumber={whatsappNumber} />}

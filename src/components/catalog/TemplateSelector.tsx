@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
+import { useEditorSync } from '@/hooks/useEditorSync';
 import ModernTemplate from './templates/ModernTemplate';
 import MinimalTemplate from './templates/MinimalTemplate';
 import ElegantTemplate from './templates/ElegantTemplate';
@@ -19,6 +20,7 @@ interface TemplateSelectorProps {
   isInWishlist: boolean;
   showPrices: boolean;
   showStock: boolean;
+  storeIdentifier: string;
 }
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -30,8 +32,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   onQuickView,
   isInWishlist,
   showPrices,
-  showStock
+  showStock,
+  storeIdentifier
 }) => {
+  const { settings } = useEditorSync(storeIdentifier);
+
   const templateProps = {
     product,
     catalogType,
@@ -40,7 +45,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     onQuickView,
     isInWishlist,
     showPrices,
-    showStock
+    showStock,
+    editorSettings: settings
   };
 
   switch (templateName) {

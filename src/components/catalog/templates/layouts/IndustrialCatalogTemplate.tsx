@@ -18,6 +18,7 @@ interface IndustrialCatalogTemplateProps {
   onToggleFilters: () => void;
   onCartClick: () => void;
   children: React.ReactNode;
+  editorSettings?: any;
 }
 
 const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
@@ -29,53 +30,78 @@ const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
   onSearch,
   onToggleFilters,
   onCartClick,
-  children
+  children,
+  editorSettings
 }) => {
-  const { applyColorsToDocument } = useTemplateColors(store.url_slug || store.id);
+  const { applyColorsToDocument, colorScheme } = useTemplateColors(store.url_slug || store.id);
 
   useEffect(() => {
     applyColorsToDocument();
   }, [applyColorsToDocument]);
 
+  const backgroundPattern = colorScheme ? 
+    `linear-gradient(45deg, ${colorScheme.background} 25%, transparent 25%), linear-gradient(-45deg, ${colorScheme.background} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${colorScheme.primary}11 75%), linear-gradient(-45deg, transparent 75%, ${colorScheme.primary}11 75%)` :
+    'linear-gradient(45deg, #f1f5f9 25%, transparent 25%), linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #47556911 75%), linear-gradient(-45deg, transparent 75%, #47556911 75%)';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-gray-200">
+    <div className="min-h-screen bg-gray-50" style={{ 
+      backgroundImage: backgroundPattern,
+      backgroundSize: '20px 20px',
+      backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+    }}>
       <style>{`
         .btn-primary {
-          background: linear-gradient(135deg, var(--template-primary), var(--template-secondary));
-          border: 2px solid rgba(71, 85, 105, 0.3);
+          background: linear-gradient(135deg, var(--template-primary, #475569), var(--template-secondary, #F59E0B));
+          border: 2px solid var(--template-primary, #475569);
           color: white;
-          font-weight: bold;
+          transition: all 0.3s ease;
+          border-radius: var(--template-border-radius, 4px);
+          font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          transition: all 0.3s ease;
         }
         .btn-primary:hover {
-          background: linear-gradient(135deg, var(--template-secondary), var(--template-primary));
-          border-color: var(--template-secondary);
-          box-shadow: 0 8px 20px rgba(71, 85, 105, 0.4);
+          background: var(--template-primary, #475569);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(71, 85, 105, 0.4);
         }
         .template-card {
-          background: var(--template-surface);
-          border: 2px solid var(--template-border);
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+          background: var(--template-surface, #ffffff);
+          border: 2px solid var(--template-border, #cbd5e1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           transition: all 0.3s ease;
+          border-radius: var(--template-border-radius, 4px);
         }
         .template-card:hover {
-          box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
-          border-color: var(--template-secondary);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px);
+          border-color: var(--template-primary, #475569);
         }
-        .industrial-texture {
-          background-image: 
-            linear-gradient(45deg, transparent 25%, rgba(71, 85, 105, 0.05) 25%),
-            linear-gradient(-45deg, transparent 25%, rgba(71, 85, 105, 0.05) 25%),
-            linear-gradient(45deg, rgba(71, 85, 105, 0.05) 75%, transparent 75%),
-            linear-gradient(-45deg, rgba(71, 85, 105, 0.05) 75%, transparent 75%);
-          background-size: 20px 20px;
-          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        .catalog-header {
+          background: var(--template-surface, #ffffff);
+          border-bottom: 3px solid var(--template-primary, #475569);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .text-primary {
+          color: var(--template-primary, #475569) !important;
+        }
+        .bg-primary {
+          background-color: var(--template-primary, #475569) !important;
+        }
+        .border-primary {
+          border-color: var(--template-primary, #475569) !important;
+        }
+        .industrial-accent {
+          background: linear-gradient(90deg, var(--template-secondary, #F59E0B), var(--template-accent, #DC2626));
+          padding: 2px 8px;
+          border-radius: var(--template-border-radius, 4px);
+          color: white;
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
       `}</style>
       
-      <div className="industrial-texture">
+      <div className="catalog-header">
         <CatalogHeader 
           store={store}
           catalogType={catalogType}
@@ -86,13 +112,13 @@ const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
           onToggleFilters={onToggleFilters}
           onCartClick={onCartClick}
         />
-        
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
-
-        <CatalogFooter store={store} />
       </div>
+      
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+
+      <CatalogFooter store={store} />
       
       <FloatingCart onCheckout={onCartClick} />
       {whatsappNumber && <FloatingWhatsApp phoneNumber={whatsappNumber} />}

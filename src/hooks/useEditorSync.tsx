@@ -18,6 +18,29 @@ export const useEditorSync = (storeIdentifier: string) => {
     root.style.setProperty('--template-text', settings.text_color || '#1E293B');
     root.style.setProperty('--template-border', settings.border_color || '#E2E8F0');
     root.style.setProperty('--template-surface', '#FFFFFF');
+    
+    // Aplicar configurações de layout se disponíveis
+    if (settings.font_family) {
+      root.style.setProperty('--template-font-family', settings.font_family);
+    }
+    
+    if (settings.border_radius) {
+      root.style.setProperty('--template-border-radius', `${settings.border_radius}px`);
+    }
+    
+    if (settings.layout_spacing) {
+      root.style.setProperty('--template-spacing', `${settings.layout_spacing}px`);
+    }
+
+    console.log('Editor styles aplicados:', {
+      primary: settings.primary_color,
+      secondary: settings.secondary_color,
+      accent: settings.accent_color,
+      background: settings.background_color,
+      text: settings.text_color,
+      border: settings.border_color,
+      template: settings.template_name
+    });
   };
 
   useEffect(() => {
@@ -27,6 +50,7 @@ export const useEditorSync = (storeIdentifier: string) => {
   return {
     settings,
     loading,
-    templateName: settings?.template_name || 'modern'
+    templateName: settings?.template_name || 'modern',
+    isConnected: !!settings && !loading
   };
 };
