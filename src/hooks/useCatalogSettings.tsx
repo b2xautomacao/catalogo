@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +44,10 @@ export interface CatalogSettingsData {
   background_color: string;
   text_color: string;
   border_color: string;
+  // Configurações de layout avançado
+  font_family: string;
+  layout_spacing: number;
+  border_radius: number;
   // Configurações de marca d'água
   watermark_enabled: boolean;
   watermark_type: 'text' | 'logo';
@@ -204,6 +207,10 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           background_color: '#F8FAFC',
           text_color: '#1E293B',
           border_color: '#E2E8F0',
+          // Configurações de layout avançado
+          font_family: 'Inter, system-ui, sans-serif',
+          layout_spacing: 16,
+          border_radius: 8,
           watermark_enabled: false,
           watermark_type: 'text' as const,
           watermark_text: 'Minha Loja',
@@ -242,6 +249,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           background_color: '#F8FAFC',
           text_color: '#1E293B',
           border_color: '#E2E8F0',
+          font_family: 'Inter, system-ui, sans-serif',
+          layout_spacing: 16,
+          border_radius: 8,
           watermark_enabled: false,
           watermark_type: 'text' as const,
           watermark_text: 'Minha Loja',
@@ -293,6 +303,10 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           background_color: data.background_color || '#F8FAFC',
           text_color: data.text_color || '#1E293B',
           border_color: data.border_color || '#E2E8F0',
+          // Configurações de layout avançado com fallback
+          font_family: data.font_family || 'Inter, system-ui, sans-serif',
+          layout_spacing: data.layout_spacing || 16,
+          border_radius: data.border_radius || 8,
           watermark_enabled: data.watermark_enabled || false,
           watermark_type: (data.watermark_type === 'logo' ? 'logo' : 'text') as 'text' | 'logo',
           watermark_text: data.watermark_text || 'Minha Loja',
@@ -377,6 +391,10 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
         background_color: data.background_color || '#F8FAFC',
         text_color: data.text_color || '#1E293B',
         border_color: data.border_color || '#E2E8F0',
+        // Configurações de layout avançado
+        font_family: data.font_family || 'Inter, system-ui, sans-serif',
+        layout_spacing: data.layout_spacing || 16,
+        border_radius: data.border_radius || 8,
         watermark_enabled: data.watermark_enabled || false,
         watermark_type: (data.watermark_type === 'logo' ? 'logo' : 'text') as 'text' | 'logo',
         watermark_text: data.watermark_text || 'Minha Loja',

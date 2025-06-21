@@ -957,6 +957,7 @@ export type Database = {
           allow_price_filter: boolean | null
           background_color: string | null
           border_color: string | null
+          border_radius: number | null
           business_hours: Json | null
           business_type: string | null
           catalog_mode: string | null
@@ -965,8 +966,10 @@ export type Database = {
           created_at: string
           custom_domain: string | null
           facebook_url: string | null
+          font_family: string | null
           id: string
           instagram_url: string | null
+          layout_spacing: number | null
           payment_methods: Json | null
           primary_color: string | null
           retail_catalog_active: boolean | null
@@ -1000,6 +1003,7 @@ export type Database = {
           allow_price_filter?: boolean | null
           background_color?: string | null
           border_color?: string | null
+          border_radius?: number | null
           business_hours?: Json | null
           business_type?: string | null
           catalog_mode?: string | null
@@ -1008,8 +1012,10 @@ export type Database = {
           created_at?: string
           custom_domain?: string | null
           facebook_url?: string | null
+          font_family?: string | null
           id?: string
           instagram_url?: string | null
+          layout_spacing?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
           retail_catalog_active?: boolean | null
@@ -1043,6 +1049,7 @@ export type Database = {
           allow_price_filter?: boolean | null
           background_color?: string | null
           border_color?: string | null
+          border_radius?: number | null
           business_hours?: Json | null
           business_type?: string | null
           catalog_mode?: string | null
@@ -1051,8 +1058,10 @@ export type Database = {
           created_at?: string
           custom_domain?: string | null
           facebook_url?: string | null
+          font_family?: string | null
           id?: string
           instagram_url?: string | null
+          layout_spacing?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
           retail_catalog_active?: boolean | null
