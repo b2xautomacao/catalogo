@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +16,7 @@ import ProductSeoForm from './wizard/ProductSeoForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useDraftImages } from '@/hooks/useDraftImages';
 import { useFormTracker } from '@/hooks/useFormTracker';
+import { useVariationImageUpload } from '@/hooks/useVariationImageUpload';
 import { ProductVariation } from './ProductVariationsManager';
 
 const productSchema = z.object({
@@ -69,6 +71,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const { profile } = useAuth();
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
+  const { uploadVariationImage } = useVariationImageUpload();
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -126,7 +129,6 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       }
       
       form.reset(formData);
-      // Reset do tracker após carregar dados iniciais
       setTimeout(() => reset(), 100);
     }
   }, [initialData, mode, form, reset]);
@@ -185,7 +187,40 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     }
   };
 
-  const handleBypassSave = async () => {
+  // Função simplificada para processar imagens das variações
+  const processVariationImages = async (variations: ProductVariation[]): Promise<ProductVariation[]> => {
+    const processedVariations: ProductVariation[] = [];
+    
+    for (const variation of variations) {
+      let processedVariation = { ...variation };
+      
+      // Se há arquivo de imagem (blob), fazer upload
+      if (variation.image_file && variation.image_url?.startsWith('blob:')) {
+        console.log('🔄 Processando upload de imagem da variação...');
+        
+        // Gerar ID temporário se não existir
+        const variationId = variation.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        const uploadResult = await uploadVariationImage(variation.image_file, variationId);
+        
+        if (uploadResult.success && uploadResult.imageUrl) {
+          processedVariation.image_url = uploadResult.imageUrl;
+          // Remover o arquivo após upload bem-sucedido
+          delete processedVariation.image_file;
+        } else {
+          console.warn('⚠️ Falha no upload da imagem da variação:', uploadResult.error);
+          // Remover URL blob inválida se upload falhou
+          processedVariation.image_url = '';
+        }
+      }
+      
+      processedVariations.push(processedVariation);
+    }
+    
+    return processedVariations;
+  };
+
+  const handleSave = async () => {
     if (!profile?.store_id) {
       console.error('🚨 Store ID não encontrado!');
       return;
@@ -203,30 +238,9 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         imageFiles = draftImages.map(img => img.file);
       }
 
-      // Processar variações com arquivos de imagem
-      const processedVariations = variations.map((variation) => {
-        const cleanVariation: any = {
-          ...variation,
-          color: variation.color || null,
-          size: variation.size || null,
-          sku: variation.sku || null,
-          stock: Number(variation.stock) || 0,
-          price_adjustment: Number(variation.price_adjustment) || 0,
-          is_active: variation.is_active ?? true,
-        };
-
-        // Se há arquivo de imagem, incluir
-        if (variation.image_file) {
-          cleanVariation.image_file = variation.image_file;
-        }
-
-        // Se há URL de imagem (não temporária), incluir
-        if (variation.image_url && !variation.image_url.startsWith('blob:')) {
-          cleanVariation.image_url = variation.image_url;
-        }
-
-        return cleanVariation;
-      });
+      // Processar imagens das variações ANTES de enviar
+      console.log('🎨 Processando imagens das variações...');
+      const processedVariations = await processVariationImages(variations);
 
       const productData = {
         ...form.getValues(),
@@ -240,7 +254,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         stock: Number(form.getValues('stock')),
       };
 
-      console.log('💾 Salvando produto com dados:', {
+      console.log('💾 Salvando produto com dados processados:', {
         ...productData,
         image_files: productData.image_files?.length || 0,
         variations: productData.variations?.length || 0
@@ -260,10 +274,6 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleFinalSubmit = async () =>  {
-    await handleBypassSave();
   };
 
   const renderCurrentStep = () => {
@@ -390,7 +400,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                   {hasUnsavedChanges && (
                     <Button
                       type="button"
-                      onClick={handleBypassSave}
+                      onClick={handleSave}
                       disabled={isSubmitting}
                       className="min-w-[100px] bg-blue-600 hover:bg-blue-700"
                     >
@@ -412,7 +422,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                   ) : (
                     <Button
                       type="button"
-                      onClick={handleFinalSubmit}
+                      onClick={handleSave}
                       disabled={isSubmitting}
                       className="min-w-[120px] bg-green-600 hover:bg-green-700"
                     >

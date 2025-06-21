@@ -565,18 +565,48 @@ export const useProducts = (storeId?: string) => {
         return { data: null, error: 'Store ID é obrigatório' };
       }
 
-      const { data, error } = await supabase
+      console.log('🔍 Buscando produto com variações:', id);
+
+      // Buscar produto
+      const { data: product, error: productError } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
-        .eq('store_id', profile.store_id) // VALIDAR ownership
+        .eq('store_id', profile.store_id)
         .single();
 
-      if (error) throw error;
-      return { data, error: null };
+      if (productError) {
+        console.error('❌ Erro ao buscar produto:', productError);
+        throw productError;
+      }
+
+      // Buscar variações do produto
+      const { data: variations, error: variationsError } = await supabase
+        .from('product_variations')
+        .select('*')
+        .eq('product_id', id)
+        .order('created_at', { ascending: true });
+
+      if (variationsError) {
+        console.error('❌ Erro ao buscar variações:', variationsError);
+        // Não falhar se não conseguir buscar variações
+      }
+
+      const productWithVariations = {
+        ...product,
+        variations: variations || []
+      };
+
+      console.log('✅ Produto carregado com variações:', {
+        id: product.id,
+        name: product.name,
+        variations_count: variations?.length || 0
+      });
+
+      return { data: productWithVariations, error: null };
     } catch (error) {
       console.error('🚨 [SECURITY] Erro ao buscar produto:', error);
-      return { data: null, error };
+      return { data: null, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   };
 
