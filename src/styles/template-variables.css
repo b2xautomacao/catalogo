@@ -1,0 +1,141 @@
+
+/* Variáveis CSS globais para templates */
+:root {
+  /* Cores do template - Padrão Editor */
+  --template-primary: #0057FF;
+  --template-secondary: #FF6F00;
+  --template-accent: #8E2DE2;
+  --template-background: #F8FAFC;
+  --template-surface: #FFFFFF;
+  --template-text: #1E293B;
+  --template-text-muted: #64748B;
+  --template-border: #E2E8F0;
+  
+  /* Gradientes globais */
+  --template-gradient-from: var(--template-primary);
+  --template-gradient-to: var(--template-secondary);
+  --template-gradient-primary: linear-gradient(135deg, var(--template-gradient-from) 0%, var(--template-gradient-to) 100%);
+  --template-gradient-accent: linear-gradient(135deg, var(--template-accent) 0%, var(--template-primary) 100%);
+  
+  /* Layout */
+  --template-font-family: 'Inter, system-ui, sans-serif';
+  --template-spacing: 16px;
+  --template-border-radius: 8px;
+  
+  /* Sombras */
+  --template-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --template-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --template-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --template-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Aplicação global dos estilos do template */
+.template-container {
+  font-family: var(--template-font-family);
+  background-color: var(--template-background);
+  color: var(--template-text);
+}
+
+/* Botões com gradiente global */
+.btn-primary,
+.button-primary,
+.template-button-primary {
+  background: var(--template-gradient-primary) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: var(--template-border-radius) !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+.btn-primary:hover,
+.button-primary:hover,
+.template-button-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--template-shadow-lg) !important;
+  opacity: 0.9 !important;
+}
+
+.btn-primary:active,
+.button-primary:active,
+.template-button-primary:active {
+  transform: translateY(0) !important;
+}
+
+/* Botões secundários */
+.btn-secondary,
+.button-secondary,
+.template-button-secondary {
+  background: transparent !important;
+  color: var(--template-primary) !important;
+  border: 2px solid var(--template-primary) !important;
+  border-radius: var(--template-border-radius) !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-secondary:hover,
+.button-secondary:hover,
+.template-button-secondary:hover {
+  background: var(--template-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* Cards do template */
+.template-card {
+  background: var(--template-surface);
+  border: 1px solid var(--template-border);
+  border-radius: var(--template-border-radius);
+  box-shadow: var(--template-shadow);
+  transition: all 0.3s ease;
+}
+
+.template-card:hover {
+  box-shadow: var(--template-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Produtos com gradiente */
+.product-card .btn-primary,
+.product-card .button-primary {
+  background: var(--template-gradient-primary) !important;
+}
+
+/* Headers do template */
+.template-header {
+  background: var(--template-surface);
+  border-bottom: 1px solid var(--template-border);
+  color: var(--template-text);
+}
+
+/* Texto com gradiente */
+.template-gradient-text {
+  background: var(--template-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
+/* Aplicar nos elementos do catálogo */
+.catalog-container {
+  font-family: var(--template-font-family);
+}
+
+.catalog-container .btn-primary,
+.catalog-container .button-primary {
+  background: var(--template-gradient-primary) !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  :root {
+    --template-spacing: 12px;
+    --template-border-radius: 6px;
+  }
+}

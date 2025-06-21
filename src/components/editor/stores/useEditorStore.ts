@@ -22,10 +22,10 @@ interface EditorStore {
 
 const defaultConfiguration = {
   global: {
-    template: 'modern',
-    fontFamily: 'Inter, sans-serif',
-    borderRadius: 8,
-    layoutSpacing: 16,
+    template: 'editor', // Usar template "editor" como padrão
+    fontFamily: 'Inter, system-ui, sans-serif',
+    borderRadius: 12, // Mais arredondado como no editor
+    layoutSpacing: 20, // Mais espaçamento como no editor
     fontSize: {
       small: 12,
       medium: 16,
@@ -68,7 +68,7 @@ const defaultConfiguration = {
     buttonStyle: {
       backgroundColor: '#0057FF',
       textColor: '#FFFFFF',
-      borderRadius: 8
+      borderRadius: 12 // Mais arredondado
     }
   },
   colors: {
@@ -100,6 +100,8 @@ const defaultConfiguration = {
     showCartItems: true,
     showSecurityBadges: true,
     showReviews: false,
+    showPrices: true,
+    allowFilters: true,
     colors: {
       primary: '#0057FF',
       secondary: '#FF6F00',
@@ -139,7 +141,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   isPreviewMode: false,
   togglePreviewMode: () => set((state) => ({ isPreviewMode: !state.isPreviewMode })),
   resetToDefault: () => {
-    set({ configuration: defaultConfiguration, isDirty: false });
+    set({ configuration: defaultConfiguration, isDirty: false, currentTemplate: 'editor' });
   },
   configuration: defaultConfiguration,
   updateConfiguration: (path, value) => {
@@ -160,7 +162,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     });
   },
   
-  currentTemplate: 'modern',
+  currentTemplate: 'editor', // Template padrão
   applyTemplate: (templateName: string, colors?: any) => {
     set((state) => {
       const newConfiguration = { ...state.configuration };
@@ -199,10 +201,10 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
           ...state.configuration,
           global: {
             ...state.configuration.global,
-            template: settings.template_name || 'modern',
-            fontFamily: settings.font_family || 'Inter, sans-serif',
-            borderRadius: settings.border_radius || 8,
-            layoutSpacing: settings.layout_spacing || 16,
+            template: settings.template_name || 'editor',
+            fontFamily: settings.font_family || 'Inter, system-ui, sans-serif',
+            borderRadius: settings.border_radius || 12,
+            layoutSpacing: settings.layout_spacing || 20,
           },
           colors: {
             ...state.configuration.colors,
@@ -212,13 +214,18 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
             background: settings.background_color || '#F8FAFC',
             text: settings.text_color || '#1E293B',
             border: settings.border_color || '#E2E8F0',
+          },
+          checkout: {
+            ...state.configuration.checkout,
+            showPrices: settings.show_prices !== false,
+            allowFilters: settings.allow_categories_filter !== false,
           }
         },
-        currentTemplate: settings.template_name || 'modern',
+        currentTemplate: settings.template_name || 'editor',
         isDirty: false
       }));
     } else {
-      console.log('Carregando configurações do banco...');
+      console.log('Carregando configurações padrão...');
       set({ isDirty: false });
     }
   }

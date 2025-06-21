@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
 import { useEditorStore } from '../stores/useEditorStore';
+import { EditorTemplate } from '../templates/EditorTemplate';
 
 interface Template {
   id: string;
@@ -23,6 +24,7 @@ interface Template {
 }
 
 const predefinedTemplates: Template[] = [
+  EditorTemplate,
   {
     id: 'modern',
     name: 'Modern',
@@ -89,7 +91,19 @@ export const TemplateSelector: React.FC = () => {
   const { configuration, applyTemplate, currentTemplate } = useEditorStore();
 
   const handleApplyTemplate = (template: Template) => {
+    console.log('Aplicando template:', template.name);
     applyTemplate(template.id, template.colors);
+    
+    // Aplicar estilos CSS imediatamente
+    const root = document.documentElement;
+    root.style.setProperty('--template-primary', template.colors.primary);
+    root.style.setProperty('--template-secondary', template.colors.secondary);
+    root.style.setProperty('--template-accent', template.colors.accent);
+    root.style.setProperty('--template-background', template.colors.background);
+    root.style.setProperty('--template-text', template.colors.text);
+    root.style.setProperty('--template-border', template.colors.border);
+    root.style.setProperty('--template-gradient-from', template.colors.primary);
+    root.style.setProperty('--template-gradient-to', template.colors.secondary);
   };
 
   return (
@@ -119,6 +133,9 @@ export const TemplateSelector: React.FC = () => {
                       {currentTemplate === template.id && (
                         <Check className="w-4 h-4 text-green-500" />
                       )}
+                      {template.id === 'editor' && (
+                        <Badge variant="outline" className="text-xs">Recomendado</Badge>
+                      )}
                     </h4>
                     <p className="text-sm text-gray-600">{template.description}</p>
                   </div>
@@ -142,12 +159,12 @@ export const TemplateSelector: React.FC = () => {
                 <Button
                   size="sm"
                   onClick={() => handleApplyTemplate(template)}
-                  className="flex-1"
+                  className="flex-1 template-button-primary"
                   variant={currentTemplate === template.id ? "default" : "outline"}
                 >
                   {currentTemplate === template.id ? 'Aplicado' : 'Aplicar Template'}
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" className="template-button-secondary">
                   <Eye className="w-4 h-4" />
                 </Button>
               </div>

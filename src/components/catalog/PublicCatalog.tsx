@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCatalog } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
-import { useEditorSync } from '@/hooks/useEditorSync';
+import { useGlobalTemplateStyles } from '@/hooks/useGlobalTemplateStyles';
 import ProductGrid from './ProductGrid';
 import FilterSidebar from './FilterSidebar';
 import TemplateWrapper from './TemplateWrapper';
@@ -20,7 +20,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
 }) => {
   const { store, products, filteredProducts, loading: catalogLoading, searchProducts, filterProducts } = useCatalog(storeIdentifier, catalogType);
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
-  const { templateName } = useEditorSync(storeIdentifier);
+  const { isReady, templateName } = useGlobalTemplateStyles(storeIdentifier);
   const { totalItems } = useCart();
   
   const [wishlist, setWishlist] = useState<Product[]>([]);
@@ -60,7 +60,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja não encontrada</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja não encontrada</h1>  
           <p className="text-gray-600">A loja que você está procurando não existe ou não está ativa.</p>
         </div>
       </div>
@@ -68,7 +68,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div className="relative template-container catalog-container">
       <TemplateWrapper
         templateName={templateName}
         store={store}
