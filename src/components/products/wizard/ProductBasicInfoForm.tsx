@@ -1,164 +1,177 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useCategories } from '@/hooks/useCategories';
-import SimpleCategoryDialog from '@/components/products/SimpleCategoryDialog';
-import AIContentGenerator from '@/components/ai/AIContentGenerator';
+import CategoryFormDialog from '../CategoryFormDialog';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ProductBasicInfoFormProps {
   form: UseFormReturn<any>;
 }
 
-const ProductBasicInfoForm = ({ form }: ProductBasicInfoFormProps) => {
+const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({ form }) => {
   const { categories, loading: categoriesLoading, fetchCategories } = useCategories();
-  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
 
-  const productName = form.watch('name');
-  const selectedCategory = form.watch('category');
+  // Forçar refresh das categorias quando o componente for montado
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleCategoryCreated = async (newCategory: any) => {
-    console.log('Nova categoria criada:', newCategory);
-    form.setValue('category', newCategory.name);
-    setShowCategoryDialog(false);
-    
-    // Recarregar categorias para atualizar o select
-    try {
-      await fetchCategories();
-      console.log('Categorias recarregadas com sucesso');
-    } catch (error) {
-      console.error('Erro ao recarregar categorias:', error);
-    }
+    console.log('📂 Nova categoria criada:', newCategory);
+    await fetchCategories(); // Recarregar categorias
+    form.setValue('category', newCategory.name); // Selecionar automaticamente
+    form.trigger('category'); // Validar campo
   };
 
-  const handleDescriptionGenerated = (description: string) => {
-    form.setValue('description', description);
+  const handleRefreshCategories = async () => {
+    console.log('🔄 Atualizando lista de categorias...');
+    await fetchCategories();
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Nome do Produto *</FormLabel>
-            <FormControl>
-              <Input placeholder="Digite o nome do produto" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Informações Básicas</h3>
+        <p className="text-sm text-muted-foreground">
+          Preencha as informações essenciais do seu produto.
+        </p>
+      </div>
 
-      <FormField
-        control={form.control}
-        name="category"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Categoria *</FormLabel>
-            <div className="flex gap-2">
-              <Select onValueChange={field.onChange} value={field.value} disabled={categoriesLoading}>
-                <FormControl>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue 
-                      placeholder={
-                        categoriesLoading 
-                          ? "Carregando categorias..." 
-                          : categories.length === 0 
-                            ? "Nenhuma categoria encontrada"
-                            : "Selecione uma categoria"
-                      } 
-                    />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {!categoriesLoading && categories.length > 0 && (
-                    categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))
-                  )}
-                  {!categoriesLoading && categories.length === 0 && (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Nenhuma categoria encontrada. Crie uma nova categoria.
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowCategoryDialog(true)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome do Produto *</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Digite o nome do produto" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="seo_slug"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Slug (URL amigável)</FormLabel>
-            <FormControl>
-              <Input placeholder="produto-exemplo" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <div className="flex items-center justify-between mb-2">
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
               <FormLabel>Descrição</FormLabel>
-              <AIContentGenerator
-                productName={productName}
-                category={selectedCategory}
-                onDescriptionGenerated={handleDescriptionGenerated}
-                disabled={!productName?.trim()}
-                variant="description"
-                size="sm"
-              />
-            </div>
-            <FormControl>
-              <Textarea
-                placeholder="Descreva detalhadamente o produto..."
-                className="min-h-[120px]"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormControl>
+                <Textarea 
+                  placeholder="Descreva o produto (opcional)"
+                  rows={4}
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <SimpleCategoryDialog
-        open={showCategoryDialog}
-        onOpenChange={setShowCategoryDialog}
-        onCategoryCreated={handleCategoryCreated}
-      />
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Categoria *</FormLabel>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <FormControl>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                      disabled={categoriesLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefreshCategories}
+                  disabled={categoriesLoading}
+                  title="Atualizar categorias"
+                >
+                  <RefreshCw className={`h-4 w-4 ${categoriesLoading ? 'animate-spin' : ''}`} />
+                </Button>
+                <CategoryFormDialog onCategoryCreated={handleCategoryCreated} />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="is_active"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">
+                    Produto Ativo
+                  </FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Produto visível no catálogo
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_featured"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">
+                    Produto Destaque
+                  </FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Destacar no catálogo
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -101,7 +100,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   // Carregar dados iniciais quando em modo edição
   useEffect(() => {
     if (mode === 'edit' && initialData) {
-      console.log('ProductFormWizard - Carregando dados iniciais:', initialData);
+      console.log('📝 ProductFormWizard - Carregando dados iniciais:', initialData);
       
       const formData = {
         id: initialData.id,
@@ -122,6 +121,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       };
       
       if (initialData.variations) {
+        console.log('🎨 Carregando variações existentes:', initialData.variations.length);
         setVariations(initialData.variations);
       }
       
@@ -186,58 +186,56 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   };
 
   const handleBypassSave = async () => {
-    if (!profile?.store_id) return;
+    if (!profile?.store_id) {
+      console.error('🚨 Store ID não encontrado!');
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
       let imageUrl = form.getValues('image_url');
+      let imageFiles: File[] = [];
       
+      // Preparar arquivos de imagem para upload
       if (mode === 'create' && draftImages.length > 0) {
-        console.log('Fazendo upload de imagens rascunho...');
-        const uploadResult = await uploadDraftImages();
-        if (uploadResult.success && uploadResult.urls.length > 0) {
-          imageUrl = uploadResult.urls[0];
-          console.log('Upload concluído, URL principal:', imageUrl);
-        }
+        console.log('📤 Preparando upload de imagens rascunho...');
+        imageFiles = draftImages.map(img => img.file);
       }
 
-      // Processar variações com upload de imagens
-      const processedVariations = await Promise.all(
-        variations.map(async (variation) => {
-          let variationImageUrl = variation.image_url;
-          
-          // Se há arquivo de imagem para upload
-          if (variation.image_file) {
-            try {
-              // Aqui você pode implementar o upload da imagem da variação
-              // Por enquanto, mantemos a URL temporária
-              console.log('Upload de imagem da variação:', variation.image_file.name);
-            } catch (error) {
-              console.error('Erro no upload da imagem da variação:', error);
-            }
-          }
+      // Processar variações com arquivos de imagem
+      const processedVariations = variations.map((variation) => {
+        const cleanVariation = {
+          ...variation,
+          color: variation.color || null,
+          size: variation.size || null,
+          sku: variation.sku || null,
+          stock: Number(variation.stock) || 0,
+          price_adjustment: Number(variation.price_adjustment) || 0,
+          is_active: variation.is_active ?? true,
+        };
 
-          // Remover propriedades temporárias e garantir tipos corretos
-          const { image_file, ...cleanVariation } = variation;
-          
-          return {
-            ...cleanVariation,
-            image_url: variationImageUrl || null,
-            color: variation.color || null,
-            size: variation.size || null,
-            sku: variation.sku || null,
-            stock: Number(variation.stock) || 0,
-            price_adjustment: Number(variation.price_adjustment) || 0,
-            is_active: variation.is_active ?? true,
-          };
-        })
-      );
+        // Se há arquivo de imagem, incluir
+        if (variation.image_file) {
+          cleanVariation.image_file = variation.image_file;
+        }
+
+        // Remover propriedades temporárias desnecessárias
+        const { image_url, ...finalVariation } = cleanVariation;
+        
+        // Manter image_url apenas se não for um object URL temporário
+        if (image_url && !image_url.startsWith('blob:')) {
+          finalVariation.image_url = image_url;
+        }
+
+        return finalVariation;
+      });
 
       const productData = {
         ...form.getValues(),
         store_id: profile.store_id,
         image_url: imageUrl,
+        image_files: imageFiles.length > 0 ? imageFiles : undefined,
         variations: processedVariations.length > 0 ? processedVariations : undefined,
         wholesale_price: form.getValues('wholesale_price') || null,
         min_wholesale_qty: form.getValues('min_wholesale_qty') || 1,
@@ -245,8 +243,11 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         stock: Number(form.getValues('stock')),
       };
 
-      console.log('Salvando produto com dados:', productData);
-      console.log('Variações processadas:', processedVariations);
+      console.log('💾 Salvando produto com dados:', {
+        ...productData,
+        image_files: productData.image_files?.length || 0,
+        variations: productData.variations?.length || 0
+      });
 
       await onSubmit(productData);
       markAsSaved();
@@ -258,7 +259,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       
       onClose?.();
     } catch (error) {
-      console.error('Erro ao salvar produto:', error);
+      console.error('🚨 Erro ao salvar produto:', error);
     } finally {
       setIsSubmitting(false);
     }

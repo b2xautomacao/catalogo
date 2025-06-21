@@ -54,7 +54,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
       id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    console.log('Adicionando variação:', variationToAdd);
+    console.log('➕ Adicionando variação:', variationToAdd);
     onChange([...variations, variationToAdd]);
     
     setNewVariation({
@@ -70,7 +70,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
 
   const removeVariation = (index: number) => {
     const updatedVariations = variations.filter((_, i) => i !== index);
-    console.log('Removendo variação, nova lista:', updatedVariations);
+    console.log('🗑️ Removendo variação, nova lista:', updatedVariations);
     onChange(updatedVariations);
   };
 
@@ -83,7 +83,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
     if (editingIndex !== null && editingVariation) {
       const updatedVariations = [...variations];
       updatedVariations[editingIndex] = editingVariation;
-      console.log('Salvando edição da variação:', editingVariation);
+      console.log('💾 Salvando edição da variação:', editingVariation);
       onChange(updatedVariations);
       setEditingIndex(null);
       setEditingVariation(null);
@@ -110,6 +110,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   };
 
   const handleNewVariationImageUpload = (file: File) => {
+    console.log('📤 Nova imagem para variação:', file.name);
     setNewVariation(prev => ({
       ...prev,
       image_file: file,
@@ -118,6 +119,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   };
 
   const handleNewVariationImageRemove = () => {
+    console.log('🗑️ Removendo imagem da nova variação');
     setNewVariation(prev => ({
       ...prev,
       image_file: undefined,
@@ -127,6 +129,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
 
   const handleEditVariationImageUpload = (file: File) => {
     if (editingVariation) {
+      console.log('📤 Nova imagem para variação em edição:', file.name);
       setEditingVariation({
         ...editingVariation,
         image_file: file,
@@ -137,6 +140,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
 
   const handleEditVariationImageRemove = () => {
     if (editingVariation) {
+      console.log('🗑️ Removendo imagem da variação em edição');
       setEditingVariation({
         ...editingVariation,
         image_file: undefined,
@@ -145,7 +149,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
     }
   };
 
-  const handleStockChange = (value: string, isEditing: boolean = false, index?: number) => {
+  const handleStockChange = (value: string, isEditing: boolean = false) => {
     const numericValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0);
     
     if (isEditing && editingVariation) {
@@ -254,7 +258,7 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
       {variations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Variações Cadastradas</CardTitle>
+            <CardTitle className="text-base">Variações Cadastradas ({variations.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -362,6 +366,11 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
                             {variation.sku && (
                               <Badge variant="secondary">
                                 SKU: {variation.sku}
+                              </Badge>
+                            )}
+                            {variation.id?.startsWith('temp_') && (
+                              <Badge variant="destructive">
+                                Novo
                               </Badge>
                             )}
                           </div>
