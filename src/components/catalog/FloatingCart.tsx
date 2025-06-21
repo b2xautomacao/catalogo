@@ -11,6 +11,21 @@ interface FloatingCartProps {
   onCheckout?: () => void;
 }
 
+// Função utilitária para formatar valores monetários com segurança
+const formatCurrency = (value: number | undefined | null): string => {
+  if (typeof value !== 'number' || isNaN(value)) {
+    return 'R$ 0,00';
+  }
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+};
+
+// Função utilitária para calcular valores com segurança
+const safeCalculate = (a: number | undefined | null, b: number | undefined | null): number => {
+  const numA = typeof a === 'number' && !isNaN(a) ? a : 0;
+  const numB = typeof b === 'number' && !isNaN(b) ? b : 0;
+  return numA * numB;
+};
+
 const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
   const {
     items,
@@ -73,7 +88,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                   <span className="font-semibold text-sm">Oportunidade de Economia!</span>
                 </div>
                 <p className="text-xs text-orange-600 mt-1">
-                  Adicione +{itemsToWholesale} itens e economize R$ {potentialSavings.toFixed(2)}
+                  Adicione +{itemsToWholesale} itens e economize {formatCurrency(potentialSavings)}
                 </p>
               </div>
             )}
@@ -91,100 +106,108 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition-all">
-                      <div className="flex items-start gap-4">
-                        <CartItemThumbnail 
-                          imageUrl={item.product.image_url}
-                          productName={item.product.name}
-                          size="md"
-                        />
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 truncate">
-                            {item.product.name}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {item.catalogType === 'wholesale' ? 'Atacado' : 'Varejo'}
-                            </Badge>
-                            {item.isWholesalePrice && (
-                              <Badge className="text-xs bg-green-100 text-green-700 border-green-300">
-                                💰 Preço de Atacado
-                              </Badge>
-                            )}
-                            {item.variations && (
-                              <span className="text-xs text-gray-500">
-                                {item.variations.size} {item.variations.color}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Indicador de Economia Individual */}
-                          {item.product.wholesale_price && item.product.min_wholesale_qty && item.quantity < item.product.min_wholesale_qty && (
-                            <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                              <div className="flex items-center gap-1 text-xs text-orange-700">
-                                <AlertCircle size={12} />
-                                <span>Faltam {item.product.min_wholesale_qty - item.quantity} para atacado</span>
-                              </div>
-                              <p className="text-xs text-orange-600">
-                                Economize R$ {((item.originalPrice - item.product.wholesale_price) * item.product.min_wholesale_qty).toFixed(2)}
-                              </p>
-                            </div>
-                          )}
+                  {items.map((item) => {
+                    // Validações de segurança para cada item
+                    const itemPrice = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0;
+                    const itemQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) ? item.quantity : 1;
+                    const itemOriginalPrice = typeof item.originalPrice === 'number' && !isNaN(item.originalPrice) ? item.originalPrice : itemPrice;
+                    const itemTotal = safeCalculate(itemPrice, itemQuantity);
+                    
+                    return (
+                      <div key={item.id} className="bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-4">
+                          <CartItemThumbnail 
+                            imageUrl={item.product?.image_url}
+                            productName={item.product?.name || 'Produto'}
+                            size="md"
+                          />
                           
-                          <div className="flex items-center justify-between mt-3">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="h-8 w-8 p-0 rounded-full hover:bg-red-50 hover:border-red-300"
-                              >
-                                <Minus size={12} />
-                              </Button>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 truncate">
+                              {item.product?.name || 'Produto sem nome'}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {item.catalogType === 'wholesale' ? 'Atacado' : 'Varejo'}
+                              </Badge>
+                              {item.isWholesalePrice && (
+                                <Badge className="text-xs bg-green-100 text-green-700 border-green-300">
+                                  💰 Preço de Atacado
+                                </Badge>
+                              )}
+                              {item.variations && (
+                                <span className="text-xs text-gray-500">
+                                  {item.variations.size} {item.variations.color}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Indicador de Economia Individual */}
+                            {item.product?.wholesale_price && item.product?.min_wholesale_qty && itemQuantity < item.product.min_wholesale_qty && (
+                              <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
+                                <div className="flex items-center gap-1 text-xs text-orange-700">
+                                  <AlertCircle size={12} />
+                                  <span>Faltam {item.product.min_wholesale_qty - itemQuantity} para atacado</span>
+                                </div>
+                                <p className="text-xs text-orange-600">
+                                  Economize {formatCurrency(safeCalculate(itemOriginalPrice - (item.product.wholesale_price || 0), item.product.min_wholesale_qty))}
+                                </p>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center justify-between mt-3">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateQuantity(item.id, itemQuantity - 1)}
+                                  className="h-8 w-8 p-0 rounded-full hover:bg-red-50 hover:border-red-300"
+                                >
+                                  <Minus size={12} />
+                                </Button>
+                                
+                                <span className="font-semibold min-w-[2rem] text-center bg-gray-50 px-2 py-1 rounded">
+                                  {itemQuantity}
+                                </span>
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => updateQuantity(item.id, itemQuantity + 1)}
+                                  className="h-8 w-8 p-0 rounded-full hover:bg-green-50 hover:border-green-300"
+                                >
+                                  <Plus size={12} />
+                                </Button>
+                              </div>
                               
-                              <span className="font-semibold min-w-[2rem] text-center bg-gray-50 px-2 py-1 rounded">
-                                {item.quantity}
-                              </span>
-                              
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="h-8 w-8 p-0 rounded-full hover:bg-green-50 hover:border-green-300"
+                                onClick={() => removeItem(item.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                               >
-                                <Plus size={12} />
+                                <Trash2 size={14} />
                               </Button>
                             </div>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(item.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
-                            >
-                              <Trash2 size={14} />
-                            </Button>
                           </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="font-bold text-primary text-lg">
-                            R$ {(item.price * item.quantity).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            R$ {item.price.toFixed(2)} cada
-                          </p>
-                          {item.isWholesalePrice && item.originalPrice && (
-                            <p className="text-xs text-green-600 font-medium">
-                              Economia: R$ {((item.originalPrice - item.price) * item.quantity).toFixed(2)}
+                          
+                          <div className="text-right">
+                            <p className="font-bold text-primary text-lg">
+                              {formatCurrency(itemTotal)}
                             </p>
-                          )}
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(itemPrice)} cada
+                            </p>
+                            {item.isWholesalePrice && itemOriginalPrice && itemOriginalPrice > itemPrice && (
+                              <p className="text-xs text-green-600 font-medium">
+                                Economia: {formatCurrency(safeCalculate(itemOriginalPrice - itemPrice, itemQuantity))}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -199,7 +222,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                         💡 Economia potencial:
                       </span>
                       <span className="font-bold text-orange-800">
-                        R$ {potentialSavings.toFixed(2)}
+                        {formatCurrency(potentialSavings)}
                       </span>
                     </div>
                     <p className="text-xs text-orange-700 mt-1">
@@ -211,7 +234,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-2xl font-bold text-primary">
-                    R$ {totalAmount.toFixed(2)}
+                    {formatCurrency(totalAmount)}
                   </span>
                 </div>
                 

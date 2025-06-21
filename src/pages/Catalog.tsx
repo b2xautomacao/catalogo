@@ -17,6 +17,7 @@ import CatalogFooter from '@/components/catalog/CatalogFooter';
 import FloatingCart from '@/components/catalog/FloatingCart';
 import CheckoutModal from '@/components/catalog/CheckoutModal';
 import { useToast } from '@/hooks/use-toast';
+import CartErrorBoundary from '@/components/catalog/CartErrorBoundary';
 
 const CatalogContent = memo(() => {
   const { storeIdentifier } = useParams<{ storeIdentifier: string }>();
@@ -284,7 +285,7 @@ const CatalogContent = memo(() => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <CatalogHeader
         store={store}
@@ -414,8 +415,10 @@ const CatalogContent = memo(() => {
       />
 
       {/* Floating Cart */}
-      <FloatingCart onCheckout={() => setShowCheckout(true)} />
-
+      <CartErrorBoundary>
+        <FloatingCart onCheckout={() => setShowCheckout(true)} />
+      </CartErrorBoundary>
+      
       {/* Checkout Modal - Passando dados da loja */}
       <CheckoutModal
         isOpen={showCheckout}
