@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,10 +73,9 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
   const { uploadVariationImage } = useVariationImageUpload();
   
-  // Controle de carregamento de dados iniciais
-  const initialDataLoadedRef = useRef(false);
-  // Ref para monitorar estado das variações
-  const variationsStateRef = useRef<ProductVariation[]>([]);
+  // Controle mais rigoroso de carregamento inicial
+  const dataLoadedRef = useRef<string | null>(null);
+  const modeRef = useRef(mode);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -104,11 +104,13 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     }
   });
 
-  // Função segura para atualizar variações com logs detalhados
+  // Função segura para atualizar variações
   const handleVariationsChange = (newVariations: ProductVariation[]) => {
     console.log('🔄 VARIAÇÕES - Mudança solicitada:', {
       anterior: variations.length,
       nova: newVariations.length,
+      modo: mode,
+      productId: initialData?.id,
       detalhes: newVariations.map(v => ({ 
         id: v.id, 
         color: v.color, 
@@ -119,18 +121,27 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     });
     
     setVariations(newVariations);
-    variationsStateRef.current = newVariations;
-    
-    console.log('✅ VARIAÇÕES - Estado atualizado:', {
-      stateLength: newVariations.length,
-      refLength: variationsStateRef.current.length
-    });
+    console.log('✅ VARIAÇÕES - Estado atualizado com sucesso:', newVariations.length);
   };
 
-  // Carregar dados iniciais apenas uma vez
+  // CORREÇÃO CRÍTICA: Carregamento inicial controlado - executar apenas uma vez por produto
   useEffect(() => {
-    if (mode === 'edit' && initialData && !initialDataLoadedRef.current) {
-      console.log('📝 ProductFormWizard - Carregando dados iniciais:', {
+    const currentProductId = initialData?.id || 'new-product';
+    const currentMode = mode;
+    
+    console.log('🔍 CARREGAMENTO - Verificando necessidade:', {
+      mode: currentMode,
+      productId: currentProductId,
+      dataLoadedFor: dataLoadedRef.current,
+      needsLoad: dataLoadedRef.current !== currentProductId
+    });
+
+    // Só carregar se:
+    // 1. É modo de edição E
+    // 2. Temos dados iniciais E  
+    // 3. Ainda não carregamos dados para este produto específico
+    if (currentMode === 'edit' && initialData && dataLoadedRef.current !== currentProductId) {
+      console.log('📝 CARREGAMENTO - Iniciando para produto:', {
         id: initialData.id,
         name: initialData.name,
         variations_count: initialData.variations?.length || 0
@@ -156,43 +167,35 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       
       // Configurar variações se existirem
       if (initialData.variations && Array.isArray(initialData.variations)) {
-        console.log('🎨 Carregando variações existentes:', initialData.variations.length);
-        const loadedVariations = initialData.variations;
-        setVariations(loadedVariations);
-        variationsStateRef.current = loadedVariations;
-        console.log('✅ Variações carregadas no estado:', loadedVariations.length);
+        console.log('🎨 CARREGAMENTO - Configurando variações:', initialData.variations.length);
+        setVariations(initialData.variations);
+      } else {
+        console.log('🎨 CARREGAMENTO - Nenhuma variação encontrada');
+        setVariations([]);
       }
       
       form.reset(formData);
-      initialDataLoadedRef.current = true;
+      dataLoadedRef.current = currentProductId;
       
-      // Reset do form tracker após pequeno delay
-      setTimeout(() => reset(), 200);
+      // Reset tracker após carregamento
+      setTimeout(() => reset(), 300);
+      
+      console.log('✅ CARREGAMENTO - Concluído para produto:', currentProductId);
     }
-  }, [initialData?.id, mode]);
-
-  // Reset do controle quando mode muda para criação
-  useEffect(() => {
-    if (mode === 'create') {
-      initialDataLoadedRef.current = false;
+    
+    // CORREÇÃO: Reset apenas quando mudança real de modo para 'create'
+    else if (currentMode === 'create' && modeRef.current === 'edit') {
+      console.log('🔄 RESET - Mudança de edição para criação');
       setVariations([]);
-      variationsStateRef.current = [];
-      console.log('🔄 VARIAÇÕES - Reset para modo criação');
+      dataLoadedRef.current = null;
+      modeRef.current = 'create';
     }
-  }, [mode]);
-
-  // Monitorar mudanças no estado das variações
-  useEffect(() => {
-    console.log('👀 VARIAÇÕES - Estado mudou:', {
-      length: variations.length,
-      variations: variations.map(v => ({ 
-        id: v.id, 
-        color: v.color, 
-        size: v.size, 
-        hasImage: !!v.image_url 
-      }))
-    });
-  }, [variations]);
+    
+    // Atualizar ref do modo
+    if (modeRef.current !== currentMode) {
+      modeRef.current = currentMode;
+    }
+  }, [initialData?.id, mode, form, reset]);
 
   // Gerar slug automaticamente quando o nome mudar (apenas no modo criação)
   const watchedName = form.watch('name');
@@ -295,24 +298,26 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       return;
     }
 
-    // VERIFICAÇÃO CRÍTICA: Estado das variações antes do salvamento
-    const currentVariations = variationsStateRef.current.length > 0 ? variationsStateRef.current : variations;
-    
-    console.log('🚨 CRÍTICO - Estado das variações antes do salvamento:', {
-      stateVariations: variations.length,
-      refVariations: variationsStateRef.current.length,
-      currentVariations: currentVariations.length,
-      detalhes: currentVariations.map(v => ({ 
+    // VERIFICAÇÃO CRÍTICA MELHORADA: Estado das variações
+    console.log('🚨 CRÍTICO - Verificação completa do estado antes do salvamento:', {
+      variationsLength: variations.length,
+      dataLoaded: dataLoadedRef.current,
+      mode: mode,
+      productId: initialData?.id,
+      variationsDetailed: variations.map(v => ({ 
         id: v.id, 
         color: v.color, 
         size: v.size, 
         stock: v.stock,
-        hasImage: !!v.image_url 
+        hasImage: !!v.image_url,
+        hasImageFile: !!v.image_file
       }))
     });
 
-    if (currentVariations.length === 0) {
-      console.log('⚠️ AVISO - Nenhuma variação encontrada para salvar');
+    if (variations.length === 0) {
+      console.log('ℹ️ AVISO - Produto será salvo sem variações');
+    } else {
+      console.log('✅ CONFIRMADO - Produto possui variações para salvar:', variations.length);
     }
 
     setIsSubmitting(true);
@@ -328,9 +333,9 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       }
 
       // Processar imagens das variações ANTES de enviar
-      console.log('🎨 Processando variações antes do envio:', {
-        total: currentVariations.length,
-        variations: currentVariations.map(v => ({ 
+      console.log('🎨 PROCESSAMENTO - Iniciando processamento das variações:', {
+        total: variations.length,
+        variations: variations.map(v => ({ 
           id: v.id, 
           color: v.color, 
           size: v.size, 
@@ -340,8 +345,8 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         }))
       });
 
-      const processedVariations = await processVariationImages(currentVariations);
-      console.log('✅ Variações processadas:', processedVariations.length);
+      const processedVariations = await processVariationImages(variations);
+      console.log('✅ PROCESSAMENTO - Variações processadas com sucesso:', processedVariations.length);
 
       const productData = {
         ...form.getValues(),
@@ -355,15 +360,16 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
         stock: Number(form.getValues('stock')),
       };
 
-      console.log('💾 FINAL - Enviando dados do produto:', {
-        ...productData,
-        image_files: productData.image_files?.length || 0,
-        variations: productData.variations?.length || 0,
-        variationsDetailed: productData.variations?.map(v => ({ 
+      console.log('💾 ENVIO FINAL - Dados do produto preparados:', {
+        id: productData.id,
+        name: productData.name,
+        mode: mode,
+        variations_count: productData.variations?.length || 0,
+        image_files_count: productData.image_files?.length || 0,
+        variationsPreview: productData.variations?.slice(0, 3).map(v => ({ 
           id: v.id, 
           color: v.color, 
-          size: v.size, 
-          stock: v.stock 
+          size: v.size 
         }))
       });
 
@@ -373,7 +379,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       if (mode === 'create') {
         clearDraftImages();
         setVariations([]);
-        variationsStateRef.current = [];
+        dataLoadedRef.current = null;
       }
       
       onClose?.();
@@ -541,10 +547,15 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
                 </div>
               </div>
               
-              {/* Debug: Estado atual das variações */}
+              {/* Debug: Estado atual das variações - MELHORADO */}
               {variations.length > 0 && (
-                <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                  <strong>Debug:</strong> {variations.length} variações no estado atual
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                  <strong>✅ Estado OK:</strong> {variations.length} variações prontas para salvar
+                  {mode === 'edit' && dataLoadedRef.current && (
+                    <span className="ml-2 text-green-600">
+                      | Dados carregados: {dataLoadedRef.current.slice(0, 8)}...
+                    </span>
+                  )}
                 </div>
               )}
             </div>
