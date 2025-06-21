@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import ShareableLinks from '@/components/settings/ShareableLinks';
 import WatermarkSettings from '@/components/settings/WatermarkSettings';
 import DomainSettings from '@/components/settings/DomainSettings';
+import CatalogModeSettings from '@/components/settings/CatalogModeSettings';
 import ModernTemplate from '@/components/catalog/templates/ModernTemplate';
 import MinimalTemplate from '@/components/catalog/templates/MinimalTemplate';
 import ElegantTemplate from '@/components/catalog/templates/ElegantTemplate';
@@ -31,7 +32,7 @@ import {
   MessageSquare,
   Share2,
   Check,
-  Droplet
+  ArrowLeftRight
 } from 'lucide-react';
 
 const CatalogSettings = () => {
@@ -228,8 +229,9 @@ const CatalogSettings = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="catalogs" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+      <Tabs defaultValue="mode" className="w-full">
+        <TabsList className="grid w-full grid-cols-9">
+          <TabsTrigger value="mode">Modo</TabsTrigger>
           <TabsTrigger value="catalogs">Catálogos</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="watermark">Marca d'água</TabsTrigger>
@@ -239,6 +241,11 @@ const CatalogSettings = () => {
           <TabsTrigger value="checkout">Checkout</TabsTrigger>
           <TabsTrigger value="display">Exibição</TabsTrigger>
         </TabsList>
+
+        {/* Modo de Catálogo */}
+        <TabsContent value="mode">
+          <CatalogModeSettings />
+        </TabsContent>
 
         {/* Configurações de Catálogos */}
         <TabsContent value="catalogs">

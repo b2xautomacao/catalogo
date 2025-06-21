@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +36,7 @@ export interface CatalogSettingsData {
   facebook_url: string | null;
   instagram_url: string | null;
   twitter_url: string | null;
+  catalog_mode: 'separated' | 'hybrid' | 'toggle';
   // Configurações de marca d'água
   watermark_enabled: boolean;
   watermark_type: 'text' | 'logo';
@@ -188,6 +188,7 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: null,
           instagram_url: null,
           twitter_url: null,
+          catalog_mode: 'separated' as const,
           watermark_enabled: false,
           watermark_type: 'text' as const,
           watermark_text: 'Minha Loja',
@@ -219,6 +220,7 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: null,
           instagram_url: null,
           twitter_url: null,
+          catalog_mode: 'separated' as const,
           watermark_enabled: false,
           watermark_type: 'text' as const,
           watermark_text: 'Minha Loja',
@@ -261,6 +263,8 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           facebook_url: data.facebook_url || null,
           instagram_url: data.instagram_url || null,
           twitter_url: data.twitter_url || null,
+          catalog_mode: (['separated', 'hybrid', 'toggle'].includes(data.catalog_mode)) ? 
+            data.catalog_mode as 'separated' | 'hybrid' | 'toggle' : 'separated',
           watermark_enabled: data.watermark_enabled || false,
           watermark_type: (data.watermark_type === 'logo' ? 'logo' : 'text') as 'text' | 'logo',
           watermark_text: data.watermark_text || 'Minha Loja',
@@ -336,6 +340,8 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
         facebook_url: data.facebook_url || null,
         instagram_url: data.instagram_url || null,
         twitter_url: data.twitter_url || null,
+        catalog_mode: (['separated', 'hybrid', 'toggle'].includes(data.catalog_mode)) ? 
+          data.catalog_mode as 'separated' | 'hybrid' | 'toggle' : 'separated',
         watermark_enabled: data.watermark_enabled || false,
         watermark_type: (data.watermark_type === 'logo' ? 'logo' : 'text') as 'text' | 'logo',
         watermark_text: data.watermark_text || 'Minha Loja',

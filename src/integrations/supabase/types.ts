@@ -905,6 +905,7 @@ export type Database = {
           allow_price_filter: boolean | null
           business_hours: Json | null
           business_type: string | null
+          catalog_mode: string | null
           catalog_url_slug: string | null
           checkout_type: string | null
           created_at: string
@@ -941,6 +942,7 @@ export type Database = {
           allow_price_filter?: boolean | null
           business_hours?: Json | null
           business_type?: string | null
+          catalog_mode?: string | null
           catalog_url_slug?: string | null
           checkout_type?: string | null
           created_at?: string
@@ -977,6 +979,7 @@ export type Database = {
           allow_price_filter?: boolean | null
           business_hours?: Json | null
           business_type?: string | null
+          catalog_mode?: string | null
           catalog_url_slug?: string | null
           checkout_type?: string | null
           created_at?: string
