@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
-import { Settings, Layout, Package, ShoppingCart, Grid3X3 } from 'lucide-react';
+import { Settings, Layout, Package, ShoppingCart, Grid3X3, FileText } from 'lucide-react';
 import GlobalSettings from './settings/GlobalSettings';
 import HeaderSettings from './settings/HeaderSettings';
 import ProductCardSettings from './settings/ProductCardSettings';
 import CheckoutSettings from './settings/CheckoutSettings';
 import SectionsManager from './settings/SectionsManager';
+import FooterSettings from './settings/FooterSettings';
 
 const EditorSidebar: React.FC = () => {
   const [activeSection, setActiveSection] = useState('global');
@@ -18,6 +20,7 @@ const EditorSidebar: React.FC = () => {
             { id: 'global', label: 'Global', icon: Settings },
             { id: 'header', label: 'Cabeçalho', icon: Layout },
             { id: 'products', label: 'Produtos', icon: Package },
+            { id: 'footer', label: 'Footer', icon: FileText },
             { id: 'checkout', label: 'Checkout', icon: ShoppingCart },
             { id: 'sections', label: 'Seções', icon: Grid3X3 }
           ].map(({ id, label, icon: Icon }) => (
@@ -39,9 +42,10 @@ const EditorSidebar: React.FC = () => {
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
-        {activeSection === 'global'&& <GlobalSettings />}
+        {activeSection === 'global' && <GlobalSettings />}
         {activeSection === 'header' && <HeaderSettings />}
         {activeSection === 'products' && <ProductCardSettings />}
+        {activeSection === 'footer' && <FooterSettings />}
         {activeSection === 'checkout' && <CheckoutSettings />}
         {activeSection === 'sections' && <SectionsManager />}
       </div>

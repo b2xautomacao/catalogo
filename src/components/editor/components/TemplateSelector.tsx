@@ -115,7 +115,7 @@ export const TemplateSelector: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="space-y-3 max-h-96 overflow-y-auto">
         {predefinedTemplates.map((template) => (
           <Card 
             key={template.id}
@@ -123,49 +123,49 @@ export const TemplateSelector: React.FC = () => {
               currentTemplate === template.id ? 'ring-2 ring-blue-500' : ''
             }`}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-lg ${template.preview}`} />
-                  <div>
-                    <h4 className="font-semibold flex items-center gap-2">
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex-shrink-0 ${template.preview}`} />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-sm flex items-center gap-1">
                       {template.name}
                       {currentTemplate === template.id && (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
                       )}
                       {template.id === 'editor' && (
                         <Badge variant="outline" className="text-xs">Recomendado</Badge>
                       )}
                     </h4>
-                    <p className="text-sm text-gray-600">{template.description}</p>
+                    <p className="text-xs text-gray-600 leading-tight">{template.description}</p>
                   </div>
                 </div>
-                <Badge variant="outline">{template.category}</Badge>
+                <Badge variant="outline" className="text-xs ml-2 flex-shrink-0">{template.category}</Badge>
               </div>
 
               {/* Preview das cores */}
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-1 mb-2">
                 {Object.entries(template.colors).slice(0, 3).map(([key, color]) => (
                   <div
                     key={key}
-                    className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                    className="w-4 h-4 rounded-full border border-white shadow-sm flex-shrink-0"
                     style={{ backgroundColor: color }}
                     title={key}
                   />
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   size="sm"
                   onClick={() => handleApplyTemplate(template)}
-                  className="flex-1 template-button-primary"
+                  className="flex-1 h-8 text-xs template-button-primary"
                   variant={currentTemplate === template.id ? "default" : "outline"}
                 >
-                  {currentTemplate === template.id ? 'Aplicado' : 'Aplicar Template'}
+                  {currentTemplate === template.id ? 'Aplicado' : 'Aplicar'}
                 </Button>
-                <Button size="sm" variant="ghost" className="template-button-secondary">
-                  <Eye className="w-4 h-4" />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 template-button-secondary">
+                  <Eye className="w-3 h-3" />
                 </Button>
               </div>
             </CardContent>

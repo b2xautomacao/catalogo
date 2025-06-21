@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useEditorStore } from '../stores/useEditorStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,20 +9,9 @@ export const useTemplateSync = () => {
   const { settings, updateSettings, loading } = useCatalogSettings(profile?.store_id);
   const { configuration, updateConfiguration, loadFromDatabase, isDirty } = useEditorStore();
   const [isConnected, setIsConnected] = useState(false);
-  const loadingRef = useRef(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  // Carregar configurações do banco na inicialização com debounce
-  useEffect(() => {
-    if (settings && !loading && profile?.store_id && !loadingRef.current) {
-      loadingRef.current = true;
-      console.log('useTemplateSync: Carregando configurações do banco:', settings);
-      loadFromDatabase(settings);
-      setIsConnected(true);
-      loadingRef.current = false;
-    }
-  }, [settings, loading, profile?.store_id, loadFromDatabase]);
-
-  // Aplicar estilos CSS globais quando as configurações mudarem
+  // Aplicar estilos CSS globais
   const applyGlobalStyles = useCallback((currentSettings: any) => {
     if (!currentSettings) return;
 
@@ -37,7 +26,7 @@ export const useTemplateSync = () => {
     root.style.setProperty('--template-border', currentSettings.border_color || '#E2E8F0');
     root.style.setProperty('--template-surface', '#FFFFFF');
     
-    // Aplicar gradientes dos botões
+    // Aplicar gradientes
     root.style.setProperty('--template-gradient-from', currentSettings.primary_color || '#0057FF');
     root.style.setProperty('--template-gradient-to', currentSettings.secondary_color || '#FF6F00');
     
@@ -54,13 +43,24 @@ export const useTemplateSync = () => {
       root.style.setProperty('--template-spacing', `${currentSettings.layout_spacing}px`);
     }
 
-    console.log('useTemplateSync: Estilos globais aplicados:', {
+    console.log('useTemplateSync: Estilos aplicados:', {
       primary: currentSettings.primary_color,
-      secondary: currentSettings.secondary_color,
-      template: currentSettings.template_name
+      secondary: currentSettings.secondary_color
     });
   }, []);
 
+  // Carregar configurações do banco na inicialização - simplificado
+  useEffect(() => {
+    if (settings && !hasLoadedOnce && profile?.store_id) {
+      console.log('useTemplateSync: Carregando configurações:', settings);
+      loadFromDatabase(settings);
+      applyGlobalStyles(settings);
+      setIsConnected(true);
+      setHasLoadedOnce(true);
+    }
+  }, [settings, hasLoadedOnce, profile?.store_id, loadFromDatabase, applyGlobalStyles]);
+
+  // Aplicar estilos quando as configurações mudarem
   useEffect(() => {
     if (settings && !loading) {
       applyGlobalStyles(settings);
