@@ -23,7 +23,7 @@ import {
 
 const CatalogSettings = () => {
   const { profile } = useAuth();
-  const { settings, loading, updateSettings, resetSettings } = useCatalogSettings();
+  const { settings, loading, updateSettings } = useCatalogSettings();
   
   const [localSettings, setLocalSettings] = useState({
     template_name: 'modern',
@@ -43,26 +43,60 @@ const CatalogSettings = () => {
 
   useEffect(() => {
     if (settings) {
-      setLocalSettings(settings);
+      setLocalSettings({
+        template_name: settings.template_name || 'modern',
+        show_prices: settings.show_prices !== false,
+        show_stock: settings.show_stock !== false,
+        show_categories: settings.allow_categories_filter !== false,
+        show_search: true, // Não existe no banco, usar padrão
+        show_filters: settings.allow_price_filter !== false,
+        items_per_page: 12, // Não existe no banco, usar padrão
+        catalog_title: settings.seo_title || '',
+        catalog_description: settings.seo_description || '',
+        primary_color: '#0057FF', // Não existe no banco, usar padrão
+        secondary_color: '#FF6F00', // Não existe no banco, usar padrão
+        font_family: 'Inter', // Não existe no banco, usar padrão
+        custom_css: '' // Não existe no banco, usar padrão
+      });
     }
   }, [settings]);
 
   const handleSave = async () => {
-    const result = await updateSettings(localSettings);
-    if (result.success) {
+    const updates = {
+      template_name: localSettings.template_name,
+      show_prices: localSettings.show_prices,
+      show_stock: localSettings.show_stock,
+      allow_categories_filter: localSettings.show_categories,
+      allow_price_filter: localSettings.show_filters,
+      seo_title: localSettings.catalog_title,
+      seo_description: localSettings.catalog_description
+    };
+
+    const result = await updateSettings(updates);
+    if (result.data && !result.error) {
       toast.success('Configurações do catálogo salvas com sucesso!');
     } else {
-      toast.error('Erro ao salvar configurações: ' + result.error);
+      toast.error('Erro ao salvar configurações: ' + (result.error?.message || 'Erro desconhecido'));
     }
   };
 
-  const handleReset = async () => {
-    const result = await resetSettings();
-    if (result.success) {
-      toast.success('Configurações resetadas para o padrão!');
-    } else {
-      toast.error('Erro ao resetar configurações: ' + result.error);
-    }
+  const handleReset = () => {
+    setLocalSettings({
+      template_name: 'modern',
+      show_prices: true,
+      show_stock: true,
+      show_categories: true,
+      show_search: true,
+      show_filters: true,
+      items_per_page: 12,
+      catalog_title: '',
+      catalog_description: '',
+      primary_color: '#0057FF',
+      secondary_color: '#FF6F00',
+      font_family: 'Inter',
+      custom_css: ''
+    });
+    toast.info('Configurações resetadas para o padrão!');
   };
 
   const templates = [
