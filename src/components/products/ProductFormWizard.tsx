@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -72,6 +71,10 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
   const { profile } = useAuth();
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
   const { uploadVariationImage } = useVariationImageUpload();
+  
+  // Usar ref para controlar se os dados iniciais já foram carregados
+  const initialDataLoadedRef = useRef(false);
+  const lastInitialDataRef = useRef<any>(null);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -100,9 +103,17 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
     }
   });
 
-  // Carregar dados iniciais quando em modo edição
+  // Carregar dados iniciais apenas uma vez e quando realmente necessário
   useEffect(() => {
-    if (mode === 'edit' && initialData) {
+    if (mode === 'edit' && initialData && !initialDataLoadedRef.current) {
+      // Verificar se os dados realmente mudaram para evitar loops
+      const currentDataString = JSON.stringify(initialData);
+      const lastDataString = JSON.stringify(lastInitialDataRef.current);
+      
+      if (currentDataString === lastDataString) {
+        return;
+      }
+      
       console.log('📝 ProductFormWizard - Carregando dados iniciais:', initialData);
       
       const formData = {
@@ -129,9 +140,23 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
       }
       
       form.reset(formData);
+      
+      // Marcar como carregado e salvar referência dos dados
+      initialDataLoadedRef.current = true;
+      lastInitialDataRef.current = initialData;
+      
+      // Reset do form tracker após carregar dados iniciais
       setTimeout(() => reset(), 100);
     }
-  }, [initialData, mode, form, reset]);
+  }, [initialData?.id]); // Dependência apenas no ID para evitar loops
+
+  // Reset do controle quando mode muda
+  useEffect(() => {
+    if (mode === 'create') {
+      initialDataLoadedRef.current = false;
+      lastInitialDataRef.current = null;
+    }
+  }, [mode]);
 
   // Gerar slug automaticamente quando o nome mudar (apenas no modo criação)
   const watchedName = form.watch('name');
