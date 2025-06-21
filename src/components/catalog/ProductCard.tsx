@@ -1,5 +1,6 @@
-import React, { useState, memo, useCallback } from 'react';
-import { Heart, ShoppingCart, Eye, Star, Share2 } from 'lucide-react';
+
+import React, { useState, memo, useCallback, useMemo } from 'react';
+import { Heart, ShoppingCart, Eye, Star, Share2, TrendingUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { Product } from '@/hooks/useCatalog';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useProductVariations } from '@/hooks/useProductVariations';
 import { useCart } from '@/hooks/useCart';
+import { useCatalogMode } from '@/hooks/useCatalogMode';
 import { useToast } from '@/hooks/use-toast';
 import { createCartItem } from '@/utils/cartHelpers';
 import ProductDetailsModal from './ProductDetailsModal';
@@ -17,6 +19,7 @@ interface ProductCardProps {
   onAddToWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
   isInWishlist?: boolean;
+  storeIdentifier?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = memo(({
@@ -24,21 +27,48 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   catalogType,
   onAddToWishlist,
   onQuickView,
-  isInWishlist = false
+  isInWishlist = false,
+  storeIdentifier
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const { variations } = useProductVariations(product.id);
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const { toast } = useToast();
+  
+  const {
+    catalogMode,
+    currentCatalogType,
+    calculatePrice,
+    shouldShowSavingsIndicator,
+    calculatePotentialSavings
+  } = useCatalogMode(storeIdentifier);
 
   // Usar variações do produto se disponíveis, senão usar do hook
   const productVariations = product.variations || variations;
 
-  const price = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
+  // Calcular quantidade atual no carrinho para este produto
+  const cartQuantity = useMemo(() => {
+    return items
+      .filter(item => item.product.id === product.id)
+      .reduce((total, item) => total + item.quantity, 0);
+  }, [items, product.id]);
+
+  // Calcular preço baseado no modo e quantidade do carrinho
+  const effectivePrice = useMemo(() => {
+    return calculatePrice(product, cartQuantity + 1); // +1 para próxima unidade
+  }, [calculatePrice, product, cartQuantity]);
+
+  // Calcular economia potencial
+  const potentialSavings = useMemo(() => {
+    return calculatePotentialSavings(product, cartQuantity + 1);
+  }, [calculatePotentialSavings, product, cartQuantity]);
+
+  // Verificar se deve mostrar indicador de economia
+  const showSavings = useMemo(() => {
+    return shouldShowSavingsIndicator(product, cartQuantity + 1);
+  }, [shouldShowSavingsIndicator, product, cartQuantity]);
 
   const minQuantity = catalogType === 'wholesale' && product.min_wholesale_qty 
     ? product.min_wholesale_qty 
@@ -72,10 +102,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       setShowDetailsModal(true);
     } else {
       // Se não tem variações, adicionar diretamente ao carrinho
-      const minQuantity = catalogType === 'wholesale' && product.min_wholesale_qty 
-        ? product.min_wholesale_qty 
-        : 1;
-
+      const minQuantity = 1; // Sempre adiciona 1 por vez, lógica híbrida será aplicada automaticamente
       const cartItem = createCartItem(product, catalogType, minQuantity);
       addItem(cartItem);
     }
@@ -161,9 +188,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
 
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-2">
-              {catalogType === 'wholesale' && discountPercentage > 0 && (
-                <Badge className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg">
-                  -{discountPercentage}%
+              {catalogMode === 'hybrid' && discountPercentage > 0 && (
+                <Badge className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg animate-pulse">
+                  -{discountPercentage}% atacado
                 </Badge>
               )}
               {stockStatus && (
@@ -178,19 +205,32 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               )}
             </div>
 
+            {/* Indicador de Economia - Modo Híbrido */}
+            {catalogMode === 'hybrid' && showSavings && potentialSavings && (
+              <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white p-2 rounded-lg shadow-lg animate-bounce">
+                <div className="flex items-center gap-1 text-xs font-bold">
+                  <TrendingUp size={12} />
+                  <span>Faltam {potentialSavings.qtyRemaining}</span>
+                </div>
+                <div className="text-xs">
+                  Economize {potentialSavings.savingsPercentage.toFixed(0)}%
+                </div>
+              </div>
+            )}
+
             {/* Wishlist Button */}
             <Button
               size="sm"
               variant="ghost"
               onClick={handleAddToWishlist}
-              className="absolute top-3 right-3 w-9 h-9 p-0 bg-white/90 hover:bg-white shadow-lg backdrop-blur-sm"
+              className="absolute bottom-3 right-3 w-9 h-9 p-0 bg-white/90 hover:bg-white shadow-lg backdrop-blur-sm"
             >
               <Heart size={16} fill={isInWishlist ? 'red' : 'none'} className={isInWishlist ? 'text-red-500' : 'text-gray-600'} />
             </Button>
           </div>
 
           {/* Product Info */}
-          <div className="p-3">
+          <div className="p-4">
             {/* Category */}
             {product.category && (
               <p className="text-xs text-blue-600 uppercase tracking-wider mb-1 font-semibold">
@@ -218,13 +258,28 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               <span className="text-xs text-gray-500 ml-1">(24)</span>
             </div>
 
+            {/* Informações no Carrinho - Modo Híbrido */}
+            {catalogMode === 'hybrid' && cartQuantity > 0 && (
+              <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-1 text-xs text-blue-700">
+                  <ShoppingCart size={12} />
+                  <span>{cartQuantity} no carrinho</span>
+                </div>
+                {potentialSavings && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Adicione +{potentialSavings.qtyRemaining} para economizar {potentialSavings.savingsPercentage.toFixed(0)}%
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Price */}
             <div className="mb-3">
-              <div className="flex items-center gap-1 mb-1">
-                <span className="text-lg font-bold text-gray-900">
-                  R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg font-bold text-gray-900 transition-colors duration-300">
+                  R$ {effectivePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                {catalogType === 'wholesale' && product.wholesale_price && (
+                {catalogMode === 'hybrid' && product.wholesale_price && product.wholesale_price < product.retail_price && (
                   <span className="text-xs text-gray-500 line-through">
                     R$ {product.retail_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
@@ -236,17 +291,34 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                   Mín. {minQuantity} un.
                 </p>
               )}
+
+              {/* Indicador de Preço Híbrido */}
+              {catalogMode === 'hybrid' && product.wholesale_price && (
+                <div className="flex items-center gap-1 text-xs text-green-600">
+                  <AlertCircle size={12} />
+                  <span>Preço de atacado disponível</span>
+                </div>
+              )}
             </div>
 
             {/* Add to Cart Button */}
             <Button
               onClick={handleAddToCart}
               disabled={product.stock === 0}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium text-xs py-2 px-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed h-9"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium text-sm py-2 px-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed h-10"
             >
-              <ShoppingCart size={14} className="mr-1" />
+              <ShoppingCart size={16} className="mr-2" />
               {product.stock === 0 ? 'Esgotado' : productVariations.length > 0 ? 'Ver Opções' : 'Adicionar'}
             </Button>
+
+            {/* Incentivo para Atacado - Modo Híbrido */}
+            {catalogMode === 'hybrid' && potentialSavings && (
+              <div className="mt-2 text-center">
+                <p className="text-xs text-orange-600 font-medium">
+                  💰 Compre {potentialSavings.minQtyNeeded} e economize R$ {potentialSavings.savings.toFixed(2)}
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ShoppingCart, Trash2, Plus, Minus, X } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, X, TrendingUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/hooks/useCart';
@@ -20,7 +20,10 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
     updateQuantity,
     isOpen,
     toggleCart,
-    closeCart
+    closeCart,
+    potentialSavings,
+    canGetWholesalePrice,
+    itemsToWholesale
   } = useCart();
 
   const handleCheckout = () => {
@@ -62,6 +65,19 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
               </SheetTitle>
             </SheetHeader>
 
+            {/* Indicadores de Economia */}
+            {canGetWholesalePrice && (
+              <div className="px-6 py-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-b">
+                <div className="flex items-center gap-2 text-orange-700">
+                  <TrendingUp size={16} />
+                  <span className="font-semibold text-sm">Oportunidade de Economia!</span>
+                </div>
+                <p className="text-xs text-orange-600 mt-1">
+                  Adicione +{itemsToWholesale} itens e economize R$ {potentialSavings.toFixed(2)}
+                </p>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-6">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
@@ -92,12 +108,30 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                             <Badge variant="outline" className="text-xs">
                               {item.catalogType === 'wholesale' ? 'Atacado' : 'Varejo'}
                             </Badge>
+                            {item.isWholesalePrice && (
+                              <Badge className="text-xs bg-green-100 text-green-700 border-green-300">
+                                💰 Preço de Atacado
+                              </Badge>
+                            )}
                             {item.variations && (
                               <span className="text-xs text-gray-500">
                                 {item.variations.size} {item.variations.color}
                               </span>
                             )}
                           </div>
+
+                          {/* Indicador de Economia Individual */}
+                          {item.product.wholesale_price && item.product.min_wholesale_qty && item.quantity < item.product.min_wholesale_qty && (
+                            <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
+                              <div className="flex items-center gap-1 text-xs text-orange-700">
+                                <AlertCircle size={12} />
+                                <span>Faltam {item.product.min_wholesale_qty - item.quantity} para atacado</span>
+                              </div>
+                              <p className="text-xs text-orange-600">
+                                Economize R$ {((item.originalPrice - item.product.wholesale_price) * item.product.min_wholesale_qty).toFixed(2)}
+                              </p>
+                            </div>
+                          )}
                           
                           <div className="flex items-center justify-between mt-3">
                             <div className="flex items-center gap-2">
@@ -142,6 +176,11 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
                           <p className="text-xs text-gray-500">
                             R$ {item.price.toFixed(2)} cada
                           </p>
+                          {item.isWholesalePrice && (
+                            <p className="text-xs text-green-600 font-medium">
+                              Economia: R$ {((item.originalPrice - item.price) * item.quantity).toFixed(2)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -152,6 +191,23 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
 
             {items.length > 0 && (
               <div className="border-t bg-gradient-to-r from-gray-50 to-gray-100 p-6 space-y-4">
+                {/* Resumo de Economia */}
+                {potentialSavings > 0 && (
+                  <div className="p-3 bg-orange-100 rounded-lg border border-orange-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-orange-800">
+                        💡 Economia potencial:
+                      </span>
+                      <span className="font-bold text-orange-800">
+                        R$ {potentialSavings.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-orange-700 mt-1">
+                      Adicione mais {itemsToWholesale} itens para ativar preços de atacado
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-2xl font-bold text-primary">

@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCatalog, CatalogType, Product } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
+import { useCatalogMode } from '@/hooks/useCatalogMode';
 import { CartProvider, useCart } from '@/hooks/useCart';
 import { useDebounce } from '@/hooks/useDebounce';
 import { createCartItem } from '@/utils/cartHelpers';
 import CatalogHeader from '@/components/catalog/CatalogHeader';
+import CatalogModeToggle from '@/components/catalog/CatalogModeToggle';
 import FilterSidebar, { FilterState } from '@/components/catalog/FilterSidebar';
 import ProductGrid from '@/components/catalog/ProductGrid';
 import CatalogFooter from '@/components/catalog/CatalogFooter';
@@ -22,13 +24,22 @@ const CatalogContent = memo(() => {
   const { toast } = useToast();
   const { totalItems } = useCart();
   
+  const { catalogMode, currentCatalogType, toggleCatalogType } = useCatalogMode(storeIdentifier);
+  
   console.log('Catalog: Parâmetros da URL:', { 
     storeIdentifier, 
     pathname: location.pathname, 
-    search: location.search 
+    search: location.search,
+    catalogMode,
+    currentCatalogType
   });
   
   const getCatalogTypeFromUrl = useCallback((): CatalogType => {
+    // Para modo toggle, usar o tipo atual do hook
+    if (catalogMode === 'toggle') {
+      return currentCatalogType;
+    }
+    
     const params = new URLSearchParams(location.search);
     const typeParam = params.get('type');
     if (typeParam === 'wholesale') return 'wholesale';
@@ -39,7 +50,7 @@ const CatalogContent = memo(() => {
     }
     
     return 'retail';
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, catalogMode, currentCatalogType]);
 
   const initialCatalogType = useMemo(() => getCatalogTypeFromUrl(), [getCatalogTypeFromUrl]);
   
@@ -74,14 +85,14 @@ const CatalogContent = memo(() => {
     }
   }, [debouncedSearchQuery, searchProducts]);
 
-  // Update catalog type when URL changes
+  // Update catalog type when URL changes or toggle mode changes
   useEffect(() => {
     const newCatalogType = getCatalogTypeFromUrl();
     if (newCatalogType !== catalogType) {
       console.log('Catalog: Mudando tipo de catálogo:', { from: catalogType, to: newCatalogType });
       setCatalogType(newCatalogType);
     }
-  }, [location.pathname, location.search, catalogType, getCatalogTypeFromUrl]);
+  }, [location.pathname, location.search, catalogType, getCatalogTypeFromUrl, currentCatalogType]);
 
   // Set page title when store data is available
   useEffect(() => {
@@ -268,7 +279,8 @@ const CatalogContent = memo(() => {
     store: store?.name, 
     productsCount: sortedProducts.length, 
     loading,
-    storeActive: store?.is_active
+    storeActive: store?.is_active,
+    catalogMode
   });
 
   return (
@@ -285,6 +297,13 @@ const CatalogContent = memo(() => {
         onCartClick={() => setShowCheckout(true)}
         onToggleFilters={() => setFilterSidebarOpen(true)}
       />
+
+      {/* Toggle de Catálogo - Para modo toggle */}
+      {catalogMode === 'toggle' && (
+        <div className="container mx-auto px-4 pt-4">
+          <CatalogModeToggle storeIdentifier={storeIdentifier} />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
@@ -381,6 +400,7 @@ const CatalogContent = memo(() => {
               onAddToWishlist={handleAddToWishlist}
               onQuickView={handleQuickView}
               wishlist={wishlist}
+              storeIdentifier={storeIdentifier}
             />
           </div>
         </div>

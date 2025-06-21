@@ -16,7 +16,9 @@ import {
   Package,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowLeftRight,
+  Zap
 } from 'lucide-react';
 
 const ShareableLinks = () => {
@@ -79,22 +81,42 @@ const ShareableLinks = () => {
   };
 
   const generateLinks = () => {
-    if (!currentStore) return { retailUrl: '', wholesaleUrl: '' };
+    if (!currentStore || !settings) return { catalogUrl: '', retailUrl: '', wholesaleUrl: '' };
 
     const baseUrl = window.location.origin;
-    // Priorizar slug da loja, fallback para ID
     const identifier = currentStore.url_slug || currentStore.id;
     
-    console.log('ShareableLinks: Gerando URLs:', { 
+    console.log('ShareableLinks: Gerando URLs para modo:', settings.catalog_mode, { 
       storeId: currentStore.id, 
       urlSlug: currentStore.url_slug, 
       finalIdentifier: identifier 
     });
     
-    return {
-      retailUrl: `${baseUrl}/catalog/${identifier}?type=retail`,
-      wholesaleUrl: `${baseUrl}/catalog/${identifier}?type=wholesale`
-    };
+    // Baseado no modo de catálogo
+    switch (settings.catalog_mode) {
+      case 'separated':
+        return {
+          catalogUrl: `${baseUrl}/catalog/${identifier}`,
+          retailUrl: `${baseUrl}/catalog/${identifier}?type=retail`,
+          wholesaleUrl: `${baseUrl}/catalog/${identifier}?type=wholesale`
+        };
+      
+      case 'hybrid':
+      case 'toggle':
+        // Para híbrido e toggle, um único link
+        return {
+          catalogUrl: `${baseUrl}/catalog/${identifier}`,
+          retailUrl: '',
+          wholesaleUrl: ''
+        };
+      
+      default:
+        return {
+          catalogUrl: `${baseUrl}/catalog/${identifier}`,
+          retailUrl: `${baseUrl}/catalog/${identifier}?type=retail`,
+          wholesaleUrl: `${baseUrl}/catalog/${identifier}?type=wholesale`
+        };
+    }
   };
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -102,7 +124,7 @@ const ShareableLinks = () => {
       await navigator.clipboard.writeText(text);
       toast({
         title: "Link copiado!",
-        description: `O link do catálogo de ${type} foi copiado para a área de transferência.`,
+        description: `O link do catálogo ${type} foi copiado para a área de transferência.`,
       });
     } catch (error) {
       console.error('Erro ao copiar:', error);
@@ -133,7 +155,7 @@ const ShareableLinks = () => {
     );
   }
 
-  if (!currentStore) {
+  if (!currentStore || !settings) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-8">
@@ -146,7 +168,39 @@ const ShareableLinks = () => {
     );
   }
 
-  const { retailUrl, wholesaleUrl } = generateLinks();
+  const { catalogUrl, retailUrl, wholesaleUrl } = generateLinks();
+
+  const getModeInfo = () => {
+    switch (settings.catalog_mode) {
+      case 'separated':
+        return {
+          title: 'Catálogos Separados',
+          description: 'Links distintos para varejo e atacado',
+          icon: ShoppingBag
+        };
+      case 'hybrid':
+        return {
+          title: 'Catálogo Híbrido',
+          description: 'Preços automáticos por quantidade',
+          icon: Zap
+        };
+      case 'toggle':
+        return {
+          title: 'Catálogo Alternável',
+          description: 'Cliente alterna entre varejo e atacado',
+          icon: ArrowLeftRight
+        };
+      default:
+        return {
+          title: 'Catálogos Separados',
+          description: 'Links distintos para varejo e atacado',
+          icon: ShoppingBag
+        };
+    }
+  };
+
+  const modeInfo = getModeInfo();
+  const ModeIcon = modeInfo.icon;
 
   return (
     <div className="space-y-6">
@@ -190,112 +244,182 @@ const ShareableLinks = () => {
         </CardContent>
       </Card>
 
+      {/* Modo Atual */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ModeIcon className="h-5 w-5" />
+            Modo de Catálogo Atual
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <ModeIcon className="h-6 w-6 text-blue-600" />
+            <div>
+              <h4 className="font-semibold text-blue-900">{modeInfo.title}</h4>
+              <p className="text-sm text-blue-700">{modeInfo.description}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Links dos Catálogos */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ExternalLink className="h-5 w-5" />
-            Links dos Catálogos
+            Links Compartilháveis
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Catálogo de Varejo */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4 text-blue-600" />
-                <Label className="font-medium">Catálogo de Varejo</Label>
-                {settings?.retail_catalog_active ? (
-                  <Badge variant="default" className="text-xs">
-                    <Eye className="h-3 w-3 mr-1" />
-                    Ativo
-                  </Badge>
+          {settings.catalog_mode === 'separated' ? (
+            <>
+              {/* Catálogo de Varejo - Modo Separado */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="h-4 w-4 text-blue-600" />
+                    <Label className="font-medium">Catálogo de Varejo</Label>
+                    {settings.retail_catalog_active ? (
+                      <Badge variant="default" className="text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Ativo
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        <EyeOff className="h-3 w-3 mr-1" />
+                        Inativo
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                {settings.retail_catalog_active ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={retailUrl}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(retailUrl, 'de varejo')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => openPreview(retailUrl)}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
                 ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    <EyeOff className="h-3 w-3 mr-1" />
-                    Inativo
-                  </Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Ative o catálogo de varejo para gerar o link compartilhável
+                  </p>
                 )}
               </div>
-            </div>
-            
-            {settings?.retail_catalog_active ? (
-              <div className="flex gap-2">
-                <Input
-                  value={retailUrl}
-                  readOnly
-                  className="bg-gray-50"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(retailUrl, 'varejo')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => openPreview(retailUrl)}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Ative o catálogo de varejo para gerar o link compartilhável
-              </p>
-            )}
-          </div>
 
-          {/* Catálogo de Atacado */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-orange-600" />
-                <Label className="font-medium">Catálogo de Atacado</Label>
-                {settings?.wholesale_catalog_active ? (
+              {/* Catálogo de Atacado - Modo Separado */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-orange-600" />
+                    <Label className="font-medium">Catálogo de Atacado</Label>
+                    {settings.wholesale_catalog_active ? (
+                      <Badge variant="default" className="text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Ativo
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        <EyeOff className="h-3 w-3 mr-1" />
+                        Inativo
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                {settings.wholesale_catalog_active ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={wholesaleUrl}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(wholesaleUrl, 'de atacado')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => openPreview(wholesaleUrl)}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Ative o catálogo de atacado para gerar o link compartilhável
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            // Link único para modo híbrido e toggle
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ModeIcon className="h-4 w-4 text-primary" />
+                  <Label className="font-medium">
+                    Catálogo {settings.catalog_mode === 'hybrid' ? 'Híbrido' : 'Alternável'}
+                  </Label>
                   <Badge variant="default" className="text-xs">
                     <Eye className="h-3 w-3 mr-1" />
                     Ativo
                   </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    <EyeOff className="h-3 w-3 mr-1" />
-                    Inativo
-                  </Badge>
-                )}
+                </div>
               </div>
-            </div>
-            
-            {settings?.wholesale_catalog_active ? (
+              
               <div className="flex gap-2">
                 <Input
-                  value={wholesaleUrl}
+                  value={catalogUrl}
                   readOnly
                   className="bg-gray-50"
                 />
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => copyToClipboard(wholesaleUrl, 'atacado')}
+                  onClick={() => copyToClipboard(catalogUrl, settings.catalog_mode === 'hybrid' ? 'híbrido' : 'alternável')}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => openPreview(wholesaleUrl)}
+                  onClick={() => openPreview(catalogUrl)}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Ative o catálogo de atacado para gerar o link compartilhável
-              </p>
-            )}
-          </div>
+              
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  {settings.catalog_mode === 'hybrid' 
+                    ? '⚡ Preços de atacado aplicados automaticamente conforme a quantidade'
+                    : '🔄 Clientes podem alternar entre preços de varejo e atacado'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Como usar os links:</h4>
