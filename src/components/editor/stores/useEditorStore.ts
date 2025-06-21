@@ -52,6 +52,36 @@ interface EditorConfiguration {
   checkout: {
     showPrices: boolean;
     allowFilters: boolean;
+    layout?: 'single' | 'steps';
+    type?: 'whatsapp' | 'online' | 'both';
+    showCartItems?: boolean;
+    showSecurityBadges?: boolean;
+    showReviews?: boolean;
+    colors?: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      background: string;
+      text: string;
+    };
+    upsells?: {
+      showRelated?: boolean;
+      minimumValueOffers?: boolean;
+      freeShippingThreshold?: string;
+      customMessage?: string;
+    };
+    urgency?: {
+      lowStockCounter?: boolean;
+      lowStockThreshold?: string;
+      offerTimer?: boolean;
+      offerDuration?: string;
+    };
+    socialProof?: {
+      showReviews?: boolean;
+      recentSales?: boolean;
+      salesMessage?: string;
+      bestSellerBadge?: boolean;
+    };
   };
 }
 
@@ -66,7 +96,7 @@ interface EditorStore {
   setCurrentDevice: (device: 'desktop' | 'tablet' | 'mobile') => void;
   setActiveTab: (tab: 'catalog' | 'checkout') => void;
   togglePreviewMode: () => void;
-  updateConfiguration: (updates: Partial<EditorConfiguration>) => void;
+  updateConfiguration: (updates: Partial<EditorConfiguration> | string, value?: any) => void;
   resetToDefault: () => void;
   applyTemplate: (templateId: string, colors: any) => void;
   loadFromDatabase: (settings: any) => void;
@@ -121,7 +151,37 @@ const defaultConfiguration: EditorConfiguration = {
   },
   checkout: {
     showPrices: true,
-    allowFilters: true
+    allowFilters: true,
+    layout: 'single',
+    type: 'both',
+    showCartItems: true,
+    showSecurityBadges: true,
+    showReviews: true,
+    colors: {
+      primary: '#0057FF',
+      secondary: '#FF6F00',
+      accent: '#8E2DE2',
+      background: '#F8FAFC',
+      text: '#1E293B'
+    },
+    upsells: {
+      showRelated: false,
+      minimumValueOffers: false,
+      freeShippingThreshold: '150',
+      customMessage: ''
+    },
+    urgency: {
+      lowStockCounter: false,
+      lowStockThreshold: '5',
+      offerTimer: false,
+      offerDuration: '15'
+    },
+    socialProof: {
+      showReviews: true,
+      recentSales: false,
+      salesMessage: '',
+      bestSellerBadge: false
+    }
   }
 };
 
@@ -137,10 +197,32 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   togglePreviewMode: () => set(state => ({ isPreviewMode: !state.isPreviewMode })),
 
-  updateConfiguration: (updates) => set(state => ({
-    configuration: { ...state.configuration, ...updates },
-    isDirty: true
-  })),
+  updateConfiguration: (updates, value) => set(state => {
+    let newConfig = { ...state.configuration };
+    
+    if (typeof updates === 'string') {  
+      // Support for dot notation like 'checkout.colors.primary'
+      const keys = updates.split('.');
+      let current = newConfig as any;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
+      }
+      
+      current[keys[keys.length - 1]] = value;
+    } else {
+      // Merge object updates
+      newConfig = { ...newConfig, ...updates };
+    }
+    
+    return {
+      configuration: newConfig,
+      isDirty: true
+    };
+  }),
 
   resetToDefault: () => set({
     configuration: defaultConfiguration,
@@ -180,8 +262,17 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         template: settings.template_name || defaultConfiguration.global.template,
       },
       checkout: {
+        ...defaultConfiguration.checkout,
         showPrices: settings.show_prices ?? defaultConfiguration.checkout.showPrices,
         allowFilters: settings.allow_categories_filter ?? defaultConfiguration.checkout.allowFilters,
+        colors: {
+          ...defaultConfiguration.checkout.colors!,
+          primary: settings.primary_color || defaultConfiguration.checkout.colors!.primary,
+          secondary: settings.secondary_color || defaultConfiguration.checkout.colors!.secondary,
+          accent: settings.accent_color || defaultConfiguration.checkout.colors!.accent,
+          background: settings.background_color || defaultConfiguration.checkout.colors!.background,
+          text: settings.text_color || defaultConfiguration.checkout.colors!.text,
+        }
       }
     };
 
