@@ -13,6 +13,8 @@ import { useTemplateColors } from '@/hooks/useTemplateColors';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import AdvancedColorSettings from './AdvancedColorSettings';
+import ShareableLinks from './ShareableLinks';
+import CatalogModeSettings from './CatalogModeSettings';
 import {
   Palette,
   Eye,
@@ -23,7 +25,11 @@ import {
   Smartphone,
   Crown,
   Zap,
-  Sparkles
+  Sparkles,
+  Share2,
+  ArrowLeftRight,
+  Search,
+  Globe
 } from 'lucide-react';
 
 const CatalogSettings = () => {
@@ -48,7 +54,8 @@ const CatalogSettings = () => {
     text_color: '#1E293B',
     border_color: '#E2E8F0',
     font_family: 'Inter',
-    custom_css: ''
+    custom_css: '',
+    seo_keywords: ''
   });
 
   useEffect(() => {
@@ -70,7 +77,8 @@ const CatalogSettings = () => {
         text_color: settings.text_color || '#1E293B',
         border_color: settings.border_color || '#E2E8F0',
         font_family: 'Inter',
-        custom_css: ''
+        custom_css: '',
+        seo_keywords: settings.seo_keywords || ''
       });
     }
   }, [settings]);
@@ -84,6 +92,7 @@ const CatalogSettings = () => {
       allow_price_filter: localSettings.show_filters,
       seo_title: localSettings.catalog_title,
       seo_description: localSettings.catalog_description,
+      seo_keywords: localSettings.seo_keywords,
       primary_color: localSettings.primary_color,
       secondary_color: localSettings.secondary_color,
       accent_color: localSettings.accent_color,
@@ -135,6 +144,7 @@ const CatalogSettings = () => {
       items_per_page: 12,
       catalog_title: '',
       catalog_description: '',
+      seo_keywords: ''
     }));
     toast.info('Configurações resetadas para o padrão!');
   };
@@ -201,11 +211,31 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="template">Template</TabsTrigger>
-          <TabsTrigger value="display">Exibição</TabsTrigger>
-          <TabsTrigger value="colors">Cores</TabsTrigger>
-          <TabsTrigger value="info">Informações</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsTrigger value="template" className="flex items-center gap-1">
+            <Palette className="h-4 w-4" />
+            <span className="hidden sm:inline">Template</span>
+          </TabsTrigger>
+          <TabsTrigger value="mode" className="flex items-center gap-1">
+            <ArrowLeftRight className="h-4 w-4" />
+            <span className="hidden sm:inline">Modo</span>
+          </TabsTrigger>
+          <TabsTrigger value="display" className="flex items-center gap-1">
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Exibição</span>
+          </TabsTrigger>
+          <TabsTrigger value="colors" className="flex items-center gap-1">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">Cores</span>
+          </TabsTrigger>
+          <TabsTrigger value="sharing" className="flex items-center gap-1">
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Links</span>
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="flex items-center gap-1">
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">SEO</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="template" className="space-y-6">
@@ -285,6 +315,10 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mode" className="space-y-6">
+          <CatalogModeSettings />
         </TabsContent>
 
         <TabsContent value="display" className="space-y-6">
@@ -403,37 +437,60 @@ const CatalogSettings = () => {
           />
         </TabsContent>
 
-        <TabsContent value="info" className="space-y-6">
-          {/* Branding */}
+        <TabsContent value="sharing" className="space-y-6">
+          <ShareableLinks />
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-6">
+          {/* SEO Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Informações do Catálogo
+                <Search className="h-5 w-5" />
+                Configurações de SEO
               </CardTitle>
               <CardDescription>
-                Personalize as informações exibidas no seu catálogo
+                Otimize seu catálogo para mecanismos de busca
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="catalog-title">Título do Catálogo</Label>
+                <Label htmlFor="catalog-title">Título do Catálogo (SEO)</Label>
                 <Input
                   id="catalog-title"
                   value={localSettings.catalog_title}
                   onChange={(e) => setLocalSettings({...localSettings, catalog_title: e.target.value})}
-                  placeholder="Ex: Catálogo de Produtos"
+                  placeholder="Ex: Catálogo de Produtos - Minha Loja"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Aparece na aba do navegador e nos resultados de busca
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="catalog-description">Descrição do Catálogo</Label>
+                <Label htmlFor="catalog-description">Descrição do Catálogo (SEO)</Label>
                 <Input
                   id="catalog-description"
                   value={localSettings.catalog_description}
                   onChange={(e) => setLocalSettings({...localSettings, catalog_description: e.target.value})}
-                  placeholder="Ex: Encontre os melhores produtos aqui"
+                  placeholder="Ex: Encontre os melhores produtos com os melhores preços"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Aparece nos resultados de busca do Google
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="seo-keywords">Palavras-chave (SEO)</Label>
+                <Input
+                  id="seo-keywords"
+                  value={localSettings.seo_keywords}
+                  onChange={(e) => setLocalSettings({...localSettings, seo_keywords: e.target.value})}
+                  placeholder="Ex: produtos, loja online, varejo, atacado"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separe as palavras-chave por vírgulas
+                </p>
               </div>
             </CardContent>
           </Card>

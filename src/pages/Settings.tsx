@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Store, Palette, Truck, CreditCard, MessageSquare, Globe, Shield, Image } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Palette, Truck, CreditCard, MessageSquare, Globe, Shield, Image, ArrowLeftRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/components/layout/AppLayout';
@@ -89,7 +89,7 @@ const Settings = () => {
                   Configurações do Catálogo
                 </CardTitle>
                 <CardDescription>
-                  Personalize a aparência e funcionamento do seu catálogo
+                  Personalize a aparência, funcionamento e compartilhamento do seu catálogo
                 </CardDescription>
               </CardHeader>
               <CardContent>
