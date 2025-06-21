@@ -205,7 +205,7 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
 
       // Processar variações com arquivos de imagem
       const processedVariations = variations.map((variation) => {
-        const cleanVariation = {
+        const cleanVariation: any = {
           ...variation,
           color: variation.color || null,
           size: variation.size || null,
@@ -220,15 +220,12 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
           cleanVariation.image_file = variation.image_file;
         }
 
-        // Remover propriedades temporárias desnecessárias
-        const { image_url, ...finalVariation } = cleanVariation;
-        
-        // Manter image_url apenas se não for um object URL temporário
-        if (image_url && !image_url.startsWith('blob:')) {
-          finalVariation.image_url = image_url;
+        // Se há URL de imagem (não temporária), incluir
+        if (variation.image_url && !variation.image_url.startsWith('blob:')) {
+          cleanVariation.image_url = variation.image_url;
         }
 
-        return finalVariation;
+        return cleanVariation;
       });
 
       const productData = {
@@ -302,176 +299,141 @@ const ProductFormWizard = ({ onSubmit, initialData, mode, onClose }: ProductForm
 
   return (
     <>
-      <div className="h-full flex flex-col">
-        {/* Header com Progress */}
-        <div className="shrink-0 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">{currentStepData?.icon}</div>
-              <div>
-                <h3 className="text-lg font-semibold">{currentStepData?.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  Passo {currentStep} de {steps.length}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm font-medium">{Math.round(progress)}%</div>
-              <div className="text-xs text-muted-foreground">Concluído</div>
+      {/* Header com Progress */}
+      <div className="shrink-0 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">{currentStepData?.icon}</div>
+            <div>
+              <h3 className="text-lg font-semibold">{currentStepData?.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                Passo {currentStep} de {steps.length}
+              </p>
             </div>
           </div>
-          
-          <Progress value={progress} className="h-2 mb-4" />
-          
-          {/* Steps Navigation */}
-          <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center shrink-0">
-                  <div
-                    className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 cursor-pointer hover:scale-105
-                      ${step.id === currentStep
-                        ? 'bg-primary text-primary-foreground shadow-lg scale-110'
-                        : step.id < currentStep
-                        ? 'bg-green-500 text-white'
-                        : 'bg-muted text-muted-foreground'
-                      }
-                    `}
-                    onClick={() => {
-                      if (step.id <= currentStep || canProceedToNext()) {
-                        setCurrentStep(step.id);
-                      }
-                    }}
-                  >
-                    {step.id < currentStep ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      step.id
-                    )}
-                  </div>
-                  
-                  {index < steps.length - 1 && (
-                    <div 
-                      className={`
-                        w-8 h-0.5 mx-1 transition-colors
-                        ${step.id < currentStep ? 'bg-green-500' : 'bg-border'}
-                      `} 
-                    />
+          <div className="text-right">
+            <div className="text-sm font-medium">{Math.round(progress)}%</div>
+            <div className="text-xs text-muted-foreground">Concluído</div>
+          </div>
+        </div>
+        
+        <Progress value={progress} className="h-2 mb-4" />
+        
+        {/* Steps Navigation */}
+        <div className="flex items-center justify-center">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center shrink-0">
+                <div
+                  className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 cursor-pointer hover:scale-105
+                    ${step.id === currentStep
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-110'
+                      : step.id < currentStep
+                      ? 'bg-green-500 text-white'
+                      : 'bg-muted text-muted-foreground'
+                    }
+                  `}
+                  onClick={() => {
+                    if (step.id <= currentStep || canProceedToNext()) {
+                      setCurrentStep(step.id);
+                    }
+                  }}
+                >
+                  {step.id < currentStep ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    step.id
                   )}
                 </div>
-              ))}
-            </div>
+                
+                {index < steps.length - 1 && (
+                  <div 
+                    className={`
+                      w-8 h-0.5 mx-1 transition-colors
+                      ${step.id < currentStep ? 'bg-green-500' : 'bg-border'}
+                    `} 
+                  />
+                )}
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Form Content */}
-        <div className="flex-1 overflow-hidden">
-          <Form {...form}>
-            <div className="h-full flex flex-col">
-              <div className="flex-1 overflow-y-auto px-1">
-                <div className="pb-6">
-                  {renderCurrentStep()}
-                </div>
-              </div>
-
-              {/* Navigation Buttons */}
-              <div className="shrink-0 pt-6 border-t bg-background/95 backdrop-blur">
-                <div className="flex justify-between gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handlePrevious}
-                    disabled={currentStep === 1}
-                    className="min-w-[100px]"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Anterior
-                  </Button>
-
-                  <div className="flex gap-2">
-                    {/* Botão de salvamento bypass - sempre visível se há mudanças */}
-                    {hasUnsavedChanges && (
-                      <Button
-                        type="button"
-                        onClick={handleBypassSave}
-                        disabled={isSubmitting}
-                        className="min-w-[100px] bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Save className="mr-2 h-4 w-4" />
-                        {isSubmitting ? 'Salvando...' : 'Salvar'}
-                      </Button>
-                    )}
-                    
-                    {currentStep < steps.length ? (
-                      <Button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={!canProceedToNext()}
-                        className="min-w-[100px]"
-                      >
-                        Próximo
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={handleFinalSubmit}
-                        disabled={isSubmitting}
-                        className="min-w-[120px] bg-green-600 hover:bg-green-700"
-                      >
-                        <Save className="mr-2 h-4 w-4" />
-                        {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Finalizar' : 'Criar Produto'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Form>
-        </div>
-
-        {/* Indicador de mudanças não salvas */}
-        {hasUnsavedChanges && (
-          <div className="fixed bottom-4 left-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm z-50">
-            <AlertTriangle className="h-4 w-4" />
-            Alterações não salvas
-          </div>
-        )}
       </div>
 
-      {/* Dialog de confirmação para mudanças não salvas */}
-      <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Alterações não salvas</DialogTitle>
-            <DialogDescription>
-              Você tem alterações não salvas. O que deseja fazer?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowUnsavedDialog(false);
-                reset();
-                onClose?.();
-              }}
-            >
-              Descartar alterações
-            </Button>
-            <Button
-              onClick={async () => {
-                setShowUnsavedDialog(false);
-                await handleBypassSave();
-              }}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Salvando...' : 'Salvar e fechar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Form Content */}
+      <div className="flex-1 overflow-hidden">
+        <Form {...form}>
+          <div className="h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto px-1">
+              <div className="pb-6">
+                {renderCurrentStep()}
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="shrink-0 pt-6 border-t bg-background/95 backdrop-blur">
+              <div className="flex justify-between gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 1}
+                  className="min-w-[100px]"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Anterior
+                </Button>
+
+                <div className="flex gap-2">
+                  {/* Botão de salvamento bypass - sempre visível se há mudanças */}
+                  {hasUnsavedChanges && (
+                    <Button
+                      type="button"
+                      onClick={handleBypassSave}
+                      disabled={isSubmitting}
+                      className="min-w-[100px] bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSubmitting ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                  )}
+                  
+                  {currentStep < steps.length ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!canProceedToNext()}
+                      className="min-w-[100px]"
+                    >
+                      Próximo
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={handleFinalSubmit}
+                      disabled={isSubmitting}
+                      className="min-w-[120px] bg-green-600 hover:bg-green-700"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSubmitting ? 'Salvando...' : mode === 'edit' ? 'Finalizar' : 'Criar Produto'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Form>
+      </div>
+
+      {/* Indicador de mudanças não salvas */}
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-4 left-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm z-50">
+          <AlertTriangle className="h-4 w-4" />
+          Alterações não salvas
+        </div>
+      )}
     </>
   );
 };
