@@ -1,402 +1,120 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-export interface EditorConfiguration {
-  // Header Settings
-  header: {
-    layout: 'left' | 'center' | 'right' | 'split';
-    backgroundColor: string;
-    textColor: string;
-    logoPosition: 'left' | 'center' | 'right';
-    showSlogan: boolean;
-    slogan: string;
-    showSearchBar: boolean;
-    searchBarPosition: 'header' | 'below';
-    isSticky: boolean;
-  };
-  
-  // Product Cards Settings
-  productCards: {
-    layout: 'grid' | 'list' | 'masonry';
-    imagePosition: 'top' | 'left' | 'right';
-    showBorder: boolean;
-    borderColor: string;
-    backgroundColor: string;
-    columns: {
-      desktop: number;
-      tablet: number;
-      mobile: number;
-    };
-    showElements: {
-      title: boolean;
-      price: boolean;
-      buyButton: boolean;
-      discountBadge: boolean;
-      description: boolean;
-    };
-    buttonStyle: {
-      backgroundColor: string;
-      textColor: string;
-      borderRadius: number;
-    };
-  };
-  
-  // Checkout Settings Avançadas
-  checkout: {
-    layout: 'single' | 'steps';
-    type: 'whatsapp' | 'online' | 'both';
-    colors: {
-      primary: string;
-      secondary: string;
-      accent: string;
-      background: string;
-      text: string;
-    };
-    showCartItems: boolean;
-    showSecurityBadges: boolean;
-    showReviews: boolean;
-    showPrices: boolean;
-    allowFilters: boolean;
-    
-    // Upsells e Cross-sells
-    upsells: {
-      showRelated: boolean;
-      minimumValueOffers: boolean;
-      freeShippingThreshold: string;
-      customMessage: string;
-    };
-    
-    // Elementos de Urgência
-    urgency: {
-      lowStockCounter: boolean;
-      lowStockThreshold: string;
-      offerTimer: boolean;
-      offerDuration: string;
-    };
-    
-    // Prova Social
-    socialProof: {
-      showReviews: boolean;
-      recentSales: boolean;
-      salesMessage: string;
-      bestSellerBadge: boolean;
-    };
-  };
-  
-  // Global Settings ampliadas
-  global: {
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor: string;
-    backgroundColor: string;
-    textColor: string;
-    borderColor: string;
-    fontFamily: string;
-    templateName: string;
-    fontSize: {
-      small: number;
-      medium: number;
-      large: number;
-    };
-    spacing: {
-      small: number;
-      medium: number;
-      large: number;
-    };
-  };
-  
-  // Notificações e Conversão
-  notifications: {
-    cartToast: {
-      enabled: boolean;
-      message: string;
-      position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
-      duration: number;
-      showUpsell: boolean;
-    };
-    stockAlert: {
-      enabled: boolean;
-      threshold: number;
-      message: string;
-    };
-    freeShippingAlert: {
-      enabled: boolean;
-      threshold: number;
-      message: string;
-    };
-  };
-  
-  // Active Sections
-  sections: {
-    banner: boolean;
-    categories: boolean;
-    featuredProducts: boolean;
-    testimonials: boolean;
-    newsletter: boolean;
-    footer: boolean;
-  };
-  
-  // Section Order
-  sectionOrder: string[];
-}
 
 interface EditorStore {
-  // Estado
-  configuration: EditorConfiguration;
-  selectedElement: string | null;
-  currentDevice: 'desktop' | 'tablet' | 'mobile';
-  currentTemplate: string;
-  isPreviewMode: boolean;
   isDirty: boolean;
-  
-  // Ações
-  updateConfiguration: (path: string, value: any) => void;
-  setSelectedElement: (elementId: string | null) => void;
+  markAsDirty: () => void;
+  markAsClean: () => void;
+  currentDevice: 'desktop' | 'tablet' | 'mobile';
   setCurrentDevice: (device: 'desktop' | 'tablet' | 'mobile') => void;
+  activeTab: 'catalog' | 'checkout';
+  setActiveTab: (tab: 'catalog' | 'checkout') => void;
+  isPreviewMode: boolean;
   togglePreviewMode: () => void;
   resetToDefault: () => void;
-  reorderSections: (newOrder: string[]) => void;
-  applyTemplate: (templateId: string, colors?: any) => void;
-  loadFromDatabase: (settings: any) => void;
+  configuration: any;
+  updateConfiguration: (path: string, value: any) => void;
 }
 
-const defaultConfiguration: EditorConfiguration = {
-  header: {
-    layout: 'left',
-    backgroundColor: '#FFFFFF',
-    textColor: '#1E293B',
-    logoPosition: 'left',
-    showSlogan: true,
-    slogan: 'Sua loja online',
-    showSearchBar: true,
-    searchBarPosition: 'header',
-    isSticky: true,
+const defaultConfiguration = {
+  global: {
+    template: 'modern',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: 8,
+    layoutSpacing: 16,
   },
-  productCards: {
-    layout: 'grid',
-    imagePosition: 'top',
-    showBorder: true,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    columns: {
-      desktop: 4,
-      tablet: 3,
-      mobile: 2,
-    },
-    showElements: {
-      title: true,
-      price: true,
-      buyButton: true,
-      discountBadge: true,
-      description: false,
-    },
-    buttonStyle: {
-      backgroundColor: '#0057FF',
-      textColor: '#FFFFFF',
-      borderRadius: 8,
-    },
+  header: {
+    showSearchBar: true,
+    showCartButton: true,
+    showWishlistButton: true,
+    headerBackgroundColor: '#FFFFFF',
+    headerTextColor: '#000000',
+  },
+  productCard: {
+    showQuickView: true,
+    showAddToCart: true,
+    productCardStyle: 'card',
+  },
+  colors: {
+    primary: '#0057FF',
+    secondary: '#FF6F00',
+    accent: '#8E2DE2',
+    background: '#F8FAFC',
+    text: '#1E293B',
+    border: '#E2E8F0',
+  },
+  sections: {
+    hero: {
+      enabled: true,
+      title: 'Bem-vindo!',
+      subtitle: 'Descubra nossos produtos.',
+      backgroundImage: '/placeholder.svg',
+    }
   },
   checkout: {
     layout: 'single',
     type: 'both',
+    showCartItems: true,
+    showSecurityBadges: true,
+    showReviews: false,
     colors: {
       primary: '#0057FF',
       secondary: '#FF6F00',
       accent: '#8E2DE2',
       background: '#FFFFFF',
-      text: '#1E293B',
+      text: '#1E293B'
     },
-    showCartItems: true,
-    showSecurityBadges: true,
-    showReviews: false,
-    showPrices: true,
-    allowFilters: true,
     upsells: {
-      showRelated: true,
+      showRelated: false,
       minimumValueOffers: false,
-      freeShippingThreshold: '150',
-      customMessage: 'Complete sua compra com estes produtos selecionados...'
+      freeShippingThreshold: '',
+      customMessage: ''
     },
     urgency: {
       lowStockCounter: false,
-      lowStockThreshold: '5',
+      lowStockThreshold: '',
       offerTimer: false,
-      offerDuration: '15'
+      offerDuration: ''
     },
     socialProof: {
       showReviews: false,
-      recentSales: true,
-      salesMessage: 'X pessoas compraram este produto hoje',
+      recentSales: false,
+      salesMessage: '',
       bestSellerBadge: false
     }
-  },
-  global: {
-    primaryColor: '#0057FF',
-    secondaryColor: '#FF6F00',
-    accentColor: '#8E2DE2',
-    backgroundColor: '#F8FAFC',
-    textColor: '#1E293B',
-    borderColor: '#E2E8F0',
-    fontFamily: 'Inter',
-    templateName: 'modern',
-    fontSize: {
-      small: 14,
-      medium: 16,
-      large: 20,
-    },
-    spacing: {
-      small: 8,
-      medium: 16,
-      large: 24,
-    },
-  },
-  notifications: {
-    cartToast: {
-      enabled: true,
-      message: 'Produto adicionado ao carrinho!',
-      position: 'top-right',
-      duration: 3000,
-      showUpsell: false
-    },
-    stockAlert: {
-      enabled: false,
-      threshold: 5,
-      message: 'Restam apenas {stock} unidades!'
-    },
-    freeShippingAlert: {
-      enabled: true,
-      threshold: 150,
-      message: 'Faltam apenas R$ {remaining} para frete grátis!'
-    }
-  },
-  sections: {
-    banner: true,
-    categories: true,
-    featuredProducts: true,
-    testimonials: false,
-    newsletter: true,
-    footer: true,
-  },
-  sectionOrder: ['banner', 'categories', 'featuredProducts', 'testimonials', 'newsletter', 'footer'],
+  }
 };
 
-export const useEditorStore = create<EditorStore>()(
-  persist(
-    (set, get) => ({
-      configuration: defaultConfiguration,
-      selectedElement: null,
-      currentDevice: 'desktop',
-      currentTemplate: 'modern',
-      isPreviewMode: false,
-      isDirty: false,
-      
-      updateConfiguration: (path: string, value: any) => {
-        set((state) => {
-          const newConfig = { ...state.configuration };
-          const keys = path.split('.');
-          let current: any = newConfig;
-          
-          for (let i = 0; i < keys.length - 1; i++) {
-            if (!current[keys[i]]) {
-              current[keys[i]] = {};
-            }
-            current = current[keys[i]];
-          }
-          
-          current[keys[keys.length - 1]] = value;
-          
-          return {
-            configuration: newConfig,
-            isDirty: true,
-          };
-        });
-      },
-      
-      applyTemplate: (templateId: string, colors?: any) => {
-        set((state) => {
-          const newConfig = { ...state.configuration };
-          
-          if (colors) {
-            newConfig.global.primaryColor = colors.primary;
-            newConfig.global.secondaryColor = colors.secondary;
-            newConfig.global.accentColor = colors.accent;
-            newConfig.global.backgroundColor = colors.background;
-            newConfig.global.textColor = colors.text;
-            newConfig.global.borderColor = colors.border;
-            
-            // Aplicar também no checkout
-            newConfig.checkout.colors.primary = colors.primary;
-            newConfig.checkout.colors.secondary = colors.secondary;
-            newConfig.checkout.colors.accent = colors.accent;
-          }
-          
-          newConfig.global.templateName = templateId;
-          
-          return {
-            configuration: newConfig,
-            currentTemplate: templateId,
-            isDirty: true,
-          };
-        });
-      },
-      
-      loadFromDatabase: (settings: any) => {
-        set((state) => {
-          const newConfig = { ...state.configuration };
-          
-          // Mapear dados do banco para configuração do editor
-          if (settings) {
-            newConfig.global.primaryColor = settings.primary_color || newConfig.global.primaryColor;
-            newConfig.global.secondaryColor = settings.secondary_color || newConfig.global.secondaryColor;
-            newConfig.global.accentColor = settings.accent_color || newConfig.global.accentColor;
-            newConfig.global.backgroundColor = settings.background_color || newConfig.global.backgroundColor;
-            newConfig.global.textColor = settings.text_color || newConfig.global.textColor;
-            newConfig.global.borderColor = settings.border_color || newConfig.global.borderColor;
-            newConfig.global.templateName = settings.template_name || newConfig.global.templateName;
-            
-            // Configurações de checkout
-            newConfig.checkout.colors.primary = settings.primary_color || newConfig.checkout.colors.primary;
-            newConfig.checkout.colors.secondary = settings.secondary_color || newConfig.checkout.colors.secondary;
-            newConfig.checkout.colors.accent = settings.accent_color || newConfig.checkout.colors.accent;
-            newConfig.checkout.showPrices = settings.show_prices ?? newConfig.checkout.showPrices;
-            newConfig.checkout.allowFilters = settings.allow_categories_filter ?? newConfig.checkout.allowFilters;
-          }
-          
-          return {
-            configuration: newConfig,
-            currentTemplate: settings?.template_name || 'modern',
-            isDirty: false,
-          };
-        });
-      },
-      
-      setSelectedElement: (elementId) => set({ selectedElement: elementId }),
-      
-      setCurrentDevice: (device) => set({ currentDevice: device }),
-      
-      togglePreviewMode: () => set((state) => ({ isPreviewMode: !state.isPreviewMode })),
-      
-      resetToDefault: () => set({ 
-        configuration: defaultConfiguration, 
-        isDirty: true 
-      }),
-      
-      reorderSections: (newOrder) => {
-        set((state) => ({
-          configuration: {
-            ...state.configuration,
-            sectionOrder: newOrder,
-          },
-          isDirty: true,
-        }));
-      },
-    }),
-    {
-      name: 'visual-editor-store',
-      partialize: (state) => ({ 
-        configuration: state.configuration,
-        currentTemplate: state.currentTemplate 
-      }),
-    }
-  )
-);
+export const useEditorStore = create<EditorStore>((set, get) => ({
+  isDirty: false,
+  markAsDirty: () => set({ isDirty: true }),
+  markAsClean: () => set({ isDirty: false }),
+  currentDevice: 'desktop',
+  setCurrentDevice: (device) => set({ currentDevice: device }),
+  activeTab: 'catalog',
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  isPreviewMode: false,
+  togglePreviewMode: () => set((state) => ({ isPreviewMode: !state.isPreviewMode })),
+  resetToDefault: () => {
+    set({ configuration: defaultConfiguration, isDirty: false });
+  },
+  configuration: defaultConfiguration,
+  updateConfiguration: (path, value) => {
+    set((state) => {
+      const newConfiguration = { ...state.configuration };
+      const pathParts = path.split('.');
+      let current = newConfiguration;
+
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        current[part] = { ...current[part] };
+        current = current[part];
+      }
+
+      current[pathParts[pathParts.length - 1]] = value;
+
+      return { configuration: newConfiguration, isDirty: true };
+    });
+  },
+  
+  
+}));
