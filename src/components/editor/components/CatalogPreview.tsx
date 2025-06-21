@@ -5,6 +5,7 @@ import { usePreviewData } from '../hooks/usePreviewData';
 import { useUnifiedEditor } from '@/hooks/useUnifiedEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreData } from '@/hooks/useStoreData';
+import { Store } from '@/hooks/useCatalog';
 import TemplateWrapper from '@/components/catalog/TemplateWrapper';
 import ProductGrid from '@/components/catalog/ProductGrid';
 
@@ -31,8 +32,24 @@ const CatalogPreview: React.FC = () => {
     );
   }
 
-  // Usar loja mockada se não tiver dados reais
-  const previewStore = store || {
+  // Usar loja mockada se não tiver dados reais - com todos os campos obrigatórios
+  const previewStore: Store = store ? {
+    id: store.id,
+    name: store.name,
+    description: store.description || 'Descrição da loja de exemplo',
+    logo_url: store.logo_url || null,
+    phone: store.phone || '(11) 99999-9999',
+    email: store.email || 'contato@minhaloja.com',
+    address: store.address || 'Rua Example, 123 - São Paulo, SP',
+    url_slug: store.url_slug || 'preview',
+    owner_id: profile?.id || 'preview-owner-id',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    cnpj: null,
+    plan_type: 'basic',
+    monthly_fee: 0
+  } : {
     id: 'preview-store',
     name: 'Minha Loja',
     description: 'Descrição da loja de exemplo',
@@ -41,9 +58,13 @@ const CatalogPreview: React.FC = () => {
     email: 'contato@minhaloja.com',
     address: 'Rua Example, 123 - São Paulo, SP',
     url_slug: 'preview',
+    owner_id: 'preview-owner-id',
     is_active: true,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    cnpj: null,
+    plan_type: 'basic',
+    monthly_fee: 0
   };
 
   return (
