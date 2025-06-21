@@ -210,7 +210,7 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({ store, whatsappNumber, st
       {/* WhatsApp Floating Button - Posicionado à esquerda */}
       {whatsappNumber && (
         <Button
-          className="fixed bottom-6 left-6 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg z-50 transition-all duration-300 transform hover:scale-105"
+          className="fixed bottom-22 rigth-6 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg z-50 transition-all duration-300 transform hover:scale-105"
           onClick={() => {
             const message = `Olá! Estou interessado nos produtos da ${store.name}`;
             window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
