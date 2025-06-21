@@ -94,6 +94,7 @@ export const useProducts = (storeId?: string) => {
           *,
           product_variations (
             id,
+            product_id,
             color,
             size,
             sku,
@@ -113,10 +114,22 @@ export const useProducts = (storeId?: string) => {
         throw productsError;
       }
 
-      // Transformar dados para incluir variações
+      // Transformar dados para incluir variações com product_id
       const productsWithVariations = productsData?.map(product => ({
         ...product,
-        variations: product.product_variations || []
+        variations: product.product_variations?.map(variation => ({
+          id: variation.id,
+          product_id: variation.product_id,
+          color: variation.color,
+          size: variation.size,
+          sku: variation.sku,
+          stock: variation.stock,
+          price_adjustment: variation.price_adjustment,
+          is_active: variation.is_active,
+          image_url: variation.image_url,
+          created_at: variation.created_at,
+          updated_at: variation.updated_at
+        })) || []
       })) || [];
 
       console.log('✅ [SECURITY] Produtos carregados com variações:', {

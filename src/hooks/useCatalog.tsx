@@ -135,13 +135,16 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
           *,
           product_variations!inner (
             id,
+            product_id,
             color,
             size,
             sku,
             stock,
             price_adjustment,
             is_active,
-            image_url
+            image_url,
+            created_at,
+            updated_at
           )
         `)
         .eq('store_id', storeId)
@@ -158,7 +161,19 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
       // Transformar os dados para incluir variações corretamente
       const productsWithVariations = productsData?.map(product => ({
         ...product,
-        variations: product.product_variations || []
+        variations: product.product_variations?.map(variation => ({
+          id: variation.id,
+          product_id: variation.product_id,
+          color: variation.color,
+          size: variation.size,
+          sku: variation.sku,
+          stock: variation.stock,
+          price_adjustment: variation.price_adjustment,
+          is_active: variation.is_active,
+          image_url: variation.image_url,
+          created_at: variation.created_at,
+          updated_at: variation.updated_at
+        })) || []
       })) || [];
 
       console.log('✅ CATÁLOGO - Produtos carregados com variações:', {

@@ -55,6 +55,7 @@ const CatalogSettings = () => {
     store_id: '',
     category: 'Exemplo',
     is_active: true,
+    is_featured: false,
     meta_title: null,
     meta_description: null,
     keywords: null,
