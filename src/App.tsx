@@ -23,6 +23,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProtectedCoupons from '@/pages/ProtectedCoupons';
 import ProtectedReports from '@/pages/ProtectedReports';
 import ProtectedDeliveries from '@/pages/ProtectedDeliveries';
+import VisualEditor from '@/components/editor/VisualEditor';
 
 import Stores from '@/pages/Stores';
 import PlanManagement from '@/pages/PlanManagement';
@@ -48,6 +49,7 @@ function App() {
         <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+        <Route path="/visual-editor" element={<ProtectedRoute><VisualEditor /></ProtectedRoute>} />
         <Route path="/catalog/:storeIdentifier" element={<Catalog />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failure" element={<PaymentFailure />} />
