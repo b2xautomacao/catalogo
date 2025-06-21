@@ -92,6 +92,8 @@ const CatalogContent = memo(() => {
     }
   }, [store, catalogType]);
 
+  // ... keep existing code (handler functions)
+
   const handleCatalogTypeChange = useCallback((type: CatalogType) => {
     if (type === 'wholesale' && settings && !settings.wholesale_catalog_active) {
       toast({
@@ -188,8 +190,7 @@ const CatalogContent = memo(() => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ... keep existing code (error handling and loading states)
-
+  // ERROR HANDLING WITH BETTER LOGGING
   if (!storeIdentifier) {
     console.error('Catalog: storeIdentifier ausente - URL inválida');
     return (
@@ -215,6 +216,12 @@ const CatalogContent = memo(() => {
           <p className="text-sm text-gray-500">
             Identificador: {storeIdentifier}
           </p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Tentar Novamente
+          </Button>
         </div>
       </div>
     );
@@ -234,13 +241,19 @@ const CatalogContent = memo(() => {
   }
 
   if (!loading && !store) {
-    console.error('Catalog: Loja não encontrada após carregamento');
+    console.error('Catalog: Loja não encontrada após carregamento - storeIdentifier:', storeIdentifier);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja não encontrada</h1>
           <p className="text-gray-600">A loja que você está procurando não existe ou não está mais ativa.</p>
           <p className="text-sm text-gray-500 mt-2">Identificador buscado: {storeIdentifier}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Tentar Novamente
+          </Button>
         </div>
       </div>
     );
@@ -254,7 +267,8 @@ const CatalogContent = memo(() => {
   console.log('Catalog: Renderizando catálogo:', { 
     store: store?.name, 
     productsCount: sortedProducts.length, 
-    loading 
+    loading,
+    storeActive: store?.is_active
   });
 
   return (

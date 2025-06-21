@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Minus, ShoppingCart, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -147,10 +146,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const price = catalogType === 'retail' ? product.retail_price : (product.wholesale_price || product.retail_price);
   const minQty = catalogType === 'wholesale' ? (product.min_wholesale_qty || 1) : 1;
 
-  // Calcular preço final com ajuste da variação
-  const finalPrice = selectedVariation 
-    ? price + (selectedVariation.price_adjustment || 0)
-    : price;
+  // Calcular preço final com ajuste da variação - COM VERIFICAÇÃO NULL
+  const priceAdjustment = selectedVariation?.price_adjustment || 0;
+  const finalPrice = price + priceAdjustment;
 
   // Calcular estoque disponível
   const availableStock = selectedVariation 
@@ -261,13 +259,13 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   style: 'currency',
                   currency: 'BRL'
                 }).format(finalPrice)}
-                {selectedVariation?.price_adjustment !== 0 && (
+                {priceAdjustment !== 0 && (
                   <span className="text-sm text-gray-500 ml-2">
-                    (Ajuste: {selectedVariation.price_adjustment > 0 ? '+' : ''}
+                    (Ajuste: {priceAdjustment > 0 ? '+' : ''}
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL'
-                    }).format(selectedVariation.price_adjustment)})
+                    }).format(priceAdjustment)})
                   </span>
                 )}
               </div>
@@ -346,6 +344,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <div>Variação selecionada: {selectedVariation?.id || 'Nenhuma'}</div>
                 <div>Estoque disponível: {availableStock}</div>
                 <div>Preço final: R$ {finalPrice.toFixed(2)}</div>
+                <div>Ajuste de preço: R$ {priceAdjustment.toFixed(2)}</div>
                 <div>Imagens: {productImages.length}</div>
               </div>
             )}

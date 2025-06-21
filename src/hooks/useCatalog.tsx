@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,22 +80,40 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     try {
       console.log('🏪 CATÁLOGO - Carregando loja:', identifier);
 
-      const { data: storeData, error: storeError } = await supabase
+      // Buscar primeiro por url_slug, depois por ID se não encontrar
+      let { data: storeData, error: storeError } = await supabase
         .from('stores')
         .select('*')
         .eq('url_slug', identifier)
+        .eq('is_active', true)
         .single();
+
+      // Se não encontrou por url_slug, tentar por ID
+      if (storeError && storeError.code === 'PGRST116') {
+        console.log('🔄 CATÁLOGO - Tentando buscar por ID:', identifier);
+        const { data: storeByIdData, error: storeByIdError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', identifier)
+          .eq('is_active', true)
+          .single();
+        
+        storeData = storeByIdData;
+        storeError = storeByIdError;
+      }
 
       if (storeError) {
         console.error('❌ Erro ao buscar loja:', storeError);
-        setStoreError(`Erro ao buscar loja: ${storeError.message}`);
+        setStoreError(`Loja não encontrada ou inativa`);
+        setStore(null);
         setLoading(false);
         return false;
       }
 
       if (!storeData) {
-        console.warn('⚠️ Loja não encontrada');
+        console.warn('⚠️ Loja não encontrada:', identifier);
         setStoreError('Loja não encontrada.');
+        setStore(null);
         setLoading(false);
         return false;
       }
@@ -104,7 +121,8 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
       console.log('✅ Loja carregada:', {
         id: storeData.id,
         name: storeData.name,
-        url_slug: storeData.url_slug
+        url_slug: storeData.url_slug,
+        is_active: storeData.is_active
       });
 
       setStore(storeData);
@@ -113,6 +131,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     } catch (error) {
       console.error('🚨 Erro ao carregar loja:', error);
       setStoreError('Erro ao carregar loja.');
+      setStore(null);
       return false;
     } finally {
       setLoading(false);
@@ -208,7 +227,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
   const initializeCatalog = useCallback(async (identifier: string, type: CatalogType) => {
     // Avoid reloading if same store and catalog type
-    if (loadedStoreRef.current === identifier && loadedCatalogTypeRef.current === type) {
+    if (loadedStoreRef.current === identifier && loadedCatalogTypeRef.current === type && store) {
       console.log('ℹ️ CATÁLOGO - Cache hit, não recarregando');
       return true;
     }
@@ -234,7 +253,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
     
     setLoading(false);
     return productsLoaded;
-  }, [loadStore, loadProducts]);
+  }, [loadStore, loadProducts, store]);
 
   // Only initialize when store identifier or catalog type actually changes
   useEffect(() => {
