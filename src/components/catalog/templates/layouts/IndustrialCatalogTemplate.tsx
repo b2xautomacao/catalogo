@@ -39,7 +39,7 @@ const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 to-gray-200">
-      <style jsx global>{`
+      <style>{`
         .btn-primary {
           background: linear-gradient(135deg, var(--template-primary), var(--template-secondary));
           border: 2px solid rgba(71, 85, 105, 0.3);

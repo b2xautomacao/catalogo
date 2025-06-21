@@ -39,7 +39,7 @@ const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50">
-      <style jsx global>{`
+      <style>{`
         .btn-primary {
           background: linear-gradient(135deg, var(--template-primary), var(--template-secondary));
           border: 2px solid var(--template-primary);

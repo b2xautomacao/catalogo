@@ -39,7 +39,7 @@ const MinimalCatalogTemplate: React.FC<MinimalCatalogTemplateProps> = ({
 
   return (
     <div className="min-h-screen bg-white">
-      <style jsx global>{`
+      <style>{`
         .btn-primary {
           background: var(--template-primary);
           border: 1px solid var(--template-primary);

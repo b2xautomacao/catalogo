@@ -39,7 +39,7 @@ const ModernCatalogTemplate: React.FC<ModernCatalogTemplateProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <style jsx global>{`
+      <style>{`
         .btn-primary {
           background: linear-gradient(135deg, var(--template-primary), var(--template-secondary));
           border: none;
