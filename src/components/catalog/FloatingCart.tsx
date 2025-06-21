@@ -58,7 +58,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
         <SheetTrigger asChild>
           <Button
             size="lg"
-            className="relative h-16 w-16 rounded-full bg-gradient-to-r from-primary to-accent hover:from-blue-700 hover:to-purple-700 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+            className="relative h-16 w-16 flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-accent hover:from-blue-700 hover:to-purple-700 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <ShoppingCart size={24} className="text-white" />
             {totalItems > 0 && (
@@ -70,6 +70,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
               </Badge>
             )}
           </Button>
+
         </SheetTrigger>
 
         <SheetContent className="w-full sm:max-w-lg overflow-hidden p-0">
