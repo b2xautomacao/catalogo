@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useCatalog } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import ProductGrid from './ProductGrid';
-import CatalogHeader from './CatalogHeader';
-import CatalogFooter from './CatalogFooter';
 import FilterSidebar from './FilterSidebar';
+import TemplateWrapper from './TemplateWrapper';
 import { Product, CatalogType } from '@/hooks/useCatalog';
 import { useCart } from '@/hooks/useCart';
 
@@ -20,7 +19,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
 }) => {
   const { store, products, filteredProducts, loading: catalogLoading, searchProducts, filterProducts } = useCatalog(storeIdentifier, catalogType);
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
-  const { totalItems } = useCart(); // Corrigido: usar totalItems em vez de itemsCount
+  const { totalItems } = useCart();
   
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -66,49 +65,46 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <CatalogHeader 
-        store={store}
-        catalogType={catalogType}
-        cartItemsCount={totalItems} // Corrigido: usar totalItems
-        wishlistCount={wishlist.length}
-        whatsappNumber={settings?.whatsapp_number || undefined}
-        onSearch={searchProducts}
-        onToggleFilters={() => setIsFilterOpen(!isFilterOpen)}
-        onCartClick={handleCartClick}
-      />
-      
-      <main className="container mx-auto px-4 py-6">
-        <div className="flex gap-6">
-          {settings?.allow_categories_filter && (
-            <aside className="w-64 hidden lg:block">
-              <FilterSidebar
-                products={products}
-                onFilter={filterProducts}
-                isOpen={false}
-                onClose={() => {}}
-                isMobile={false}
-              />
-            </aside>
-          )}
-          
-          <div className="flex-1">
-            <ProductGrid
-              products={filteredProducts}
-              catalogType={catalogType}
-              loading={loading}
-              onAddToWishlist={handleAddToWishlist}
-              onQuickView={handleQuickView}
-              wishlist={wishlist}
-              storeIdentifier={storeIdentifier}
-              templateName={settings?.template_name || 'modern'}
-            />
-          </div>
-        </div>
-      </main>
+  const templateName = settings?.template_name || 'modern';
 
-      <CatalogFooter store={store} />
+  return (
+    <TemplateWrapper
+      templateName={templateName}
+      store={store}
+      catalogType={catalogType}
+      cartItemsCount={totalItems}
+      wishlistCount={wishlist.length}
+      whatsappNumber={settings?.whatsapp_number || undefined}
+      onSearch={searchProducts}
+      onToggleFilters={() => setIsFilterOpen(!isFilterOpen)}
+      onCartClick={handleCartClick}
+    >
+      <div className="flex gap-6">
+        {settings?.allow_categories_filter && (
+          <aside className="w-64 hidden lg:block">
+            <FilterSidebar
+              products={products}
+              onFilter={filterProducts}
+              isOpen={false}
+              onClose={() => {}}
+              isMobile={false}
+            />
+          </aside>
+        )}
+        
+        <div className="flex-1">
+          <ProductGrid
+            products={filteredProducts}
+            catalogType={catalogType}
+            loading={loading}
+            onAddToWishlist={handleAddToWishlist}
+            onQuickView={handleQuickView}
+            wishlist={wishlist}
+            storeIdentifier={storeIdentifier}
+            templateName={templateName}
+          />
+        </div>
+      </div>
 
       {/* FilterSidebar Mobile */}
       {settings?.allow_categories_filter && (
@@ -120,7 +116,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
           isMobile={true}
         />
       )}
-    </div>
+    </TemplateWrapper>
   );
 };
 

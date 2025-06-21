@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,10 +13,13 @@ import {
   Palette,
   Eye,
   Settings,
-  Smartphone,
-  Monitor,
   Save,
-  RotateCw
+  RotateCw,
+  Monitor,
+  Smartphone,
+  Crown,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
 const CatalogSettings = () => {
@@ -48,15 +49,15 @@ const CatalogSettings = () => {
         show_prices: settings.show_prices !== false,
         show_stock: settings.show_stock !== false,
         show_categories: settings.allow_categories_filter !== false,
-        show_search: true, // Não existe no banco, usar padrão
+        show_search: true,
         show_filters: settings.allow_price_filter !== false,
-        items_per_page: 12, // Não existe no banco, usar padrão
+        items_per_page: 12,
         catalog_title: settings.seo_title || '',
         catalog_description: settings.seo_description || '',
-        primary_color: '#0057FF', // Não existe no banco, usar padrão
-        secondary_color: '#FF6F00', // Não existe no banco, usar padrão
-        font_family: 'Inter', // Não existe no banco, usar padrão
-        custom_css: '' // Não existe no banco, usar padrão
+        primary_color: (settings as any).primary_color || '#0057FF',
+        secondary_color: (settings as any).secondary_color || '#FF6F00',
+        font_family: 'Inter',
+        custom_css: ''
       });
     }
   }, [settings]);
@@ -69,7 +70,9 @@ const CatalogSettings = () => {
       allow_categories_filter: localSettings.show_categories,
       allow_price_filter: localSettings.show_filters,
       seo_title: localSettings.catalog_title,
-      seo_description: localSettings.catalog_description
+      seo_description: localSettings.catalog_description,
+      primary_color: localSettings.primary_color,
+      secondary_color: localSettings.secondary_color
     };
 
     const result = await updateSettings(updates);
@@ -100,10 +103,38 @@ const CatalogSettings = () => {
   };
 
   const templates = [
-    { value: 'modern', label: 'Moderno', description: 'Design limpo e contemporâneo' },
-    { value: 'minimal', label: 'Minimalista', description: 'Focado no essencial' },
-    { value: 'elegant', label: 'Elegante', description: 'Sofisticado e refinado' },
-    { value: 'industrial', label: 'Industrial', description: 'Robusto e profissional' }
+    { 
+      value: 'modern', 
+      label: 'Moderno', 
+      description: 'Design limpo e contemporâneo',
+      icon: Monitor,
+      colors: ['#0057FF', '#FF6F00', '#8E2DE2'],
+      features: ['Gradientes suaves', 'Animações fluidas', 'Layout responsivo']
+    },
+    { 
+      value: 'minimal', 
+      label: 'Minimalista', 
+      description: 'Focado no essencial',
+      icon: Zap,
+      colors: ['#1F2937', '#059669', '#DC2626'],
+      features: ['Design limpo', 'Tipografia clara', 'Navegação simples']
+    },
+    { 
+      value: 'elegant', 
+      label: 'Elegante', 
+      description: 'Sofisticado e refinado',
+      icon: Crown,
+      colors: ['#D97706', '#92400E', '#7C2D12'],
+      features: ['Tons dourados', 'Elementos premium', 'Detalhes refinados']
+    },
+    { 
+      value: 'industrial', 
+      label: 'Industrial', 
+      description: 'Robusto e profissional',
+      icon: Settings,
+      colors: ['#475569', '#F59E0B', '#DC2626'],
+      features: ['Visual metálico', 'Bordas definidas', 'Estilo corporativo']
+    }
   ];
 
   if (loading) {
@@ -116,7 +147,7 @@ const CatalogSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Template Selection */}
+      {/* Template Selection with Preview */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -124,36 +155,71 @@ const CatalogSettings = () => {
             Template do Catálogo
           </CardTitle>
           <CardDescription>
-            Escolha o template visual que melhor representa sua marca
+            Escolha o template visual que melhor representa sua marca. O template será aplicado a todo o catálogo.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {templates.map((template) => (
-              <Card 
-                key={template.value}
-                className={`cursor-pointer transition-all border-2 ${
-                  localSettings.template_name === template.value 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setLocalSettings({...localSettings, template_name: template.value})}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">{template.label}</h4>
-                      <p className="text-sm text-gray-600">{template.description}</p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {templates.map((template) => {
+              const IconComponent = template.icon;
+              return (
+                <Card 
+                  key={template.value}
+                  className={`cursor-pointer transition-all border-2 hover:shadow-lg ${
+                    localSettings.template_name === template.value 
+                      ? 'border-blue-500 bg-blue-50 shadow-md' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setLocalSettings({...localSettings, template_name: template.value})}
+                >
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${localSettings.template_name === template.value ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+                            <IconComponent size={20} />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-lg">{template.label}</h4>
+                            <p className="text-sm text-gray-600">{template.description}</p>
+                          </div>
+                        </div>
+                        {localSettings.template_name === template.value && (
+                          <Badge className="bg-blue-500">
+                            <Sparkles size={12} className="mr-1" />
+                            Ativo
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Color Preview */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Paleta:</span>
+                        {template.colors.map((color, index) => (
+                          <div 
+                            key={index}
+                            className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Features */}
+                      <div className="space-y-2">
+                        <span className="text-xs text-gray-500 font-medium">Características:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {template.features.map((feature, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    {localSettings.template_name === template.value && (
-                      <Badge className="bg-blue-500">
-                        Selecionado
-                      </Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -291,7 +357,7 @@ const CatalogSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Colors */}
+      {/* Colors - Enhanced */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -299,7 +365,7 @@ const CatalogSettings = () => {
             Cores Personalizadas
           </CardTitle>
           <CardDescription>
-            Defina as cores principais do seu catálogo
+            Personalize as cores do template selecionado. As cores serão aplicadas a todo o catálogo.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -339,6 +405,33 @@ const CatalogSettings = () => {
                   placeholder="#FF6F00"
                   className="flex-1"
                 />
+              </div>
+            </div>
+          </div>
+          
+          {/* Color Preview */}
+          <div className="mt-4 p-4 rounded-lg border-2 border-dashed border-gray-300">
+            <h4 className="text-sm font-medium mb-3">Preview das Cores:</h4>
+            <div className="flex gap-4">
+              <div 
+                className="px-4 py-2 rounded text-white font-medium"
+                style={{ backgroundColor: localSettings.primary_color }}
+              >
+                Cor Primária
+              </div>
+              <div 
+                className="px-4 py-2 rounded text-white font-medium"
+                style={{ backgroundColor: localSettings.secondary_color }}
+              >
+                Cor Secundária
+              </div>
+              <div 
+                className="px-4 py-2 rounded text-white font-medium"
+                style={{ 
+                  background: `linear-gradient(135deg, ${localSettings.primary_color}, ${localSettings.secondary_color})` 
+                }}
+              >
+                Gradiente
               </div>
             </div>
           </div>
