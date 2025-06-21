@@ -212,10 +212,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
         name: product.name,
         retail_price: product.retail_price,
         wholesale_price: product.wholesale_price,
+        min_wholesale_qty: product.min_wholesale_qty,
         image_url: selectedVariation?.image_url || product.image_url
       },
       quantity: quantity,
       price: finalPrice,
+      originalPrice: product.retail_price, // Adicionar originalPrice obrigatório
       variations: selectedVariation,
       catalogType: catalogType
     });
