@@ -60,7 +60,7 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout }) => {
             size="lg"
             className="relative h-16 w-16 rounded-full bg-gradient-to-r from-primary to-accent hover:from-blue-700 hover:to-purple-700 shadow-2xl hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
-            <ShoppingCart size={24} className="text-white" />cart
+            <ShoppingCart className="h-5 w-5 mr-2" />
             {totalItems > 0 && (
               <Badge
                 variant="destructive"
