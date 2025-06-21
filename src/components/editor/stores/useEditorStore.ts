@@ -26,6 +26,16 @@ const defaultConfiguration = {
     fontFamily: 'Inter, sans-serif',
     borderRadius: 8,
     layoutSpacing: 16,
+    fontSize: {
+      small: 12,
+      medium: 16,
+      large: 24
+    },
+    spacing: {
+      small: 8,
+      medium: 16,
+      large: 24
+    }
   },
   header: {
     showSearchBar: true,
