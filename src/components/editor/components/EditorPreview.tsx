@@ -6,6 +6,8 @@ import PreviewProductGrid from './preview/PreviewProductGrid';
 import PreviewFooter from './preview/PreviewFooter';
 import PreviewBanner from './preview/PreviewBanner';
 import PreviewCategories from './preview/PreviewCategories';
+import { CheckoutPreview } from './CheckoutPreview';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const EditorPreview: React.FC = () => {
   const { configuration } = useEditorStore();
@@ -106,11 +108,30 @@ const EditorPreview: React.FC = () => {
       </style>
 
       <div className="editor-preview">
-        {/* Header sempre visível */}
-        <PreviewHeader />
+        <Tabs defaultValue="catalog" className="w-full">
+          <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+            <TabsList className="w-full justify-start h-12 bg-transparent p-2">
+              <TabsTrigger value="catalog" className="px-6">
+                Catálogo
+              </TabsTrigger>
+              <TabsTrigger value="checkout" className="px-6">
+                Checkout
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* Seções dinâmicas baseadas na configuração */}
-        {configuration.sectionOrder.map(renderSection)}
+          <TabsContent value="catalog" className="mt-0">
+            {/* Header sempre visível */}
+            <PreviewHeader />
+
+            {/* Seções dinâmicas baseadas na configuração */}
+            {configuration.sectionOrder.map(renderSection)}
+          </TabsContent>
+
+          <TabsContent value="checkout" className="mt-0 bg-gray-50 min-h-screen py-8">
+            <CheckoutPreview />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

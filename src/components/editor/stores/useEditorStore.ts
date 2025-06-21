@@ -42,9 +42,10 @@ export interface EditorConfiguration {
     };
   };
   
-  // Checkout Settings
+  // Checkout Settings Avançadas
   checkout: {
     layout: 'single' | 'steps';
+    type: 'whatsapp' | 'online' | 'both';
     colors: {
       primary: string;
       secondary: string;
@@ -55,16 +56,44 @@ export interface EditorConfiguration {
     showCartItems: boolean;
     showSecurityBadges: boolean;
     showReviews: boolean;
+    showPrices: boolean;
+    allowFilters: boolean;
+    
+    // Upsells e Cross-sells
+    upsells?: {
+      showRelated: boolean;
+      minimumValueOffers: boolean;
+      freeShippingThreshold: string;
+      customMessage: string;
+    };
+    
+    // Elementos de Urgência
+    urgency?: {
+      lowStockCounter: boolean;
+      lowStockThreshold: string;
+      offerTimer: boolean;
+      offerDuration: string;
+    };
+    
+    // Prova Social
+    socialProof?: {
+      show Reviews: boolean;
+      recentSales: boolean;
+      salesMessage: string;
+      bestSellerBadge: boolean;
+    };
   };
   
-  // Global Settings
+  // Global Settings ampliadas
   global: {
     primaryColor: string;
     secondaryColor: string;
     accentColor: string;
     backgroundColor: string;
     textColor: string;
+    borderColor: string;
     fontFamily: string;
+    templateName: string;
     fontSize: {
       small: number;
       medium: number;
@@ -74,6 +103,27 @@ export interface EditorConfiguration {
       small: number;
       medium: number;
       large: number;
+    };
+  };
+  
+  // Notificações e Conversão
+  notifications: {
+    cartToast: {
+      enabled: boolean;
+      message: string;
+      position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+      duration: number;
+      showUpsell: boolean;
+    };
+    stockAlert: {
+      enabled: boolean;
+      threshold: number;
+      message: string;
+    };
+    freeShippingAlert: {
+      enabled: boolean;
+      threshold: number;
+      message: string;
     };
   };
   
@@ -96,6 +146,7 @@ interface EditorStore {
   configuration: EditorConfiguration;
   selectedElement: string | null;
   currentDevice: 'desktop' | 'tablet' | 'mobile';
+  currentTemplate: string;
   isPreviewMode: boolean;
   isDirty: boolean;
   
@@ -107,6 +158,8 @@ interface EditorStore {
   saveConfiguration: () => Promise<void>;
   resetToDefault: () => void;
   reorderSections: (newOrder: string[]) => void;
+  applyTemplate: (templateId: string, colors?: any) => void;
+  syncWithDatabase: () => Promise<void>;
 }
 
 const defaultConfiguration: EditorConfiguration = {
@@ -147,6 +200,7 @@ const defaultConfiguration: EditorConfiguration = {
   },
   checkout: {
     layout: 'single',
+    type: 'both',
     colors: {
       primary: '#0057FF',
       secondary: '#FF6F00',
@@ -157,6 +211,26 @@ const defaultConfiguration: EditorConfiguration = {
     showCartItems: true,
     showSecurityBadges: true,
     showReviews: false,
+    showPrices: true,
+    allowFilters: true,
+    upsells: {
+      showRelated: true,
+      minimumValueOffers: false,
+      freeShippingThreshold: '150',
+      customMessage: 'Complete sua compra com estes produtos selecionados...'
+    },
+    urgency: {
+      lowStockCounter: false,
+      lowStockThreshold: '5',
+      offerTimer: false,
+      offerDuration: '15'
+    },
+    socialProof: {
+      showReviews: false,
+      recentSales: true,
+      salesMessage: 'X pessoas compraram este produto hoje',
+      bestSellerBadge: false
+    }
   },
   global: {
     primaryColor: '#0057FF',
@@ -164,7 +238,9 @@ const defaultConfiguration: EditorConfiguration = {
     accentColor: '#8E2DE2',
     backgroundColor: '#F8FAFC',
     textColor: '#1E293B',
+    borderColor: '#E2E8F0',
     fontFamily: 'Inter',
+    templateName: 'modern',
     fontSize: {
       small: 14,
       medium: 16,
@@ -175,6 +251,25 @@ const defaultConfiguration: EditorConfiguration = {
       medium: 16,
       large: 24,
     },
+  },
+  notifications: {
+    cartToast: {
+      enabled: true,
+      message: 'Produto adicionado ao carrinho!',
+      position: 'top-right',
+      duration: 3000,
+      showUpsell: false
+    },
+    stockAlert: {
+      enabled: false,
+      threshold: 5,
+      message: 'Restam apenas {stock} unidades!'
+    },
+    freeShippingAlert: {
+      enabled: true,
+      threshold: 150,
+      message: 'Faltam apenas R$ {remaining} para frete grátis!'
+    }
   },
   sections: {
     banner: true,
@@ -193,6 +288,7 @@ export const useEditorStore = create<EditorStore>()(
       configuration: defaultConfiguration,
       selectedElement: null,
       currentDevice: 'desktop',
+      currentTemplate: 'modern',
       isPreviewMode: false,
       isDirty: false,
       
@@ -203,6 +299,9 @@ export const useEditorStore = create<EditorStore>()(
           let current: any = newConfig;
           
           for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]]) {
+              current[keys[i]] = {};
+            }
             current = current[keys[i]];
           }
           
@@ -215,6 +314,39 @@ export const useEditorStore = create<EditorStore>()(
         });
       },
       
+      applyTemplate: (templateId: string, colors?: any) => {
+        set((state) => {
+          const newConfig = { ...state.configuration };
+          
+          if (colors) {
+            newConfig.global.primaryColor = colors.primary;
+            newConfig.global.secondaryColor = colors.secondary;
+            newConfig.global.accentColor = colors.accent;
+            newConfig.global.backgroundColor = colors.background;
+            newConfig.global.textColor = colors.text;
+            newConfig.global.borderColor = colors.border;
+            
+            // Aplicar também no checkout
+            newConfig.checkout.colors.primary = colors.primary;
+            newConfig.checkout.colors.secondary = colors.secondary;
+            newConfig.checkout.colors.accent = colors.accent;
+          }
+          
+          newConfig.global.templateName = templateId;
+          
+          return {
+            configuration: newConfig,
+            currentTemplate: templateId,
+            isDirty: true,
+          };
+        });
+      },
+      
+      syncWithDatabase: async () => {
+        // Implementar sincronização com o banco via hook
+        console.log('Sincronizando com banco de dados...');
+      },
+      
       setSelectedElement: (elementId) => set({ selectedElement: elementId }),
       
       setCurrentDevice: (device) => set({ currentDevice: device }),
@@ -222,7 +354,7 @@ export const useEditorStore = create<EditorStore>()(
       togglePreviewMode: () => set((state) => ({ isPreviewMode: !state.isPreviewMode })),
       
       saveConfiguration: async () => {
-        // TODO: Implementar salvamento no Supabase
+        // TODO: Implementar salvamento no Supabase via hook
         console.log('Salvando configuração...', get().configuration);
         set({ isDirty: false });
       },
@@ -244,7 +376,10 @@ export const useEditorStore = create<EditorStore>()(
     }),
     {
       name: 'visual-editor-store',
-      partialize: (state) => ({ configuration: state.configuration }),
+      partialize: (state) => ({ 
+        configuration: state.configuration,
+        currentTemplate: state.currentTemplate 
+      }),
     }
   )
 );
