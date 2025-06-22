@@ -29,6 +29,10 @@ import Stores from '@/pages/Stores';
 import PlanManagement from '@/pages/PlanManagement';
 import GlobalIntegrations from '@/pages/GlobalIntegrations';
 
+// Importar estilos isolados
+import '@/styles/dashboard-apple.css';
+import '@/styles/template-variables.css';
+
 function App() {
   return (
     <Router>

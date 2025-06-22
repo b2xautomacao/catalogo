@@ -1,7 +1,7 @@
 
-/* Variáveis CSS globais para templates */
+/* Variáveis CSS globais para templates - ISOLADO DO DASHBOARD */
 :root {
-  /* Cores do template - Padrão Editor */
+  /* Cores do template - APENAS PARA CATALOGO PUBLICO */
   --template-primary: #0057FF;
   --template-secondary: #FF6F00;
   --template-accent: #8E2DE2;
@@ -11,80 +11,99 @@
   --template-text-muted: #64748B;
   --template-border: #E2E8F0;
   
-  /* Gradientes globais */
+  /* Gradientes globais - APENAS PARA CATALOGO PUBLICO */
   --template-gradient-from: var(--template-primary);
   --template-gradient-to: var(--template-secondary);
   --template-gradient-primary: linear-gradient(135deg, var(--template-gradient-from) 0%, var(--template-gradient-to) 100%);
   --template-gradient-accent: linear-gradient(135deg, var(--template-accent) 0%, var(--template-primary) 100%);
   
-  /* Layout */
+  /* Layout - APENAS PARA CATALOGO PUBLICO */
   --template-font-family: 'Inter, system-ui, sans-serif';
   --template-spacing: 16px;
   --template-border-radius: 8px;
   
-  /* Tamanhos de fonte */
+  /* Tamanhos de fonte - APENAS PARA CATALOGO PUBLICO */
   --template-font-size-small: 14px;
   --template-font-size-medium: 16px;
   --template-font-size-large: 24px;
   
-  /* Espaçamentos */
+  /* Espaçamentos - APENAS PARA CATALOGO PUBLICO */
   --template-spacing-small: 8px;
   --template-spacing-medium: 16px;
   --template-spacing-large: 32px;
   
-  /* Sombras */
+  /* Sombras - APENAS PARA CATALOGO PUBLICO */
   --template-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --template-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --template-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0,   0, 0, 0.05);
   --template-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Aplicação global dos estilos do template */
-.template-container,
-.catalog-container {
+/* IMPORTANTE: Aplicação RESTRITA aos containers específicos do catálogo */
+.template-container:not(.dashboard-container),
+.catalog-container:not(.dashboard-container) {
   font-family: var(--template-font-family);
   background-color: var(--template-background);
   color: var(--template-text);
 }
 
-/* Switches com tema personalizado */
-.themed-switch[data-state="checked"] {
+/* PROTEÇÃO: Garantir que dashboard nunca seja afetado pelas variáveis do template */
+.dashboard-container {
+  /* Neutralizar completamente as variáveis do template */
+  --template-primary: initial !important;
+  --template-secondary: initial !important;
+  --template-accent: initial !important;
+  --template-background: initial !important;
+  --template-surface: initial !important;
+  --template-text: initial !important;
+  --template-border: initial !important;
+  --template-font-family: initial !important;
+  --template-border-radius: initial !important;
+  --template-spacing: initial !important;
+}
+
+/* Switches com tema personalizado - APENAS PARA EDITOR/CATALOGO */
+.template-container .themed-switch[data-state="checked"]:not(.dashboard-container .themed-switch),
+.catalog-container .themed-switch[data-state="checked"]:not(.dashboard-container .themed-switch) {
   background-color: var(--template-primary) !important;
   border-color: var(--template-primary) !important;
 }
 
-.themed-switch[data-state="unchecked"] {
+.template-container .themed-switch[data-state="unchecked"]:not(.dashboard-container .themed-switch),
+.catalog-container .themed-switch[data-state="unchecked"]:not(.dashboard-container .themed-switch) {
   background-color: #e2e8f0 !important;
   border-color: #cbd5e1 !important;
 }
 
-.themed-switch:hover[data-state="checked"] {
+.template-container .themed-switch:hover[data-state="checked"]:not(.dashboard-container .themed-switch),
+.catalog-container .themed-switch:hover[data-state="checked"]:not(.dashboard-container .themed-switch) {
   background-color: var(--template-secondary) !important;
   opacity: 0.9;
 }
 
-.themed-switch:hover[data-state="unchecked"] {
+.template-container .themed-switch:hover[data-state="unchecked"]:not(.dashboard-container .themed-switch),
+.catalog-container .themed-switch:hover[data-state="unchecked"]:not(.dashboard-container .themed-switch) {
   background-color: #cbd5e1 !important;
 }
 
-.themed-switch .switch-thumb {
+.template-container .themed-switch .switch-thumb:not(.dashboard-container .themed-switch .switch-thumb),
+.catalog-container .themed-switch .switch-thumb:not(.dashboard-container .themed-switch .switch-thumb) {
   background: white !important;
   transition: transform 0.2s ease !important;
 }
 
-.themed-switch[data-state="checked"] .switch-thumb {
+.template-container .themed-switch[data-state="checked"] .switch-thumb:not(.dashboard-container .themed-switch .switch-thumb),
+.catalog-container .themed-switch[data-state="checked"] .switch-thumb:not(.dashboard-container .themed-switch .switch-thumb) {
   transform: translateX(18px) !important;
 }
 
-/* Botões com gradiente global - Versão mais específica */
-.btn-primary,
-.button-primary,
-.template-button-primary,
-button[class*="primary"],
-.catalog-container .btn-primary,
-.catalog-container .button-primary,
-.template-container .btn-primary,
-.template-container .button-primary {
+/* Botões com gradiente global - APENAS PARA CATALOGO */
+.template-container .btn-primary:not(.dashboard-container .btn-primary),
+.template-container .button-primary:not(.dashboard-container .button-primary),
+.template-container .template-button-primary:not(.dashboard-container .template-button-primary),
+.template-container button[class*="primary"]:not(.dashboard-container button[class*="primary"]),
+.catalog-container .btn-primary:not(.dashboard-container .btn-primary),
+.catalog-container .button-primary:not(.dashboard-container .button-primary) {
   background: var(--template-gradient-primary) !important;
   color: #FFFFFF !important;
   border: none !important;
@@ -100,30 +119,30 @@ button[class*="primary"],
   text-decoration: none !important;
 }
 
-.btn-primary:hover,
-.button-primary:hover,
-.template-button-primary:hover,
-button[class*="primary"]:hover,
-.catalog-container .btn-primary:hover,
-.catalog-container .button-primary:hover,
-.template-container .btn-primary:hover,
-.template-container .button-primary:hover {
+.template-container .btn-primary:hover:not(.dashboard-container .btn-primary),
+.template-container .button-primary:hover:not(.dashboard-container .button-primary),
+.template-container .template-button-primary:hover:not(.dashboard-container .template-button-primary),
+.template-container button[class*="primary"]:hover:not(.dashboard-container button[class*="primary"]),
+.catalog-container .btn-primary:hover:not(.dashboard-container .btn-primary),
+.catalog-container .button-primary:hover:not(.dashboard-container .button-primary) {
   transform: translateY(-2px) !important;
   box-shadow: var(--template-shadow-lg) !important;
   opacity: 0.9 !important;
 }
 
-.btn-primary:active,
-.button-primary:active,
-.template-button-primary:active,
-button[class*="primary"]:active {
+.template-container .btn-primary:active:not(.dashboard-container .btn-primary),
+.template-container .button-primary:active:not(.dashboard-container .button-primary),
+.template-container .template-button-primary:active:not(.dashboard-container .template-button-primary),
+.template-container button[class*="primary"]:active:not(.dashboard-container button[class*="primary"]) {
   transform: translateY(0) !important;
 }
 
-/* Botões secundários */
-.btn-secondary,
-.button-secondary,
-.template-button-secondary {
+/* Botões secundários - APENAS PARA CATALOGO */
+.template-container .btn-secondary:not(.dashboard-container .btn-secondary),
+.template-container .button-secondary:not(.dashboard-container .button-secondary),
+.template-container .template-button-secondary:not(.dashboard-container .template-button-secondary),
+.catalog-container .btn-secondary:not(.dashboard-container .btn-secondary),
+.catalog-container .button-secondary:not(.dashboard-container .button-secondary) {
   background: transparent !important;
   color: var(--template-primary) !important;
   border: 2px solid var(--template-primary) !important;
@@ -133,15 +152,18 @@ button[class*="primary"]:active {
   padding: 0.5rem 1rem !important;
 }
 
-.btn-secondary:hover,
-.button-secondary:hover,
-.template-button-secondary:hover {
+.template-container .btn-secondary:hover:not(.dashboard-container .btn-secondary),
+.template-container .button-secondary:hover:not(.dashboard-container .button-secondary),
+.template-container .template-button-secondary:hover:not(.dashboard-container .template-button-secondary),
+.catalog-container .btn-secondary:hover:not(.dashboard-container .btn-secondary),
+.catalog-container .button-secondary:hover:not(.dashboard-container .button-secondary) {
   background: var(--template-primary) !important;
   color: #FFFFFF !important;
 }
 
-/* Cards do template */
-.template-card {
+/* Cards do template - APENAS PARA CATALOGO */
+.template-container .template-card:not(.dashboard-container .template-card),
+.catalog-container .template-card:not(.dashboard-container .template-card) {
   background: var(--template-surface);
   border: 1px solid var(--template-border);
   border-radius: var(--template-border-radius);
@@ -149,20 +171,23 @@ button[class*="primary"]:active {
   transition: all 0.3s ease;
 }
 
-.template-card:hover {
+.template-container .template-card:hover:not(.dashboard-container .template-card),
+.catalog-container .template-card:hover:not(.dashboard-container .template-card) {
   box-shadow: var(--template-shadow-lg);
   transform: translateY(-2px);
 }
 
-/* Headers do template */
-.template-header {
+/* Headers do template - APENAS PARA CATALOGO */
+.template-container .template-header:not(.dashboard-container .template-header),
+.catalog-container .template-header:not(.dashboard-container .template-header) {
   background: var(--template-surface);
   border-bottom: 1px solid var(--template-border);
   color: var(--template-text);
 }
 
-/* Texto com gradiente */
-.template-gradient-text {
+/* Texto com gradiente - APENAS PARA CATALOGO */
+.template-container .template-gradient-text:not(.dashboard-container .template-gradient-text),
+.catalog-container .template-gradient-text:not(.dashboard-container .template-gradient-text) {
   background: var(--template-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -170,18 +195,30 @@ button[class*="primary"]:active {
   font-weight: 600;
 }
 
-/* Aplicar em elementos específicos do catálogo */
-.product-card .btn-primary,
-.product-card .button-primary,
-.product-card button[class*="Adicionar"],
-.product-card button[class*="Comprar"] {
+/* Aplicar em elementos específicos do catálogo - APENAS PARA CATALOGO */
+.template-container .product-card .btn-primary:not(.dashboard-container .product-card .btn-primary),
+.template-container .product-card .button-primary:not(.dashboard-container .product-card .button-primary),
+.template-container .product-card button[class*="Adicionar"]:not(.dashboard-container .product-card button[class*="Adicionar"]),
+.template-container .product-card button[class*="Comprar"]:not(.dashboard-container .product-card button[class*="Comprar"]),
+.catalog-container .product-card .btn-primary:not(.dashboard-container .product-card .btn-primary),
+.catalog-container .product-card .button-primary:not(.dashboard-container .product-card .button-primary),
+.catalog-container .product-card button[class*="Adicionar"]:not(.dashboard-container .product-card button[class*="Adicionar"]),
+.catalog-container .product-card button[class*="Comprar"]:not(.dashboard-container .product-card button[class*="Comprar"]) {
   background: var(--template-gradient-primary) !important;
 }
 
-/* Responsividade */
+/* Responsividade - APENAS PARA CATALOGO */
 @media (max-width: 768px) {
-  :root {
+  .template-container:not(.dashboard-container),
+  .catalog-container:not(.dashboard-container) {
     --template-spacing: 12px;
     --template-border-radius: 6px;
   }
+}
+
+/* PROTEÇÃO FINAL: Garantir que dashboard nunca herde estilos do template */
+.dashboard-container,
+.dashboard-container * {
+  /* Neutralizar qualquer possível herança */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif !important;
 }

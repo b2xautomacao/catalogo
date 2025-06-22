@@ -1,86 +1,101 @@
 
-import React, { useState } from 'react';
-import DashboardCards from './DashboardCards';
-import QuickActions from './QuickActions';
-import ProtectedNavigationPanel from './ProtectedNavigationPanel';
-import ProtectedMobileNavigationPanel from './ProtectedMobileNavigationPanel';
-import ProductFormModal from '@/components/products/ProductFormModal';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useProducts } from '@/hooks/useProducts';
-import { toast } from 'sonner';
+import React from 'react';
+import { Plus, TrendingUp, Package, ShoppingCart, Users } from 'lucide-react';
+import AppleDashboardLayout from './AppleDashboardLayout';
+import AppleDashboardCard from './AppleDashboardCard';
+import AppleQuickActions from './AppleQuickActions';
+import AppleNavigationCard from './AppleNavigationCard';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useNavigate } from 'react-router-dom';
+import '@/styles/dashboard-apple.css';
 
 const StoreDashboard = () => {
-  const [showProductModal, setShowProductModal] = useState(false);
-  const { isSuperadmin } = useAuth();
-  const { createProduct } = useProducts();
+  const navigate = useNavigate();
+  const { data: metrics, isLoading } = useDashboardMetrics();
 
   const handleNewProduct = () => {
-    setShowProductModal(true);
+    navigate('/products?action=new');
   };
 
-  const handleCreateProduct = async (data: any) => {
-    try {
-      const result = await createProduct(data);
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      toast.success('Produto criado com sucesso!');
-      setShowProductModal(false);
-    } catch (error) {
-      console.error('Erro ao criar produto:', error);
-      toast.error('Erro ao criar produto');
-    }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   return (
-    <div className="space-y-6 lg:space-y-8">
-      {/* Cards principais */}
-      <DashboardCards userRole={isSuperadmin ? 'superadmin' : 'admin'} />
+    <div className="dashboard-container">
+      <AppleDashboardLayout
+        title="Dashboard da Loja"
+        subtitle="Visão geral das suas vendas e produtos"
+        actions={
+          <button
+            onClick={handleNewProduct}
+            className="apple-button apple-button-primary"
+          >
+            <Plus size={16} />
+            Novo Produto
+          </button>
+        }
+      >
+        {/* Métricas principais */}
+        <div className="apple-grid apple-grid-cols-1 apple-grid-md-2 apple-grid-lg-4">
+          <AppleDashboardCard
+            title="Vendas do Mês"
+            value={isLoading ? "..." : formatCurrency(metrics?.salesThisMonth || 0)}
+            subtitle="vendas confirmadas"
+            icon={TrendingUp}
+            trend={metrics ? {
+              value: Math.round(metrics.salesGrowth),
+              isPositive: metrics.salesGrowth >= 0
+            } : undefined}
+            variant="green"
+          />
+          
+          <AppleDashboardCard
+            title="Pedidos Hoje"
+            value={isLoading ? "..." : (metrics?.ordersToday || 0)}
+            subtitle="novos pedidos"
+            icon={ShoppingCart}
+            trend={metrics ? {
+              value: Math.round(metrics.ordersGrowth),
+              isPositive: metrics.ordersGrowth >= 0
+            } : undefined}
+            variant="blue"
+          />
+          
+          <AppleDashboardCard
+            title="Produtos Ativos"
+            value={isLoading ? "..." : (metrics?.activeProducts || 0)}
+            subtitle="produtos disponíveis"
+            icon={Package}
+            trend={metrics ? {
+              value: Math.round(metrics.productsGrowth),
+              isPositive: metrics.productsGrowth >= 0
+            } : undefined}
+            variant="purple"
+          />
+          
+          <AppleDashboardCard
+            title="Visitantes"
+            value={isLoading ? "..." : (metrics?.visitors || 0)}
+            subtitle="acessos hoje"
+            icon={Users}
+            trend={metrics ? {
+              value: Math.round(metrics.visitorsGrowth),
+              isPositive: metrics.visitorsGrowth >= 0
+            } : undefined}
+            variant="orange"
+          />
+        </div>
 
-      {/* Ações rápidas - apenas em desktop */}
-      <div className="hidden lg:block">
-        <QuickActions onNewProduct={handleNewProduct} />
-      </div>
-
-      {/* Acesso Rápido - Desktop */}
-      <div className="hidden lg:block">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Acesso Rápido
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProtectedNavigationPanel />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Acesso Rápido - Mobile */}
-      <div className="lg:hidden">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <TrendingUp className="h-5 w-5" />
-              Acesso Rápido
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProtectedMobileNavigationPanel />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal para novo produto */}
-      <ProductFormModal
-        open={showProductModal}
-        onOpenChange={setShowProductModal}
-        onSubmit={handleCreateProduct}
-        mode="create"
-      />
+        {/* Grid com navegação e ações rápidas */}
+        <div className="apple-grid apple-grid-cols-1 apple-grid-lg-2">
+          <AppleNavigationCard />
+          <AppleQuickActions onNewProduct={handleNewProduct} />
+        </div>
+      </AppleDashboardLayout>
     </div>
   );
 };
