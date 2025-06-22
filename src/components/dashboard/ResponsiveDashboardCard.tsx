@@ -25,50 +25,60 @@ const ResponsiveDashboardCard = ({
   onClick 
 }: ResponsiveDashboardCardProps) => {
   const getCardVariantClass = () => {
-    switch (variant) {
-      case 'primary':
-        return 'dashboard-card-primary';
-      case 'secondary':
-        return 'dashboard-card-secondary';
-      case 'success':
-        return 'dashboard-card-success';
-      case 'warning':
-        return 'dashboard-card-warning';
-      default:
-        return 'dashboard-card-primary';
-    }
+    return `dashboard-card dashboard-card-${variant}`;
   };
 
   return (
     <div 
-      className={`dashboard-card ${getCardVariantClass()} ${onClick ? 'cursor-pointer' : ''} 
-                  transition-all duration-300 ease-out transform-gpu group`}
+      className={`${getCardVariantClass()} ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
+      style={{ position: 'relative', overflow: 'hidden' }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4 md:mb-5">
-        <div className="flex-1 min-w-0">
-          <p className="text-white/90 text-sm md:text-base font-semibold truncate mb-1">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+        <div style={{ flex: '1', minWidth: '0' }}>
+          <p style={{ 
+            color: 'rgba(255, 255, 255, 0.9)', 
+            fontSize: '0.875rem', 
+            fontWeight: '600', 
+            marginBottom: '0.25rem',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
             {title}
           </p>
         </div>
         <div className="dashboard-card-icon">
-          <Icon className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-sm" />
+          <Icon size={28} style={{ color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }} />
         </div>
       </div>
 
       {/* Valor principal e trend */}
-      <div className="flex items-end justify-between mb-3 md:mb-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-white text-3xl md:text-4xl xl:text-5xl font-bold leading-none tracking-tight truncate drop-shadow-sm">
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <div style={{ flex: '1', minWidth: '0' }}>
+          <h3 style={{ 
+            color: 'white', 
+            fontSize: '2.5rem', 
+            fontWeight: '700', 
+            lineHeight: '1',
+            letterSpacing: '-0.025em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+          }}>
             {value}
           </h3>
         </div>
         {trend && (
-          <div className="flex items-center ml-3">
-            <span className={`text-sm md:text-base font-bold flex items-center gap-1 ${
-              trend.isPositive ? 'text-green-200' : 'text-red-200'
-            } drop-shadow-sm`}>
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '0.75rem' }}>
+            <span style={{
+              fontSize: '0.875rem',
+              fontWeight: '700',
+              color: trend.isPositive ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)',
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+            }}>
               {trend.isPositive ? '↗' : '↘'} {Math.abs(trend.value)}%
             </span>
           </div>
@@ -77,7 +87,15 @@ const ResponsiveDashboardCard = ({
 
       {/* Subtitle */}
       {subtitle && (
-        <p className="text-white/80 text-sm md:text-base truncate mb-4 md:mb-5 font-medium">
+        <p style={{ 
+          color: 'rgba(255, 255, 255, 0.8)', 
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          marginBottom: '1.25rem',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
           {subtitle}
         </p>
       )}
@@ -98,7 +116,17 @@ const ResponsiveDashboardCard = ({
 
       {/* Overlay Hover Effect */}
       {onClick && (
-        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all duration-300 rounded-2xl pointer-events-none" />
+        <div style={{
+          position: 'absolute',
+          top: '0',
+          right: '0',
+          bottom: '0',
+          left: '0',
+          background: 'rgba(255, 255, 255, 0)',
+          borderRadius: '1.5rem',
+          pointerEvents: 'none',
+          transition: 'all 0.3s ease'
+        }} />
       )}
     </div>
   );
