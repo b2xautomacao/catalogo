@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileNavigation from './MobileNavigation';
 import Footer from './Footer';
@@ -26,8 +25,6 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ 
   children, 
-  title = 'Dashboard', 
-  subtitle, 
   breadcrumbs = [] 
 }) => {
   const { user, profile, loading } = useAuth();
@@ -56,7 +53,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       {/* Wizard de Onboarding */}
       {needsOnboarding && (
         <OnboardingWizard
@@ -65,14 +62,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({
         />
       )}
 
-      {/* Header fixo no topo */}
-      <Header title={title} subtitle={subtitle} />
-
       {/* Sidebar fixa para desktop */}
       <Sidebar />
 
       {/* Conteúdo principal com margem para não sobrepor a sidebar */}
-      <main className="pt-16 lg:pl-64 min-h-screen flex flex-col">
+      <main className="lg:pl-64 min-h-screen flex flex-col">
         <div className="flex-1 p-4 lg:p-6 space-y-6">
           {/* Breadcrumbs */}
           {breadcrumbs.length > 0 && (
