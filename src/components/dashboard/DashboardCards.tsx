@@ -19,14 +19,16 @@ const DashboardCards = ({ userRole }: DashboardCardsProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[1, 2, 3, 4].map((index) => (
-          <div key={index} className="rounded-2xl p-6 space-y-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
+      <div className="dashboard-container">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((index) => (
+            <div key={index} className="dashboard-skeleton rounded-2xl p-6 space-y-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -139,18 +141,20 @@ const DashboardCards = ({ userRole }: DashboardCardsProps) => {
   const stats = userRole === 'superadmin' ? superadminStats : adminStats;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => (
-        <ResponsiveDashboardCard
-          key={index}
-          title={stat.title}
-          value={stat.value}
-          subtitle={stat.subtitle}
-          icon={stat.icon}
-          trend={stat.trend}
-          variant={stat.variant}
-        />
-      ))}
+    <div className="dashboard-container">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 dashboard-animate-in">
+        {stats.map((stat, index) => (
+          <ResponsiveDashboardCard
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            subtitle={stat.subtitle}
+            icon={stat.icon}
+            trend={stat.trend}
+            variant={stat.variant}
+          />
+        ))}
+      </div>
     </div>
   );
 };

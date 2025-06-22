@@ -1,5 +1,5 @@
 
-/* Variáveis CSS globais para templates */
+/* Variáveis CSS específicas para templates de CATÁLOGO APENAS */
 :root {
   /* Cores do template - Padrão Editor */
   --template-primary: #0057FF;
@@ -35,11 +35,11 @@
   /* Sombras */
   --template-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --template-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --template-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0,   0, 0, 0.05);
+  --template-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --template-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Aplicação global dos estilos do template */
+/* RESTRIÇÃO: Aplicação APENAS em containers específicos do template/catálogo */
 .template-container,
 .catalog-container {
   font-family: var(--template-font-family);
@@ -47,44 +47,50 @@
   color: var(--template-text);
 }
 
-/* Switches com tema personalizado */
-.themed-switch[data-state="checked"] {
+/* Switches com tema personalizado - APENAS para templates */
+.template-container .themed-switch[data-state="checked"],
+.catalog-container .themed-switch[data-state="checked"] {
   background-color: var(--template-primary) !important;
   border-color: var(--template-primary) !important;
 }
 
-.themed-switch[data-state="unchecked"] {
+.template-container .themed-switch[data-state="unchecked"],
+.catalog-container .themed-switch[data-state="unchecked"] {
   background-color: #e2e8f0 !important;
   border-color: #cbd5e1 !important;
 }
 
-.themed-switch:hover[data-state="checked"] {
+.template-container .themed-switch:hover[data-state="checked"],
+.catalog-container .themed-switch:hover[data-state="checked"] {
   background-color: var(--template-secondary) !important;
   opacity: 0.9;
 }
 
-.themed-switch:hover[data-state="unchecked"] {
+.template-container .themed-switch:hover[data-state="unchecked"],
+.catalog-container .themed-switch:hover[data-state="unchecked"] {
   background-color: #cbd5e1 !important;
 }
 
-.themed-switch .switch-thumb {
+.template-container .themed-switch .switch-thumb,
+.catalog-container .themed-switch .switch-thumb {
   background: white !important;
   transition: transform 0.2s ease !important;
 }
 
-.themed-switch[data-state="checked"] .switch-thumb {
+.template-container .themed-switch[data-state="checked"] .switch-thumb,
+.catalog-container .themed-switch[data-state="checked"] .switch-thumb {
   transform: translateX(18px) !important;
 }
 
-/* Botões com gradiente global - Versão mais específica */
-.btn-primary,
-.button-primary,
-.template-button-primary,
-button[class*="primary"],
+/* Botões com gradiente - RESTRITOS ao template/catálogo */
+.template-container .btn-primary,
+.template-container .button-primary,
+.template-container .template-button-primary,
+.template-container button[class*="primary"],
 .catalog-container .btn-primary,
 .catalog-container .button-primary,
-.template-container .btn-primary,
-.template-container .button-primary {
+.catalog-container .template-button-primary,
+.catalog-container button[class*="primary"] {
   background: var(--template-gradient-primary) !important;
   color: #FFFFFF !important;
   border: none !important;
@@ -100,30 +106,37 @@ button[class*="primary"],
   text-decoration: none !important;
 }
 
-.btn-primary:hover,
-.button-primary:hover,
-.template-button-primary:hover,
-button[class*="primary"]:hover,
+.template-container .btn-primary:hover,
+.template-container .button-primary:hover,
+.template-container .template-button-primary:hover,
+.template-container button[class*="primary"]:hover,
 .catalog-container .btn-primary:hover,
 .catalog-container .button-primary:hover,
-.template-container .btn-primary:hover,
-.template-container .button-primary:hover {
+.catalog-container .template-button-primary:hover,
+.catalog-container button[class*="primary"]:hover {
   transform: translateY(-2px) !important;
   box-shadow: var(--template-shadow-lg) !important;
   opacity: 0.9 !important;
 }
 
-.btn-primary:active,
-.button-primary:active,
-.template-button-primary:active,
-button[class*="primary"]:active {
+.template-container .btn-primary:active,
+.template-container .button-primary:active,
+.template-container .template-button-primary:active,
+.template-container button[class*="primary"]:active,
+.catalog-container .btn-primary:active,
+.catalog-container .button-primary:active,
+.catalog-container .template-button-primary:active,
+.catalog-container button[class*="primary"]:active {
   transform: translateY(0) !important;
 }
 
-/* Botões secundários */
-.btn-secondary,
-.button-secondary,
-.template-button-secondary {
+/* Botões secundários - RESTRITOS */
+.template-container .btn-secondary,
+.template-container .button-secondary,
+.template-container .template-button-secondary,
+.catalog-container .btn-secondary,
+.catalog-container .button-secondary,
+.catalog-container .template-button-secondary {
   background: transparent !important;
   color: var(--template-primary) !important;
   border: 2px solid var(--template-primary) !important;
@@ -133,15 +146,19 @@ button[class*="primary"]:active {
   padding: 0.5rem 1rem !important;
 }
 
-.btn-secondary:hover,
-.button-secondary:hover,
-.template-button-secondary:hover {
+.template-container .btn-secondary:hover,
+.template-container .button-secondary:hover,
+.template-container .template-button-secondary:hover,
+.catalog-container .btn-secondary:hover,
+.catalog-container .button-secondary:hover,
+.catalog-container .template-button-secondary:hover {
   background: var(--template-primary) !important;
   color: #FFFFFF !important;
 }
 
-/* Cards do template */
-.template-card {
+/* Cards do template - RESTRITOS */
+.template-container .template-card,
+.catalog-container .template-card {
   background: var(--template-surface);
   border: 1px solid var(--template-border);
   border-radius: var(--template-border-radius);
@@ -149,20 +166,23 @@ button[class*="primary"]:active {
   transition: all 0.3s ease;
 }
 
-.template-card:hover {
+.template-container .template-card:hover,
+.catalog-container .template-card:hover {
   box-shadow: var(--template-shadow-lg);
   transform: translateY(-2px);
 }
 
-/* Headers do template */
-.template-header {
+/* Headers do template - RESTRITOS */
+.template-container .template-header,
+.catalog-container .template-header {
   background: var(--template-surface);
   border-bottom: 1px solid var(--template-border);
   color: var(--template-text);
 }
 
-/* Texto com gradiente */
-.template-gradient-text {
+/* Texto com gradiente - RESTRITO */
+.template-container .template-gradient-text,
+.catalog-container .template-gradient-text {
   background: var(--template-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -170,17 +190,22 @@ button[class*="primary"]:active {
   font-weight: 600;
 }
 
-/* Aplicar em elementos específicos do catálogo */
-.product-card .btn-primary,
-.product-card .button-primary,
-.product-card button[class*="Adicionar"],
-.product-card button[class*="Comprar"] {
+/* Aplicar em elementos específicos do catálogo APENAS */
+.template-container .product-card .btn-primary,
+.template-container .product-card .button-primary,
+.template-container .product-card button[class*="Adicionar"],
+.template-container .product-card button[class*="Comprar"],
+.catalog-container .product-card .btn-primary,
+.catalog-container .product-card .button-primary,
+.catalog-container .product-card button[class*="Adicionar"],
+.catalog-container .product-card button[class*="Comprar"] {
   background: var(--template-gradient-primary) !important;
 }
 
-/* Responsividade */
+/* Responsividade - APENAS para templates */
 @media (max-width: 768px) {
-  :root {
+  .template-container,
+  .catalog-container {
     --template-spacing: 12px;
     --template-border-radius: 6px;
   }

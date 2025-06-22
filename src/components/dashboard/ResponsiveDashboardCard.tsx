@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
@@ -23,25 +24,25 @@ const ResponsiveDashboardCard = ({
   variant = 'primary',
   onClick 
 }: ResponsiveDashboardCardProps) => {
-  const getCardClass = () => {
-    const baseClasses = "relative overflow-hidden rounded-2xl md:rounded-3xl p-5 md:p-8 lg:p-10 text-white shadow-xl hover:shadow-2xl backdrop-blur-sm border border-white/20 transition-all duration-300 ease-out transform-gpu";
-    const variantClasses = {
-      primary: 'bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600',
-      secondary: 'bg-gradient-to-br from-slate-500 via-slate-600 to-gray-700', 
-      success: 'bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600',
-      warning: 'bg-gradient-to-br from-orange-500 via-amber-600 to-red-500'
-    };
-    return `${baseClasses} ${variantClasses[variant]}`;
-  };
-
-  const getIconContainerClass = () => {
-    return "flex-shrink-0 w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-white/30 transition-all duration-300 ease-out hover:bg-white/30 hover:scale-105";
+  const getCardVariantClass = () => {
+    switch (variant) {
+      case 'primary':
+        return 'dashboard-card-primary';
+      case 'secondary':
+        return 'dashboard-card-secondary';
+      case 'success':
+        return 'dashboard-card-success';
+      case 'warning':
+        return 'dashboard-card-warning';
+      default:
+        return 'dashboard-card-primary';
+    }
   };
 
   return (
     <div 
-      className={`${getCardClass()} ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]' : ''} 
-                  transition-all duration-300 ease-out transform-gpu touch-target group`}
+      className={`dashboard-card ${getCardVariantClass()} ${onClick ? 'cursor-pointer' : ''} 
+                  transition-all duration-300 ease-out transform-gpu group`}
       onClick={onClick}
     >
       {/* Header */}
@@ -51,7 +52,7 @@ const ResponsiveDashboardCard = ({
             {title}
           </p>
         </div>
-        <div className={getIconContainerClass()}>
+        <div className="dashboard-card-icon">
           <Icon className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-sm" />
         </div>
       </div>
@@ -83,10 +84,10 @@ const ResponsiveDashboardCard = ({
       
       {/* Progress bar para trend */}
       {trend && (
-        <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm shadow-inner">
+        <div className="dashboard-progress-bar">
           <div 
-            className={`h-full rounded-full transition-all duration-700 ease-out shadow-sm ${
-              trend.isPositive ? 'bg-gradient-to-r from-green-300 to-emerald-400' : 'bg-gradient-to-r from-red-300 to-rose-400'
+            className={`dashboard-progress-fill ${
+              trend.isPositive ? 'dashboard-progress-positive' : 'dashboard-progress-negative'
             }`}
             style={{ 
               width: `${Math.min(Math.abs(trend.value), 100)}%`,

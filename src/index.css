@@ -7,8 +7,11 @@
 /* Importar estilos do template industrial */
 @import './styles/industrial-template.css';
 
-/* Importar variáveis CSS globais dos templates */
+/* Importar variáveis CSS globais dos templates -  RESTRITO A TEMPLATES */
 @import './styles/template-variables.css';
+
+/* Importar estilos isolados do dashboard */
+@import './styles/dashboard-isolated.css';
 
 @layer base {
   :root {
@@ -106,27 +109,5 @@
   -webkit-line-clamp: 3;
 }
 
-/* Aplicar estilos de template globalmente */
-.catalog-container,
-.template-container {
-  font-family: var(--template-font-family);
-}
-
-/* Garantir que botões primários sempre tenham gradiente */
-.btn-primary,
-.button-primary,
-button[class*="primary"] {
-  background: var(--template-gradient-primary) !important;
-  color: #FFFFFF !important;
-  border: none !important;
-  font-weight: 500 !important;
-  transition: all 0.3s ease !important;
-}
-
-.btn-primary:hover,
-.button-primary:hover,
-button[class*="primary"]:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--template-shadow-lg) !important;
-  opacity: 0.9 !important;
-}
+/* REMOVIDO: Estilos globais de botões que conflitavam */
+/* Agora cada contexto (dashboard vs template) tem seus próprios estilos */
