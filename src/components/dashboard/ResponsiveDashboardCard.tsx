@@ -24,10 +24,27 @@ const ResponsiveDashboardCard = ({
   variant = 'primary',
   onClick 
 }: ResponsiveDashboardCardProps) => {
-  const getCardClass = () => {
-    const baseClasses = "dashboard-card-" + variant;
-    const interactiveClasses = onClick ? 'cursor-pointer' : '';
-    return `${baseClasses} ${interactiveClasses}`;
+  const getCardClasses = () => {
+    const baseClasses = "relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ease-out";
+    const interactiveClasses = onClick ? 'cursor-pointer hover:transform hover:scale-102 hover:-translate-y-1' : '';
+    
+    let variantClasses = '';
+    switch (variant) {
+      case 'primary':
+        variantClasses = 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg shadow-blue-500/25';
+        break;
+      case 'secondary':
+        variantClasses = 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-lg shadow-slate-500/25';
+        break;
+      case 'success':
+        variantClasses = 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/25';
+        break;
+      case 'warning':
+        variantClasses = 'bg-gradient-to-br from-amber-500 to-red-500 shadow-lg shadow-amber-500/25';
+        break;
+    }
+    
+    return `${baseClasses} ${variantClasses} ${interactiveClasses}`;
   };
 
   const getIconContainerClass = () => {
@@ -36,7 +53,7 @@ const ResponsiveDashboardCard = ({
 
   return (
     <div 
-      className={getCardClass()}
+      className={getCardClasses()}
       onClick={onClick}
     >
       {/* Header */}

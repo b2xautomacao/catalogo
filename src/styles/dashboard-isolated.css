@@ -4,62 +4,18 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Cards do Dashboard - Estilos isolados */
-.dashboard-container .dashboard-card-primary {
-  background: linear-gradient(135deg, #0057FF 0%, #8E2DE2 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  padding: 24px !important;
-  box-shadow: 0 10px 25px rgba(0, 87, 255, 0.2) !important;
-  transition: all 0.3s ease !important;
-  position: relative !important;
-  overflow: hidden !important;
+/* Layout específico do Dashboard */
+.dashboard-container .dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
 }
 
-.dashboard-container .dashboard-card-secondary {
-  background: linear-gradient(135deg, #64748B 0%, #475569 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  padding: 24px !important;
-  box-shadow: 0 10px 25px rgba(100, 116, 139, 0.2) !important;
-  transition: all 0.3s ease !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-.dashboard-container .dashboard-card-success {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  padding: 24px !important;
-  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2) !important;
-  transition: all 0.3s ease !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-.dashboard-container .dashboard-card-warning {
-  background: linear-gradient(135deg, #F59E0B 0%, #DC2626 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  padding: 24px !important;
-  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.2) !important;
-  transition: all 0.3s ease !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-/* Hover effects para cards do dashboard */
-.dashboard-container .dashboard-card-primary:hover,
-.dashboard-container .dashboard-card-secondary:hover,
-.dashboard-container .dashboard-card-success:hover,
-.dashboard-container .dashboard-card-warning:hover {
-  transform: translateY(-5px) scale(1.02) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+@media (max-width: 768px) {
+  .dashboard-container .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 /* Botões do Dashboard - Isolados */
@@ -98,31 +54,9 @@
 
 /* Responsividade específica do Dashboard */
 @media (max-width: 768px) {
-  .dashboard-container .dashboard-card-primary,
-  .dashboard-container .dashboard-card-secondary,
-  .dashboard-container .dashboard-card-success,
-  .dashboard-container .dashboard-card-warning {
-    padding: 16px !important;
-    border-radius: 12px !important;
-  }
-  
   .dashboard-container .dashboard-btn-primary,
   .dashboard-container .dashboard-btn-secondary {
     padding: 10px 16px !important;
     font-size: 14px !important;
-  }
-}
-
-/* Layout específico do Dashboard */
-.dashboard-container .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-@media (max-width: 768px) {
-  .dashboard-container .dashboard-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
   }
 }
