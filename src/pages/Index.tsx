@@ -159,8 +159,8 @@ const Index = () => {
           Fazer Logout
         </button>
       </div>
-    );
-  }
+    </div>
+  );
 };
 
 export default Index;
