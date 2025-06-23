@@ -6,6 +6,7 @@ import { useGlobalTemplateStyles } from '@/hooks/useGlobalTemplateStyles';
 import ProductGrid from './ProductGrid';
 import FilterSidebar from './FilterSidebar';
 import TemplateWrapper from './TemplateWrapper';
+import CheckoutModal from './CheckoutModal';
 import { Product, CatalogType } from '@/hooks/useCatalog';
 import { useCart } from '@/hooks/useCart';
 
@@ -26,6 +27,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const handleAddToWishlist = (product: Product) => {
     setWishlist(prev => {
@@ -43,7 +45,13 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   };
 
   const handleCartClick = () => {
-    console.log('🛒 PUBLIC CATALOG - Clique no carrinho');
+    console.log('🛒 PUBLIC CATALOG - Abrindo checkout modal');
+    setIsCheckoutOpen(true);
+  };
+
+  const handleCloseCheckout = () => {
+    console.log('🛒 PUBLIC CATALOG - Fechando checkout modal');
+    setIsCheckoutOpen(false);
   };
 
   const loading = catalogLoading || settingsLoading;
@@ -120,6 +128,15 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
           />
         )}
       </TemplateWrapper>
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={handleCloseCheckout}
+        storeSettings={settings}
+        storeId={store?.id}
+        storeData={store}
+      />
     </div>
   );
 };
