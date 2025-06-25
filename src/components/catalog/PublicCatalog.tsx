@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { useCatalog } from '@/hooks/useCatalog';
+import { useCatalog, CatalogType } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useGlobalTemplateStyles } from '@/hooks/useGlobalTemplateStyles';
 import ProductGrid from './ProductGrid';
 import FilterSidebar from './FilterSidebar';
 import TemplateWrapper from './TemplateWrapper';
 import CheckoutModal from './CheckoutModal';
-import { Product, CatalogType } from '@/hooks/useCatalog';
+import { Product } from '@/types/product';
 import { useCart } from '@/hooks/useCart';
 
 interface PublicCatalogProps {

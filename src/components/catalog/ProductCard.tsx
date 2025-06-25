@@ -4,7 +4,7 @@ import { Heart, ShoppingCart, Eye, Star, Share2, TrendingUp, AlertCircle } from 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Product } from '@/hooks/useCatalog';
+import { Product } from '@/types/product';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useProductVariations } from '@/hooks/useProductVariations';
 import { useCart } from '@/hooks/useCart';

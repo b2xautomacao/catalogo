@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Heart, Package, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { Product } from '@/hooks/useCatalog';
+import { Product } from '@/types/product';
 import ProductImageGallery from '@/components/products/ProductImageGallery';
 
 interface ProductDetailsModalProps {
