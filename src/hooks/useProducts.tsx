@@ -26,6 +26,13 @@ export interface Product {
   reserved_stock?: number;
   created_at?: string;
   updated_at?: string;
+  variations?: Array<{
+    id: string;
+    size?: string;
+    color?: string;
+    price_adjustment?: number;
+    stock: number;
+  }>;
 }
 
 export interface CreateProductData {
@@ -44,6 +51,7 @@ export interface CreateProductData {
   is_featured?: boolean;
   allow_negative_stock?: boolean;
   stock_alert_threshold?: number;
+  is_active?: boolean;
 }
 
 export interface UpdateProductData extends CreateProductData {

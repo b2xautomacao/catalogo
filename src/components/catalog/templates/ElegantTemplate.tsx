@@ -1,4 +1,3 @@
-
 import React, { useState, memo, useCallback, useMemo } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2, TrendingUp, AlertCircle, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,7 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = memo(({
   } = useCatalogMode();
 
   // Usar variações do produto se disponíveis, senão usar do hook
-  const productVariations = product.variations || variations;
+  const productVariations = product.variations || variations || [];
 
   // Calcular quantidade atual no carrinho para este produto
   const cartQuantity = useMemo(() => {
@@ -322,7 +321,10 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = memo(({
 
       {/* Product Details Modal */}
       <ProductDetailsModal
-        product={product}
+        product={{
+          ...product,
+          description: product.description || ''
+        }}
         catalogType={catalogType}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}

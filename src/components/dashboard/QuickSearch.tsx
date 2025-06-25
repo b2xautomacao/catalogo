@@ -17,7 +17,7 @@ const QuickSearch = ({ onProductSelect, onOrderSelect }: QuickSearchProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const { profile } = useAuth();
-  const { products } = useProducts(profile?.store_id || '');
+  const { products } = useProducts();
   const { orders } = useOrders();
 
   const searchResults = useMemo(() => {

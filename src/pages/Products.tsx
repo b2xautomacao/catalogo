@@ -117,9 +117,9 @@ const Products = () => {
   // Mapear produtos para o formato esperado pelo ProductList
   const mappedProducts = products.map(product => ({
     ...product,
-    price: product.retail_price || 0,
-    status: product.is_active ? 'active' as const : 'inactive' as const,
-    wholesalePrice: product.wholesale_price
+    description: product.description || '', // Garantir que description não seja undefined
+    category: product.category || '', // Garantir que category não seja undefined
+    status: product.is_active ? 'active' as const : 'inactive' as const
   }));
 
   return (
