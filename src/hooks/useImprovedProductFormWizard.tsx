@@ -39,8 +39,10 @@ export const useImprovedProductFormWizard = () => {
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Estado inicial com valores padrão mais robustos
   const [formData, setFormData] = useState<ProductFormData>({
-    store_id: '',
+    store_id: profile?.store_id || '',
     name: '',
     description: '',
     retail_price: 0,
@@ -69,48 +71,72 @@ export const useImprovedProductFormWizard = () => {
   ];
 
   const updateFormData = useCallback((updates: Partial<ProductFormData>) => {
-    console.log('🔧 WIZARD IMPROVED - Atualizando dados:', Object.keys(updates));
-    setFormData(prev => {
-      const updated = { ...prev, ...updates };
-      console.log('📊 WIZARD IMPROVED - Dados após atualização:', {
-        step: currentStep,
-        name: updated.name?.trim(),
-        nameLength: updated.name?.trim()?.length || 0,
-        retail_price: updated.retail_price,
-        stock: updated.stock,
-        variations: updated.variations?.length || 0
-      });
-      return updated;
+    console.log('🔧 IMPROVED WIZARD - Atualizando formData:', {
+      currentStep,
+      updates: Object.keys(updates),
+      nameUpdate: updates.name ? `"${updates.name.trim()}"` : 'não alterado',
+      priceUpdate: updates.retail_price !== undefined ? updates.retail_price : 'não alterado'
     });
-  }, [currentStep]);
+    
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // Garantir que store_id está sempre presente
+      if (!newData.store_id && profile?.store_id) {
+        newData.store_id = profile.store_id;
+      }
+      
+      console.log('📊 IMPROVED WIZARD - FormData após atualização:', {
+        name: `"${newData.name?.trim() || ''}"`,
+        nameLength: newData.name?.trim()?.length || 0,
+        retail_price: newData.retail_price,
+        stock: newData.stock,
+        store_id: newData.store_id,
+        hasStoreId: !!newData.store_id
+      });
+      
+      return newData;
+    });
+  }, [currentStep, profile?.store_id]);
 
   const validateCurrentStep = useCallback((): boolean => {
-    console.log('✅ WIZARD IMPROVED - Validando step:', currentStep);
+    console.log('✅ IMPROVED WIZARD - Validando step:', currentStep);
     
     const currentStepData = steps[currentStep];
     if (!currentStepData.required) {
-      console.log('📝 WIZARD IMPROVED - Step opcional, sempre válido:', currentStep);
+      console.log('📝 IMPROVED WIZARD - Step opcional, sempre válido:', currentStep);
       return true;
     }
     
-    console.log('📊 WIZARD IMPROVED - Dados para validação:', {
-      name: formData.name?.trim(),
-      nameLength: formData.name?.trim()?.length || 0,
-      retail_price: formData.retail_price,
-      stock: formData.stock
+    // Dados atuais para validação
+    const nameToValidate = formData.name?.trim() || '';
+    const priceToValidate = formData.retail_price || 0;
+    const stockToValidate = formData.stock || 0;
+    
+    console.log('📊 IMPROVED WIZARD - Dados para validação:', {
+      step: currentStep,
+      name: `"${nameToValidate}"`,
+      nameLength: nameToValidate.length,
+      retail_price: priceToValidate,
+      stock: stockToValidate,
+      store_id: formData.store_id
     });
     
     switch (currentStep) {
       case 0: // Informações Básicas
-        const hasName = formData.name?.trim() && formData.name.trim().length > 0;
-        console.log('📝 WIZARD IMPROVED - Validação básica:', { hasName, name: formData.name?.trim() });
-        return hasName;
+        const hasValidName = nameToValidate.length > 0;
+        console.log('📝 IMPROVED WIZARD - Validação básica:', { 
+          hasValidName, 
+          nameValue: `"${nameToValidate}"`,
+          nameLength: nameToValidate.length
+        });
+        return hasValidName;
         
       case 1: // Preços e Estoque
-        const validPricing = formData.retail_price > 0 && formData.stock >= 0;
-        console.log('💰 WIZARD IMPROVED - Validação preços:', {
-          retail_price: formData.retail_price,
-          stock: formData.stock,
+        const validPricing = priceToValidate > 0 && stockToValidate >= 0;
+        console.log('💰 IMPROVED WIZARD - Validação preços:', {
+          retail_price: priceToValidate,
+          stock: stockToValidate,
           valid: validPricing
         });
         return validPricing;
@@ -121,21 +147,29 @@ export const useImprovedProductFormWizard = () => {
   }, [currentStep, formData, steps]);
 
   const nextStep = useCallback(() => {
-    console.log('➡️ WIZARD IMPROVED - Tentando avançar do step:', currentStep);
+    console.log('➡️ IMPROVED WIZARD - Tentando avançar do step:', currentStep);
     
     const canProceed = validateCurrentStep();
-    console.log('🚦 WIZARD IMPROVED - Pode avançar?', canProceed);
+    console.log('🚦 IMPROVED WIZARD - Pode avançar?', canProceed);
     
     if (!canProceed) {
-      console.log('🛑 WIZARD IMPROVED - Não pode avançar, dados incompletos');
+      console.log('🛑 IMPROVED WIZARD - Não pode avançar, dados incompletos');
       
-      const currentStepData = steps[currentStep];
       let message = 'Preencha todos os campos obrigatórios antes de continuar.';
       
       if (currentStep === 0) {
         message = 'Nome do produto é obrigatório.';
+        console.log('🔍 IMPROVED WIZARD - Problema no nome:', {
+          formDataName: formData.name,
+          trimmedName: formData.name?.trim(),
+          nameLength: formData.name?.trim()?.length || 0
+        });
       } else if (currentStep === 1) {
         message = 'Preço de varejo deve ser maior que zero e estoque não pode ser negativo.';
+        console.log('🔍 IMPROVED WIZARD - Problema nos preços:', {
+          retail_price: formData.retail_price,
+          stock: formData.stock
+        });
       }
       
       toast({
@@ -148,45 +182,53 @@ export const useImprovedProductFormWizard = () => {
     
     if (currentStep < steps.length - 1) {
       const nextStepIndex = currentStep + 1;
-      console.log('✅ WIZARD IMPROVED - Avançando para step:', nextStepIndex);
+      console.log('✅ IMPROVED WIZARD - Avançando para step:', nextStepIndex);
       setCurrentStep(nextStepIndex);
     }
-  }, [currentStep, steps.length, validateCurrentStep, toast]);
+  }, [currentStep, steps.length, validateCurrentStep, toast, formData]);
 
   const prevStep = useCallback(() => {
-    console.log('⬅️ WIZARD IMPROVED - Voltando do step:', currentStep);
+    console.log('⬅️ IMPROVED WIZARD - Voltando do step:', currentStep);
     if (currentStep > 0) {
       const prevStepIndex = currentStep - 1;
-      console.log('✅ WIZARD IMPROVED - Voltando para step:', prevStepIndex);
+      console.log('✅ IMPROVED WIZARD - Voltando para step:', prevStepIndex);
       setCurrentStep(prevStepIndex);
     }
   }, [currentStep]);
 
   const goToStep = useCallback((stepIndex: number) => {
-    console.log('🎯 WIZARD IMPROVED - Indo para step:', stepIndex);
+    console.log('🎯 IMPROVED WIZARD - Indo para step:', stepIndex);
     if (stepIndex >= 0 && stepIndex < steps.length) {
       setCurrentStep(stepIndex);
     }
   }, [steps.length]);
 
   const saveProduct = useCallback(async (productId?: string): Promise<string | null> => {
-    console.log('💾 WIZARD IMPROVED - Iniciando salvamento');
-    console.log('📋 WIZARD IMPROVED - Product ID:', productId);
-    console.log('📋 WIZARD IMPROVED - Form Data:', {
-      name: formData.name?.trim(),
-      retail_price: formData.retail_price,
-      stock: formData.stock,
-      category: formData.category?.trim(),
+    console.log('💾 IMPROVED WIZARD - Iniciando salvamento');
+    console.log('📋 IMPROVED WIZARD - Product ID:', productId);
+    
+    // Dados atuais no momento do salvamento
+    const currentName = formData.name?.trim() || '';
+    const currentPrice = formData.retail_price || 0;
+    const currentStock = formData.stock || 0;
+    const currentStoreId = formData.store_id || profile?.store_id;
+    
+    console.log('📋 IMPROVED WIZARD - Dados no momento do salvamento:', {
+      name: `"${currentName}"`,
+      nameLength: currentName.length,
+      retail_price: currentPrice,
+      stock: currentStock,
+      store_id: currentStoreId,
       variations: formData.variations?.length || 0
     });
 
     if (isSaving) {
-      console.log('⏳ WIZARD IMPROVED - Já está salvando, ignorando...');
+      console.log('⏳ IMPROVED WIZARD - Já está salvando, ignorando...');
       return null;
     }
 
-    if (!profile?.store_id) {
-      console.error('❌ WIZARD IMPROVED - Store ID não encontrado');
+    if (!currentStoreId) {
+      console.error('❌ IMPROVED WIZARD - Store ID não encontrado');
       toast({
         title: 'Erro',
         description: 'Loja não identificada. Faça login novamente.',
@@ -195,10 +237,13 @@ export const useImprovedProductFormWizard = () => {
       return null;
     }
 
-    // Validação final obrigatória
-    const trimmedName = formData.name?.trim();
-    if (!trimmedName || trimmedName.length === 0) {
-      console.error('❌ WIZARD IMPROVED - Nome vazio:', formData.name);
+    // Validação final obrigatória com dados atuais
+    if (!currentName || currentName.length === 0) {
+      console.error('❌ IMPROVED WIZARD - Nome vazio no salvamento:', {
+        formDataName: formData.name,
+        trimmedName: currentName,
+        nameLength: currentName.length
+      });
       toast({
         title: 'Erro de validação',
         description: 'Nome do produto é obrigatório.',
@@ -207,8 +252,8 @@ export const useImprovedProductFormWizard = () => {
       return null;
     }
 
-    if (formData.retail_price <= 0) {
-      console.error('❌ WIZARD IMPROVED - Preço inválido:', formData.retail_price);
+    if (currentPrice <= 0) {
+      console.error('❌ IMPROVED WIZARD - Preço inválido:', currentPrice);
       toast({
         title: 'Erro de validação',
         description: 'Preço de varejo deve ser maior que zero.',
@@ -220,56 +265,56 @@ export const useImprovedProductFormWizard = () => {
     setIsSaving(true);
 
     try {
-      // 1. Preparar dados do produto
+      // 1. Preparar dados do produto com valores atuais
       const { variations, ...productDataWithoutVariations } = formData;
       const productData: CreateProductData = {
         ...productDataWithoutVariations,
-        store_id: profile.store_id,
-        name: trimmedName,
+        store_id: currentStoreId,
+        name: currentName,
         description: formData.description?.trim() || '',
         category: formData.category?.trim() || 'Geral',
-        retail_price: Number(formData.retail_price),
-        stock: Number(formData.stock)
+        retail_price: Number(currentPrice),
+        stock: Number(currentStock)
       };
 
-      console.log('📤 WIZARD IMPROVED - Salvando produto:', productData);
+      console.log('📤 IMPROVED WIZARD - Dados limpos para salvamento:', productData);
 
       // 2. Salvar produto
       let result;
       let savedProductId: string;
 
       if (productId) {
-        console.log('🔄 WIZARD IMPROVED - Atualizando produto existente');
+        console.log('🔄 IMPROVED WIZARD - Atualizando produto existente');
         result = await updateProduct({ ...productData, id: productId });
         savedProductId = productId;
       } else {
-        console.log('➕ WIZARD IMPROVED - Criando novo produto');
+        console.log('➕ IMPROVED WIZARD - Criando novo produto');
         result = await createProduct(productData);
         savedProductId = result.data?.id;
       }
 
       if (result.error || !savedProductId) {
-        console.error('❌ WIZARD IMPROVED - Erro ao salvar produto:', result.error);
+        console.error('❌ IMPROVED WIZARD - Erro ao salvar produto:', result.error);
         throw new Error(result.error || 'Erro ao salvar produto');
       }
 
-      console.log('✅ WIZARD IMPROVED - Produto salvo:', savedProductId);
+      console.log('✅ IMPROVED WIZARD - Produto salvo:', savedProductId);
 
       // 3. Upload de imagens
       if (draftImages.length > 0) {
-        console.log('📷 WIZARD IMPROVED - Fazendo upload de imagens');
+        console.log('📷 IMPROVED WIZARD - Fazendo upload de imagens');
         try {
           const uploadedUrls = await uploadDraftImages(savedProductId);
-          console.log('✅ WIZARD IMPROVED - Upload concluído:', uploadedUrls.length);
+          console.log('✅ IMPROVED WIZARD - Upload concluído:', uploadedUrls.length);
         } catch (uploadError) {
-          console.error('❌ WIZARD IMPROVED - Erro no upload:', uploadError);
+          console.error('❌ IMPROVED WIZARD - Erro no upload:', uploadError);
           // Não falhar o produto por causa das imagens
         }
       }
 
       // 4. Salvar variações
       if (formData.variations && formData.variations.length > 0) {
-        console.log('🎨 WIZARD IMPROVED - Salvando variações:', formData.variations.length);
+        console.log('🎨 IMPROVED WIZARD - Salvando variações:', formData.variations.length);
         try {
           const variationsToSave = formData.variations.map(variation => ({
             color: variation.color || null,
@@ -283,26 +328,26 @@ export const useImprovedProductFormWizard = () => {
 
           const variationResult = await saveVariations(savedProductId, variationsToSave);
           if (variationResult.success) {
-            console.log('✅ WIZARD IMPROVED - Variações salvas');
+            console.log('✅ IMPROVED WIZARD - Variações salvas');
           } else {
-            console.error('❌ WIZARD IMPROVED - Erro nas variações:', variationResult.error);
+            console.error('❌ IMPROVED WIZARD - Erro nas variações:', variationResult.error);
           }
         } catch (variationError) {
-          console.error('❌ WIZARD IMPROVED - Erro ao salvar variações:', variationError);
+          console.error('❌ IMPROVED WIZARD - Erro ao salvar variações:', variationError);
         }
       }
 
       // Sucesso
       toast({ 
         title: productId ? 'Produto atualizado!' : 'Produto criado!',
-        description: `${trimmedName} foi ${productId ? 'atualizado' : 'criado'} com sucesso.`
+        description: `${currentName} foi ${productId ? 'atualizado' : 'criado'} com sucesso.`
       });
       
-      console.log('🎉 WIZARD IMPROVED - Processo completo!');
+      console.log('🎉 IMPROVED WIZARD - Processo completo!');
       return savedProductId;
       
     } catch (error) {
-      console.error('💥 WIZARD IMPROVED - Erro no salvamento:', error);
+      console.error('💥 IMPROVED WIZARD - Erro no salvamento:', error);
       toast({
         title: 'Erro ao salvar produto',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -315,9 +360,9 @@ export const useImprovedProductFormWizard = () => {
   }, [formData, profile?.store_id, draftImages, createProduct, updateProduct, uploadDraftImages, saveVariations, toast, isSaving]);
 
   const resetForm = useCallback(() => {
-    console.log('🔄 WIZARD IMPROVED - Resetando formulário');
+    console.log('🔄 IMPROVED WIZARD - Resetando formulário');
     setFormData({
-      store_id: '',
+      store_id: profile?.store_id || '',
       name: '',
       description: '',
       retail_price: 0,
@@ -337,7 +382,7 @@ export const useImprovedProductFormWizard = () => {
     });
     setCurrentStep(0);
     clearDraftImages();
-  }, [clearDraftImages]);
+  }, [clearDraftImages, profile?.store_id]);
 
   const canProceed = validateCurrentStep();
 

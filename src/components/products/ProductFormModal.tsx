@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ProductFormWizard from './ProductFormWizard';
+import ImprovedProductFormWizard from './ImprovedProductFormWizard';
 
 interface ProductFormModalProps {
   open: boolean;
@@ -17,15 +17,15 @@ const ProductFormModal = ({
   initialData,
   mode
 }: ProductFormModalProps) => {
-  console.log('🎭 PRODUCT FORM MODAL - Renderizando:', {
+  console.log('🎭 PRODUCT FORM MODAL - Renderizando com Improved Wizard:', {
     open,
     mode,
-    hasInitialData: !!initialData
+    hasInitialData: !!initialData,
+    initialDataId: initialData?.id
   });
 
-  // Simplificar - deixar apenas o wizard gerenciar tudo
   const handleSuccess = () => {
-    console.log('✅ PRODUCT FORM MODAL - Sucesso, fechando modal');
+    console.log('✅ PRODUCT FORM MODAL - Sucesso no Improved Wizard, fechando modal');
     onOpenChange(false);
     
     // Se há callback de submit, executar após fechar
@@ -37,12 +37,12 @@ const ProductFormModal = ({
   };
 
   const handleClose = () => {
-    console.log('❌ PRODUCT FORM MODAL - Fechando modal');
+    console.log('❌ PRODUCT FORM MODAL - Fechando modal via Improved Wizard');
     onOpenChange(false);
   };
 
   return (
-    <ProductFormWizard
+    <ImprovedProductFormWizard
       isOpen={open}
       onClose={handleClose}
       editingProduct={mode === 'edit' ? initialData : undefined}

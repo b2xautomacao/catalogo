@@ -24,6 +24,7 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
   console.log('🧙‍♂️ IMPROVED PRODUCT WIZARD - Renderizando:', {
     isOpen,
     editingProduct: editingProduct?.id,
+    editingProductName: editingProduct?.name,
     hasOnSuccess: !!onSuccess
   });
 
@@ -47,10 +48,16 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
   // Carregar dados do produto para edição
   useEffect(() => {
     if (editingProduct && isOpen) {
-      console.log('📂 IMPROVED WIZARD - Carregando produto para edição:', editingProduct);
+      console.log('📂 IMPROVED WIZARD - Carregando produto para edição:', {
+        id: editingProduct.id,
+        name: editingProduct.name,
+        retail_price: editingProduct.retail_price,
+        stock: editingProduct.stock,
+        category: editingProduct.category
+      });
       
-      // Carregar dados básicos do produto
-      updateFormData({
+      // Preparar dados completos para carregar
+      const productDataToLoad = {
         name: editingProduct.name || '',
         description: editingProduct.description || '',
         retail_price: editingProduct.retail_price || 0,
@@ -65,7 +72,10 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
         is_featured: editingProduct.is_featured || false,
         allow_negative_stock: editingProduct.allow_negative_stock || false,
         stock_alert_threshold: editingProduct.stock_alert_threshold || 5,
-      });
+      };
+      
+      console.log('📥 IMPROVED WIZARD - Dados preparados para carregamento:', productDataToLoad);
+      updateFormData(productDataToLoad);
 
       // Carregar imagens existentes
       if (editingProduct.id) {
@@ -105,6 +115,12 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
 
   const handleSave = async () => {
     console.log('💾 IMPROVED WIZARD - Tentativa de salvamento');
+    console.log('📊 IMPROVED WIZARD - FormData atual:', {
+      name: `"${formData.name?.trim() || ''}"`,
+      nameLength: formData.name?.trim()?.length || 0,
+      retail_price: formData.retail_price,
+      stock: formData.stock
+    });
     
     try {
       const productId = await saveProduct(editingProduct?.id);
@@ -132,11 +148,12 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
 
   const isLastStep = currentStep === steps.length - 1;
   
-  // Calcular steps completados
+  // Calcular steps completados baseado nos dados atuais
   const completedSteps: number[] = [];
   
   // Step 0: Básico - precisa de nome
-  if (formData.name?.trim() && formData.name.trim().length > 0) {
+  const currentName = formData.name?.trim() || '';
+  if (currentName.length > 0) {
     completedSteps.push(0);
   }
   
@@ -148,15 +165,18 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
   // Steps 2-5 sempre podem ser completados (opcionais)
   completedSteps.push(2, 3, 4, 5);
 
-  console.log('📊 IMPROVED WIZARD - Status:', {
+  console.log('📊 IMPROVED WIZARD - Status atual:', {
     currentStep,
     canProceed,
     completedSteps,
     isLastStep,
-    formDataValid: {
-      name: !!formData.name?.trim(),
-      price: formData.retail_price > 0,
-      stock: formData.stock >= 0
+    formDataStatus: {
+      name: `"${currentName}"`,
+      nameLength: currentName.length,
+      price: formData.retail_price,
+      stock: formData.stock,
+      hasValidName: currentName.length > 0,
+      hasValidPrice: formData.retail_price > 0
     }
   });
 
