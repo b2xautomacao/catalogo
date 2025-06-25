@@ -6,7 +6,7 @@ import ProductVariationsForm from './ProductVariationsForm';
 import ImprovedDraftImageUpload from '../ImprovedDraftImageUpload';
 import ProductSeoForm from './ProductSeoForm';
 import ProductAdvancedForm from './ProductAdvancedForm';
-import { ProductFormData } from '@/hooks/useProductFormWizard';
+import { ProductFormData } from '@/hooks/useImprovedProductFormWizard';
 
 interface WizardStepContentProps {
   currentStep: number;
