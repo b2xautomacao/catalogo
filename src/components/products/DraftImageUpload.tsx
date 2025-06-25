@@ -23,6 +23,9 @@ const DraftImageUpload = ({
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
 
+  console.log('🖼 DRAFT IMAGE UPLOAD - Imagens:', draftImages.length);
+  console.log('🖼 DRAFT IMAGE UPLOAD - Uploading:', uploading);
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -48,6 +51,8 @@ const DraftImageUpload = ({
   };
 
   const handleFiles = (files: File[]) => {
+    console.log('📁 DRAFT IMAGE UPLOAD - Arquivos selecionados:', files.length);
+    
     if (draftImages.length >= maxImages) {
       toast({
         title: "Limite atingido",
@@ -79,6 +84,7 @@ const DraftImageUpload = ({
         return;
       }
 
+      console.log('➕ DRAFT IMAGE UPLOAD - Adicionando arquivo:', file.name);
       onImageAdd(file);
     });
   };
@@ -86,37 +92,60 @@ const DraftImageUpload = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
-        {draftImages.map((image, index) => (
-          <div key={image.id} className="relative group">
-            <div className="w-24 h-24 rounded-lg border-2 border-gray-200 overflow-hidden">
-              <img
-                src={image.url}
-                alt={`Produto ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+        {draftImages.map((image, index) => {
+          console.log('🎨 DRAFT IMAGE UPLOAD - Renderizando imagem:', index, {
+            id: image.id,
+            hasPreview: !!image.preview,
+            hasUrl: !!image.url,
+            uploaded: image.uploaded,
+            isExisting: image.isExisting
+          });
+
+          return (
+            <div key={image.id} className="relative group">
+              <div className="w-24 h-24 rounded-lg border-2 border-gray-200 overflow-hidden">
+                <img
+                  src={image.preview || image.url || ''}
+                  alt={`Produto ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('❌ DRAFT IMAGE UPLOAD - Erro ao carregar imagem:', image.id);
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDlWN0MyMSA1Ljg5NTQzIDIwLjEwNDYgNSAxOSA1SDVDMy44OTU0MyA1IDMgNS44OTU0MyAzIDdWMTdDMyAxOC4xMDQ2IDMuODk1NDMgMTkgNSAxOUgxOUMyMC4xMDQ2IDE5IDIxIDE4LjEwNDYgMjEgMTdWMTVNMjEgOUwxNSAxNUw5IDlNMjEgOUgxNE0yMSA5VjE1IiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
+                  }}
+                />
+              </div>
+              
+              <button
+                onClick={() => {
+                  console.log('🗑 DRAFT IMAGE UPLOAD - Removendo imagem:', image.id);
+                  onImageRemove(image.id);
+                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                disabled={uploading}
+              >
+                <X size={14} />
+              </button>
+              
+              {index === 0 && (
+                <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                  Principal
+                </div>
+              )}
+              
+              {image.uploaded && (
+                <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                  ✓
+                </div>
+              )}
+
+              {!image.uploaded && !image.isExisting && (
+                <div className="absolute top-1 left-1 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                  Nova
+                </div>
+              )}
             </div>
-            
-            <button
-              onClick={() => onImageRemove(image.id)}
-              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              disabled={uploading}
-            >
-              <X size={14} />
-            </button>
-            
-            {index === 0 && (
-              <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                Principal
-              </div>
-            )}
-            
-            {image.uploaded && (
-              <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                ✓
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
         
         {draftImages.length < maxImages && (
           <div

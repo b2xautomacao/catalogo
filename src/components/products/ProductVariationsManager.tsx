@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +19,11 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   onChange
 }) => {
   const [showForm, setShowForm] = useState(false);
+
+  console.log('🎨 VARIATIONS MANAGER - Renderizando:', {
+    variationsCount: variations.length,
+    showForm
+  });
 
   const addVariation = () => {
     const newVariation: ProductVariation = {
@@ -52,8 +56,17 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   };
 
   const handleImageUpload = (index: number, file: File) => {
+    console.log('📷 VARIATIONS MANAGER - Upload de imagem para variação:', index);
+    console.log('📁 VARIATIONS MANAGER - Arquivo:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
     // Criar URL temporária para preview
     const previewUrl = URL.createObjectURL(file);
+    console.log('🔗 VARIATIONS MANAGER - Preview URL criada:', previewUrl);
+    
     updateVariation(index, { 
       image_file: file,
       image_url: previewUrl
@@ -61,6 +74,14 @@ const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   };
 
   const handleImageRemove = (index: number) => {
+    console.log('🗑 VARIATIONS MANAGER - Removendo imagem da variação:', index);
+    const variation = variations[index];
+    
+    // Revogar blob URL se existir
+    if (variation.image_url && variation.image_url.startsWith('blob:')) {
+      URL.revokeObjectURL(variation.image_url);
+    }
+    
     updateVariation(index, { 
       image_file: undefined,
       image_url: ''

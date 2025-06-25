@@ -85,13 +85,20 @@ export const useProductFormWizard = () => {
 
   const validateCurrentStep = useCallback((): boolean => {
     console.log('✅ WIZARD - Validando step:', currentStep);
+    console.log('📊 WIZARD - Dados do form para validação:', {
+      name: formData.name?.trim(),
+      nameLength: formData.name?.trim()?.length || 0,
+      retail_price: formData.retail_price,
+      stock: formData.stock,
+      category: formData.category?.trim()
+    });
     
     switch (currentStep) {
       case 0: // Informações Básicas
-        const basicValid = !!(formData.name?.trim() && formData.retail_price > 0);
+        const basicValid = !!(formData.name?.trim() && formData.name.trim().length > 0);
         console.log('📝 WIZARD - Step 0 (Básico):', {
           name: formData.name?.trim(),
-          retail_price: formData.retail_price,
+          nameValid: basicValid,
           valid: basicValid
         });
         return basicValid;
@@ -113,7 +120,7 @@ export const useProductFormWizard = () => {
         return true;
         
       default:
-        console.log('❌ WIZARD - Step desconhecido:', currentStep);
+        console.error('❌ WIZARD - Step desconhecido:', currentStep);
         return false;
     }
   }, [currentStep, formData]);
@@ -160,7 +167,13 @@ export const useProductFormWizard = () => {
   const saveProduct = useCallback(async (productId?: string): Promise<string | null> => {
     console.log('💾 WIZARD - Iniciando salvamento do produto');
     console.log('📋 WIZARD - Product ID:', productId);
-    console.log('📋 WIZARD - Form Data:', formData);
+    console.log('📋 WIZARD - Form Data:', {
+      name: formData.name,
+      retail_price: formData.retail_price,
+      stock: formData.stock,
+      category: formData.category,
+      description: formData.description?.substring(0, 50) + '...'
+    });
     console.log('📋 WIZARD - Draft Images:', draftImages.length);
     console.log('📋 WIZARD - Variations:', formData.variations?.length || 0);
 
@@ -180,8 +193,8 @@ export const useProductFormWizard = () => {
     }
 
     // Validação final dos dados
-    if (!formData.name?.trim()) {
-      console.error('❌ WIZARD - Nome vazio');
+    if (!formData.name?.trim() || formData.name.trim().length === 0) {
+      console.error('❌ WIZARD - Nome vazio ou inválido:', formData.name);
       toast({
         title: 'Erro de validação',
         description: 'Nome do produto é obrigatório.',
@@ -191,7 +204,7 @@ export const useProductFormWizard = () => {
     }
 
     if (formData.retail_price <= 0) {
-      console.error('❌ WIZARD - Preço inválido');
+      console.error('❌ WIZARD - Preço inválido:', formData.retail_price);
       toast({
         title: 'Erro de validação',
         description: 'Preço de varejo deve ser maior que zero.',
@@ -210,7 +223,9 @@ export const useProductFormWizard = () => {
         store_id: profile.store_id,
         name: formData.name.trim(),
         description: formData.description?.trim() || '',
-        category: formData.category?.trim() || '',
+        category: formData.category?.trim() || 'Geral',
+        retail_price: Number(formData.retail_price),
+        stock: Number(formData.stock)
       };
 
       console.log('📤 WIZARD - Dados do produto para salvar:', productData);
@@ -243,28 +258,38 @@ export const useProductFormWizard = () => {
       // 2. Salvar imagens se houver
       if (draftImages.length > 0) {
         console.log('📷 WIZARD - Fazendo upload de imagens...');
-        const uploadedUrls = await uploadDraftImages(savedProductId);
-        console.log('✅ WIZARD - Upload de imagens concluído:', uploadedUrls.length);
+        try {
+          const uploadedUrls = await uploadDraftImages(savedProductId);
+          console.log('✅ WIZARD - Upload de imagens concluído:', uploadedUrls.length);
+        } catch (uploadError) {
+          console.error('❌ WIZARD - Erro no upload de imagens:', uploadError);
+          // Não falhar o produto por causa das imagens
+        }
       }
 
       // 3. Salvar variações se houver
       if (formData.variations && formData.variations.length > 0) {
         console.log('🎨 WIZARD - Salvando variações...');
-        const variationsToSave = formData.variations.map(variation => ({
-          color: variation.color || null,
-          size: variation.size || null,
-          sku: variation.sku || null,
-          stock: variation.stock,
-          price_adjustment: variation.price_adjustment,
-          is_active: variation.is_active,
-          image_url: variation.image_url || null
-        }));
+        try {
+          const variationsToSave = formData.variations.map(variation => ({
+            color: variation.color || null,
+            size: variation.size || null,
+            sku: variation.sku || null,
+            stock: variation.stock,
+            price_adjustment: variation.price_adjustment,
+            is_active: variation.is_active,
+            image_url: variation.image_url || null
+          }));
 
-        const variationResult = await saveVariations(savedProductId, variationsToSave);
-        if (variationResult.success) {
-          console.log('✅ WIZARD - Variações salvas com sucesso');
-        } else {
-          console.error('❌ WIZARD - Erro ao salvar variações:', variationResult.error);
+          const variationResult = await saveVariations(savedProductId, variationsToSave);
+          if (variationResult.success) {
+            console.log('✅ WIZARD - Variações salvas com sucesso');
+          } else {
+            console.error('❌ WIZARD - Erro ao salvar variações:', variationResult.error);
+          }
+        } catch (variationError) {
+          console.error('❌ WIZARD - Erro nas variações:', variationError);
+          // Não falhar o produto por causa das variações
         }
       }
 

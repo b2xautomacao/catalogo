@@ -21,9 +21,20 @@ const VariationImageUpload: React.FC<VariationImageUploadProps> = ({
 }) => {
   const [dragOver, setDragOver] = useState(false);
 
+  console.log('🖼 VARIATION IMAGE UPLOAD - Renderizando:', {
+    hasImage: !!imageUrl,
+    imageUrl: imageUrl?.substring(0, 50) + '...',
+    disabled
+  });
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      console.log('📁 VARIATION IMAGE UPLOAD - Arquivo selecionado:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
       onImageUpload(file);
     }
   };
@@ -34,6 +45,11 @@ const VariationImageUpload: React.FC<VariationImageUploadProps> = ({
     
     const file = event.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
+      console.log('📁 VARIATION IMAGE UPLOAD - Arquivo arrastado:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
       onImageUpload(file);
     }
   };
@@ -59,13 +75,20 @@ const VariationImageUpload: React.FC<VariationImageUploadProps> = ({
                 src={imageUrl}
                 alt="Variação"
                 className="w-full h-20 object-cover rounded"
+                onError={(e) => {
+                  console.error('❌ VARIATION IMAGE UPLOAD - Erro ao carregar imagem');
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDlWN0MyMSA1Ljg5NTQzIDIwLjEwNDYgNSAxOSA1SDVDMy44OTU0MyA1IDMgNS44OTU0MyAzIDdWMTdDMyAxOC4xMDQ2IDMuODk1NDMgMTkgNSAxOUgxOUMyMC4xMDQ2IDE5IDIxIDE4LjEwNDYgMjEgMTdWMTVNMjEgOUwxNSAxNUw5IDlNMjEgOUgxNE0yMSA5VjE1IiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
+                }}
               />
               <Button
                 type="button"
                 variant="destructive"
                 size="sm"
                 className="absolute top-1 right-1 h-6 w-6 p-0"
-                onClick={onImageRemove}
+                onClick={() => {
+                  console.log('🗑 VARIATION IMAGE UPLOAD - Removendo imagem');
+                  onImageRemove();
+                }}
                 disabled={disabled}
               >
                 <X className="h-3 w-3" />
