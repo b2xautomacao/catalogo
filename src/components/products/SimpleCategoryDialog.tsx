@@ -29,6 +29,11 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
     setDescription(generatedDescription);
   };
 
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -60,22 +65,30 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
         is_active: true
       };
 
+      console.log('Criando categoria:', categoryData);
       const { data, error } = await createCategory(categoryData);
 
       if (error) {
+        console.error('Erro ao criar categoria:', error);
         toast({
           title: "Erro ao criar categoria",
           description: "Verifique se o nome não está duplicado",
           variant: "destructive"
         });
       } else if (data) {
+        console.log('Categoria criada com sucesso:', data);
         toast({
           title: "Categoria criada",
           description: `A categoria "${name}" foi criada com sucesso`
         });
         
-        setName('');
-        setDescription('');
+        // Resetar formulário
+        resetForm();
+        
+        // Fechar modal
+        onOpenChange(false);
+        
+        // Notificar categoria criada
         onCategoryCreated(data);
       }
     } catch (error) {
@@ -90,16 +103,16 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
     }
   };
 
-  const resetForm = () => {
-    setName('');
-    setDescription('');
+  // Resetar formulário quando o modal for fechado
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      onOpenChange(newOpen);
-      if (!newOpen) resetForm();
-    }}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -161,7 +174,7 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => onOpenChange(false)} 
+              onClick={() => handleOpenChange(false)} 
               disabled={loading}
             >
               Cancelar

@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Sparkles } from 'lucide-react';
 import { ProductFormData } from '@/hooks/useProductFormWizard';
+import { useCategories } from '@/hooks/useCategories';
 import SimpleCategoryDialog from '../SimpleCategoryDialog';
-import { useState } from 'react';
+import AIContentGenerator from '@/components/ai/AIContentGenerator';
 
 interface ProductBasicInfoFormProps {
   formData: ProductFormData;
@@ -20,10 +22,16 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
   updateFormData
 }) => {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const { categories, loading: categoriesLoading } = useCategories();
 
-  const handleCategoryCreated = (categoryName: string) => {
-    updateFormData({ category: categoryName });
+  const handleCategoryCreated = (category: any) => {
+    console.log('Nova categoria criada:', category);
+    updateFormData({ category: category.name });
     setShowCategoryDialog(false);
+  };
+
+  const handleDescriptionGenerated = (description: string) => {
+    updateFormData({ description });
   };
 
   return (
@@ -49,13 +57,27 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
             <div className="flex gap-2">
-              <Input
-                id="category"
+              <Select
                 value={formData.category || ''}
-                onChange={(e) => updateFormData({ category: e.target.value })}
-                placeholder="Digite ou selecione uma categoria"
-                className="flex-1"
-              />
+                onValueChange={(value) => updateFormData({ category: value })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoriesLoading ? (
+                    <SelectItem value="">Carregando...</SelectItem>
+                  ) : categories.length === 0 ? (
+                    <SelectItem value="">Nenhuma categoria encontrada</SelectItem>
+                  ) : (
+                    categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               <Button
                 type="button"
                 variant="outline"
@@ -69,7 +91,17 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
 
           {/* Descrição */}
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="description">Descrição</Label>
+              <AIContentGenerator
+                productName={formData.name}
+                category={formData.category || 'produto'}
+                onDescriptionGenerated={handleDescriptionGenerated}
+                disabled={!formData.name}
+                variant="description"
+                size="sm"
+              />
+            </div>
             <Textarea
               id="description"
               value={formData.description || ''}
@@ -78,31 +110,6 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
               rows={4}
               className="w-full resize-none"
             />
-          </div>
-
-          {/* Ferramenta de IA */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-blue-900 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Gerar com IA
-                </h4>
-                <p className="text-sm text-blue-700 mt-1">
-                  Use inteligência artificial para gerar descrição automática
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-blue-700 border-blue-300 hover:bg-blue-100"
-                disabled={!formData.name}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Gerar Descrição
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
