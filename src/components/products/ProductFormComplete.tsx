@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +15,8 @@ import { useDraftImages } from '@/hooks/useDraftImages';
 import DraftImageUpload from './DraftImageUpload';
 import CategoryFormDialog from './CategoryFormDialog';
 import ProductDescriptionAI from '@/components/ai/ProductDescriptionAI';
-import ProductVariationsManager, { ProductVariation } from './ProductVariationsManager';
+import ProductVariationsManager from './ProductVariationsManager';
+import { ProductVariation } from '@/hooks/useProductFormWizard';
 import { Package, DollarSign, Hash, Tag, FileText, Image, Loader2 } from 'lucide-react';
 
 const productSchema = z.object({
@@ -293,7 +295,6 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
       <ProductVariationsManager
         variations={variations}
         onChange={setVariations}
-        disabled={isSubmitting || uploading}
       />
 
       {/* Imagens */}
