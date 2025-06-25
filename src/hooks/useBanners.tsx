@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export interface Banner {
   id: string;
@@ -16,83 +17,120 @@ export interface Banner {
   display_order: number;
   start_date?: string;
   end_date?: string;
+  product_id?: string;
+  source_type?: 'manual' | 'product';
   created_at: string;
   updated_at: string;
 }
 
-export const useBanners = (storeId?: string, bannerType?: string) => {
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { profile } = useAuth();
+export interface BannerCreateData {
+  title: string;
+  description?: string;
+  image_url: string;
+  link_url?: string;
+  banner_type: Banner['banner_type'];
+  position: number;
+  display_order: number;
+  is_active: boolean;
+  start_date?: string;
+  end_date?: string;
+  product_id?: string;
+  source_type?: 'manual' | 'product';
+  store_id: string;
+}
 
-  const targetStoreId = storeId || profile?.store_id;
+export const useBanners = (storeId?: string, bannerType?: Banner['banner_type']) => {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchBanners = async () => {
-    if (!targetStoreId) return;
-
     try {
       setLoading(true);
+      
+      const targetStoreId = storeId || profile?.store_id;
+      if (!targetStoreId) return;
+
       let query = supabase
         .from('catalog_banners')
-        .select('*')
+        .select(`
+          *,
+          products!left(id, name, image_url, description)
+        `)
         .eq('store_id', targetStoreId)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .eq('is_active', true);
 
       if (bannerType) {
         query = query.eq('banner_type', bannerType);
       }
 
-      const { data, error: fetchError } = await query;
+      // Filtrar por datas se aplicável
+      const now = new Date().toISOString();
+      query = query.or(`start_date.is.null,start_date.lte.${now}`)
+                   .or(`end_date.is.null,end_date.gte.${now}`);
 
-      if (fetchError) throw fetchError;
+      query = query.order('display_order').order('created_at');
 
-      // Filtrar banners que estão dentro do período de exibição e fazer type assertion
-      const activeBanners = data?.filter(banner => {
-        const now = new Date();
-        const startDate = banner.start_date ? new Date(banner.start_date) : null;
-        const endDate = banner.end_date ? new Date(banner.end_date) : null;
+      const { data, error } = await query;
 
-        return (!startDate || startDate <= now) && (!endDate || endDate >= now);
-      }).map(banner => ({
-        ...banner,
-        banner_type: banner.banner_type as Banner['banner_type']
-      })) || [];
+      if (error) {
+        console.error('Error fetching banners:', error);
+        return;
+      }
 
-      setBanners(activeBanners);
-    } catch (err) {
-      console.error('Erro ao buscar banners:', err);
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      // Processar banners baseados em produtos
+      const processedBanners = (data || []).map((banner: any) => {
+        if (banner.source_type === 'product' && banner.products) {
+          return {
+            ...banner,
+            title: banner.title || banner.products.name,
+            image_url: banner.image_url || banner.products.image_url,
+            description: banner.description || banner.products.description,
+          };
+        }
+        return banner;
+      });
+
+      setBanners(processedBanners);
+    } catch (error) {
+      console.error('Error in fetchBanners:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const createBanner = async (bannerData: Omit<Banner, 'id' | 'created_at' | 'updated_at'>) => {
+  useEffect(() => {
+    fetchBanners();
+  }, [storeId, bannerType, profile?.store_id]);
+
+  const createBanner = async (bannerData: BannerCreateData) => {
     try {
+      const targetStoreId = bannerData.store_id || profile?.store_id;
+      if (!targetStoreId) {
+        throw new Error('Store ID não encontrado');
+      }
+
       const { data, error } = await supabase
         .from('catalog_banners')
-        .insert([bannerData])
+        .insert({
+          ...bannerData,
+          store_id: targetStoreId,
+        })
         .select()
         .single();
 
       if (error) throw error;
 
-      const newBanner = {
-        ...data,
-        banner_type: data.banner_type as Banner['banner_type']
-      };
-
-      setBanners(prev => [...prev, newBanner]);
-      return { data: newBanner, error: null };
+      await fetchBanners();
+      return { data, error: null };
     } catch (error) {
-      console.error('Erro ao criar banner:', error);
+      console.error('Error creating banner:', error);
       return { data: null, error };
     }
   };
 
-  const updateBanner = async (id: string, updates: Partial<Banner>) => {
+  const updateBanner = async (id: string, updates: Partial<BannerCreateData>) => {
     try {
       const { data, error } = await supabase
         .from('catalog_banners')
@@ -103,17 +141,10 @@ export const useBanners = (storeId?: string, bannerType?: string) => {
 
       if (error) throw error;
 
-      const updatedBanner = {
-        ...data,
-        banner_type: data.banner_type as Banner['banner_type']
-      };
-
-      setBanners(prev => prev.map(banner => 
-        banner.id === id ? { ...banner, ...updatedBanner } : banner
-      ));
-      return { data: updatedBanner, error: null };
+      await fetchBanners();
+      return { data, error: null };
     } catch (error) {
-      console.error('Erro ao atualizar banner:', error);
+      console.error('Error updating banner:', error);
       return { data: null, error };
     }
   };
@@ -127,25 +158,20 @@ export const useBanners = (storeId?: string, bannerType?: string) => {
 
       if (error) throw error;
 
-      setBanners(prev => prev.filter(banner => banner.id !== id));
+      await fetchBanners();
       return { error: null };
     } catch (error) {
-      console.error('Erro ao deletar banner:', error);
+      console.error('Error deleting banner:', error);
       return { error };
     }
   };
 
-  useEffect(() => {
-    fetchBanners();
-  }, [targetStoreId, bannerType]);
-
   return {
     banners,
     loading,
-    error,
-    fetchBanners,
     createBanner,
     updateBanner,
-    deleteBanner
+    deleteBanner,
+    refetch: fetchBanners,
   };
 };

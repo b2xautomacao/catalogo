@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface CatalogSettingsData {
+  store_id?: string;
   template_name?: string;
   show_prices?: boolean;
   show_stock?: boolean;
@@ -22,6 +23,7 @@ export interface CatalogSettingsData {
   catalog_mode?: string;
   custom_domain?: string;
   catalog_url_slug?: string;
+  checkout_type?: string;
   payment_methods?: any;
   business_hours?: any;
   shipping_options?: any;
@@ -29,11 +31,20 @@ export interface CatalogSettingsData {
   instagram_url?: string;
   twitter_url?: string;
   whatsapp_number?: string;
+  whatsapp_integration_active?: boolean;
   font_family?: string;
   layout_spacing?: number;
   border_radius?: number;
   retail_catalog_active?: boolean;
   wholesale_catalog_active?: boolean;
+  watermark_enabled?: boolean;
+  watermark_type?: string;
+  watermark_text?: string;
+  watermark_logo_url?: string;
+  watermark_position?: string;
+  watermark_opacity?: number;
+  watermark_size?: number;
+  watermark_color?: string;
 }
 
 export const useCatalogSettings = (storeIdentifier?: string) => {
@@ -71,6 +82,7 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
 
       if (data) {
         setSettings({
+          store_id: data.store_id,
           template_name: data.template_name,
           show_prices: data.show_prices,
           show_stock: data.show_stock,
@@ -89,6 +101,7 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           catalog_mode: data.catalog_mode,
           custom_domain: data.custom_domain,
           catalog_url_slug: data.catalog_url_slug,
+          checkout_type: data.checkout_type,
           payment_methods: data.payment_methods,
           business_hours: data.business_hours,
           shipping_options: data.shipping_options,
@@ -96,11 +109,20 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           instagram_url: data.instagram_url,
           twitter_url: data.twitter_url,
           whatsapp_number: data.whatsapp_number,
+          whatsapp_integration_active: data.whatsapp_integration_active,
           font_family: data.font_family,
           layout_spacing: data.layout_spacing,
           border_radius: data.border_radius,
           retail_catalog_active: data.retail_catalog_active,
           wholesale_catalog_active: data.wholesale_catalog_active,
+          watermark_enabled: data.watermark_enabled,
+          watermark_type: data.watermark_type,
+          watermark_text: data.watermark_text,
+          watermark_logo_url: data.watermark_logo_url,
+          watermark_position: data.watermark_position,
+          watermark_opacity: data.watermark_opacity,
+          watermark_size: data.watermark_size,
+          watermark_color: data.watermark_color,
         });
       } else {
         setSettings({});
