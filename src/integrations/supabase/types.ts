@@ -970,6 +970,7 @@ export type Database = {
           id: string
           instagram_url: string | null
           layout_spacing: number | null
+          mobile_columns: number | null
           payment_methods: Json | null
           primary_color: string | null
           retail_catalog_active: boolean | null
@@ -1016,6 +1017,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           layout_spacing?: number | null
+          mobile_columns?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
           retail_catalog_active?: boolean | null
@@ -1062,6 +1064,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           layout_spacing?: number | null
+          mobile_columns?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
           retail_catalog_active?: boolean | null
