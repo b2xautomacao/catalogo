@@ -17,22 +17,26 @@ const ProductFormModal = ({
   initialData,
   mode
 }: ProductFormModalProps) => {
-  const handleSuccess = () => {
-    onOpenChange(false);
+  const handleSuccess = async () => {
+    console.log('🎉 ProductFormModal - Produto salvo com sucesso');
     
+    // Chamar onSubmit se fornecido (para refresh da lista)
     if (onSubmit) {
-      onSubmit({}).catch(console.error);
+      try {
+        await onSubmit({});
+      } catch (error) {
+        console.error('Erro no onSubmit:', error);
+      }
     }
-  };
-
-  const handleClose = () => {
+    
+    // Fechar modal
     onOpenChange(false);
   };
 
   return (
     <SimpleProductWizard
       isOpen={open}
-      onClose={handleClose}
+      onClose={() => onOpenChange(false)}
       editingProduct={mode === 'edit' ? initialData : undefined}
       onSuccess={handleSuccess}
     />

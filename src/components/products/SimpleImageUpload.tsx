@@ -125,22 +125,15 @@ const SimpleImageUpload = ({
             onDrop={handleDrop}
             onClick={() => !isUploading && document.getElementById('simple-image-upload')?.click()}
           >
-            {isUploading ? (
-              <div className="flex flex-col items-center">
-                <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <p className="text-primary font-medium">Processando imagens...</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <Upload className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2 font-medium">
-                  Arraste e solte imagens aqui, ou clique para selecionar
-                </p>
-                <p className="text-sm text-gray-500">
-                  PNG, JPG, JPEG, GIF, WEBP • Máximo {maxImages} imagens • 5MB por arquivo
-                </p>
-              </div>
-            )}
+            <div className="flex flex-col items-center">
+              <Upload className="h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-gray-600 mb-2 font-medium">
+                Arraste e solte imagens aqui, ou clique para selecionar
+              </p>
+              <p className="text-sm text-gray-500">
+                PNG, JPG, JPEG, GIF, WEBP • Máximo {maxImages} imagens • 5MB por arquivo
+              </p>
+            </div>
           </div>
         )}
 
@@ -157,39 +150,26 @@ const SimpleImageUpload = ({
         {/* Preview das Imagens */}
         {images.length > 0 && (
           <div className="space-y-4">
-            <h4 className="font-medium flex items-center gap-2">
-              Imagens Selecionadas
-              {isUploading && (
-                <span className="text-sm text-blue-600 flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Processando...
-                </span>
-              )}
-            </h4>
+            <h4 className="font-medium">Imagens Selecionadas</h4>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {images.map((image, index) => (
                 <div key={image.id} className="relative group">
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors">
-                    {image.preview || image.url ? (
-                      <img
-                        src={image.preview || image.url || ''}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          target.style.display = 'none';
-                          const errorDiv = target.parentElement?.querySelector('.error-placeholder');
-                          if (errorDiv) {
-                            (errorDiv as HTMLElement).style.display = 'flex';
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
+                    <img
+                      src={image.preview || image.url || ''}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('❌ Erro ao carregar imagem:', image.preview || image.url);
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const errorDiv = target.parentElement?.querySelector('.error-placeholder');
+                        if (errorDiv) {
+                          (errorDiv as HTMLElement).style.display = 'flex';
+                        }
+                      }}
+                    />
                     
                     {/* Placeholder de erro */}
                     <div className="error-placeholder w-full h-full items-center justify-center bg-gray-100 hidden">
@@ -199,13 +179,9 @@ const SimpleImageUpload = ({
                   
                   {/* Status Badge */}
                   <div className="absolute top-2 left-2">
-                    {image.uploaded ? (
+                    {image.uploaded || image.isExisting ? (
                       <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                         ✓ Salva
-                      </div>
-                    ) : image.isExisting ? (
-                      <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                        Existente
                       </div>
                     ) : (
                       <div className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
@@ -251,7 +227,6 @@ const SimpleImageUpload = ({
             <li>• A primeira imagem será definida como principal</li>
             <li>• Use imagens de alta qualidade (mínimo 800x800px)</li>
             <li>• Máximo de {maxImages} imagens por produto</li>
-            <li>• Formatos aceitos: PNG, JPG, JPEG, GIF, WEBP</li>
             <li>• As imagens serão salvas automaticamente ao concluir o cadastro</li>
           </ul>
         </div>

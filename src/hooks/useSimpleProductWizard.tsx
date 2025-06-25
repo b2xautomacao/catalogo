@@ -28,7 +28,7 @@ export const useSimpleProductWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Estado do formulário com valores padrão seguros
+  // Estado inicial mais simples e confiável
   const [formData, setFormData] = useState<SimpleProductFormData>({
     store_id: profile?.store_id || '',
     name: '',
@@ -59,13 +59,24 @@ export const useSimpleProductWizard = () => {
   ];
 
   const updateFormData = useCallback((updates: Partial<SimpleProductFormData>) => {
+    console.log('🔧 updateFormData - Recebendo atualizações:', Object.keys(updates));
+    
     setFormData(prev => {
       const newData = { ...prev, ...updates };
       
-      // Garantir que store_id está sempre presente
+      // Garantir store_id sempre presente
       if (!newData.store_id && profile?.store_id) {
         newData.store_id = profile.store_id;
       }
+      
+      console.log('📊 updateFormData - Dados atualizados:', {
+        name: newData.name,
+        nameLength: newData.name?.length || 0,
+        description: newData.description,
+        descriptionLength: newData.description?.length || 0,
+        retail_price: newData.retail_price,
+        stock: newData.stock
+      });
       
       return newData;
     });
@@ -73,17 +84,28 @@ export const useSimpleProductWizard = () => {
 
   const validateCurrentStep = useCallback((): boolean => {
     const currentStepData = steps[currentStep];
-    if (!currentStepData.required) return true;
+    if (!currentStepData?.required) return true;
     
-    // Validação garantindo que o nome está realmente preenchido
     const trimmedName = (formData.name || '').trim();
     
     switch (currentStep) {
       case 0: // Informações Básicas
-        return trimmedName.length > 0;
+        const isValid = trimmedName.length > 0;
+        console.log('✅ Validação Step 0:', { 
+          name: `"${trimmedName}"`, 
+          length: trimmedName.length, 
+          valid: isValid 
+        });
+        return isValid;
         
-      case 1: // Preços e Estoque
-        return formData.retail_price > 0 && formData.stock >= 0;
+      case 1: // Preços e Estoque  
+        const priceValid = formData.retail_price > 0 && formData.stock >= 0;
+        console.log('✅ Validação Step 1:', { 
+          price: formData.retail_price, 
+          stock: formData.stock, 
+          valid: priceValid 
+        });
+        return priceValid;
         
       default:
         return true;
@@ -130,6 +152,16 @@ export const useSimpleProductWizard = () => {
 
     const storeId = formData.store_id || profile?.store_id;
     const trimmedName = (formData.name || '').trim();
+
+    console.log('💾 SALVANDO PRODUTO - Dados finais:', {
+      name: `"${trimmedName}"`,
+      nameLength: trimmedName.length,
+      description: formData.description,
+      retail_price: formData.retail_price,
+      stock: formData.stock,
+      store_id: storeId,
+      imagesCount: images.length
+    });
 
     if (!storeId) {
       toast({
@@ -189,12 +221,13 @@ export const useSimpleProductWizard = () => {
         throw new Error(result.error || 'Erro ao salvar produto');
       }
 
-      // Upload de imagens
+      // Upload de imagens APÓS salvar produto
       if (images.length > 0) {
         try {
           await uploadImages(savedProductId);
         } catch (uploadError) {
           console.error('Erro no upload:', uploadError);
+          // Não falhar por causa das imagens
         }
       }
 
@@ -264,7 +297,9 @@ export const useSimpleProductWizard = () => {
   const loadProductData = useCallback((product: any) => {
     if (!product) return;
     
-    setFormData({
+    console.log('📥 Carregando dados do produto:', product);
+    
+    const productData = {
       name: product.name || '',
       description: product.description || '',
       retail_price: product.retail_price || 0,
@@ -282,8 +317,14 @@ export const useSimpleProductWizard = () => {
       store_id: product.store_id || profile?.store_id || '',
       is_active: true,
       variations: []
-    });
+    };
     
+    console.log('📊 Dados processados:', productData);
+    
+    // Atualizar formData de uma vez
+    setFormData(productData);
+    
+    // Carregar imagens existentes
     if (product.id) {
       loadExistingImages(product.id);
     }

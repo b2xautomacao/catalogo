@@ -40,6 +40,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   // Carregar dados do produto para edição
   useEffect(() => {
     if (editingProduct && isOpen) {
+      console.log('📂 Carregando produto para edição:', editingProduct.name);
       loadProductData(editingProduct);
     }
   }, [editingProduct?.id, isOpen, loadProductData]);
