@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import { toast } from 'sonner';
 import AdvancedColorSettings from './AdvancedColorSettings';
 import ShareableLinks from './ShareableLinks';
 import CatalogModeSettings from './CatalogModeSettings';
+import MobileLayoutSettings from './MobileLayoutSettings';
 import {
   Palette,
   Eye,
@@ -110,7 +110,6 @@ const CatalogSettings = () => {
   };
 
   const handleTemplateChange = async (templateName: string) => {
-    // Aplicar cores padrão do template selecionado
     const defaultColors = resetToTemplateDefaults(templateName);
     
     setLocalSettings(prev => ({
@@ -119,7 +118,6 @@ const CatalogSettings = () => {
       ...defaultColors
     }));
 
-    // Salvar automaticamente a mudança de template com cores padrão
     const updates = {
       template_name: templateName,
       ...defaultColors
@@ -211,7 +209,7 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
           <TabsTrigger value="template" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Template</span>
@@ -223,6 +221,10 @@ const CatalogSettings = () => {
           <TabsTrigger value="display" className="flex items-center gap-1">
             <Eye className="h-4 w-4" />
             <span className="hidden sm:inline">Exibição</span>
+          </TabsTrigger>
+          <TabsTrigger value="mobile" className="flex items-center gap-1">
+            <Smartphone className="h-4 w-4" />
+            <span className="hidden sm:inline">Mobile</span>
           </TabsTrigger>
           <TabsTrigger value="colors" className="flex items-center gap-1">
             <Sparkles className="h-4 w-4" />
@@ -420,6 +422,10 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mobile" className="space-y-6">
+          <MobileLayoutSettings />
         </TabsContent>
 
         <TabsContent value="colors" className="space-y-6">

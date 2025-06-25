@@ -1,161 +1,97 @@
 
 import React from 'react';
-import { UseFormReturn } from 'react-hook-form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { CurrencyInput } from '@/components/ui/currency-input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { ProductFormData } from '@/hooks/useProductFormWizard';
 
 interface ProductPricingFormProps {
-  form: UseFormReturn<any>;
+  formData: ProductFormData;
+  updateFormData: (updates: Partial<ProductFormData>) => void;
 }
 
-const ProductPricingForm = ({ form }: ProductPricingFormProps) => {
-  const watchWholesalePrice = form.watch('wholesale_price');
-  const hasWholesalePrice = watchWholesalePrice && watchWholesalePrice > 0;
-
+const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
+  formData,
+  updateFormData
+}) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <FormField
-        control={form.control}
-        name="retail_price"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Preço de Varejo *</FormLabel>
-            <FormControl>
-              <CurrencyInput
-                value={field.value || 0}
-                onChange={field.onChange}
-                placeholder="0,00"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="retail_price">Preço Varejo *</Label>
+          <Input
+            id="retail_price"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.retail_price}
+            onChange={(e) => updateFormData({ retail_price: parseFloat(e.target.value) || 0 })}
+            placeholder="0,00"
+          />
+        </div>
 
-      <FormField
-        control={form.control}
-        name="wholesale_price"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Preço de Atacado</FormLabel>
-            <FormControl>
-              <CurrencyInput
-                value={field.value || 0}
-                onChange={field.onChange}
-                placeholder="0,00"
-              />
-            </FormControl>
-            <FormDescription>
-              Deixe vazio se não vender no atacado
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        <div>
+          <Label htmlFor="wholesale_price">Preço Atacado</Label>
+          <Input
+            id="wholesale_price"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.wholesale_price || ''}
+            onChange={(e) => updateFormData({ wholesale_price: parseFloat(e.target.value) || undefined })}
+            placeholder="0,00"
+          />
+        </div>
+      </div>
 
-      <FormField
-        control={form.control}
-        name="stock"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Estoque Atual *</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                min="0"
-                step="1"
-                value={field.value || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  field.onChange(value === '' ? 0 : parseInt(value) || 0);
-                }}
-                placeholder="0"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="stock">Estoque</Label>
+          <Input
+            id="stock"
+            type="number"
+            min="0"
+            value={formData.stock}
+            onChange={(e) => updateFormData({ stock: parseInt(e.target.value) || 0 })}
+            placeholder="0"
+          />
+        </div>
 
-      {hasWholesalePrice && (
-        <FormField
-          control={form.control}
-          name="min_wholesale_qty"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quantidade Mínima (Atacado)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={field.value || ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    field.onChange(value === '' ? 1 : parseInt(value) || 1);
-                  }}
-                  placeholder="1"
-                />
-              </FormControl>
-              <FormDescription>
-                Quantidade mínima para venda no atacado
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
+        <div>
+          <Label htmlFor="min_wholesale_qty">Quantidade Mínima Atacado</Label>
+          <Input
+            id="min_wholesale_qty"
+            type="number"
+            min="1"
+            value={formData.min_wholesale_qty || 1}
+            onChange={(e) => updateFormData({ min_wholesale_qty: parseInt(e.target.value) || 1 })}
+            placeholder="1"
+          />
+        </div>
+      </div>
 
-      <FormField
-        control={form.control}
-        name="is_featured"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base">Produto em Destaque</FormLabel>
-              <FormDescription>
-                Destacar este produto no catálogo
-              </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="allow_negative_stock">Permitir Estoque Negativo</Label>
+          <Switch
+            id="allow_negative_stock"
+            checked={formData.allow_negative_stock || false}
+            onCheckedChange={(checked) => updateFormData({ allow_negative_stock: checked })}
+          />
+        </div>
 
-      <FormField
-        control={form.control}
-        name="is_active"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base">Produto Ativo</FormLabel>
-              <FormDescription>
-                Produto visível no catálogo
-              </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
+        <div>
+          <Label htmlFor="stock_alert_threshold">Alerta de Estoque Baixo</Label>
+          <Input
+            id="stock_alert_threshold"
+            type="number"
+            min="0"
+            value={formData.stock_alert_threshold || 5}
+            onChange={(e) => updateFormData({ stock_alert_threshold: parseInt(e.target.value) || 5 })}
+            placeholder="5"
+          />
+        </div>
+      </div>
     </div>
   );
 };
