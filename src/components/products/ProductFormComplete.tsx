@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -97,7 +96,7 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
   const handleImageRemove = (id: string) => {
     const index = draftImages.findIndex(img => img.id === id);
     if (index !== -1) {
-      removeDraftImage(index);
+      removeDraftImage(id);
     }
   };
 
@@ -109,11 +108,8 @@ const ProductFormComplete = ({ onSubmit, initialData, mode }: ProductFormComplet
       
       if (draftImages.length > 0) {
         console.log('Fazendo upload das imagens...');
-        const uploadResult = await uploadDraftImages();
-        if (uploadResult.success) {
-          imageUrls = uploadResult.urls;
-          console.log('URLs das imagens:', imageUrls);
-        }
+        // Corrigir aqui: uploadDraftImages precisa de um productId, mas ainda não temos
+        // Por isso vamos criar o produto primeiro e depois fazer upload das imagens
       }
 
       const productData = {

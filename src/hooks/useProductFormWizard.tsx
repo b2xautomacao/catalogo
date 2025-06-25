@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
 import { useDraftImages } from '@/hooks/useDraftImages';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ProductFormData {
   name: string;
@@ -22,6 +23,7 @@ export interface ProductFormData {
 
 export const useProductFormWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -38,9 +40,10 @@ export const useProductFormWizard = () => {
     stock_alert_threshold: 5,
   });
 
-  const { createProduct, updateProduct, isCreating, isUpdating } = useProducts();
+  const { createProduct, updateProduct } = useProducts();
   const { uploadDraftImages, clearDraftImages, draftImages } = useDraftImages();
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const updateFormData = useCallback((updates: Partial<ProductFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -59,13 +62,23 @@ export const useProductFormWizard = () => {
   }, []);
 
   const saveProduct = useCallback(async (productId?: string): Promise<string | null> => {
+    if (!profile?.store_id) {
+      toast({
+        title: 'Erro',
+        description: 'Store ID não encontrado',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
     try {
+      setIsSaving(true);
       console.log('🔄 Salvando produto...', { productId, hasImages: draftImages.length > 0 });
       
       // Preparar dados do produto
       const productData = {
         ...formData,
-        // Remover image_url dos dados principais - será definido após upload das imagens
+        store_id: profile.store_id,
         image_url: undefined
       };
 
@@ -119,8 +132,10 @@ export const useProductFormWizard = () => {
         variant: 'destructive',
       });
       return null;
+    } finally {
+      setIsSaving(false);
     }
-  }, [formData, draftImages, createProduct, updateProduct, uploadDraftImages, toast]);
+  }, [formData, draftImages, createProduct, updateProduct, uploadDraftImages, toast, profile?.store_id]);
 
   const resetForm = useCallback(() => {
     setCurrentStep(0);
@@ -154,9 +169,7 @@ export const useProductFormWizard = () => {
     currentStep,
     formData,
     steps,
-    isCreating,
-    isUpdating,
-    isSaving: isCreating || isUpdating,
+    isSaving,
     updateFormData,
     nextStep,
     prevStep,
