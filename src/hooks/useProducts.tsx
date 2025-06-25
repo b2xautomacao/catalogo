@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Product, CreateProductData, UpdateProductData } from '@/types/product';
+import type { Product, CreateProductData, UpdateProductData } from '@/types/product';
 
-export { Product, CreateProductData, UpdateProductData };
+export type { Product, CreateProductData, UpdateProductData };
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,7 +27,22 @@ export const useProducts = () => {
 
       const { data, error: fetchError } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          product_variations (
+            id,
+            product_id,
+            color,
+            size,
+            sku,
+            stock,
+            price_adjustment,
+            is_active,
+            image_url,
+            created_at,
+            updated_at
+          )
+        `)
         .eq('store_id', profile.store_id)
         .order('created_at', { ascending: false });
 
@@ -36,8 +51,26 @@ export const useProducts = () => {
         throw fetchError;
       }
 
-      console.log('useProducts: Produtos carregados:', data?.length || 0);
-      setProducts(data || []);
+      // Transformar os dados para incluir variações corretamente
+      const productsWithVariations = data?.map(product => ({
+        ...product,
+        variations: product.product_variations?.map(variation => ({
+          id: variation.id,
+          product_id: variation.product_id,
+          color: variation.color,
+          size: variation.size,
+          sku: variation.sku,
+          stock: variation.stock,
+          price_adjustment: variation.price_adjustment,
+          is_active: variation.is_active,
+          image_url: variation.image_url,
+          created_at: variation.created_at,
+          updated_at: variation.updated_at
+        })) || []
+      })) || [];
+
+      console.log('useProducts: Produtos carregados:', productsWithVariations?.length || 0);
+      setProducts(productsWithVariations);
     } catch (error) {
       console.error('useProducts: Erro:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar produtos';

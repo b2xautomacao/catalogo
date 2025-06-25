@@ -1,48 +1,9 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Product, ProductVariation } from '@/types/product';
 
 export type CatalogType = 'retail' | 'wholesale';
-
-// Interface para variações no catálogo - compatível com ProductVariation
-export interface CatalogProductVariation {
-  id: string;
-  product_id: string;
-  color: string | null;
-  size: string | null;
-  sku: string | null;
-  stock: number;
-  price_adjustment: number;
-  is_active: boolean;
-  image_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// Interface Product compatível com useProducts
-export interface Product {
-  id: string;
-  store_id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  retail_price: number;
-  wholesale_price: number | null;
-  stock: number;
-  reserved_stock: number;
-  min_wholesale_qty: number | null;
-  allow_negative_stock: boolean;
-  stock_alert_threshold: number | null;
-  is_active: boolean;
-  is_featured: boolean | null;
-  image_url: string | null;
-  meta_title: string | null;
-  meta_description: string | null;
-  seo_slug: string | null;
-  keywords: string | null;
-  created_at: string;
-  updated_at: string;
-  variations?: CatalogProductVariation[];
-}
 
 // Interface Store alinhada com os dados reais do Supabase
 export interface Store {

@@ -17,10 +17,10 @@ export interface Product {
   id: string;
   store_id: string;
   name: string;
-  description: string;
+  description?: string;
   retail_price: number;
   wholesale_price?: number;
-  category: string;
+  category?: string;
   stock: number;
   min_wholesale_qty?: number;
   image_url?: string;
