@@ -56,23 +56,36 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
         stock_alert_threshold: editingProduct.stock_alert_threshold || 5,
       });
 
-      // Carregar imagens existentes apenas uma vez
+      // Carregar imagens existentes
       loadExistingImages(editingProduct.id);
     }
-  }, [editingProduct?.id, isOpen]); // Dependências otimizadas
+  }, [editingProduct?.id, isOpen, updateFormData, loadExistingImages]);
 
   // Limpar form ao fechar
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+      clearDraftImages();
     }
-  }, [isOpen, resetForm]);
+  }, [isOpen, resetForm, clearDraftImages]);
 
   const handleSave = async () => {
-    const productId = await saveProduct(editingProduct?.id);
-    if (productId) {
-      onSuccess?.();
-      onClose();
+    console.log('Iniciando salvamento do produto...');
+    console.log('Dados do formulário:', formData);
+    
+    try {
+      const productId = await saveProduct(editingProduct?.id);
+      console.log('Produto salvo com ID:', productId);
+      
+      if (productId) {
+        console.log('Salvamento bem-sucedido, chamando callbacks...');
+        onSuccess?.();
+        onClose();
+      } else {
+        console.error('Falha no salvamento - productId é null');
+      }
+    } catch (error) {
+      console.error('Erro durante o salvamento:', error);
     }
   };
 

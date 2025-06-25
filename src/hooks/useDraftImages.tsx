@@ -19,6 +19,7 @@ export const useDraftImages = () => {
   const { toast } = useToast();
 
   const addDraftImages = useCallback((files: File[]) => {
+    console.log('Adicionando imagens draft:', files.length);
     const newImages: DraftImage[] = files.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
@@ -30,6 +31,7 @@ export const useDraftImages = () => {
   }, []);
 
   const removeDraftImage = useCallback((id: string) => {
+    console.log('Removendo imagem draft:', id);
     setDraftImages(prev => {
       const imageToRemove = prev.find(img => img.id === id);
       if (imageToRemove && imageToRemove.preview) {
@@ -40,8 +42,12 @@ export const useDraftImages = () => {
   }, []);
 
   const uploadDraftImages = useCallback(async (productId: string): Promise<string[]> => {
-    if (draftImages.length === 0) return [];
+    if (draftImages.length === 0) {
+      console.log('Nenhuma imagem para upload');
+      return [];
+    }
 
+    console.log('Iniciando upload de imagens:', draftImages.length);
     setIsUploading(true);
     const uploadedUrls: string[] = [];
 
@@ -50,10 +56,12 @@ export const useDraftImages = () => {
         const image = draftImages[i];
         
         if (image.uploaded && image.url) {
+          console.log('Imagem já enviada:', image.url);
           uploadedUrls.push(image.url);
           continue;
         }
 
+        console.log('Fazendo upload da imagem:', i + 1);
         const fileExt = image.file.name.split('.').pop();
         const fileName = `${productId}/${Date.now()}-${i}.${fileExt}`;
 
@@ -71,6 +79,7 @@ export const useDraftImages = () => {
           .getPublicUrl(uploadData.path);
 
         const imageUrl = urlData.publicUrl;
+        console.log('Imagem enviada com sucesso:', imageUrl);
         uploadedUrls.push(imageUrl);
 
         // Salvar na tabela product_images
@@ -109,6 +118,7 @@ export const useDraftImages = () => {
         });
       }
 
+      console.log('Upload concluído:', uploadedUrls.length, 'imagens');
       return uploadedUrls;
     } catch (error) {
       console.error('Erro no processo de upload:', error);
@@ -124,6 +134,7 @@ export const useDraftImages = () => {
   }, [draftImages, toast]);
 
   const clearDraftImages = useCallback(() => {
+    console.log('Limpando imagens draft');
     draftImages.forEach(image => {
       if (image.preview) {
         URL.revokeObjectURL(image.preview);
@@ -136,9 +147,11 @@ export const useDraftImages = () => {
   const loadExistingImages = useCallback(async (productId: string) => {
     // Evitar carregar o mesmo produto múltiplas vezes
     if (loadedProductIdRef.current === productId || isLoading) {
+      console.log('Imagens já carregadas ou carregando para:', productId);
       return;
     }
 
+    console.log('Carregando imagens existentes para produto:', productId);
     setIsLoading(true);
     loadedProductIdRef.current = productId;
 
@@ -155,6 +168,7 @@ export const useDraftImages = () => {
       }
 
       if (images && images.length > 0) {
+        console.log('Imagens carregadas:', images.length);
         const existingImages: DraftImage[] = images.map((img) => ({
           id: img.id,
           file: new File([], ''), // File vazio para imagens já salvas
@@ -164,6 +178,9 @@ export const useDraftImages = () => {
         }));
         
         setDraftImages(existingImages);
+      } else {
+        console.log('Nenhuma imagem existente encontrada');
+        setDraftImages([]);
       }
     } catch (error) {
       console.error('Erro ao carregar imagens:', error);

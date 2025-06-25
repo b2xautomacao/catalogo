@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useDraftImages } from '@/hooks/useDraftImages';
 import { useToast } from '@/hooks/use-toast';
@@ -64,29 +64,30 @@ export const useProductFormWizard = () => {
     { id: 'advanced', title: 'Configurações Avançadas', description: 'Opções extras' }
   ];
 
-  const updateFormData = (updates: Partial<ProductFormData>) => {
+  const updateFormData = useCallback((updates: Partial<ProductFormData>) => {
+    console.log('Atualizando dados do formulário:', updates);
     setFormData(prev => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     }
-  };
+  }, [currentStep, steps.length]);
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
-  };
+  }, [currentStep]);
 
-  const goToStep = (stepIndex: number) => {
+  const goToStep = useCallback((stepIndex: number) => {
     if (stepIndex >= 0 && stepIndex < steps.length) {
       setCurrentStep(stepIndex);
     }
-  };
+  }, [steps.length]);
 
-  const validateCurrentStep = (): boolean => {
+  const validateCurrentStep = useCallback((): boolean => {
     switch (currentStep) {
       case 0: // Informações Básicas
         return !!(formData.name && formData.retail_price > 0);
@@ -101,25 +102,38 @@ export const useProductFormWizard = () => {
       default:
         return true;
     }
-  };
+  }, [currentStep, formData]);
 
-  const saveProduct = async (productId?: string): Promise<string | null> => {
-    if (isSaving) return null;
+  const saveProduct = useCallback(async (productId?: string): Promise<string | null> => {
+    if (isSaving) {
+      console.log('Já está salvando, ignorando...');
+      return null;
+    }
+
+    console.log('Iniciando salvamento...', { productId, formData, draftImages: draftImages.length });
 
     try {
       setIsSaving(true);
       
+      // Validar store_id
+      if (!profile?.store_id) {
+        throw new Error('Store ID é obrigatório');
+      }
+
       // Preparar dados do produto
       const productData = {
         ...formData,
-        store_id: profile?.store_id || '',
+        store_id: profile.store_id,
       };
+
+      console.log('Dados preparados para salvamento:', productData);
 
       let result;
       let savedProductId: string;
 
       if (productId) {
         // Atualizar produto existente
+        console.log('Atualizando produto existente:', productId);
         result = await updateProduct({
           ...productData,
           id: productId
@@ -127,9 +141,12 @@ export const useProductFormWizard = () => {
         savedProductId = productId;
       } else {
         // Criar novo produto
+        console.log('Criando novo produto...');
         result = await createProduct(productData);
         savedProductId = result.data?.id;
       }
+
+      console.log('Resultado da operação:', result);
 
       if (result.error || !savedProductId) {
         throw new Error(result.error || 'Erro ao salvar produto');
@@ -137,7 +154,10 @@ export const useProductFormWizard = () => {
 
       // Upload das imagens se houver
       if (draftImages.length > 0) {
+        console.log('Fazendo upload de imagens:', draftImages.length);
         const uploadedUrls = await uploadDraftImages(savedProductId);
+        console.log('URLs das imagens enviadas:', uploadedUrls);
+        
         if (uploadedUrls.length > 0) {
           // Atualizar produto com a primeira imagem como principal
           await updateProduct({
@@ -152,14 +172,11 @@ export const useProductFormWizard = () => {
         description: `${formData.name} foi ${productId ? 'atualizado' : 'criado'} com sucesso.`
       });
       
-      // Reset form apenas para produtos novos
-      if (!productId) {
-        resetForm();
-      }
-      
+      console.log('Produto salvo com sucesso:', savedProductId);
       return savedProductId;
+      
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error('Erro ao salvar produto:', error);
       toast({
         title: 'Erro ao salvar produto',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -169,9 +186,10 @@ export const useProductFormWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [formData, profile?.store_id, draftImages, createProduct, updateProduct, uploadDraftImages, toast, isSaving]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
+    console.log('Resetando formulário...');
     setFormData({
       name: '',
       description: '',
@@ -191,7 +209,7 @@ export const useProductFormWizard = () => {
     });
     setCurrentStep(0);
     clearDraftImages();
-  };
+  }, [clearDraftImages]);
 
   return {
     currentStep,
