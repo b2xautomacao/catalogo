@@ -106,17 +106,11 @@ export const useProductFormWizard = () => {
     try {
       setIsSaving(true);
       
-      // Upload das imagens primeiro
-      let uploadedImages: string[] = [];
-      if (draftImages.length > 0) {
-        uploadedImages = await uploadDraftImages();
-      }
-
       // Preparar dados do produto
       const productData = {
         ...formData,
         store_id: profile?.store_id || '',
-        image_url: uploadedImages[0] || formData.image_url || '',
+        image_url: formData.image_url || '',
       };
 
       let result;
@@ -128,6 +122,17 @@ export const useProductFormWizard = () => {
 
       if (result.error) throw new Error(result.error);
 
+      const savedProductId = result.data?.id || productId;
+      
+      // Upload das imagens após salvar o produto
+      if (savedProductId && draftImages.length > 0) {
+        const uploadedUrls = await uploadDraftImages(savedProductId);
+        if (uploadedUrls.length > 0) {
+          // Atualizar produto com a primeira imagem como principal
+          await updateProduct(savedProductId, { image_url: uploadedUrls[0] });
+        }
+      }
+
       toast({ 
         title: productId ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!' 
       });
@@ -135,7 +140,7 @@ export const useProductFormWizard = () => {
       // Reset form
       resetForm();
       
-      return result.data?.id || productId || null;
+      return savedProductId || null;
     } catch (error) {
       console.error('Error saving product:', error);
       toast({
