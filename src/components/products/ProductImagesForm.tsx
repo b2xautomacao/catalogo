@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
 }) => {
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
   const [showWatermarkPreview, setShowWatermarkPreview] = useState(false);
-  const { applyWatermark, processing, isWatermarkEnabled } = useImageWatermark();
+  const { applyWatermark, processing, watermarkEnabled } = useImageWatermark();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newImages: ProductImage[] = [];
@@ -36,7 +35,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
       let processedFile = file;
       
       // Aplicar marca d'água automaticamente se estiver habilitada
-      if (isWatermarkEnabled) {
+      if (watermarkEnabled) {
         try {
           processedFile = await applyWatermark(file);
         } catch (error) {
@@ -54,7 +53,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
     }
     
     onChange([...images, ...newImages]);
-  }, [images, onChange, applyWatermark, isWatermarkEnabled]);
+  }, [images, onChange, applyWatermark, watermarkEnabled]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -101,7 +100,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
           Imagens do Produto
-          {isWatermarkEnabled && (
+          {watermarkEnabled && (
             <Badge variant="outline" className="text-xs">
               <Droplet className="h-3 w-3 mr-1" />
               Marca d'água ativa
@@ -131,7 +130,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
               <p className="text-sm text-gray-500">
                 Formatos suportados: JPG, PNG, WebP
               </p>
-              {isWatermarkEnabled && (
+              {watermarkEnabled && (
                 <p className="text-xs text-blue-600 mt-2">
                   ✨ Marca d'água será aplicada automaticamente
                 </p>
@@ -272,7 +271,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
 
         <p className="text-sm text-gray-500">
           A primeira imagem será usada como imagem principal do produto.
-          {isWatermarkEnabled && (
+          {watermarkEnabled && (
             <span className="block mt-1 text-blue-600">
               Marca d'água está ativa e será aplicada automaticamente em novas imagens.
             </span>

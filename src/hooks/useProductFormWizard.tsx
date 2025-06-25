@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useDraftImages } from '@/hooks/useDraftImages';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ProductFormData {
   name: string;
@@ -32,6 +33,7 @@ export const useProductFormWizard = () => {
   const { createProduct, updateProduct } = useProducts();
   const { draftImages, uploadDraftImages } = useDraftImages();
   const { toast } = useToast();
+  const { profile } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -107,12 +109,13 @@ export const useProductFormWizard = () => {
       // Upload das imagens primeiro
       let uploadedImages: string[] = [];
       if (draftImages.length > 0) {
-        uploadedImages = await uploadDraftImages(productId);
+        uploadedImages = await uploadDraftImages();
       }
 
       // Preparar dados do produto
       const productData = {
         ...formData,
+        store_id: profile?.store_id || '',
         image_url: uploadedImages[0] || formData.image_url || '',
       };
 
