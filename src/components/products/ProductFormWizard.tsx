@@ -38,7 +38,8 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   // Carregar dados do produto para edição
   useEffect(() => {
     if (editingProduct && isOpen) {
-      console.log('ProductFormWizard: Carregando produto para edição:', editingProduct.id);
+      console.log('=== CARREGANDO PRODUTO PARA EDIÇÃO ===');
+      console.log('Produto:', editingProduct);
       
       updateFormData({
         name: editingProduct.name || '',
@@ -57,29 +58,37 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
       });
 
       // Carregar imagens existentes
-      loadExistingImages(editingProduct.id);
+      if (editingProduct.id) {
+        console.log('Carregando imagens para produto ID:', editingProduct.id);
+        loadExistingImages(editingProduct.id);
+      }
     }
-  }, [editingProduct?.id, isOpen, updateFormData, loadExistingImages]);
+  }, [editingProduct?.id, isOpen]);
 
   // Limpar form ao fechar
   useEffect(() => {
     if (!isOpen) {
+      console.log('Dialog fechado, limpando dados...');
       resetForm();
       clearDraftImages();
     }
-  }, [isOpen, resetForm, clearDraftImages]);
+  }, [isOpen]);
 
   const handleSave = async () => {
-    console.log('Iniciando salvamento do produto...');
+    console.log('=== INICIANDO PROCESSO DE SALVAMENTO ===');
     console.log('Dados do formulário:', formData);
+    console.log('Produto em edição:', editingProduct?.id);
     
     try {
       const productId = await saveProduct(editingProduct?.id);
-      console.log('Produto salvo com ID:', productId);
+      console.log('=== RESULTADO DO SALVAMENTO ===');
+      console.log('Product ID retornado:', productId);
       
       if (productId) {
-        console.log('Salvamento bem-sucedido, chamando callbacks...');
-        onSuccess?.();
+        console.log('Salvamento bem-sucedido, executando callbacks...');
+        if (onSuccess) {
+          onSuccess();
+        }
         onClose();
       } else {
         console.error('Falha no salvamento - productId é null');
@@ -90,6 +99,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   };
 
   const handleClose = () => {
+    console.log('Fechando wizard...');
     clearDraftImages();
     onClose();
   };

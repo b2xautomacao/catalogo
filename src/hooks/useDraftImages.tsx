@@ -28,6 +28,7 @@ export const useDraftImages = () => {
     }));
     
     setDraftImages(prev => [...prev, ...newImages]);
+    return newImages;
   }, []);
 
   const removeDraftImage = useCallback((id: string) => {
@@ -52,6 +53,16 @@ export const useDraftImages = () => {
     const uploadedUrls: string[] = [];
 
     try {
+      // Primeiro, remover imagens existentes do produto
+      const { error: deleteError } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', productId);
+
+      if (deleteError) {
+        console.error('Erro ao remover imagens existentes:', deleteError);
+      }
+
       for (let i = 0; i < draftImages.length; i++) {
         const image = draftImages[i];
         
@@ -107,10 +118,14 @@ export const useDraftImages = () => {
 
       if (uploadedUrls.length > 0) {
         // Atualizar image_url principal do produto
-        await supabase
+        const { error: updateError } = await supabase
           .from('products')
           .update({ image_url: uploadedUrls[0] })
           .eq('id', productId);
+
+        if (updateError) {
+          console.error('Erro ao atualizar imagem principal:', updateError);
+        }
 
         toast({
           title: 'Sucesso!',

@@ -110,14 +110,18 @@ export const useProductFormWizard = () => {
       return null;
     }
 
-    console.log('Iniciando salvamento...', { productId, formData, draftImages: draftImages.length });
+    console.log('=== INICIANDO SALVAMENTO ===');
+    console.log('Product ID:', productId);
+    console.log('Form Data:', formData);
+    console.log('Draft Images:', draftImages.length);
+    console.log('Store ID:', profile?.store_id);
 
     try {
       setIsSaving(true);
       
       // Validar store_id
       if (!profile?.store_id) {
-        throw new Error('Store ID é obrigatório');
+        throw new Error('Store ID é obrigatório para salvar o produto');
       }
 
       // Preparar dados do produto
@@ -133,7 +137,7 @@ export const useProductFormWizard = () => {
 
       if (productId) {
         // Atualizar produto existente
-        console.log('Atualizando produto existente:', productId);
+        console.log('=== ATUALIZANDO PRODUTO EXISTENTE ===');
         result = await updateProduct({
           ...productData,
           id: productId
@@ -141,30 +145,35 @@ export const useProductFormWizard = () => {
         savedProductId = productId;
       } else {
         // Criar novo produto
-        console.log('Criando novo produto...');
+        console.log('=== CRIANDO NOVO PRODUTO ===');
         result = await createProduct(productData);
         savedProductId = result.data?.id;
       }
 
-      console.log('Resultado da operação:', result);
+      console.log('Resultado da operação de produto:', result);
 
       if (result.error || !savedProductId) {
-        throw new Error(result.error || 'Erro ao salvar produto');
+        throw new Error(result.error || 'Erro ao salvar produto - ID não retornado');
       }
+
+      console.log('=== PRODUTO SALVO COM SUCESSO ===');
+      console.log('Product ID salvo:', savedProductId);
 
       // Upload das imagens se houver
       if (draftImages.length > 0) {
-        console.log('Fazendo upload de imagens:', draftImages.length);
+        console.log('=== INICIANDO UPLOAD DE IMAGENS ===');
+        console.log('Imagens para upload:', draftImages.length);
+        
         const uploadedUrls = await uploadDraftImages(savedProductId);
-        console.log('URLs das imagens enviadas:', uploadedUrls);
+        console.log('=== UPLOAD DE IMAGENS CONCLUÍDO ===');
+        console.log('URLs das imagens:', uploadedUrls);
         
         if (uploadedUrls.length > 0) {
-          // Atualizar produto com a primeira imagem como principal
-          await updateProduct({
-            id: savedProductId,
-            image_url: uploadedUrls[0]
-          });
+          console.log('Atualizando produto com imagem principal:', uploadedUrls[0]);
+          // A função uploadDraftImages já atualiza o produto com a primeira imagem
         }
+      } else {
+        console.log('=== NENHUMA IMAGEM PARA UPLOAD ===');
       }
 
       toast({ 
@@ -172,11 +181,12 @@ export const useProductFormWizard = () => {
         description: `${formData.name} foi ${productId ? 'atualizado' : 'criado'} com sucesso.`
       });
       
-      console.log('Produto salvo com sucesso:', savedProductId);
+      console.log('=== SALVAMENTO CONCLUÍDO COM SUCESSO ===');
       return savedProductId;
       
     } catch (error) {
-      console.error('Erro ao salvar produto:', error);
+      console.error('=== ERRO NO SALVAMENTO ===');
+      console.error('Erro:', error);
       toast({
         title: 'Erro ao salvar produto',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
