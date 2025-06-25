@@ -21,50 +21,69 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
   updateFormData,
   productId
 }) => {
+  console.log('📄 WIZARD STEP CONTENT - Renderizando step:', currentStep);
+
   switch (currentStep) {
-    case 0:
+    case 0: // Informações Básicas
+      console.log('📝 WIZARD STEP CONTENT - Renderizando básico');
       return (
         <ProductBasicInfoForm
           formData={formData}
           updateFormData={updateFormData}
         />
       );
-    case 1:
+      
+    case 1: // Preços e Estoque
+      console.log('💰 WIZARD STEP CONTENT - Renderizando preços');
       return (
         <ProductPricingForm
           formData={formData}
           updateFormData={updateFormData}
         />
       );
-    case 2:
+      
+    case 2: // Variações
+      console.log('🎨 WIZARD STEP CONTENT - Renderizando variações');
       return (
         <ProductVariationsForm
           variations={formData.variations || []}
           onVariationsChange={(variations) => updateFormData({ variations })}
         />
       );
-    case 3:
+      
+    case 3: // Imagens
+      console.log('📷 WIZARD STEP CONTENT - Renderizando imagens');
       return (
         <ImprovedDraftImageUpload
           productId={productId}
         />
       );
-    case 4:
+      
+    case 4: // SEO
+      console.log('🔍 WIZARD STEP CONTENT - Renderizando SEO');
       return (
         <ProductSeoForm
           formData={formData}
           updateFormData={updateFormData}
         />
       );
-    case 5:
+      
+    case 5: // Avançado
+      console.log('⚙️ WIZARD STEP CONTENT - Renderizando avançado');
       return (
         <ProductAdvancedForm
           formData={formData}
           updateFormData={updateFormData}
         />
       );
+      
     default:
-      return null;
+      console.error('❌ WIZARD STEP CONTENT - Step inválido:', currentStep);
+      return (
+        <div className="text-center p-8">
+          <p className="text-red-500">Step inválido: {currentStep}</p>
+        </div>
+      );
   }
 };
 

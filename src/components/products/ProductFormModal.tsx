@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProductFormWizard from './ProductFormWizard';
 
 interface ProductFormModalProps {
@@ -18,17 +17,34 @@ const ProductFormModal = ({
   initialData,
   mode
 }: ProductFormModalProps) => {
-  const handleSuccess = async () => {
-    if (onSubmit && initialData) {
-      await onSubmit(initialData);
+  console.log('🎭 PRODUCT FORM MODAL - Renderizando:', {
+    open,
+    mode,
+    hasInitialData: !!initialData
+  });
+
+  // Simplificar - deixar apenas o wizard gerenciar tudo
+  const handleSuccess = () => {
+    console.log('✅ PRODUCT FORM MODAL - Sucesso, fechando modal');
+    onOpenChange(false);
+    
+    // Se há callback de submit, executar após fechar
+    if (onSubmit) {
+      console.log('🔄 PRODUCT FORM MODAL - Executando callback onSubmit');
+      // Não precisamos passar dados aqui pois o wizard já salvou
+      onSubmit({}).catch(console.error);
     }
+  };
+
+  const handleClose = () => {
+    console.log('❌ PRODUCT FORM MODAL - Fechando modal');
     onOpenChange(false);
   };
 
   return (
     <ProductFormWizard
       isOpen={open}
-      onClose={() => onOpenChange(false)}
+      onClose={handleClose}
       editingProduct={mode === 'edit' ? initialData : undefined}
       onSuccess={handleSuccess}
     />

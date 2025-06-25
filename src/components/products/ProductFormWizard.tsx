@@ -20,6 +20,12 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   editingProduct,
   onSuccess
 }) => {
+  console.log('🧙‍♂️ PRODUCT FORM WIZARD - Renderizando:', {
+    isOpen,
+    editingProduct: editingProduct?.id,
+    hasOnSuccess: !!onSuccess
+  });
+
   const {
     currentStep,
     formData,
@@ -31,6 +37,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
     goToStep,
     saveProduct,
     resetForm,
+    canProceed
   } = useProductFormWizard();
 
   const { loadExistingImages, clearDraftImages } = useDraftImages();
@@ -38,10 +45,8 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   // Carregar dados do produto para edição
   useEffect(() => {
     if (editingProduct && isOpen) {
-      console.log('=== CARREGANDO PRODUTO PARA EDIÇÃO ===');
-      console.log('Produto:', editingProduct);
+      console.log('📂 WIZARD - Carregando produto para edição:', editingProduct);
       
-      // Preparar dados do formulário com os campos corretos - SEM 'price'
       updateFormData({
         name: editingProduct.name || '',
         description: editingProduct.description || '',
@@ -61,7 +66,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
 
       // Carregar imagens existentes
       if (editingProduct.id) {
-        console.log('Carregando imagens para produto ID:', editingProduct.id);
+        console.log('📷 WIZARD - Carregando imagens existentes');
         loadExistingImages(editingProduct.id);
       }
     }
@@ -70,67 +75,68 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   // Limpar form ao fechar
   useEffect(() => {
     if (!isOpen) {
-      console.log('Dialog fechado, limpando dados...');
+      console.log('🧹 WIZARD - Dialog fechado, limpando dados');
       resetForm();
       clearDraftImages();
     }
   }, [isOpen, resetForm, clearDraftImages]);
 
   const handleSave = async () => {
-    console.log('=== INICIANDO PROCESSO DE SALVAMENTO ===');
-    console.log('Dados do formulário:', formData);
-    console.log('Produto em edição:', editingProduct?.id);
+    console.log('💾 WIZARD - Tentativa de salvamento');
     
     try {
       const productId = await saveProduct(editingProduct?.id);
-      console.log('=== RESULTADO DO SALVAMENTO ===');
-      console.log('Product ID retornado:', productId);
+      console.log('📋 WIZARD - Resultado do salvamento:', productId);
       
       if (productId) {
-        console.log('Salvamento bem-sucedido, executando callbacks...');
+        console.log('✅ WIZARD - Salvamento bem-sucedido');
         if (onSuccess) {
           onSuccess();
         }
         onClose();
       } else {
-        console.error('Falha no salvamento - productId é null');
+        console.error('❌ WIZARD - Falha no salvamento');
       }
     } catch (error) {
-      console.error('Erro durante o salvamento:', error);
+      console.error('💥 WIZARD - Erro durante salvamento:', error);
     }
   };
 
   const handleClose = () => {
-    console.log('Fechando wizard...');
+    console.log('❌ WIZARD - Fechando wizard');
     clearDraftImages();
     onClose();
   };
 
   const isLastStep = currentStep === steps.length - 1;
   
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0: // Básico
-        return !!(formData.name?.trim() && formData.retail_price > 0);
-      case 1: // Preços
-        return formData.retail_price > 0 && formData.stock >= 0;
-      case 2: // Imagens
-        return true; // Imagens são opcionais
-      case 3: // SEO
-        return true; // SEO é opcional
-      case 4: // Avançado
-        return true;
-      default:
-        return true;
-    }
-  };
-
-  // Calcular steps completados
+  // Calcular steps completados baseado na validação
   const completedSteps: number[] = [];
-  if (formData.name && formData.retail_price > 0) completedSteps.push(0);
-  if (formData.retail_price > 0 && formData.stock >= 0) completedSteps.push(1);
-  // Imagens e SEO sempre podem ser marcados como completados
-  completedSteps.push(2, 3, 4);
+  
+  // Step 0: Básico - precisa de nome e preço
+  if (formData.name?.trim() && formData.retail_price > 0) {
+    completedSteps.push(0);
+  }
+  
+  // Step 1: Preços - precisa de preço válido e estoque >= 0
+  if (formData.retail_price > 0 && formData.stock >= 0) {
+    completedSteps.push(1);
+  }
+  
+  // Steps 2-5 sempre podem ser marcados como completados (opcionais)
+  completedSteps.push(2, 3, 4, 5);
+
+  console.log('📊 WIZARD - Status atual:', {
+    currentStep,
+    canProceed,
+    completedSteps,
+    isLastStep,
+    formDataValid: {
+      name: !!formData.name?.trim(),
+      price: formData.retail_price > 0,
+      stock: formData.stock >= 0
+    }
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -166,7 +172,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
           <ImprovedWizardActionButtons
             currentStep={currentStep}
             totalSteps={steps.length}
-            canProceed={canProceed()}
+            canProceed={canProceed}
             isSaving={isSaving}
             onPrevious={prevStep}
             onNext={nextStep}
