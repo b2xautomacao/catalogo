@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useProductFormWizard } from '@/hooks/useProductFormWizard';
 import { useDraftImages } from '@/hooks/useDraftImages';
+import { useProductVariations } from '@/hooks/useProductVariations';
 import ImprovedWizardStepNavigation from './wizard/ImprovedWizardStepNavigation';
 import WizardStepContent from './wizard/WizardStepContent';
 import ImprovedWizardActionButtons from './wizard/ImprovedWizardActionButtons';
@@ -41,6 +42,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
   } = useProductFormWizard();
 
   const { loadExistingImages, clearDraftImages } = useDraftImages();
+  const { variations, loading: variationsLoading } = useProductVariations(editingProduct?.id);
 
   // Carregar dados do produto para edição
   useEffect(() => {
@@ -71,6 +73,25 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
       }
     }
   }, [editingProduct?.id, isOpen, updateFormData, loadExistingImages]);
+
+  // Carregar variações existentes
+  useEffect(() => {
+    if (variations && variations.length > 0 && !variationsLoading) {
+      console.log('🎨 WIZARD - Carregando variações existentes:', variations.length);
+      const formattedVariations = variations.map(variation => ({
+        id: variation.id,
+        color: variation.color || '',
+        size: variation.size || '',
+        sku: variation.sku || '',
+        stock: variation.stock,
+        price_adjustment: variation.price_adjustment,
+        is_active: variation.is_active,
+        image_url: variation.image_url || ''
+      }));
+      
+      updateFormData({ variations: formattedVariations });
+    }
+  }, [variations, variationsLoading, updateFormData]);
 
   // Limpar form ao fechar
   useEffect(() => {

@@ -2,414 +2,219 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CurrencyInput } from '@/components/ui/currency-input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Edit, Check, X } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Trash2, Plus, Image } from 'lucide-react';
+import { ProductVariation } from '@/hooks/useProductFormWizard';
 import VariationImageUpload from './VariationImageUpload';
-
-export interface ProductVariation {
-  id?: string;
-  color?: string;
-  size?: string;
-  sku?: string;
-  stock: number;
-  price_adjustment: number;
-  is_active: boolean;
-  image_url?: string;
-  image_file?: File;
-}
 
 interface ProductVariationsManagerProps {
   variations: ProductVariation[];
   onChange: (variations: ProductVariation[]) => void;
-  disabled?: boolean;
 }
 
 const ProductVariationsManager: React.FC<ProductVariationsManagerProps> = ({
   variations,
-  onChange,
-  disabled = false
+  onChange
 }) => {
-  const [newVariation, setNewVariation] = useState<ProductVariation>({
-    color: '',
-    size: '',
-    sku: '',
-    stock: 0,
-    price_adjustment: 0,
-    is_active: true,
-    image_url: '',
-  });
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingVariation, setEditingVariation] = useState<ProductVariation | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const addVariation = () => {
-    if (!newVariation.color && !newVariation.size) {
-      return;
-    }
-
-    const variationToAdd = {
-      ...newVariation,
-      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-
-    console.log('➕ Adicionando variação:', variationToAdd);
-    onChange([...variations, variationToAdd]);
-    
-    setNewVariation({
+    const newVariation: ProductVariation = {
       color: '',
       size: '',
       sku: '',
       stock: 0,
       price_adjustment: 0,
       is_active: true,
-      image_url: '',
-    });
+      image_url: ''
+    };
+    
+    onChange([...variations, newVariation]);
+    setShowForm(true);
+  };
+
+  const updateVariation = (index: number, updates: Partial<ProductVariation>) => {
+    const updatedVariations = variations.map((variation, i) => 
+      i === index ? { ...variation, ...updates } : variation
+    );
+    onChange(updatedVariations);
   };
 
   const removeVariation = (index: number) => {
     const updatedVariations = variations.filter((_, i) => i !== index);
-    console.log('🗑️ Removendo variação, nova lista:', updatedVariations);
     onChange(updatedVariations);
-  };
-
-  const startEdit = (index: number) => {
-    setEditingIndex(index);
-    setEditingVariation({ ...variations[index] });
-  };
-
-  const saveEdit = () => {
-    if (editingIndex !== null && editingVariation) {
-      const updatedVariations = [...variations];
-      updatedVariations[editingIndex] = editingVariation;
-      console.log('💾 Salvando edição da variação:', editingVariation);
-      onChange(updatedVariations);
-      setEditingIndex(null);
-      setEditingVariation(null);
+    if (updatedVariations.length === 0) {
+      setShowForm(false);
     }
   };
 
-  const cancelEdit = () => {
-    setEditingIndex(null);
-    setEditingVariation(null);
-  };
-
-  const formatVariationName = (variation: ProductVariation) => {
-    const parts = [];
-    if (variation.color) parts.push(variation.color);
-    if (variation.size) parts.push(variation.size);
-    return parts.join(' - ') || 'Variação';
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const handleNewVariationImageUpload = (file: File) => {
-    console.log('📤 Nova imagem para variação:', file.name);
-    setNewVariation(prev => ({
-      ...prev,
+  const handleImageUpload = (index: number, file: File) => {
+    // Criar URL temporária para preview
+    const previewUrl = URL.createObjectURL(file);
+    updateVariation(index, { 
       image_file: file,
-      image_url: URL.createObjectURL(file)
-    }));
+      image_url: previewUrl
+    });
   };
 
-  const handleNewVariationImageRemove = () => {
-    console.log('🗑️ Removendo imagem da nova variação');
-    setNewVariation(prev => ({
-      ...prev,
+  const handleImageRemove = (index: number) => {
+    updateVariation(index, { 
       image_file: undefined,
       image_url: ''
-    }));
-  };
-
-  const handleEditVariationImageUpload = (file: File) => {
-    if (editingVariation) {
-      console.log('📤 Nova imagem para variação em edição:', file.name);
-      setEditingVariation({
-        ...editingVariation,
-        image_file: file,
-        image_url: URL.createObjectURL(file)
-      });
-    }
-  };
-
-  const handleEditVariationImageRemove = () => {
-    if (editingVariation) {
-      console.log('🗑️ Removendo imagem da variação em edição');
-      setEditingVariation({
-        ...editingVariation,
-        image_file: undefined,
-        image_url: ''
-      });
-    }
-  };
-
-  const handleStockChange = (value: string, isEditing: boolean = false) => {
-    const numericValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0);
-    
-    if (isEditing && editingVariation) {
-      setEditingVariation({ ...editingVariation, stock: numericValue });
-    } else {
-      setNewVariation({ ...newVariation, stock: numericValue });
-    }
-  };
-
-  const handlePriceAdjustmentChange = (value: number, isEditing: boolean = false) => {
-    if (isEditing && editingVariation) {
-      setEditingVariation({ ...editingVariation, price_adjustment: value });
-    } else {
-      setNewVariation({ ...newVariation, price_adjustment: value });
-    }
+    });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Form para adicionar nova variação */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Adicionar Nova Variação</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="new-color">Cor</Label>
-              <Input
-                id="new-color"
-                placeholder="Ex: Azul, Vermelho"
-                value={newVariation.color || ''}
-                onChange={(e) => setNewVariation({ ...newVariation, color: e.target.value })}
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-size">Tamanho</Label>
-              <Input
-                id="new-size"
-                placeholder="Ex: P, M, G, XG"
-                value={newVariation.size || ''}
-                onChange={(e) => setNewVariation({ ...newVariation, size: e.target.value })}
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="new-sku">SKU</Label>
-              <Input
-                id="new-sku"
-                placeholder="Código interno"
-                value={newVariation.sku || ''}
-                onChange={(e) => setNewVariation({ ...newVariation, sku: e.target.value })}
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-stock">Estoque</Label>
-              <Input
-                id="new-stock"
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={newVariation.stock === 0 ? '' : newVariation.stock.toString()}
-                onChange={(e) => handleStockChange(e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-price-adjustment">Ajuste de Preço</Label>
-              <CurrencyInput
-                value={newVariation.price_adjustment || 0}
-                onChange={(value) => handlePriceAdjustmentChange(value)}
-                placeholder="0,00"
-                disabled={disabled}
-              />
-            </div>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Variações do Produto</h3>
+          <p className="text-sm text-muted-foreground">
+            Adicione diferentes opções como cores, tamanhos ou materiais
+          </p>
+        </div>
+        <Button onClick={addVariation} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Variação
+        </Button>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <VariationImageUpload
-              imageUrl={newVariation.image_url}
-              onImageUpload={handleNewVariationImageUpload}
-              onImageRemove={handleNewVariationImageRemove}
-              disabled={disabled}
-            />
-          </div>
-          
-          <Button
-            type="button"
-            onClick={addVariation}
-            disabled={disabled || (!newVariation.color && !newVariation.size)}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Variação
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Lista de variações existentes */}
-      {variations.length > 0 && (
+      {variations.length === 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Variações Cadastradas ({variations.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {variations.map((variation, index) => (
-                <div key={variation.id || index} className="border rounded-lg p-4">
-                  {editingIndex === index ? (
-                    // Modo de edição
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Cor</Label>
-                          <Input
-                            value={editingVariation?.color || ''}
-                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, color: e.target.value } : null)}
-                            disabled={disabled}
-                          />
-                        </div>
-                        <div>
-                          <Label>Tamanho</Label>
-                          <Input
-                            value={editingVariation?.size || ''}
-                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, size: e.target.value } : null)}
-                            disabled={disabled}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label>SKU</Label>
-                          <Input
-                            value={editingVariation?.sku || ''}
-                            onChange={(e) => setEditingVariation(prev => prev ? { ...prev, sku: e.target.value } : null)}
-                            disabled={disabled}
-                          />
-                        </div>
-                        <div>
-                          <Label>Estoque</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={editingVariation?.stock === 0 ? '' : editingVariation?.stock?.toString() || ''}
-                            onChange={(e) => handleStockChange(e.target.value, true)}
-                            disabled={disabled}
-                          />
-                        </div>
-                        <div>
-                          <Label>Ajuste de Preço</Label>
-                          <CurrencyInput
-                            value={editingVariation?.price_adjustment || 0}
-                            onChange={(value) => handlePriceAdjustmentChange(value, true)}
-                            disabled={disabled}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <VariationImageUpload
-                          imageUrl={editingVariation?.image_url}
-                          onImageUpload={handleEditVariationImageUpload}
-                          onImageRemove={handleEditVariationImageRemove}
-                          disabled={disabled}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={saveEdit}
-                          disabled={disabled}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Salvar
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={cancelEdit}
-                          disabled={disabled}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Modo de visualização
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {variation.image_url && (
-                          <img
-                            src={variation.image_url}
-                            alt={formatVariationName(variation)}
-                            className="w-12 h-12 object-cover rounded border"
-                          />
-                        )}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {formatVariationName(variation)}
-                            </Badge>
-                            {variation.sku && (
-                              <Badge variant="secondary">
-                                SKU: {variation.sku}
-                              </Badge>
-                            )}
-                            {variation.id?.startsWith('temp_') && (
-                              <Badge variant="destructive">
-                                Novo
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground flex gap-4">
-                            <span>Estoque: {variation.stock}</span>
-                            <span>
-                              Ajuste: {variation.price_adjustment > 0 ? '+' : ''}
-                              {formatCurrency(variation.price_adjustment)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(index)}
-                          disabled={disabled}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeVariation(index)}
-                          disabled={disabled}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Image className="w-8 h-8 text-gray-400" />
             </div>
+            <h3 className="font-medium text-gray-900 mb-1">Nenhuma variação criada</h3>
+            <p className="text-sm text-gray-500 mb-4 text-center">
+              Variações permitem oferecer o mesmo produto em diferentes opções
+            </p>
+            <Button onClick={addVariation} variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Criar primeira variação
+            </Button>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-4">
+          {variations.map((variation, index) => (
+            <Card key={index}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    Variação {index + 1}
+                    {!variation.is_active && (
+                      <Badge variant="secondary" className="ml-2">Inativa</Badge>
+                    )}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeVariation(index)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor={`color-${index}`}>Cor</Label>
+                    <Input
+                      id={`color-${index}`}
+                      value={variation.color || ''}
+                      onChange={(e) => updateVariation(index, { color: e.target.value })}
+                      placeholder="Ex: Azul, Vermelho"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`size-${index}`}>Tamanho</Label>
+                    <Input
+                      id={`size-${index}`}
+                      value={variation.size || ''}
+                      onChange={(e) => updateVariation(index, { size: e.target.value })}
+                      placeholder="Ex: P, M, G, GG"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`sku-${index}`}>SKU</Label>
+                    <Input
+                      id={`sku-${index}`}
+                      value={variation.sku || ''}
+                      onChange={(e) => updateVariation(index, { sku: e.target.value })}
+                      placeholder="Código único"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor={`stock-${index}`}>Estoque</Label>
+                    <Input
+                      id={`stock-${index}`}
+                      type="number"
+                      min="0"
+                      value={variation.stock}
+                      onChange={(e) => updateVariation(index, { stock: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`price-adjustment-${index}`}>Ajuste de Preço (R$)</Label>
+                    <Input
+                      id={`price-adjustment-${index}`}
+                      type="number"
+                      step="0.01"
+                      value={variation.price_adjustment}
+                      onChange={(e) => updateVariation(index, { price_adjustment: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Valor a ser somado/subtraído do preço base
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor={`active-${index}`}>Variação Ativa</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Variações inativas não aparecem no catálogo
+                      </p>
+                    </div>
+                    <Switch
+                      id={`active-${index}`}
+                      checked={variation.is_active}
+                      onCheckedChange={(checked) => updateVariation(index, { is_active: checked })}
+                    />
+                  </div>
+
+                  <VariationImageUpload
+                    imageUrl={variation.image_url}
+                    onImageUpload={(file) => handleImageUpload(index, file)}
+                    onImageRemove={() => handleImageRemove(index)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {variations.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium text-blue-900 mb-2">💡 Dicas para variações:</h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Use nomes descritivos para cores e tamanhos</li>
+            <li>• O estoque da variação é independente do estoque principal</li>
+            <li>• Ajustes de preço podem ser positivos ou negativos</li>
+            <li>• Cada variação pode ter sua própria imagem</li>
+          </ul>
+        </div>
       )}
     </div>
   );

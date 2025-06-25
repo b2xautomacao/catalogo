@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { useDraftImages } from '@/hooks/useDraftImages';
+import { useProductVariations } from '@/hooks/useProductVariations';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CreateProductData } from '@/types/product';
@@ -32,6 +33,7 @@ export interface WizardStep {
 export const useProductFormWizard = () => {
   const { createProduct, updateProduct } = useProducts();
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
+  const { saveVariations } = useProductVariations();
   const { toast } = useToast();
   const { profile } = useAuth();
   
@@ -104,19 +106,10 @@ export const useProductFormWizard = () => {
         return pricingValid;
         
       case 2: // Variações (opcional)
-        console.log('🎨 WIZARD - Step 2 (Variações): sempre válido (opcional)');
-        return true;
-        
       case 3: // Imagens (opcional)
-        console.log('📷 WIZARD - Step 3 (Imagens): sempre válido (opcional)');
-        return true;
-        
       case 4: // SEO (opcional)
-        console.log('🔍 WIZARD - Step 4 (SEO): sempre válido (opcional)');
-        return true;
-        
       case 5: // Avançado (opcional)
-        console.log('⚙️ WIZARD - Step 5 (Avançado): sempre válido (opcional)');
+        console.log(`✅ WIZARD - Step ${currentStep}: sempre válido (opcional)`);
         return true;
         
       default:
@@ -145,8 +138,6 @@ export const useProductFormWizard = () => {
       const nextStepIndex = currentStep + 1;
       console.log('✅ WIZARD - Avançando para step:', nextStepIndex);
       setCurrentStep(nextStepIndex);
-    } else {
-      console.log('🏁 WIZARD - Já está no último step');
     }
   }, [currentStep, steps.length, validateCurrentStep, toast]);
 
@@ -212,7 +203,7 @@ export const useProductFormWizard = () => {
     setIsSaving(true);
 
     try {
-      // Preparar dados do produto
+      // 1. Salvar produto primeiro
       const { variations, ...productDataWithoutVariations } = formData;
       const productData: CreateProductData = {
         ...productDataWithoutVariations,
@@ -222,7 +213,7 @@ export const useProductFormWizard = () => {
         category: formData.category?.trim() || '',
       };
 
-      console.log('📤 WIZARD - Dados para salvar:', productData);
+      console.log('📤 WIZARD - Dados do produto para salvar:', productData);
 
       let result;
       let savedProductId: string;
@@ -240,26 +231,41 @@ export const useProductFormWizard = () => {
         savedProductId = result.data?.id;
       }
 
-      console.log('📋 WIZARD - Resultado da operação:', result);
+      console.log('📋 WIZARD - Resultado da operação do produto:', result);
 
       if (result.error || !savedProductId) {
-        console.error('❌ WIZARD - Erro na operação:', result.error);
+        console.error('❌ WIZARD - Erro na operação do produto:', result.error);
         throw new Error(result.error || 'Erro ao salvar produto');
       }
 
       console.log('✅ WIZARD - Produto salvo com sucesso:', savedProductId);
 
-      // Upload das imagens se houver
+      // 2. Salvar imagens se houver
       if (draftImages.length > 0) {
         console.log('📷 WIZARD - Fazendo upload de imagens...');
-        await uploadDraftImages(savedProductId);
-        console.log('✅ WIZARD - Upload de imagens concluído');
+        const uploadedUrls = await uploadDraftImages(savedProductId);
+        console.log('✅ WIZARD - Upload de imagens concluído:', uploadedUrls.length);
       }
 
-      // TODO: Implementar salvamento de variações
+      // 3. Salvar variações se houver
       if (formData.variations && formData.variations.length > 0) {
-        console.log('🎨 WIZARD - Variações para salvar:', formData.variations.length);
-        console.log('⚠️ WIZARD - Salvamento de variações ainda não implementado');
+        console.log('🎨 WIZARD - Salvando variações...');
+        const variationsToSave = formData.variations.map(variation => ({
+          color: variation.color || null,
+          size: variation.size || null,
+          sku: variation.sku || null,
+          stock: variation.stock,
+          price_adjustment: variation.price_adjustment,
+          is_active: variation.is_active,
+          image_url: variation.image_url || null
+        }));
+
+        const variationResult = await saveVariations(savedProductId, variationsToSave);
+        if (variationResult.success) {
+          console.log('✅ WIZARD - Variações salvas com sucesso');
+        } else {
+          console.error('❌ WIZARD - Erro ao salvar variações:', variationResult.error);
+        }
       }
 
       // Sucesso
@@ -282,7 +288,7 @@ export const useProductFormWizard = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [formData, profile?.store_id, draftImages, createProduct, updateProduct, uploadDraftImages, toast, isSaving]);
+  }, [formData, profile?.store_id, draftImages, createProduct, updateProduct, uploadDraftImages, saveVariations, toast, isSaving]);
 
   const resetForm = useCallback(() => {
     console.log('🔄 WIZARD - Resetando formulário');
@@ -309,7 +315,6 @@ export const useProductFormWizard = () => {
     clearDraftImages();
   }, [clearDraftImages]);
 
-  // Função auxiliar para verificar se pode avançar (usada nos botões)
   const canProceed = validateCurrentStep();
 
   return {
