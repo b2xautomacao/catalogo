@@ -17,15 +17,31 @@ export const useDraftImages = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const loadedProductIdRef = useRef<string | null>(null);
+  const activeBlobUrls = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
-  // Cleanup de URLs blob quando necessário
-  const cleanupBlobUrls = useCallback((images: DraftImage[]) => {
-    images.forEach(image => {
-      if (image.preview && image.preview.startsWith('blob:') && !image.isExisting) {
-        URL.revokeObjectURL(image.preview);
-      }
+  // Função para criar blob URL e registrar para cleanup
+  const createBlobUrl = useCallback((file: File): string => {
+    const url = URL.createObjectURL(file);
+    activeBlobUrls.current.add(url);
+    return url;
+  }, []);
+
+  // Função para limpar blob URL específico
+  const revokeBlobUrl = useCallback((url: string) => {
+    if (url && url.startsWith('blob:') && activeBlobUrls.current.has(url)) {
+      URL.revokeObjectURL(url);
+      activeBlobUrls.current.delete(url);
+    }
+  }, []);
+
+  // Cleanup de todas as blob URLs ativas
+  const cleanupAllBlobUrls = useCallback(() => {
+    console.log('=== LIMPANDO TODAS AS BLOB URLS ===');
+    activeBlobUrls.current.forEach(url => {
+      URL.revokeObjectURL(url);
     });
+    activeBlobUrls.current.clear();
   }, []);
 
   const addDraftImages = useCallback((files: File[]) => {
@@ -33,7 +49,7 @@ export const useDraftImages = () => {
     console.log('Arquivos recebidos:', files.length);
     
     const newImages: DraftImage[] = files.map((file) => {
-      const preview = URL.createObjectURL(file);
+      const preview = createBlobUrl(file);
       return {
         id: Math.random().toString(36).substr(2, 9),
         file,
@@ -51,7 +67,7 @@ export const useDraftImages = () => {
     });
     
     return newImages;
-  }, []);
+  }, [createBlobUrl]);
 
   const removeDraftImage = useCallback((id: string) => {
     console.log('=== REMOVENDO IMAGEM DRAFT ===');
@@ -60,18 +76,16 @@ export const useDraftImages = () => {
     setDraftImages(prev => {
       const imageToRemove = prev.find(img => img.id === id);
       
-      // Cleanup de blob URL apenas se não for imagem existente
-      if (imageToRemove && imageToRemove.preview && 
-          imageToRemove.preview.startsWith('blob:') && 
-          !imageToRemove.isExisting) {
-        URL.revokeObjectURL(imageToRemove.preview);
+      // Cleanup de blob URL apenas se for uma nova imagem
+      if (imageToRemove && !imageToRemove.isExisting) {
+        revokeBlobUrl(imageToRemove.preview);
       }
       
       const filtered = prev.filter(img => img.id !== id);
       console.log('Imagens restantes após remoção:', filtered.length);
       return filtered;
     });
-  }, []);
+  }, [revokeBlobUrl]);
 
   const uploadDraftImages = useCallback(async (productId: string): Promise<string[]> => {
     console.log('=== INICIANDO UPLOAD DE IMAGENS ===');
@@ -117,7 +131,7 @@ export const useDraftImages = () => {
       }
 
       // 3. Fazer upload apenas das imagens que têm arquivo (novas)
-      const imagesToUpload = draftImages.filter(img => img.file);
+      const imagesToUpload = draftImages.filter(img => img.file && !img.uploaded);
       console.log('Imagens para upload:', imagesToUpload.length);
 
       for (let i = 0; i < imagesToUpload.length; i++) {
@@ -212,13 +226,13 @@ export const useDraftImages = () => {
     console.log('=== LIMPANDO IMAGENS DRAFT ===');
     console.log('Imagens a serem limpas:', draftImages.length);
     
-    // Cleanup apenas de blob URLs de imagens não existentes
-    cleanupBlobUrls(draftImages);
+    // Cleanup de todas as blob URLs ativas
+    cleanupAllBlobUrls();
     setDraftImages([]);
     loadedProductIdRef.current = null;
     
     console.log('Imagens draft limpas');
-  }, [draftImages, cleanupBlobUrls]);
+  }, [cleanupAllBlobUrls]);
 
   const loadExistingImages = useCallback(async (productId: string) => {
     // Evitar carregar o mesmo produto múltiplas vezes

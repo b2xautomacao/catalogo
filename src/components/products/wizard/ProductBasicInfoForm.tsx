@@ -66,7 +66,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {categoriesLoading ? (
-                    <SelectItem value="loading-placeholder" disabled>
+                    <SelectItem value="loading" disabled>
                       Carregando categorias...
                     </SelectItem>
                   ) : categories.length === 0 ? (

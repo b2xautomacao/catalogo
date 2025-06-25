@@ -42,7 +42,7 @@ export const useProductFormWizard = () => {
     name: '',
     description: '',
     retail_price: 0,
-    wholesale_price: 0,
+    wholesale_price: undefined,
     category: '',
     stock: 0,
     min_wholesale_qty: 1,
@@ -151,15 +151,23 @@ export const useProductFormWizard = () => {
     setIsSaving(true);
 
     try {
-      // 1. Preparar dados do produto
+      // 1. Preparar dados do produto - CORRIGIDO: removendo referências a 'price'
       const productData = {
-        ...formData,
         store_id: profile.store_id,
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
+        retail_price: formData.retail_price,
+        wholesale_price: formData.wholesale_price || null,
+        category: formData.category?.trim() || null,
+        stock: formData.stock,
+        min_wholesale_qty: formData.min_wholesale_qty || 1,
         meta_title: formData.meta_title?.trim() || null,
         meta_description: formData.meta_description?.trim() || null,
         keywords: formData.keywords?.trim() || null,
+        seo_slug: formData.seo_slug?.trim() || null,
+        is_featured: formData.is_featured || false,
+        allow_negative_stock: formData.allow_negative_stock || false,
+        stock_alert_threshold: formData.stock_alert_threshold || 5,
       };
 
       console.log('=== SALVANDO DADOS DO PRODUTO ===');
@@ -228,7 +236,7 @@ export const useProductFormWizard = () => {
       name: '',
       description: '',
       retail_price: 0,
-      wholesale_price: 0,
+      wholesale_price: undefined,
       category: '',
       stock: 0,
       min_wholesale_qty: 1,
