@@ -5,10 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface DraftImage {
   id: string;
-  file: File;
+  file?: File;
   preview: string;
   uploaded?: boolean;
   url?: string;
+  isExisting?: boolean;
 }
 
 export const useDraftImages = () => {
@@ -18,16 +19,29 @@ export const useDraftImages = () => {
   const loadedProductIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
+  // Cleanup de URLs blob quando necessário
+  const cleanupBlobUrls = useCallback((images: DraftImage[]) => {
+    images.forEach(image => {
+      if (image.preview && image.preview.startsWith('blob:') && !image.isExisting) {
+        URL.revokeObjectURL(image.preview);
+      }
+    });
+  }, []);
+
   const addDraftImages = useCallback((files: File[]) => {
     console.log('=== ADICIONANDO IMAGENS DRAFT ===');
     console.log('Arquivos recebidos:', files.length);
     
-    const newImages: DraftImage[] = files.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      preview: URL.createObjectURL(file),
-      uploaded: false
-    }));
+    const newImages: DraftImage[] = files.map((file) => {
+      const preview = URL.createObjectURL(file);
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        file,
+        preview,
+        uploaded: false,
+        isExisting: false
+      };
+    });
     
     console.log('Imagens criadas:', newImages.length);
     setDraftImages(prev => {
@@ -45,9 +59,14 @@ export const useDraftImages = () => {
     
     setDraftImages(prev => {
       const imageToRemove = prev.find(img => img.id === id);
-      if (imageToRemove && imageToRemove.preview) {
+      
+      // Cleanup de blob URL apenas se não for imagem existente
+      if (imageToRemove && imageToRemove.preview && 
+          imageToRemove.preview.startsWith('blob:') && 
+          !imageToRemove.isExisting) {
         URL.revokeObjectURL(imageToRemove.preview);
       }
+      
       const filtered = prev.filter(img => img.id !== id);
       console.log('Imagens restantes após remoção:', filtered.length);
       return filtered;
@@ -57,7 +76,7 @@ export const useDraftImages = () => {
   const uploadDraftImages = useCallback(async (productId: string): Promise<string[]> => {
     console.log('=== INICIANDO UPLOAD DE IMAGENS ===');
     console.log('Product ID:', productId);
-    console.log('Imagens para upload:', draftImages.length);
+    console.log('Imagens para processar:', draftImages.length);
 
     if (draftImages.length === 0) {
       console.log('Nenhuma imagem para upload');
@@ -73,42 +92,46 @@ export const useDraftImages = () => {
     const uploadedUrls: string[] = [];
 
     try {
-      // 1. Primeiro, remover imagens existentes do produto
+      // 1. Remover imagens existentes do produto
       console.log('Removendo imagens existentes do produto...');
-      const { error: deleteError } = await supabase
+      const { error: deleteImagesError } = await supabase
         .from('product_images')
         .delete()
         .eq('product_id', productId);
 
-      if (deleteError) {
-        console.error('Erro ao remover imagens existentes:', deleteError);
-      } else {
-        console.log('Imagens existentes removidas com sucesso');
+      if (deleteImagesError) {
+        console.error('Erro ao remover imagens existentes:', deleteImagesError);
       }
 
-      // 2. Fazer upload das novas imagens
-      for (let i = 0; i < draftImages.length; i++) {
-        const image = draftImages[i];
+      // 2. Remover arquivos existentes do storage
+      const { data: existingFiles } = await supabase.storage
+        .from('product-images')
+        .list(productId);
+
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(file => `${productId}/${file.name}`);
+        await supabase.storage
+          .from('product-images')
+          .remove(filesToDelete);
+        console.log('Arquivos antigos removidos do storage');
+      }
+
+      // 3. Fazer upload apenas das imagens que têm arquivo (novas)
+      const imagesToUpload = draftImages.filter(img => img.file);
+      console.log('Imagens para upload:', imagesToUpload.length);
+
+      for (let i = 0; i < imagesToUpload.length; i++) {
+        const image = imagesToUpload[i];
         
-        console.log(`=== UPLOAD IMAGEM ${i + 1}/${draftImages.length} ===`);
-        console.log('Imagem ID:', image.id);
-        console.log('Arquivo:', image.file.name, image.file.size);
+        console.log(`=== UPLOAD IMAGEM ${i + 1}/${imagesToUpload.length} ===`);
 
-        if (image.uploaded && image.url) {
-          console.log('Imagem já enviada, pulando...');
-          uploadedUrls.push(image.url);
-          continue;
-        }
-
-        const fileExt = image.file.name.split('.').pop();
+        const fileExt = image.file!.name.split('.').pop();
         const fileName = `${productId}/${Date.now()}-${i}.${fileExt}`;
-
-        console.log('Nome do arquivo no storage:', fileName);
 
         // Upload para o storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(fileName, image.file, {
+          .upload(fileName, image.file!, {
             cacheControl: '3600',
             upsert: false
           });
@@ -117,8 +140,6 @@ export const useDraftImages = () => {
           console.error('Erro no upload da imagem:', uploadError);
           continue;
         }
-
-        console.log('Upload bem-sucedido:', uploadData.path);
 
         // Obter URL pública
         const { data: urlData } = supabase.storage
@@ -145,16 +166,9 @@ export const useDraftImages = () => {
         } else {
           console.log(`Imagem ${i + 1} salva no banco com sucesso`);
         }
-
-        // Marcar como enviada
-        setDraftImages(prev => prev.map(img => 
-          img.id === image.id 
-            ? { ...img, uploaded: true, url: imageUrl }
-            : img
-        ));
       }
 
-      // 3. Atualizar imagem principal do produto
+      // 4. Atualizar imagem principal do produto
       if (uploadedUrls.length > 0) {
         console.log('Atualizando imagem principal do produto...');
         const { error: updateError } = await supabase
@@ -172,10 +186,12 @@ export const useDraftImages = () => {
       console.log('=== UPLOAD CONCLUÍDO COM SUCESSO ===');
       console.log('Total de imagens enviadas:', uploadedUrls.length);
 
-      toast({
-        title: 'Sucesso!',
-        description: `${uploadedUrls.length} imagem(ns) enviada(s) com sucesso`,
-      });
+      if (uploadedUrls.length > 0) {
+        toast({
+          title: 'Sucesso!',
+          description: `${uploadedUrls.length} imagem(ns) enviada(s) com sucesso`,
+        });
+      }
 
       return uploadedUrls;
     } catch (error) {
@@ -196,16 +212,13 @@ export const useDraftImages = () => {
     console.log('=== LIMPANDO IMAGENS DRAFT ===');
     console.log('Imagens a serem limpas:', draftImages.length);
     
-    draftImages.forEach(image => {
-      if (image.preview) {
-        URL.revokeObjectURL(image.preview);
-      }
-    });
+    // Cleanup apenas de blob URLs de imagens não existentes
+    cleanupBlobUrls(draftImages);
     setDraftImages([]);
     loadedProductIdRef.current = null;
     
     console.log('Imagens draft limpas');
-  }, [draftImages]);
+  }, [draftImages, cleanupBlobUrls]);
 
   const loadExistingImages = useCallback(async (productId: string) => {
     // Evitar carregar o mesmo produto múltiplas vezes
@@ -236,10 +249,10 @@ export const useDraftImages = () => {
         console.log('Imagens existentes encontradas:', images.length);
         const existingImages: DraftImage[] = images.map((img) => ({
           id: img.id,
-          file: new File([], ''), // File vazio para imagens já salvas
           preview: img.image_url,
           uploaded: true,
-          url: img.image_url
+          url: img.image_url,
+          isExisting: true
         }));
         
         setDraftImages(existingImages);

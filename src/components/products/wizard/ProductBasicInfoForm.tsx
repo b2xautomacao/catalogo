@@ -66,9 +66,13 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {categoriesLoading ? (
-                    <SelectItem value="">Carregando...</SelectItem>
+                    <SelectItem value="loading-placeholder" disabled>
+                      Carregando categorias...
+                    </SelectItem>
                   ) : categories.length === 0 ? (
-                    <SelectItem value="">Nenhuma categoria encontrada</SelectItem>
+                    <SelectItem value="no-categories" disabled>
+                      Nenhuma categoria encontrada
+                    </SelectItem>
                   ) : (
                     categories.map((category) => (
                       <SelectItem key={category.id} value={category.name}>

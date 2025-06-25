@@ -82,14 +82,12 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
           description: `A categoria "${name}" foi criada com sucesso`
         });
         
-        // Resetar formulário
-        resetForm();
-        
-        // Fechar modal
-        onOpenChange(false);
-        
         // Notificar categoria criada
         onCategoryCreated(data);
+        
+        // Resetar formulário e fechar modal
+        resetForm();
+        onOpenChange(false);
       }
     } catch (error) {
       console.error('Erro inesperado:', error);
@@ -105,7 +103,7 @@ const SimpleCategoryDialog = ({ open, onOpenChange, onCategoryCreated }: SimpleC
 
   // Resetar formulário quando o modal for fechado
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
+    if (!newOpen && !loading) {
       resetForm();
     }
     onOpenChange(newOpen);

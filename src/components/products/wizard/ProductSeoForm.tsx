@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Search, Globe } from 'lucide-react';
 import { ProductFormData } from '@/hooks/useProductFormWizard';
+import AIContentGenerator from '@/components/ai/AIContentGenerator';
 
 interface ProductSeoFormProps {
   formData: ProductFormData;
@@ -19,28 +20,33 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateSeoContent = async () => {
-    if (!formData.name) return;
-    
-    setIsGenerating(true);
+  const handleSeoGenerated = (seoContent: string) => {
     try {
-      // Aqui você pode implementar a chamada para a API de IA
-      // Por enquanto, vou simular a geração
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const generatedTitle = `${formData.name} - ${formData.category || 'Produto'} de Qualidade`;
-      const generatedDescription = `Compre ${formData.name} com a melhor qualidade e preço. ${formData.description ? formData.description.substring(0, 100) : 'Produto de alta qualidade'}.`;
-      const generatedKeywords = `${formData.name}, ${formData.category || 'produto'}, comprar, qualidade, preço`;
-      
+      // Tentar parsear como JSON se vier estruturado
+      const parsed = JSON.parse(seoContent);
       updateFormData({
-        meta_title: generatedTitle,
-        meta_description: generatedDescription,
-        keywords: generatedKeywords
+        meta_title: parsed.title || formData.meta_title,
+        meta_description: parsed.description || formData.meta_description,
+        keywords: parsed.keywords || formData.keywords
       });
-    } catch (error) {
-      console.error('Erro ao gerar conteúdo SEO:', error);
-    } finally {
-      setIsGenerating(false);
+    } catch {
+      // Se não for JSON, usar como meta_description
+      updateFormData({ meta_description: seoContent });
+    }
+  };
+
+  const generateSeoSlug = () => {
+    if (formData.name) {
+      const slug = formData.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+        .replace(/\s+/g, '-') // Substitui espaços por hífens
+        .replace(/-+/g, '-') // Remove hífens duplicados
+        .trim();
+      
+      updateFormData({ seo_slug: slug });
     }
   };
 
@@ -66,19 +72,14 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({
                   Gere automaticamente título, descrição e palavras-chave otimizadas
                 </p>
               </div>
-              <Button
-                type="button"
-                onClick={generateSeoContent}
+              <AIContentGenerator
+                productName={formData.name}
+                category={formData.category || 'produto'}
+                onDescriptionGenerated={handleSeoGenerated}
                 disabled={!formData.name || isGenerating}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {isGenerating ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-2" />
-                )}
-                {isGenerating ? 'Gerando...' : 'Gerar SEO'}
-              </Button>
+                variant="seo"
+                size="sm"
+              />
             </div>
           </div>
 
@@ -132,7 +133,7 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="seo_slug">URL Amigável (Slug)</Label>
             <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-gray-400" />
+              <Globe className="h-4 w-4 text-gray-400 shrink-0" />
               <Input
                 id="seo_slug"
                 value={formData.seo_slug || ''}
@@ -140,14 +141,23 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({
                 placeholder="url-amigavel-do-produto"
                 className="flex-1"
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateSeoSlug}
+                disabled={!formData.name}
+              >
+                Gerar
+              </Button>
             </div>
             <p className="text-sm text-gray-500">
-              URL amigável para o produto (será gerada automaticamente se deixar em branco)
+              URL amigável para o produto (clique em "Gerar" para criar automaticamente)
             </p>
           </div>
 
           {/* Preview do SEO */}
-          {(formData.meta_title || formData.meta_description) && (
+          {(formData.meta_title || formData.meta_description || formData.name) && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-2">Preview do Google</h4>
               <div className="space-y-1">
@@ -158,7 +168,7 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({
                   loja.com/produto/{formData.seo_slug || 'produto'}
                 </div>
                 <div className="text-gray-600 text-sm">
-                  {formData.meta_description || formData.description}
+                  {formData.meta_description || formData.description || 'Descrição do produto...'}
                 </div>
               </div>
             </div>
