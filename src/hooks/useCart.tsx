@@ -1,6 +1,6 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { ProductVariation } from '@/types/variation';
 
 export interface CartItem {
   id: string;
@@ -15,10 +15,7 @@ export interface CartItem {
   quantity: number;
   price: number;
   originalPrice: number;
-  variations?: {
-    size?: string;
-    color?: string;
-  };
+  variation?: ProductVariation;
   catalogType: 'retail' | 'wholesale';
   isWholesalePrice?: boolean;
 }
@@ -69,7 +66,7 @@ const validateCartItem = (item: any): CartItem | null => {
       quantity: Math.max(1, Math.floor(item.quantity)),
       price: item.price,
       originalPrice,
-      variations: item.variations,
+      variation: item.variation,
       catalogType: item.catalogType || 'retail',
       isWholesalePrice: item.isWholesalePrice || false
     };
@@ -191,7 +188,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cartItem => 
           cartItem.product.id === validatedItem.product.id && 
           cartItem.catalogType === validatedItem.catalogType &&
-          JSON.stringify(cartItem.variations) === JSON.stringify(validatedItem.variations)
+          // Comparar variações incluindo IDs se disponíveis
+          ((!cartItem.variation && !validatedItem.variation) ||
+           (cartItem.variation && validatedItem.variation && 
+            cartItem.variation.id === validatedItem.variation.id &&
+            cartItem.variation.color === validatedItem.variation.color &&
+            cartItem.variation.size === validatedItem.variation.size))
       );
 
       let newItems;
@@ -225,9 +227,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           duration: 4000,
         });
       } else {
+        const variationText = item.variation ? 
+          ` (${[item.variation.color, item.variation.size].filter(Boolean).join(', ')})` : '';
         toast({
           title: "Produto adicionado!",
-          description: `${item.product.name} foi adicionado ao carrinho.`,
+          description: `${item.product.name}${variationText} foi adicionado ao carrinho.`,
           duration: 2000,
         });
       }
