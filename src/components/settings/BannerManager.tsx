@@ -4,6 +4,19 @@ import { Plus, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  DndContext, 
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  KeyboardSensor
+} from '@dnd-kit/core';
+import { 
+  SortableContext, 
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates
+} from '@dnd-kit/sortable';
 import { useBanners, Banner } from '@/hooks/useBanners';
 import { useBannerSorting } from '@/hooks/useBannerSorting';
 import { useToast } from '@/hooks/use-toast';
@@ -11,21 +24,27 @@ import SortableBannerItem from './banner/SortableBannerItem';
 import BannerForm from './banner/BannerForm';
 
 const BannerManager: React.FC = () => {
-  const { banners, loading, createBanner, updateBanner, deleteBanner } = useBanners();
+  const { banners, loading, createBanner, updateBanner, deleteBanner, refetch } = useBanners();
   const { toast } = useToast();
   
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [localBanners, setLocalBanners] = useState<Banner[]>([]);
 
-  const {
-    sensors,
-    isReordering,
-    handleDragEnd,
-    DndContext,
-    SortableContext,
-    verticalListSortingStrategy,
-    closestCenter,
-  } = useBannerSorting();
+  // Configurar sensores para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const { isDragging, isSaving, handleDragStart, handleDragEnd } = useBannerSorting();
+
+  // Sincronizar banners locais quando os dados chegam
+  React.useEffect(() => {
+    setLocalBanners(banners);
+  }, [banners]);
 
   const resetForm = () => {
     setEditingBanner(null);
@@ -77,6 +96,10 @@ const BannerManager: React.FC = () => {
     }
   };
 
+  const handleDragEndLocal = (event: any) => {
+    handleDragEnd(event, localBanners, setLocalBanners, refetch);
+  };
+
   const getBannerTypeLabel = (type: string) => {
     const types = {
       hero: 'Principal',
@@ -116,9 +139,9 @@ const BannerManager: React.FC = () => {
           <CardTitle className="flex items-center gap-2">
             <Image className="h-5 w-5" />
             Gerenciar Banners
-            {isReordering && (
+            {isSaving && (
               <span className="text-sm text-blue-600 font-normal">
-                (Reordenando...)
+                (Salvando...)
               </span>
             )}
           </CardTitle>
@@ -145,7 +168,7 @@ const BannerManager: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {banners.length === 0 ? (
+        {localBanners.length === 0 ? (
           <div className="text-center py-8">
             <Image className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p className="text-gray-500">Nenhum banner criado ainda.</p>
@@ -155,14 +178,15 @@ const BannerManager: React.FC = () => {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEndLocal}
           >
             <SortableContext
-              items={banners.map(banner => banner.id)}
+              items={localBanners.map(banner => banner.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-4">
-                {banners.map((banner) => (
+                {localBanners.map((banner) => (
                   <SortableBannerItem
                     key={banner.id}
                     banner={banner}
