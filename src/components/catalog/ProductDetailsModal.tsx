@@ -39,7 +39,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   console.log('🎨 MODAL - Dados recebidos:', {
     productId: product?.id,
+    productName: product?.name,
+    isOpen,
     variationsCount: variations?.length || 0,
+    onAddToCartAvailable: !!onAddToCart,
     selectedVariation: selectedVariation ? {
       id: selectedVariation.id,
       color: selectedVariation.color,
@@ -53,6 +56,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       setQuantity(1);
       setSelectedVariation(null);
       setShowVariationError(false);
+      console.log('🔄 MODAL - Reset para produto:', product.name);
     }
   }, [product?.id]);
 
@@ -61,13 +65,17 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     if (variations && variations.length > 0 && !selectedVariation) {
       // Não selecionar automaticamente - deixar usuário escolher
       setSelectedVariation(null);
+      console.log('🎯 MODAL - Variações carregadas:', variations.length);
     } else if (variations && variations.length === 0) {
       // Se não há variações, limpar seleção
       setSelectedVariation(null);
     }
   }, [variations, selectedVariation]);
 
-  if (!product) return null;
+  if (!product) {
+    console.log('❌ MODAL - Produto não fornecido');
+    return null;
+  }
 
   const hasVariations = variations && variations.length > 0;
   const requiresVariationSelection = hasVariations;
@@ -115,7 +123,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
         id: selectedVariation.id,
         color: selectedVariation.color,
         size: selectedVariation.size
-      } : null
+      } : null,
+      onAddToCartAvailable: !!onAddToCart
     });
 
     // Validar seleção de variação obrigatória
@@ -126,7 +135,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     }
 
     if (onAddToCart) {
-      console.log('🛒 MODAL - Adicionando ao carrinho:', {
+      console.log('✅ MODAL - Adicionando ao carrinho:', {
         product: product.name,
         quantity,
         variation: selectedVariation ? {
@@ -157,15 +166,16 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     isOutOfStock,
     requiresVariationSelection,
     hasSelectedVariation: !!selectedVariation,
-    canAddToCart
+    canAddToCart,
+    onAddToCartAvailable: !!onAddToCart
   });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto relative z-50 pointer-events-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 relative z-10">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
           {/* Galeria de Imagens */}
-          <div className="relative z-10">
+          <div>
             <ProductImageGallery 
               productId={product.id} 
               productName={product.name}
@@ -174,7 +184,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
           </div>
 
           {/* Informações do Produto */}
-          <div className="space-y-6 relative z-10">
+          <div className="space-y-6">
             {/* Cabeçalho */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -230,7 +240,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Seleção de Variações */}
             {hasVariations && (
-              <div className="space-y-4 relative z-10">
+              <div className="space-y-4">
                 <div>
                   <h3 className="font-medium mb-3">Selecione as opções:</h3>
                   <ProductVariationSelector
@@ -265,22 +275,21 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Controles de Quantidade */}
             {!isOutOfStock && (
-              <div className="space-y-4 relative z-10">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Quantidade
                   </label>
-                  <div className="flex items-center space-x-3 relative z-10">
+                  <div className="flex items-center space-x-3">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuantityChange(quantity - 1)}
                       disabled={quantity <= minQty}
-                      className="relative z-10 pointer-events-auto"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-16 text-center font-medium relative z-10">
+                    <span className="w-16 text-center font-medium">
                       {quantity}
                     </span>
                     <Button
@@ -288,7 +297,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       size="sm"
                       onClick={() => handleQuantityChange(quantity + 1)}
                       disabled={quantity >= availableStock}
-                      className="relative z-10 pointer-events-auto"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -301,12 +309,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="space-y-3 relative z-10">
+                <div className="space-y-3">
                   <Button 
                     onClick={handleAddToCart}
-                    className="w-full relative z-10 pointer-events-auto"
+                    className="w-full"
                     size="lg"
-                    disabled={!canAddToCart}
+                    disabled={!canAddToCart || !onAddToCart}
                   >
                     <ShoppingCart className="h-5 w-5 mr-2" />
                     Adicionar ao Carrinho
@@ -315,7 +323,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   <Button
                     variant="outline"
                     onClick={handleAddToWishlist}
-                    className="w-full relative z-10 pointer-events-auto"
+                    className="w-full"
                     size="lg"
                   >
                     <Heart className={`h-5 w-5 mr-2 ${isInWishlist ? 'fill-current' : ''}`} />
@@ -327,7 +335,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Produto Fora de Estoque */}
             {isOutOfStock && (
-              <div className="bg-gray-50 p-4 rounded-lg text-center relative z-10">
+              <div className="bg-gray-50 p-4 rounded-lg text-center">
                 <p className="text-gray-600 mb-3">
                   {selectedVariation 
                     ? 'Esta variação está temporariamente fora de estoque'
@@ -337,7 +345,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <Button
                   variant="outline"
                   onClick={handleAddToWishlist}
-                  className="w-full relative z-10 pointer-events-auto"
+                  className="w-full"
                 >
                   <Heart className={`h-5 w-5 mr-2 ${isInWishlist ? 'fill-current' : ''}`} />
                   Adicionar à Lista de Desejos
@@ -347,8 +355,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Debug Info */}
             {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs relative z-10">
+              <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
                 <strong>🐛 DEBUG MODAL:</strong>
+                <div>Produto: {product.name}</div>
+                <div>Modal aberto: {isOpen ? 'Sim' : 'Não'}</div>
                 <div>Variações carregadas: {variations?.length || 0}</div>
                 <div>Variação selecionada: {selectedVariation ? `${selectedVariation.color || 'S/C'} ${selectedVariation.size || 'S/T'}` : 'Nenhuma'}</div>
                 <div>Requer seleção: {requiresVariationSelection ? 'Sim' : 'Não'}</div>

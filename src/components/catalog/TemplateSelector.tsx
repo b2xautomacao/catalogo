@@ -49,6 +49,14 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     editorSettings: settings
   };
 
+  // Verificar se o produto tem variações
+  console.log('🎯 TemplateSelector - Produto:', {
+    id: product.id,
+    name: product.name,
+    variations: product.variations?.length || 0,
+    template: templateName
+  });
+
   switch (templateName) {
     case 'modern':
       return <ModernTemplate {...templateProps} />;

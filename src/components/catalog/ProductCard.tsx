@@ -1,4 +1,3 @@
-
 import React, { useState, memo, useCallback, useMemo } from 'react';
 import { Heart, ShoppingCart, Eye, Star, Share2, TrendingUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -116,6 +115,23 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
     setShowDetailsModal(true);
   }, []);
 
+  // Função para adicionar ao carrinho via modal
+  const handleModalAddToCart = useCallback((product: Product, quantity: number, variation?: any) => {
+    console.log('🛒 ProductCard - Adicionando ao carrinho via modal:', {
+      product: product.name,
+      quantity,
+      variation
+    });
+    
+    const cartItem = createCartItem(product, catalogType, quantity, variation);
+    addItem(cartItem);
+    
+    toast({
+      title: "Produto adicionado!",
+      description: `${product.name} foi adicionado ao carrinho.`,
+    });
+  }, [catalogType, addItem, toast]);
+
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
   }, []);
@@ -145,8 +161,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                 className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
                   imageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
@@ -323,12 +339,15 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
         </CardContent>
       </Card>
 
-      {/* Product Details Modal */}
+      {/* Product Details Modal - Agora com todas as props necessárias */}
       <ProductDetailsModal
         product={product}
         catalogType={catalogType}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
+        onAddToCart={handleModalAddToCart}
+        onAddToWishlist={handleAddToWishlist}
+        isInWishlist={isInWishlist}
       />
     </>
   );
