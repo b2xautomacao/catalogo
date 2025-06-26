@@ -162,10 +162,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto relative z-50 pointer-events-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 relative z-10">
           {/* Galeria de Imagens */}
-          <div>
+          <div className="relative z-10">
             <ProductImageGallery 
               productId={product.id} 
               productName={product.name}
@@ -174,7 +174,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
           </div>
 
           {/* Informações do Produto */}
-          <div className="space-y-6">
+          <div className="space-y-6 relative z-10">
             {/* Cabeçalho */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -230,7 +230,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Seleção de Variações */}
             {hasVariations && (
-              <div className="space-y-4">
+              <div className="space-y-4 relative z-10">
                 <div>
                   <h3 className="font-medium mb-3">Selecione as opções:</h3>
                   <ProductVariationSelector
@@ -265,21 +265,22 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Controles de Quantidade */}
             {!isOutOfStock && (
-              <div className="space-y-4">
+              <div className="space-y-4 relative z-10">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Quantidade
                   </label>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 relative z-10">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuantityChange(quantity - 1)}
                       disabled={quantity <= minQty}
+                      className="relative z-10 pointer-events-auto"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-16 text-center font-medium">
+                    <span className="w-16 text-center font-medium relative z-10">
                       {quantity}
                     </span>
                     <Button
@@ -287,6 +288,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       size="sm"
                       onClick={() => handleQuantityChange(quantity + 1)}
                       disabled={quantity >= availableStock}
+                      className="relative z-10 pointer-events-auto"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -299,10 +301,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="space-y-3">
+                <div className="space-y-3 relative z-10">
                   <Button 
                     onClick={handleAddToCart}
-                    className="w-full"
+                    className="w-full relative z-10 pointer-events-auto"
                     size="lg"
                     disabled={!canAddToCart}
                   >
@@ -313,7 +315,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   <Button
                     variant="outline"
                     onClick={handleAddToWishlist}
-                    className="w-full"
+                    className="w-full relative z-10 pointer-events-auto"
                     size="lg"
                   >
                     <Heart className={`h-5 w-5 mr-2 ${isInWishlist ? 'fill-current' : ''}`} />
@@ -325,7 +327,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Produto Fora de Estoque */}
             {isOutOfStock && (
-              <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="bg-gray-50 p-4 rounded-lg text-center relative z-10">
                 <p className="text-gray-600 mb-3">
                   {selectedVariation 
                     ? 'Esta variação está temporariamente fora de estoque'
@@ -335,7 +337,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <Button
                   variant="outline"
                   onClick={handleAddToWishlist}
-                  className="w-full"
+                  className="w-full relative z-10 pointer-events-auto"
                 >
                   <Heart className={`h-5 w-5 mr-2 ${isInWishlist ? 'fill-current' : ''}`} />
                   Adicionar à Lista de Desejos
@@ -345,7 +347,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             {/* Debug Info */}
             {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+              <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs relative z-10">
                 <strong>🐛 DEBUG MODAL:</strong>
                 <div>Variações carregadas: {variations?.length || 0}</div>
                 <div>Variação selecionada: {selectedVariation ? `${selectedVariation.color || 'S/C'} ${selectedVariation.size || 'S/T'}` : 'Nenhuma'}</div>
