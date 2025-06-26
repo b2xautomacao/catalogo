@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface ProductFormData {
   name: string;
-  description: string;
+  description?: string; // Tornando opcional para compatibilidade
   retail_price: number;
   wholesale_price?: number;
   min_wholesale_qty: number;
@@ -21,7 +21,7 @@ export interface ProductFormData {
   allow_negative_stock: boolean;
   stock_alert_threshold: number;
   variations: any[];
-  store_id?: string; // Adicionando store_id para compatibilidade
+  store_id: string; // Obrigatório mas será preenchido automaticamente
 }
 
 const initialFormData: ProductFormData = {
@@ -40,6 +40,7 @@ const initialFormData: ProductFormData = {
   allow_negative_stock: false,
   stock_alert_threshold: 5,
   variations: [],
+  store_id: '', // Será preenchido pelo hook
 };
 
 export const useImprovedProductFormWizard = () => {
@@ -60,8 +61,15 @@ export const useImprovedProductFormWizard = () => {
   ], []);
 
   const updateFormData = useCallback((updates: Partial<ProductFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
-  }, []);
+    setFormData(prev => {
+      const updated = { ...prev, ...updates };
+      // Garantir que store_id está sempre presente
+      if (!updated.store_id && profile?.store_id) {
+        updated.store_id = profile.store_id;
+      }
+      return updated;
+    });
+  }, [profile?.store_id]);
 
   const canProceed = useMemo(() => {
     const trimmedName = formData.name?.trim() || '';
@@ -184,7 +192,7 @@ export const useImprovedProductFormWizard = () => {
       // Upload de imagens se houver
       if (draftImages.length > 0 && productId) {
         console.log('📷 WIZARD SAVE - Uploading imagens:', draftImages.length);
-        const uploadResult = await uploadDraftImages(productId); // Usando o método correto
+        const uploadResult = await uploadDraftImages(productId);
         if (uploadResult.length === 0) {
           console.warn('⚠️ WIZARD SAVE - Nenhuma imagem foi enviada');
         }
@@ -245,10 +253,21 @@ export const useImprovedProductFormWizard = () => {
 
   const resetForm = useCallback(() => {
     console.log('🧹 WIZARD - Resetando formulário');
-    setFormData(initialFormData);
+    const resetData = { ...initialFormData };
+    if (profile?.store_id) {
+      resetData.store_id = profile.store_id;
+    }
+    setFormData(resetData);
     setCurrentStep(0);
     clearDraftImages();
-  }, [clearDraftImages]);
+  }, [clearDraftImages, profile?.store_id]);
+
+  // Garantir que store_id está sempre preenchido
+  useState(() => {
+    if (profile?.store_id && !formData.store_id) {
+      updateFormData({ store_id: profile.store_id });
+    }
+  });
 
   return {
     currentStep,

@@ -8,6 +8,7 @@ import { ProductVariation } from '@/types/variation';
 
 export interface SimpleProductFormData extends CreateProductData {
   variations?: ProductVariation[];
+  description?: string; // Tornando opcional para compatibilidade
 }
 
 export interface SimpleWizardStep {
