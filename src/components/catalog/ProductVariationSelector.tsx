@@ -3,17 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface ProductVariation {
-  id: string;
-  color: string | null;
-  size: string | null;
-  sku: string | null;
-  stock: number;
-  price_adjustment: number;
-  is_active: boolean;
-  image_url: string | null;
-}
+import { ProductVariation } from '@/types/variation';
 
 interface ProductVariationSelectorProps {
   variations: ProductVariation[];
