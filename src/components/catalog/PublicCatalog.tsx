@@ -7,6 +7,7 @@ import ProductGrid from './ProductGrid';
 import FilterSidebar from './FilterSidebar';
 import TemplateWrapper from './TemplateWrapper';
 import CheckoutModal from './CheckoutModal';
+import FloatingCart from './FloatingCart';
 import { Product } from '@/types/product';
 import { useCart } from '@/hooks/useCart';
 
@@ -22,7 +23,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   const { store, products, filteredProducts, loading: catalogLoading, searchProducts, filterProducts } = useCatalog(storeIdentifier, catalogType);
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
   const { isReady, templateName } = useGlobalTemplateStyles(storeIdentifier);
-  const { totalItems } = useCart();
+  const { totalItems, toggleCart } = useCart();
   
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -45,7 +46,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   };
 
   const handleCartClick = () => {
-    console.log('🛒 PUBLIC CATALOG - Abrindo checkout modal');
+    console.log('🛒 PUBLIC CATALOG - Abrindo carrinho flutuante');
+    toggleCart();
+  };
+
+  const handleCheckoutFromCart = () => {
+    console.log('🛒 PUBLIC CATALOG - Abrindo checkout modal a partir do carrinho');
     setIsCheckoutOpen(true);
   };
 
@@ -128,6 +134,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
           />
         )}
       </TemplateWrapper>
+
+      {/* Floating Cart */}
+      <FloatingCart
+        onCheckout={handleCheckoutFromCart}
+        storeId={store?.id}
+      />
 
       {/* Checkout Modal */}
       <CheckoutModal

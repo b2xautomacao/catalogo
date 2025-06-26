@@ -30,19 +30,19 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ storeId, className = '' }) => {
             <img
               src={heroBanner.image_url}
               alt={heroBanner.title}
-              className="w-full h-64 md:h-80 lg:h-96 object-cover hover:scale-105 transition-transform duration-300"
+              className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover object-center hover:scale-105 transition-transform duration-300"
               loading="eager"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             {(heroBanner.title || heroBanner.description) && (
-              <div className="absolute bottom-6 left-6 text-white">
+              <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white max-w-[calc(100%-2rem)] sm:max-w-md">
                 {heroBanner.title && (
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">
+                  <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2 leading-tight">
                     {heroBanner.title}
                   </h2>
                 )}
                 {heroBanner.description && (
-                  <p className="text-lg md:text-xl opacity-90 max-w-md">
+                  <p className="text-sm sm:text-lg md:text-xl opacity-90 leading-snug line-clamp-3">
                     {heroBanner.description}
                   </p>
                 )}
@@ -55,19 +55,19 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ storeId, className = '' }) => {
           <img
             src={heroBanner.image_url}
             alt={heroBanner.title}
-            className="w-full h-64 md:h-80 lg:h-96 object-cover"
+            className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover object-center"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           {(heroBanner.title || heroBanner.description) && (
-            <div className="absolute bottom-6 left-6 text-white">
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white max-w-[calc(100%-2rem)] sm:max-w-md">
               {heroBanner.title && (
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2 leading-tight">
                   {heroBanner.title}
                 </h2>
               )}
               {heroBanner.description && (
-                <p className="text-lg md:text-xl opacity-90 max-w-md">
+                <p className="text-sm sm:text-lg md:text-xl opacity-90 leading-snug line-clamp-3">
                   {heroBanner.description}
                 </p>
               )}
