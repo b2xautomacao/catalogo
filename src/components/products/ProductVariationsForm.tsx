@@ -71,12 +71,17 @@ const ProductVariationsForm = ({ variations, onVariationsChange }: ProductVariat
     onVariationsChange(updatedVariations);
   };
 
-  const updateVariation = (index: number, field: keyof Variation, value: string | number | boolean) => {
-    const updatedVariations = variations.map((variation, i) =>
-      i === index ? { ...variation, [field]: value } : variation
-    );
-    onVariationsChange(updatedVariations);
-  };
+ const updateVariation = (
+  index: number,
+  field: keyof Variation,
+  value: string | number | boolean | File | null | undefined
+) => {
+  const updatedVariations = variations.map((variation, i) =>
+    i === index ? { ...variation, [field]: value } : variation
+  );
+  onVariationsChange(updatedVariations);
+};
+
 
   const handleImageUpload = (index: number, file: File) => {
     console.log('📷 VARIATIONS FORM - Upload de imagem para variação:', index);
