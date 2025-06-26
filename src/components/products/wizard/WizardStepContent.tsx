@@ -16,7 +16,7 @@ interface GenericProductFormData {
   min_wholesale_qty?: number; // Tornando opcional para compatibilidade
   stock: number;
   category?: string; // Tornando opcional para compatibilidade
-  keywords: string;
+  keywords?: string; // Tornando opcional para compatibilidade
   meta_title: string;
   meta_description: string;
   seo_slug: string;
@@ -47,6 +47,7 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
     ...formData,
     min_wholesale_qty: formData.min_wholesale_qty ?? 1,
     category: formData.category || '',
+    keywords: formData.keywords || '',
     store_id: formData.store_id || ''
   };
 
