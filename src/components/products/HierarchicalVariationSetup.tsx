@@ -368,7 +368,6 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                             [template.secondary!]: e.target.value
                           })}
                           placeholder={`Ex: ${template.secondary === 'size' ? '38' : 'Valor'}`}
-                          size="sm"
                         />
                       </div>
                       <div>
@@ -378,7 +377,6 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                           min="0"
                           value={subVariation.stock.toString()}
                           onChange={(e) => updateSubVariation(selectedMainIndex, subIndex, { stock: parseInt(e.target.value) || 0 })}
-                          size="sm"
                         />
                       </div>
                       <div>
@@ -389,7 +387,6 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                           value={subVariation.price_adjustment.toString()}
                           onChange={(e) => updateSubVariation(selectedMainIndex, subIndex, { price_adjustment: parseFloat(e.target.value) || 0 })}
                           placeholder="0.00"
-                          size="sm"
                         />
                       </div>
                       <div>
@@ -398,7 +395,6 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                           value={subVariation.sku || ''}
                           onChange={(e) => updateSubVariation(selectedMainIndex, subIndex, { sku: e.target.value })}
                           placeholder="Opcional"
-                          size="sm"
                         />
                       </div>
                     </div>
