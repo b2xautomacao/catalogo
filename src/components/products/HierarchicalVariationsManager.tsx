@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { VariationGroup, HierarchicalVariation, VARIATION_TEMPLATES } from '@/ty
 import { useVariationGroups } from '@/hooks/useVariationGroups';
 import HierarchicalVariationSetup from './HierarchicalVariationSetup';
 import HierarchicalVariationPreview from './HierarchicalVariationPreview';
+import VariationMigrationHelper from './VariationMigrationHelper';
 
 interface HierarchicalVariationsManagerProps {
   productId?: string;
@@ -26,11 +28,13 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
   const [currentTemplate, setCurrentTemplate] = useState<string>('');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [localVariations, setLocalVariations] = useState<HierarchicalVariation[]>([]);
+  const [showMigration, setShowMigration] = useState(false);
 
   console.log('🎯 HIERARCHICAL MANAGER - Renderizando:', {
     productId,
     groupsCount: groups.length,
     variationsCount: hierarchicalVariations.length,
+    legacyVariationsCount: variations.length,
     isConfiguring
   });
 
@@ -42,8 +46,13 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
         : group.primary_attribute;
       setCurrentTemplate(templateKey);
       setLocalVariations(hierarchicalVariations);
+      setShowMigration(false);
     } else if (variations.length > 0) {
-      // Converter variações legadas para o novo formato
+      // Detectar variações legadas
+      console.log('🔄 HIERARCHICAL MANAGER - Detectadas variações legadas:', variations.length);
+      setShowMigration(true);
+      
+      // Converter variações legadas para o novo formato temporariamente
       const convertedVariations = variations.map((v, index) => ({
         id: v.id,
         variation_type: 'simple' as const,
@@ -59,12 +68,15 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
         children: []
       }));
       setLocalVariations(convertedVariations);
+    } else {
+      setShowMigration(false);
     }
   }, [groups, hierarchicalVariations, variations]);
 
   const handleTemplateSelect = (templateKey: string) => {
     setCurrentTemplate(templateKey);
     setIsConfiguring(true);
+    setShowMigration(false);
     
     // Inicializar com estrutura vazia baseada no template
     const template = VARIATION_TEMPLATES.find(t => 
@@ -76,6 +88,27 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
     if (template) {
       setLocalVariations([]);
     }
+  };
+
+  const handleMigration = (hierarchicalVariations: HierarchicalVariation[], templateKey: string) => {
+    setCurrentTemplate(templateKey);
+    setLocalVariations(hierarchicalVariations);
+    setIsConfiguring(true);
+    setShowMigration(false);
+    
+    // Limpar variações legadas
+    onChange([]);
+    
+    console.log('✅ HIERARCHICAL MANAGER - Migração concluída:', {
+      templateKey,
+      hierarchicalCount: hierarchicalVariations.length
+    });
+  };
+
+  const handleDeleteLegacyVariations = () => {
+    onChange([]);
+    setShowMigration(false);
+    console.log('🗑 HIERARCHICAL MANAGER - Variações legadas removidas');
   };
 
   const handleVariationsChange = (newVariations: HierarchicalVariation[]) => {
@@ -163,7 +196,16 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
         </p>
       </div>
 
-      {!hasVariations && !isConfiguring ? (
+      {/* Mostrar helper de migração se houver variações legadas */}
+      {showMigration && variations.length > 0 && (
+        <VariationMigrationHelper
+          simpleVariations={variations}
+          onMigrate={handleMigration}
+          onDeleteSimple={handleDeleteLegacyVariations}
+        />
+      )}
+
+      {!hasVariations && !isConfiguring && !showMigration ? (
         <Card>
           <CardContent className="py-8">
             <div className="text-center space-y-4">

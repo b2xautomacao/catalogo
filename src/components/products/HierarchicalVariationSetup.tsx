@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Trash2, Plus, Copy, Image } from 'lucide-react';
 import { HierarchicalVariation, VariationTemplate } from '@/types/variation';
 import VariationImageUpload from './VariationImageUpload';
@@ -274,13 +275,10 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`main-${index}-price`}>Ajuste de Preço (R$)</Label>
-                          <Input
-                            id={`main-${index}-price`}
-                            type="number"
-                            step="0.01"
-                            value={variation.price_adjustment.toString()}
-                            onChange={(e) => updateMainVariation(index, { price_adjustment: parseFloat(e.target.value) || 0 })}
+                          <Label htmlFor={`main-${index}-price`}>Ajuste de Preço</Label>
+                          <CurrencyInput
+                            value={variation.price_adjustment}
+                            onChange={(value) => updateMainVariation(index, { price_adjustment: value })}
                           />
                         </div>
                       </>
@@ -311,7 +309,7 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
       </div>
 
       {/* Configuração de subvariações */}
-      {template.secondary && variations.length > 0 && (
+      {template.secondary && variations.length > 0 && selectedMainIndex < variations.length && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -357,7 +355,7 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
             ) : (
               <div className="space-y-3">
                 {variations[selectedMainIndex].children!.map((subVariation, subIndex) => (
-                  <div key={`sub-${subIndex}`} className="flex items-center gap-4 p-3 border rounded-lg">
+                  <div key={`sub-${selectedMainIndex}-${subIndex}`} className="border rounded-lg p-4 space-y-4">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
                         <Label className="text-xs">{getAttributeLabel(template.secondary!)}</Label>
@@ -381,12 +379,9 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                       </div>
                       <div>
                         <Label className="text-xs">Ajuste Preço</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={subVariation.price_adjustment.toString()}
-                          onChange={(e) => updateSubVariation(selectedMainIndex, subIndex, { price_adjustment: parseFloat(e.target.value) || 0 })}
-                          placeholder="0.00"
+                        <CurrencyInput
+                          value={subVariation.price_adjustment}
+                          onChange={(value) => updateSubVariation(selectedMainIndex, subIndex, { price_adjustment: value })}
                         />
                       </div>
                       <div>
@@ -399,11 +394,14 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={subVariation.is_active}
-                        onCheckedChange={(checked) => updateSubVariation(selectedMainIndex, subIndex, { is_active: checked })}
-                      />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={subVariation.is_active}
+                          onCheckedChange={(checked) => updateSubVariation(selectedMainIndex, subIndex, { is_active: checked })}
+                        />
+                        <Label className="text-xs">Ativo</Label>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -413,6 +411,26 @@ const HierarchicalVariationSetup: React.FC<HierarchicalVariationSetupProps> = ({
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
+
+                    <VariationImageUpload
+                      imageUrl={subVariation.image_url}
+                      onImageUpload={(file) => {
+                        const previewUrl = URL.createObjectURL(file);
+                        updateSubVariation(selectedMainIndex, subIndex, { 
+                          image_file: file,
+                          image_url: previewUrl
+                        });
+                      }}
+                      onImageRemove={() => {
+                        if (subVariation.image_url && subVariation.image_url.startsWith('blob:')) {
+                          URL.revokeObjectURL(subVariation.image_url);
+                        }
+                        updateSubVariation(selectedMainIndex, subIndex, { 
+                          image_file: undefined,
+                          image_url: null
+                        });
+                      }}
+                    />
                   </div>
                 ))}
               </div>
