@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Settings, Eye, AlertCircle } from 'lucide-react';
+import { Plus, Settings, Eye, AlertCircle, Info } from 'lucide-react';
 import { VariationGroup, HierarchicalVariation, VARIATION_TEMPLATES } from '@/types/variation';
 import { useVariationGroups } from '@/hooks/useVariationGroups';
 import HierarchicalVariationSetup from './HierarchicalVariationSetup';
@@ -22,7 +22,7 @@ interface HierarchicalVariationsManagerProps {
 
 const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps> = ({
   productId,
-  variations,
+  variations = [],
   onChange
 }) => {
   const { groups, variations: hierarchicalVariations, loading, saveVariationGroup } = useVariationGroups(productId);
@@ -30,68 +30,85 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [localVariations, setLocalVariations] = useState<HierarchicalVariation[]>([]);
   const [showMigration, setShowMigration] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   console.log('🎯 HIERARCHICAL MANAGER - Renderizando:', {
     productId,
-    groupsCount: groups.length,
-    variationsCount: hierarchicalVariations.length,
-    legacyVariationsCount: variations.length,
-    isConfiguring
+    groupsCount: groups?.length || 0,
+    hierarchicalVariationsCount: hierarchicalVariations?.length || 0,
+    legacyVariationsCount: variations?.length || 0,
+    isConfiguring,
+    currentTemplate
   });
 
   // Verificar se já existe um sistema hierárquico configurado
-  const hasHierarchicalSystem = groups.length > 0 || isConfiguring;
+  const hasHierarchicalSystem = groups && groups.length > 0;
   
   // Verificar se é um produto em edição com variações simples
-  const isEditingWithLegacyVariations = productId && variations.length > 0 && !hasHierarchicalSystem;
+  const isEditingWithLegacyVariations = productId && variations && variations.length > 0 && !hasHierarchicalSystem;
 
+  // Evitar loops de renderização
   useEffect(() => {
-    if (groups.length > 0) {
+    if (isInitialized) return;
+
+    if (hasHierarchicalSystem && groups && groups.length > 0) {
       const group = groups[0];
       const templateKey = group.secondary_attribute 
         ? `${group.primary_attribute}+${group.secondary_attribute}`
         : group.primary_attribute;
+      
+      console.log('🔧 HIERARCHICAL MANAGER - Configurando sistema existente:', templateKey);
       setCurrentTemplate(templateKey);
-      setLocalVariations(hierarchicalVariations);
+      setLocalVariations(hierarchicalVariations || []);
       setIsConfiguring(true);
       setShowMigration(false);
+      setIsInitialized(true);
     } else if (isEditingWithLegacyVariations) {
-      // Mostrar migração apenas para produtos em edição com variações simples
-      console.log('🔄 HIERARCHICAL MANAGER - Detectadas variações legadas no produto em edição:', variations.length);
+      console.log('🔄 HIERARCHICAL MANAGER - Detectadas variações legadas:', variations.length);
       setShowMigration(true);
+      setIsConfiguring(false);
       
       // Converter variações legadas para preview
       const convertedVariations = variations.map((v, index) => ({
-        id: v.id,
+        id: v.id || `legacy-${index}`,
         variation_type: 'simple' as const,
         variation_value: v.color || v.size || `Variação ${index + 1}`,
         color: v.color,
         size: v.size,
         sku: v.sku,
-        stock: v.stock,
-        price_adjustment: v.price_adjustment,
-        is_active: v.is_active,
+        stock: v.stock || 0,
+        price_adjustment: v.price_adjustment || 0,
+        is_active: v.is_active !== false,
         image_url: v.image_url,
         display_order: index,
         children: []
       }));
       setLocalVariations(convertedVariations);
+      setIsInitialized(true);
     } else {
+      // Produto novo ou sem variações
+      console.log('🆕 HIERARCHICAL MANAGER - Produto novo ou sem configuração');
       setShowMigration(false);
       setIsConfiguring(false);
+      setLocalVariations([]);
+      setIsInitialized(true);
     }
-  }, [groups, hierarchicalVariations, variations, productId]);
+  }, [groups, hierarchicalVariations, variations, productId, hasHierarchicalSystem, isEditingWithLegacyVariations, isInitialized]);
 
   const handleTemplateSelect = (templateKey: string) => {
+    console.log('📋 HIERARCHICAL MANAGER - Selecionando template:', templateKey);
     setCurrentTemplate(templateKey);
     setIsConfiguring(true);
     setShowMigration(false);
-    
-    // Inicializar com estrutura vazia baseada no template
     setLocalVariations([]);
   };
 
   const handleMigration = (hierarchicalVariations: HierarchicalVariation[], templateKey: string) => {
+    console.log('🔄 HIERARCHICAL MANAGER - Iniciando migração:', {
+      templateKey,
+      hierarchicalCount: hierarchicalVariations.length
+    });
+    
     setCurrentTemplate(templateKey);
     setLocalVariations(hierarchicalVariations);
     setIsConfiguring(true);
@@ -99,20 +116,17 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
     
     // Limpar variações legadas
     onChange([]);
-    
-    console.log('✅ HIERARCHICAL MANAGER - Migração concluída:', {
-      templateKey,
-      hierarchicalCount: hierarchicalVariations.length
-    });
   };
 
   const handleDeleteLegacyVariations = () => {
+    console.log('🗑 HIERARCHICAL MANAGER - Removendo variações legadas');
     onChange([]);
     setShowMigration(false);
-    console.log('🗑 HIERARCHICAL MANAGER - Variações legadas removidas');
+    setLocalVariations([]);
   };
 
   const handleVariationsChange = (newVariations: HierarchicalVariation[]) => {
+    console.log('🔄 HIERARCHICAL MANAGER - Atualizando variações:', newVariations.length);
     setLocalVariations(newVariations);
     
     // Converter para o formato esperado pelo componente pai (compatibilidade)
@@ -148,7 +162,10 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
   };
 
   const handleSave = async () => {
-    if (!productId || !currentTemplate) return;
+    if (!productId || !currentTemplate) {
+      console.warn('⚠️ HIERARCHICAL MANAGER - Não é possível salvar sem productId ou template');
+      return;
+    }
 
     const template = VARIATION_TEMPLATES.find(t => 
       t.secondary 
@@ -156,7 +173,16 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
         : t.primary === currentTemplate
     );
 
-    if (!template) return;
+    if (!template) {
+      console.error('❌ HIERARCHICAL MANAGER - Template não encontrado:', currentTemplate);
+      return;
+    }
+
+    console.log('💾 HIERARCHICAL MANAGER - Salvando configuração:', {
+      productId,
+      template: template.label,
+      variationsCount: localVariations.length
+    });
 
     const groupData: Omit<VariationGroup, 'id' | 'created_at' | 'updated_at'> = {
       product_id: productId,
@@ -167,6 +193,7 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
     const result = await saveVariationGroup(productId, groupData, localVariations);
     
     if (result.success) {
+      console.log('✅ HIERARCHICAL MANAGER - Salvamento concluído com sucesso');
       setIsConfiguring(false);
     }
   };
@@ -196,6 +223,16 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
         </p>
       </div>
 
+      {/* Sistema funciona mesmo sem productId para novos produtos */}
+      {!productId && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Você pode configurar o sistema de variações hierárquicas agora. As configurações serão salvas quando o produto for criado.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Mostrar helper de migração apenas para produtos em edição com variações legadas */}
       {showMigration && isEditingWithLegacyVariations && (
         <VariationMigrationHelper
@@ -206,7 +243,7 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
       )}
 
       {/* Para produtos novos ou sem sistema configurado, mostrar seletor de template */}
-      {!hasHierarchicalSystem && !showMigration ? (
+      {!hasHierarchicalSystem && !showMigration && !isConfiguring ? (
         <Card>
           <CardContent className="py-8">
             <div className="text-center space-y-4">
@@ -271,7 +308,7 @@ const HierarchicalVariationsManager: React.FC<HierarchicalVariationsManagerProps
                       </Badge>
                     )}
                   </CardTitle>
-                  {isConfiguring && productId && (
+                  {isConfiguring && productId && localVariations.length > 0 && (
                     <Button onClick={handleSave} size="sm">
                       Salvar Configuração
                     </Button>

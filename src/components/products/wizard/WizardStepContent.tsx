@@ -13,18 +13,18 @@ interface GenericProductFormData {
   description?: string;
   retail_price: number;
   wholesale_price?: number;
-  min_wholesale_qty?: number; // Tornando opcional para compatibilidade
+  min_wholesale_qty?: number;
   stock: number;
-  category?: string; // Tornando opcional para compatibilidade
-  keywords?: string; // Tornando opcional para compatibilidade
-  meta_title?: string; // Tornando opcional para compatibilidade
-  meta_description?: string; // Tornando opcional para compatibilidade
-  seo_slug?: string; // Tornando opcional para compatibilidade
-  is_featured?: boolean; // Tornando opcional para compatibilidade
-  allow_negative_stock?: boolean; // Tornando opcional para compatibilidade
-  stock_alert_threshold?: number; // Tornando opcional para compatibilidade
+  category?: string;
+  keywords?: string;
+  meta_title?: string;
+  meta_description?: string;
+  seo_slug?: string;
+  is_featured?: boolean;
+  allow_negative_stock?: boolean;
+  stock_alert_threshold?: number;
   variations?: any[];
-  store_id?: string; // Mantendo opcional para compatibilidade
+  store_id?: string;
 }
 
 interface WizardStepContentProps {
@@ -57,6 +57,13 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
     store_id: formData.store_id || ''
   };
 
+  console.log('🧙‍♂️ WIZARD STEP CONTENT - Renderizando:', {
+    currentStep,
+    productId,
+    formDataName: formData.name,
+    variationsCount: formData.variations?.length || 0
+  });
+
   switch (currentStep) {
     case 0: // Informações Básicas
       return (
@@ -82,11 +89,12 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
         />
       );
       
-    case 3: // Variações
+    case 3: // Variações - Corrigindo o passe do productId
       return (
         <ProductVariationsForm
           variations={formData.variations || []}
           onVariationsChange={(variations) => updateFormData({ variations })}
+          productId={productId} // Passando productId corretamente
         />
       );
       
