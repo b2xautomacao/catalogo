@@ -121,7 +121,7 @@ const Sidebar = () => {
                     <Skeleton className="h-8 w-8 rounded-full" />
                   ) : (
                     <>
-                      <AvatarImage src={profile?.avatar_url || ""} />
+                      <AvatarImage src="" />
                       <AvatarFallback>{profile?.full_name?.charAt(0) || profile?.email?.charAt(0)}</AvatarFallback>
                     </>
                   )}

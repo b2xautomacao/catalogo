@@ -110,7 +110,8 @@ const MasterVariationSelector: React.FC<MasterVariationSelectorProps> = ({
       return {
         id: `variation-${index}`,
         variation_type: 'master',
-        variation_value: variationKey,
+        color: combination.length > 0 ? combination[0] : undefined,
+        size: combination.length > 1 ? combination[1] : undefined,
         stock,
         price_adjustment: 0,
         is_active: true,
@@ -241,31 +242,34 @@ const MasterVariationSelector: React.FC<MasterVariationSelectorProps> = ({
           <Card>
             <CardContent className="p-4">
               <div className="space-y-3">
-                {variations.map((variation, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{variation.variation_value}</Badge>
+                {variations.map((variation, index) => {
+                  const variationLabel = [variation.color, variation.size].filter(Boolean).join(' - ');
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{variationLabel}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`stock-${index}`} className="text-sm">Estoque:</Label>
+                        <Input
+                          id={`stock-${index}`}
+                          type="number"
+                          min="0"
+                          value={stockValues[variationLabel] || 0}
+                          onChange={(e) => {
+                            const stock = parseInt(e.target.value) || 0;
+                            handleStockChange(variationLabel, stock);
+                            // Atualizar a variação no array
+                            const updatedVariations = [...variations];
+                            updatedVariations[index] = { ...variation, stock };
+                            onVariationsChange(updatedVariations);
+                          }}
+                          className="w-20"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={`stock-${index}`} className="text-sm">Estoque:</Label>
-                      <Input
-                        id={`stock-${index}`}
-                        type="number"
-                        min="0"
-                        value={stockValues[variation.variation_value || ''] || 0}
-                        onChange={(e) => {
-                          const stock = parseInt(e.target.value) || 0;
-                          handleStockChange(variation.variation_value || '', stock);
-                          // Atualizar a variação no array
-                          const updatedVariations = [...variations];
-                          updatedVariations[index] = { ...variation, stock };
-                          onVariationsChange(updatedVariations);
-                        }}
-                        className="w-20"
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
