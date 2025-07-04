@@ -15,10 +15,86 @@ import {
   Users,
   TrendingUp,
 } from "lucide-react";
+import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 const CatalogModeSettings = () => {
   const { settings, updateSettings } = useCatalogSettings();
   const { toast } = useToast();
+  const {
+    priceModel,
+    changePriceModel,
+    updatePriceModel,
+    loading: loadingPriceModel,
+  } = useStorePriceModel(settings?.store_id);
+
+  // Estado local para seleção do modelo de atacado e níveis
+  const [selectedWholesale, setSelectedWholesale] = React.useState<string>(
+    priceModel?.price_model || "simple_wholesale"
+  );
+  const [localTiers, setLocalTiers] = React.useState([
+    { key: 2, label: "Atacarejo", enabled: priceModel?.tier_2_enabled ?? true },
+    {
+      key: 3,
+      label: "Atacado Pequeno",
+      enabled: priceModel?.tier_3_enabled ?? true,
+    },
+    {
+      key: 4,
+      label: "Atacado Grande",
+      enabled: priceModel?.tier_4_enabled ?? true,
+    },
+  ]);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (priceModel) {
+      setSelectedWholesale(priceModel.price_model);
+      setLocalTiers([
+        {
+          key: 2,
+          label: priceModel.tier_2_name || "Atacarejo",
+          enabled: priceModel.tier_2_enabled,
+        },
+        {
+          key: 3,
+          label: priceModel.tier_3_name || "Atacado Pequeno",
+          enabled: priceModel.tier_3_enabled,
+        },
+        {
+          key: 4,
+          label: priceModel.tier_4_name || "Atacado Grande",
+          enabled: priceModel.tier_4_enabled,
+        },
+      ]);
+    }
+  }, [priceModel]);
+
+  const handleSaveWholesale = async () => {
+    setSaving(true);
+    try {
+      await changePriceModel(selectedWholesale);
+      if (selectedWholesale === "gradual_wholesale") {
+        await updatePriceModel({
+          tier_2_enabled: localTiers[0].enabled,
+          tier_3_enabled: localTiers[1].enabled,
+          tier_4_enabled: localTiers[2].enabled,
+        });
+      }
+      toast({
+        title: "Configuração de atacado salva!",
+        description: "Modelo de preço atualizado com sucesso.",
+      });
+    } catch (e) {
+      toast({
+        title: "Erro ao salvar modelo de preço",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+    setSaving(false);
+  };
 
   const handleModeChange = async (
     newMode: "separated" | "hybrid" | "toggle"
@@ -124,19 +200,17 @@ const CatalogModeSettings = () => {
 
           <RadioGroup
             value={settings.catalog_mode}
-            onValueChange={(value) =>
-              handleModeChange(value as "separated" | "hybrid" | "toggle")
-            }
-            className="space-y-6"
+            onValueChange={handleModeChange}
+            className="grid md:grid-cols-3 gap-4"
           >
             {catalogModes.map((mode) => {
               const IconComponent = mode.icon;
               const isSelected = settings.catalog_mode === mode.id;
-
               return (
-                <div
+                <label
                   key={mode.id}
-                  className={`relative rounded-lg border-2 p-6 cursor-pointer transition-all duration-200 ${
+                  htmlFor={mode.id}
+                  className={`relative rounded-lg border-2 p-6 cursor-pointer transition-all duration-200 flex flex-col h-full ${
                     isSelected
                       ? "border-blue-500 bg-blue-50 shadow-lg"
                       : "border-gray-200 hover:border-gray-300 hover:shadow-md"
@@ -144,62 +218,103 @@ const CatalogModeSettings = () => {
                 >
                   <div className="flex items-center space-x-2 mb-4">
                     <RadioGroupItem value={mode.id} id={mode.id} />
-                    <Label htmlFor={mode.id} className="cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <IconComponent
-                          className={`h-5 w-5 ${
-                            isSelected ? "text-blue-600" : "text-gray-600"
-                          }`}
-                        />
-                        <span className="font-semibold text-lg">
-                          {mode.label}
-                        </span>
-                        {mode.badge && (
-                          <Badge variant="secondary" className="text-xs">
-                            {mode.badge}
-                          </Badge>
-                        )}
-                      </div>
-                    </Label>
+                    <div className="flex items-center gap-3">
+                      <IconComponent
+                        className={`h-5 w-5 ${
+                          isSelected ? "text-blue-600" : "text-gray-600"
+                        }`}
+                      />
+                      <span className="font-semibold text-lg">
+                        {mode.label}
+                      </span>
+                      {mode.badge && (
+                        <Badge variant="secondary" className="text-xs">
+                          {mode.badge}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-
                   <p className="text-gray-600 mb-4 ml-6">{mode.description}</p>
-
-                  <div className="ml-6 space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {mode.benefits.map((benefit, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isSelected ? "bg-blue-500" : "bg-gray-400"
-                            }`}
-                          />
-                          <span
-                            className={
-                              isSelected ? "text-blue-700" : "text-gray-600"
-                            }
-                          >
-                            {benefit}
-                          </span>
+                  {/* Só mostra a configuração de atacado se for o híbrido e estiver selecionado */}
+                  {mode.id === "hybrid" && isSelected && (
+                    <div className="mt-8 p-4 border rounded-lg bg-green-50">
+                      <h4 className="font-semibold mb-2 text-green-800">
+                        Configuração de Atacado
+                      </h4>
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <label className="font-medium">
+                            Modelo de Atacado:
+                          </label>
+                          <div className="flex gap-4 mt-2">
+                            <Button
+                              variant={
+                                selectedWholesale === "simple_wholesale"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setSelectedWholesale("simple_wholesale")
+                              }
+                              disabled={saving || loadingPriceModel}
+                            >
+                              Atacado Simples
+                            </Button>
+                            <Button
+                              variant={
+                                selectedWholesale === "gradual_wholesale"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setSelectedWholesale("gradual_wholesale")
+                              }
+                              disabled={saving || loadingPriceModel}
+                            >
+                              Atacado Gradativo
+                            </Button>
+                          </div>
                         </div>
-                      ))}
+                        {selectedWholesale === "gradual_wholesale" && (
+                          <div>
+                            <label className="font-medium mb-2 block">
+                              Níveis de Atacado:
+                            </label>
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-start gap-4 md:gap-8 mb-8">
+                              {localTiers.map((tier, idx) => (
+                                <div
+                                  key={tier.key}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Switch
+                                    checked={tier.enabled}
+                                    onCheckedChange={(checked) => {
+                                      setLocalTiers((prev) =>
+                                        prev.map((t, i) =>
+                                          i === idx
+                                            ? { ...t, enabled: checked }
+                                            : t
+                                        )
+                                      );
+                                    }}
+                                  />
+                                  <span>{tier.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <Button
+                          onClick={handleSaveWholesale}
+                          disabled={saving || loadingPriceModel}
+                          className="mt-4 md:mt-8"
+                        >
+                          Salvar Configuração de Atacado
+                        </Button>
+                      </div>
                     </div>
-
-                    <div
-                      className={`p-3 rounded-lg text-sm font-medium ${
-                        isSelected
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      <TrendingUp className="inline w-4 h-4 mr-2" />
-                      {mode.recommended}
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </label>
               );
             })}
           </RadioGroup>
