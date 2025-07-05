@@ -20,7 +20,7 @@ interface SimpleImageUploadProps {
 
 const SimpleImageUpload = ({
   productId,
-  maxImages = 5,
+  maxImages = 10,
   onImagesChange,
   onUploadReady,
 }: SimpleImageUploadProps) => {
@@ -32,6 +32,7 @@ const SimpleImageUpload = ({
     removeImage,
     loadExistingImages,
     uploadImages,
+    uploadNewImages,
   } = useSimpleDraftImages();
   const { toast } = useToast();
 
@@ -51,9 +52,9 @@ const SimpleImageUpload = ({
   // Expor função de upload para o componente pai
   useEffect(() => {
     if (onUploadReady) {
-      onUploadReady(uploadImages);
+      onUploadReady(uploadNewImages);
     }
-  }, [onUploadReady, uploadImages]);
+  }, [onUploadReady, uploadNewImages]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -76,7 +77,16 @@ const SimpleImageUpload = ({
   };
 
   const handleFiles = (files: File[]) => {
+    console.log("📁 HANDLE FILES - Arquivos recebidos:", files.length);
+    console.log(
+      "📊 HANDLE FILES - Imagens atuais:",
+      images.length,
+      "Max:",
+      maxImages
+    );
+
     if (images.length >= maxImages) {
+      console.log("❌ HANDLE FILES - Limite atingido");
       toast({
         title: "Limite atingido",
         description: `Você pode adicionar no máximo ${maxImages} imagens`,
@@ -89,8 +99,15 @@ const SimpleImageUpload = ({
     const filesToProcess = files.slice(0, remainingSlots);
     const validFiles: File[] = [];
 
+    console.log("📋 HANDLE FILES - Slots restantes:", remainingSlots);
+    console.log(
+      "📋 HANDLE FILES - Arquivos para processar:",
+      filesToProcess.length
+    );
+
     filesToProcess.forEach((file) => {
       if (!file.type.startsWith("image/")) {
+        console.log("❌ HANDLE FILES - Arquivo não é imagem:", file.name);
         toast({
           title: "Arquivo inválido",
           description: `${file.name} não é uma imagem válida`,
@@ -100,6 +117,11 @@ const SimpleImageUpload = ({
       }
 
       if (file.size > 5 * 1024 * 1024) {
+        console.log(
+          "❌ HANDLE FILES - Arquivo muito grande:",
+          file.name,
+          file.size
+        );
         toast({
           title: "Arquivo muito grande",
           description: `${file.name} excede o limite de 5MB`,
@@ -108,11 +130,19 @@ const SimpleImageUpload = ({
         return;
       }
 
+      console.log("✅ HANDLE FILES - Arquivo válido:", file.name);
       validFiles.push(file);
     });
 
     if (validFiles.length > 0) {
+      console.log(
+        "🚀 HANDLE FILES - Adicionando",
+        validFiles.length,
+        "imagens"
+      );
       addImages(validFiles);
+    } else {
+      console.log("⚠️ HANDLE FILES - Nenhum arquivo válido encontrado");
     }
   };
 
@@ -121,6 +151,20 @@ const SimpleImageUpload = ({
     if (input && !isUploading) {
       (input as HTMLInputElement).click();
     }
+  };
+
+  const MAX_IMAGES = 10;
+
+  const handleImageUpload = (newImages) => {
+    if (images.length + newImages.length > MAX_IMAGES) {
+      toast({
+        title: "Limite de imagens atingido",
+        description: `Você pode cadastrar no máximo ${MAX_IMAGES} imagens por produto.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // prossegue com upload normalmente
   };
 
   if (isLoading) {
@@ -274,6 +318,13 @@ const SimpleImageUpload = ({
             </li>
           </ul>
         </div>
+
+        <Button
+          onClick={handleUploadClick}
+          disabled={images.length >= MAX_IMAGES}
+        >
+          Adicionar Imagem
+        </Button>
       </CardContent>
     </Card>
   );

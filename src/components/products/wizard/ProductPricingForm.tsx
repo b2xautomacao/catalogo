@@ -76,9 +76,20 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     },
   ]);
 
-  // Carregar configuração baseada no modelo do catálogo
+  // Sincronizar price_tiers do formData com o estado local
   useEffect(() => {
-    if (!catalogSettings || !storePriceModel) return;
+    console.log(
+      "🔄 PRODUCT PRICING FORM - Sincronizando price_tiers do formData:",
+      formData.price_tiers
+    );
+    if (formData.price_tiers && formData.price_tiers.length > 0) {
+      setPriceTiers(formData.price_tiers);
+    }
+  }, [formData.price_tiers]);
+
+  // Carregar configuração baseada no modelo do catálogo (apenas para novos produtos)
+  useEffect(() => {
+    if (!catalogSettings || !storePriceModel || productId) return; // Não carregar para produtos existentes
 
     const tiers: PriceTier[] = [
       {
@@ -141,6 +152,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     formData.retail_price,
     formData.wholesale_price,
     formData.min_wholesale_qty,
+    productId, // Adicionar productId para evitar carregamento em edição
   ]);
 
   // Atualizar preço de varejo quando mudar
@@ -165,125 +177,8 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     );
   }, [formData.wholesale_price]);
 
-  // Sincronizar price_tiers do formData com o estado local
-  useEffect(() => {
-    console.log(
-      "🔄 PRODUCT PRICING FORM - Sincronizando price_tiers do formData:",
-      formData.price_tiers
-    );
-    if (formData.price_tiers && formData.price_tiers.length > 0) {
-      setPriceTiers(formData.price_tiers);
-    }
-  }, [formData.price_tiers]);
-
-  // Carregar níveis de preço existentes quando estiver editando um produto
-  useEffect(() => {
-    const loadExistingPriceTiers = async () => {
-      console.log(
-        "🔍 PRODUCT PRICING FORM - Carregando níveis de preço existentes"
-      );
-      console.log("🔍 PRODUCT PRICING FORM - productId:", productId);
-      console.log(
-        "🔍 PRODUCT PRICING FORM - formData.price_tiers:",
-        formData.price_tiers
-      );
-
-      // Se já temos price_tiers no formData, usar eles
-      if (formData.price_tiers && formData.price_tiers.length > 0) {
-        console.log(
-          "🔍 PRODUCT PRICING FORM - Usando price_tiers existentes do formData"
-        );
-        setPriceTiers(formData.price_tiers);
-        return;
-      }
-
-      // Se não temos productId, não podemos carregar
-      if (!productId) {
-        console.log(
-          "🔍 PRODUCT PRICING FORM - Sem productId, não é possível carregar"
-        );
-        return;
-      }
-
-      try {
-        console.log("🔍 PRODUCT PRICING FORM - Buscando níveis no banco...");
-        const { supabase } = await import(
-          "../../../integrations/supabase/client"
-        );
-
-        // Buscar níveis de preço existentes do produto
-        const { data: tiers, error } = await supabase
-          .from("product_price_tiers")
-          .select("*")
-          .eq("product_id", productId)
-          .eq("is_active", true)
-          .order("tier_order");
-
-        if (error) {
-          console.error(
-            "❌ PRODUCT PRICING FORM - Erro ao buscar níveis:",
-            error
-          );
-          return;
-        }
-
-        console.log("🔍 PRODUCT PRICING FORM - Níveis encontrados:", tiers);
-
-        if (tiers && tiers.length > 0) {
-          const formattedTiers = tiers.map((tier) => ({
-            id: tier.tier_order === 1 ? "retail" : `tier${tier.tier_order}`,
-            name: tier.tier_name,
-            minQuantity: tier.min_quantity,
-            price: tier.price,
-            enabled: tier.is_active,
-          }));
-
-          console.log(
-            "🔍 PRODUCT PRICING FORM - Níveis formatados:",
-            formattedTiers
-          );
-          setPriceTiers(formattedTiers);
-
-          // Atualizar formData com os níveis carregados
-          updateFormData({
-            price_tiers: formattedTiers,
-          });
-
-          // Atualizar também os preços básicos do formData
-          const retailTier = formattedTiers.find(
-            (tier) => tier.id === "retail"
-          );
-          const wholesaleTier = formattedTiers.find(
-            (tier) => tier.id === "wholesale" || tier.id === "tier2"
-          );
-
-          if (retailTier) {
-            updateFormData({ retail_price: retailTier.price });
-          }
-
-          if (wholesaleTier) {
-            updateFormData({
-              wholesale_price: wholesaleTier.price,
-              min_wholesale_qty: wholesaleTier.minQuantity,
-            });
-          }
-
-          console.log(
-            "✅ PRODUCT PRICING FORM - Níveis carregados com sucesso"
-          );
-        } else {
-          console.log("⚠️ PRODUCT PRICING FORM - Nenhum nível encontrado");
-        }
-      } catch (error) {
-        console.error(
-          "💥 PRODUCT PRICING FORM - Erro ao carregar níveis de preço existentes:",
-          error
-        );
-      }
-    };
-
-    loadExistingPriceTiers();
-  }, [productId, updateFormData]);
+  // Carregamento de price_tiers agora é feito centralmente no hook principal
+  // Este useEffect foi removido para evitar carregamento duplicado
 
   // Garantir que os preços sejam sempre sincronizados com o formData
   useEffect(() => {

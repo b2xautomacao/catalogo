@@ -182,8 +182,30 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
         <VariationImageManager
           productId={productId}
           variations={variations}
-          onImagesUpdated={() => {
-            // Recarregar variações ou atualizar estado se necessário
+          onImagesUpdated={(cor, imageUrl) => {
+            console.log(
+              "🔄 PRODUCT VARIATIONS FORM - Atualizando imagem para cor:",
+              cor,
+              "URL:",
+              imageUrl
+            );
+            const updatedVariations = variations.map((v) => {
+              if (v.color && v.color.toLowerCase() === cor.toLowerCase()) {
+                console.log(
+                  "✅ PRODUCT VARIATIONS FORM - Atualizando variação:",
+                  v.color,
+                  "com imagem:",
+                  imageUrl
+                );
+                return { ...v, image_url: imageUrl };
+              }
+              return v;
+            });
+            console.log(
+              "📊 PRODUCT VARIATIONS FORM - Total de variações atualizadas:",
+              updatedVariations.filter((v) => v.image_url).length
+            );
+            onVariationsChange(updatedVariations);
           }}
         />
       )}

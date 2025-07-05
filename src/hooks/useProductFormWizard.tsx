@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useDraftImages } from "@/hooks/useDraftImages";
 import { useProductVariations } from "@/hooks/useProductVariations";
@@ -46,6 +46,7 @@ export const useProductFormWizard = () => {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingPriceTiers, setIsLoadingPriceTiers] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     store_id: "",
     name: "",
@@ -64,6 +65,7 @@ export const useProductFormWizard = () => {
     stock_alert_threshold: 5,
     is_active: true,
     variations: [],
+    price_tiers: [],
   });
 
   const steps: WizardStep[] = [
@@ -469,12 +471,142 @@ export const useProductFormWizard = () => {
       stock_alert_threshold: 5,
       is_active: true,
       variations: [],
+      price_tiers: [],
     });
     setCurrentStep(0);
     clearDraftImages();
   }, [clearDraftImages]);
 
   const canProceed = validateCurrentStep();
+
+  // Função para carregar price_tiers de um produto existente
+  const loadProductPriceTiers = useCallback(async (productId: string) => {
+    if (!productId) return;
+
+    console.log("💰 WIZARD - Carregando price_tiers do produto:", productId);
+    setIsLoadingPriceTiers(true);
+
+    try {
+      const { supabase } = await import("../integrations/supabase/client");
+      const { data: tiers, error } = await supabase
+        .from("product_price_tiers")
+        .select("*")
+        .eq("product_id", productId)
+        .eq("is_active", true)
+        .order("tier_order");
+
+      if (error) {
+        console.error("❌ WIZARD - Erro ao carregar price_tiers:", error);
+        return;
+      }
+
+      if (tiers && tiers.length > 0) {
+        console.log("✅ WIZARD - Price_tiers carregados:", tiers.length);
+
+        const formattedTiers = tiers.map((tier) => ({
+          id: tier.tier_order === 1 ? "retail" : `tier${tier.tier_order}`,
+          name: tier.tier_name,
+          minQuantity: tier.min_quantity,
+          price: tier.price,
+          enabled: tier.is_active,
+        }));
+
+        // Atualizar formData com os price_tiers carregados
+        setFormData((prev) => {
+          const updated = {
+            ...prev,
+            price_tiers: formattedTiers,
+            // Preencher campos básicos de atacado se existirem
+            wholesale_price:
+              formattedTiers.find(
+                (t) => t.id === "wholesale" || t.id === "tier2"
+              )?.price ?? prev.wholesale_price,
+            min_wholesale_qty:
+              formattedTiers.find(
+                (t) => t.id === "wholesale" || t.id === "tier2"
+              )?.minQuantity ?? prev.min_wholesale_qty,
+            retail_price:
+              formattedTiers.find((t) => t.id === "retail")?.price ??
+              prev.retail_price,
+          };
+
+          console.log("📊 WIZARD - FormData atualizado com price_tiers:", {
+            price_tiers_count: updated.price_tiers?.length || 0,
+            retail_price: updated.retail_price,
+            wholesale_price: updated.wholesale_price,
+            min_wholesale_qty: updated.min_wholesale_qty,
+          });
+
+          return updated;
+        });
+      } else {
+        console.log("ℹ️ WIZARD - Nenhum price_tier encontrado para o produto");
+      }
+    } catch (error) {
+      console.error("💥 WIZARD - Erro ao carregar price_tiers:", error);
+    } finally {
+      setIsLoadingPriceTiers(false);
+    }
+  }, []);
+
+  // Função para carregar dados completos de um produto para edição
+  const loadProductForEditing = useCallback(
+    async (product: any) => {
+      if (!product?.id) return;
+
+      console.log(
+        "📂 WIZARD - Carregando produto completo para edição:",
+        product.id
+      );
+
+      // Carregar dados básicos do produto
+      const basicData = {
+        name: product.name || "",
+        description: product.description || "",
+        retail_price: product.retail_price || 0,
+        wholesale_price: product.wholesale_price || undefined,
+        min_wholesale_qty: product.min_wholesale_qty || 1,
+        stock: product.stock || 0,
+        category: product.category || "",
+        keywords: product.keywords || "",
+        meta_title: product.meta_title || "",
+        meta_description: product.meta_description || "",
+        seo_slug: product.seo_slug || "",
+        is_featured: product.is_featured || false,
+        allow_negative_stock: product.allow_negative_stock || false,
+        stock_alert_threshold: product.stock_alert_threshold || 5,
+      };
+
+      console.log("📊 WIZARD - Dados básicos carregados:", {
+        name: basicData.name,
+        retail_price: basicData.retail_price,
+        wholesale_price: basicData.wholesale_price,
+        min_wholesale_qty: basicData.min_wholesale_qty,
+      });
+
+      // Atualizar formData com dados básicos
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          ...basicData,
+        };
+        console.log("📊 WIZARD - FormData atualizado com dados básicos:", {
+          name: updated.name,
+          retail_price: updated.retail_price,
+          wholesale_price: updated.wholesale_price,
+          min_wholesale_qty: updated.min_wholesale_qty,
+        });
+        return updated;
+      });
+
+      // Carregar price_tiers em paralelo
+      console.log("💰 WIZARD - Iniciando carregamento de price_tiers...");
+      await loadProductPriceTiers(product.id);
+
+      console.log("✅ WIZARD - Produto carregado completamente");
+    },
+    [loadProductPriceTiers]
+  );
 
   return {
     currentStep,
@@ -491,5 +623,8 @@ export const useProductFormWizard = () => {
     isFirstStep: currentStep === 0,
     isLastStep: currentStep === steps.length - 1,
     canProceed,
+    isLoadingPriceTiers,
+    loadProductPriceTiers,
+    loadProductForEditing,
   };
 };

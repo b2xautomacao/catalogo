@@ -5,6 +5,7 @@ import ProductVariationsForm from "./ProductVariationsForm";
 import SimpleImageUpload from "../SimpleImageUpload";
 import ProductSeoForm from "./ProductSeoForm";
 import ProductAdvancedForm from "./ProductAdvancedForm";
+import { useSimpleDraftImages } from "@/hooks/useSimpleDraftImages";
 
 // Interface genérica para compatibilidade com todos os wizards
 interface GenericProductFormData {
@@ -66,6 +67,12 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
     price_tiers: formData.price_tiers || [],
   };
 
+  // Hook para acessar imagens do produto
+  const { images } = useSimpleDraftImages();
+  const productImages = images
+    .map((img) => img.url || img.preview)
+    .filter(Boolean);
+
   switch (currentStep) {
     case 0: // Informações Básicas
       return (
@@ -89,6 +96,7 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
         <SimpleImageUpload
           productId={productId}
           onUploadReady={onImageUploadReady}
+          maxImages={10}
         />
       );
 
@@ -98,6 +106,7 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
           variations={formData.variations || []}
           onVariationsChange={(variations) => updateFormData({ variations })}
           productId={productId}
+          productImages={productImages}
         />
       );
 

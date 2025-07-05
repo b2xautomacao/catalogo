@@ -460,7 +460,16 @@ export const useVariationDraftImages = () => {
 
   const getImageForColor = useCallback(
     (color: string) => {
-      return draftImages.find((img) => img.color === color);
+      const image = draftImages.find(
+        (img) => img.color.toLowerCase() === color.toLowerCase()
+      );
+      console.log(
+        "🔍 GET IMAGE FOR COLOR - Buscando imagem para cor:",
+        color,
+        "Resultado:",
+        image
+      );
+      return image;
     },
     [draftImages]
   );

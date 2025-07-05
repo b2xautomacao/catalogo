@@ -53,8 +53,16 @@ export const useSimpleDraftImages = () => {
 
   const addImages = useCallback(
     (files: File[]) => {
+      console.log(
+        "🔄 ADD IMAGES - Iniciando adição de",
+        files.length,
+        "imagens"
+      );
+      console.log("🔄 ADD IMAGES - Imagens atuais:", images.length);
+
       const newImages: SimpleDraftImage[] = files.map((file) => {
         const preview = createBlobUrl(file);
+        console.log("🔄 ADD IMAGES - Criando preview para:", file.name);
         return {
           id: `draft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           file,
@@ -66,12 +74,17 @@ export const useSimpleDraftImages = () => {
 
       setImages((prev) => {
         const updated = [...prev, ...newImages];
+        console.log(
+          "🔄 ADD IMAGES - Total de imagens após adição:",
+          updated.length
+        );
         return updated;
       });
 
+      console.log("✅ ADD IMAGES - Imagens adicionadas com sucesso");
       return newImages;
     },
-    [createBlobUrl]
+    [createBlobUrl, images.length]
   );
 
   const removeImage = useCallback(
@@ -103,25 +116,18 @@ export const useSimpleDraftImages = () => {
       const uploadedUrls: string[] = [];
 
       try {
-        // Remover imagens existentes
-        await supabase
+        // Buscar imagens já existentes
+        const { data: existingImages, error: existingError } = await supabase
           .from("product_images")
-          .delete()
+          .select("image_url")
           .eq("product_id", productId);
 
-        const { data: existingFiles } = await supabase.storage
-          .from("product-images")
-          .list(productId);
-
-        if (existingFiles?.length) {
-          const filesToDelete = existingFiles.map(
-            (file) => `${productId}/${file.name}`
-          );
-          await supabase.storage.from("product-images").remove(filesToDelete);
-        }
+        const existingUrls = (existingImages || []).map((img) => img.image_url);
 
         // Upload novas imagens (apenas as que têm arquivo)
-        const imagesToUpload = images.filter((img) => img.file);
+        const imagesToUpload = images.filter(
+          (img) => img.file && !img.uploaded
+        );
 
         for (let i = 0; i < imagesToUpload.length; i++) {
           const image = imagesToUpload[i];
@@ -148,17 +154,20 @@ export const useSimpleDraftImages = () => {
           await supabase.from("product_images").insert({
             product_id: productId,
             image_url: imageUrl,
-            image_order: i + 1,
-            is_primary: i === 0,
-            alt_text: `Imagem ${i + 1} do produto`,
+            image_order: existingUrls.length + uploadedUrls.length,
+            is_primary: existingUrls.length + uploadedUrls.length === 1,
+            alt_text: `Imagem ${
+              existingUrls.length + uploadedUrls.length
+            } do produto`,
           });
         }
 
         // Atualizar imagem principal do produto
-        if (uploadedUrls.length > 0) {
+        const allUrls = [...existingUrls, ...uploadedUrls];
+        if (allUrls.length > 0) {
           await supabase
             .from("products")
-            .update({ image_url: uploadedUrls[0] })
+            .update({ image_url: allUrls[0] })
             .eq("id", productId);
         }
 
@@ -167,7 +176,7 @@ export const useSimpleDraftImages = () => {
           description: `${uploadedUrls.length} imagem(ns) enviada(s) com sucesso`,
         });
 
-        return uploadedUrls;
+        return [...existingUrls, ...uploadedUrls];
       } catch (error) {
         console.error("💥 Erro no upload:", error);
         toast({
@@ -247,6 +256,10 @@ export const useSimpleDraftImages = () => {
   // Função para fazer upload apenas das imagens novas (preservando existentes)
   const uploadNewImages = useCallback(
     async (productId: string): Promise<string[]> => {
+      console.log("🚀 UPLOAD NEW IMAGES - Iniciando com productId:", productId);
+      console.log("🚀 UPLOAD NEW IMAGES - isUploading:", isUploading);
+      console.log("🚀 UPLOAD NEW IMAGES - Total de imagens:", images.length);
+
       if (!productId || isUploading) {
         console.log("⏭️ Upload de novas imagens pulado:", {
           productId,
@@ -256,6 +269,20 @@ export const useSimpleDraftImages = () => {
       }
 
       const newImages = images.filter((img) => img.file && !img.uploaded);
+      console.log(
+        "🚀 UPLOAD NEW IMAGES - Imagens novas encontradas:",
+        newImages.length
+      );
+      console.log(
+        "🚀 UPLOAD NEW IMAGES - Detalhes das imagens novas:",
+        newImages.map((img) => ({
+          id: img.id,
+          fileName: img.file?.name,
+          uploaded: img.uploaded,
+          isExisting: img.isExisting,
+        }))
+      );
+
       if (newImages.length === 0) {
         console.log("📭 Nenhuma imagem nova para upload");
         return [];
@@ -280,13 +307,33 @@ export const useSimpleDraftImages = () => {
           .order("image_order", { ascending: false })
           .limit(1);
 
-        let nextOrder = (maxOrderData?.[0]?.image_order || 0) + 1;
+        // Sempre começar do 1 se não há imagens, ou usar o próximo valor disponível
+        let nextOrder = 1;
+        if (maxOrderData && maxOrderData.length > 0) {
+          nextOrder = Math.min(maxOrderData[0].image_order + 1, 10);
+        }
+
+        console.log("🚀 UPLOAD NEW IMAGES - Próxima ordem:", nextOrder);
+        console.log(
+          "🚀 UPLOAD NEW IMAGES - Máxima ordem atual:",
+          maxOrderData?.[0]?.image_order || 0
+        );
 
         // Upload apenas das novas imagens
         for (let i = 0; i < newImages.length; i++) {
           const image = newImages[i];
+          console.log(
+            "🚀 UPLOAD NEW IMAGES - Processando imagem",
+            i + 1,
+            "de",
+            newImages.length,
+            ":",
+            image.file?.name
+          );
+
           const fileExt = image.file!.name.split(".").pop();
           const fileName = `${productId}/${Date.now()}-${i}.${fileExt}`;
+          console.log("🚀 UPLOAD NEW IMAGES - Nome do arquivo:", fileName);
 
           const { data: uploadData, error: uploadError } =
             await supabase.storage
@@ -294,9 +341,19 @@ export const useSimpleDraftImages = () => {
               .upload(fileName, image.file!);
 
           if (uploadError) {
-            console.error("Erro no upload da imagem", i, ":", uploadError);
+            console.error(
+              "❌ UPLOAD NEW IMAGES - Erro no upload da imagem",
+              i,
+              ":",
+              uploadError
+            );
             continue;
           }
+
+          console.log(
+            "✅ UPLOAD NEW IMAGES - Upload do storage concluído:",
+            uploadData.path
+          );
 
           const { data: urlData } = supabase.storage
             .from("product-images")
@@ -305,13 +362,33 @@ export const useSimpleDraftImages = () => {
           const imageUrl = urlData.publicUrl;
           uploadedUrls.push(imageUrl);
 
-          await supabase.from("product_images").insert({
+          // Calcular ordem da imagem (1-10)
+          const imageOrder = Math.min(nextOrder + i, 10);
+
+          console.log("🚀 UPLOAD NEW IMAGES - Inserindo no banco:", {
             product_id: productId,
             image_url: imageUrl,
-            image_order: nextOrder + i,
-            is_primary: false, // Não sobrescrever imagem principal
-            alt_text: `Imagem ${nextOrder + i} do produto`,
+            image_order: imageOrder,
           });
+
+          const { error: insertError } = await supabase
+            .from("product_images")
+            .insert({
+              product_id: productId,
+              image_url: imageUrl,
+              image_order: imageOrder,
+              is_primary: false, // Não sobrescrever imagem principal
+              alt_text: `Imagem ${imageOrder} do produto`,
+            });
+
+          if (insertError) {
+            console.error(
+              "❌ UPLOAD NEW IMAGES - Erro ao inserir no banco:",
+              insertError
+            );
+          } else {
+            console.log("✅ UPLOAD NEW IMAGES - Inserido no banco com sucesso");
+          }
 
           console.log(
             "✅ Nova imagem",

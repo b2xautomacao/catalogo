@@ -121,16 +121,54 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
           "💾 SIMPLE WIZARD - Executando upload de imagens para:",
           productId
         );
+        console.log(
+          "💾 SIMPLE WIZARD - imageUploadFunctionRef.current existe:",
+          !!imageUploadFunctionRef.current
+        );
+        console.log(
+          "💾 SIMPLE WIZARD - editingProduct?.id:",
+          editingProduct?.id
+        );
 
         if (imageUploadFunctionRef.current) {
           console.log("💾 SIMPLE WIZARD - Upload de imagens principais");
-          await imageUploadFunctionRef.current(productId);
+          try {
+            const result = await imageUploadFunctionRef.current(productId);
+            console.log(
+              "💾 SIMPLE WIZARD - Resultado do upload principal:",
+              result
+            );
+          } catch (error) {
+            console.error(
+              "💾 SIMPLE WIZARD - Erro no upload principal:",
+              error
+            );
+          }
+        } else {
+          console.log(
+            "⚠️ SIMPLE WIZARD - imageUploadFunctionRef.current não existe"
+          );
         }
 
         // Para edição, usar uploadNewImages que preserva imagens existentes
         if (editingProduct?.id) {
           console.log("💾 SIMPLE WIZARD - Upload de novas imagens");
-          await uploadNewImages(productId);
+          try {
+            const result = await uploadNewImages(productId);
+            console.log(
+              "💾 SIMPLE WIZARD - Resultado do upload de novas imagens:",
+              result
+            );
+          } catch (error) {
+            console.error(
+              "💾 SIMPLE WIZARD - Erro no upload de novas imagens:",
+              error
+            );
+          }
+        } else {
+          console.log(
+            "💾 SIMPLE WIZARD - Não é edição, pulando uploadNewImages"
+          );
         }
 
         // Upload das imagens das variações
