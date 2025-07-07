@@ -12,7 +12,28 @@ interface PriceCalculationOptions {
   price_tiers?: ProductPriceTier[];
 }
 
-export const usePriceCalculation = (storeId: string, options: PriceCalculationOptions) => {
+interface PriceCalculationResult {
+  unitPrice: number;
+  total: number;
+  savings: number;
+  appliedTier: ProductPriceTier | null;
+  isWholesale: boolean;
+  formattedUnitPrice: string;
+  formattedTotal: string;
+  formattedSavings: string;
+  currentTier: {
+    tier_name: string;
+    price: number;
+  };
+  nextTierHint?: {
+    quantityNeeded: number;
+    potentialSavings: number;
+  };
+  price: number;
+  percentage: number;
+}
+
+export const usePriceCalculation = (storeId: string, options: PriceCalculationOptions): PriceCalculationResult => {
   const { priceModel } = useStorePriceModel(storeId);
 
   return useMemo(() => {
@@ -22,6 +43,8 @@ export const usePriceCalculation = (storeId: string, options: PriceCalculationOp
     let finalPrice = retail_price;
     let appliedTier: ProductPriceTier | null = null;
     let savings = 0;
+    let currentTierName = 'Varejo';
+    let nextTierHint: { quantityNeeded: number; potentialSavings: number; } | undefined;
 
     // Verificar níveis de preço personalizados primeiro
     if (price_tiers && price_tiers.length > 0) {
@@ -32,7 +55,21 @@ export const usePriceCalculation = (storeId: string, options: PriceCalculationOp
       if (applicableTiers.length > 0) {
         appliedTier = applicableTiers[0];
         finalPrice = appliedTier.price;
+        currentTierName = appliedTier.tier_name || 'Nível Personalizado';
         savings = (retail_price - finalPrice) * quantity;
+      } else {
+        // Verificar próximo nível disponível
+        const nextTiers = price_tiers
+          .filter(tier => tier.is_active && quantity < tier.min_quantity)
+          .sort((a, b) => a.min_quantity - b.min_quantity);
+        
+        if (nextTiers.length > 0) {
+          const nextTier = nextTiers[0];
+          nextTierHint = {
+            quantityNeeded: nextTier.min_quantity - quantity,
+            potentialSavings: retail_price - nextTier.price
+          };
+        }
       }
     }
     // Se não há tiers personalizados, verificar atacado simples
@@ -42,11 +79,21 @@ export const usePriceCalculation = (storeId: string, options: PriceCalculationOp
       quantity >= (min_wholesale_qty || 1)
     ) {
       finalPrice = wholesale_price;
+      currentTierName = priceModel.simple_wholesale_name || 'Atacado';
       savings = (retail_price - wholesale_price) * quantity;
+    } else if (
+      priceModel?.simple_wholesale_enabled &&
+      wholesale_price &&
+      quantity < (min_wholesale_qty || 1)
+    ) {
+      nextTierHint = {
+        quantityNeeded: (min_wholesale_qty || 1) - quantity,
+        potentialSavings: retail_price - wholesale_price
+      };
     }
 
     const total = finalPrice * quantity;
-    const retailTotal = retail_price * quantity;
+    const savingsPercentage = retail_price > 0 ? ((retail_price - finalPrice) / retail_price) * 100 : 0;
 
     return {
       unitPrice: finalPrice,
@@ -66,6 +113,13 @@ export const usePriceCalculation = (storeId: string, options: PriceCalculationOp
         style: 'currency',
         currency: 'BRL',
       }).format(savings),
+      currentTier: {
+        tier_name: currentTierName,
+        price: finalPrice
+      },
+      nextTierHint,
+      price: finalPrice,
+      percentage: savingsPercentage
     };
-  }, [options, priceModel]);
+  }, [options, priceModel, storeId]);
 };

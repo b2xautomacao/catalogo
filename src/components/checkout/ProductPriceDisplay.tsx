@@ -1,3 +1,4 @@
+
 import React from "react";
 import { usePriceCalculation } from "../../hooks/usePriceCalculation";
 import { Badge } from "../ui/badge";
@@ -18,12 +19,11 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
   retailPrice,
   className = "",
 }) => {
-  const calculation = usePriceCalculation(
-    productId,
-    storeId,
-    quantity,
-    retailPrice
-  );
+  const calculation = usePriceCalculation(storeId, {
+    product_id: productId,
+    retail_price: retailPrice,
+    quantity
+  });
 
   const totalPrice = calculation.price * quantity;
   const totalRetailPrice = retailPrice * quantity;
@@ -35,18 +35,18 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600">Preço unitário:</span>
-          {calculation.savings.percentage > 0 && (
+          {calculation.percentage > 0 && (
             <Badge
               variant="secondary"
               className="text-xs bg-green-100 text-green-700"
             >
               <TrendingDown className="h-3 w-3 mr-1" />-
-              {calculation.savings.percentage.toFixed(0)}%
+              {calculation.percentage.toFixed(0)}%
             </Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {calculation.savings.percentage > 0 && (
+          {calculation.percentage > 0 && (
             <span className="text-sm text-gray-400 line-through">
               R$ {retailPrice.toFixed(2).replace(".", ",")}
             </span>

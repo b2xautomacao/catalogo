@@ -1,275 +1,248 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useSimpleProductWizard } from '@/hooks/useSimpleProductWizard';
+import ProductImagesForm from './ProductImagesForm';
+import ProductPriceTiersSection from './ProductPriceTiersSection';
+import WizardStepNavigation from './WizardStepNavigation';
+import WizardActionButtons from './WizardActionButtons';
 
-import React, { useEffect, useRef, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useSimpleProductWizard } from "@/hooks/useSimpleProductWizard";
-import { useProductVariations } from "@/hooks/useProductVariations";
-import { useSimpleDraftImages } from "@/hooks/useSimpleDraftImages";
-import { useVariationDraftImages } from "@/hooks/useVariationDraftImages";
-import ImprovedWizardStepNavigation from "./wizard/ImprovedWizardStepNavigation";
-import WizardStepContent from "./wizard/WizardStepContent";
-import ImprovedWizardActionButtons from "./wizard/ImprovedWizardActionButtons";
-
-interface SimpleProductWizardProps {
-  isOpen: boolean;
-  onClose: () => void;
-  editingProduct?: any;
-  onSuccess?: () => void;
+export interface SimpleProductWizardProps {
+  onComplete?: (product: any) => void;
+  onCancel?: () => void;
 }
 
 const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
-  isOpen,
-  onClose,
-  editingProduct,
-  onSuccess,
+  onComplete,
+  onCancel,
 }) => {
   const {
     currentStep,
     formData,
-    steps,
+    draftImages,
     isSaving,
-    updateFormData,
-    nextStep,
-    prevStep,
-    goToStep,
-    saveProduct,
-    resetForm,
-    loadProductData,
     canProceed,
-  } = useSimpleProductWizard();
+    goToNextStep,
+    goToPreviousStep,
+    setFormData,
+    handleImageUploadReady,
+    saveProduct,
+    validateCurrentStep,
+  } = useSimpleProductWizard({ onComplete, onCancel });
 
-  const { variations, loading: variationsLoading } = useProductVariations(
-    editingProduct?.id
-  );
-  const { clearImages, uploadNewImages } = useSimpleDraftImages();
-  const { uploadVariationImages, clearVariationImages } = useVariationDraftImages();
-
-  // Ref para evitar múltiplas chamadas
-  const loadedProductRef = useRef<string | null>(null);
-  const imageUploadFunctionRef = useRef<
-    ((productId: string) => Promise<string[]>) | null
-  >(null);
-
-  // Carregar dados do produto para edição
-  useEffect(() => {
-    if (
-      editingProduct &&
-      isOpen &&
-      loadedProductRef.current !== editingProduct.id
-    ) {
-      console.log("📂 SIMPLE WIZARD - Carregando produto para edição:", editingProduct.id);
-      loadProductData(editingProduct);
-      loadedProductRef.current = editingProduct.id;
+  const mockVariations = [
+    {
+      id: "temp-1",
+      product_id: "temp-product",
+      color: "Azul",
+      size: "M",
+      sku: "TEMP-001",
+      stock: 10,
+      price_adjustment: 0,
+      is_active: true,
+      image_url: "",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
-  }, [editingProduct?.id, isOpen, loadProductData]);
+  ];
 
-  // Carregar variações existentes
-  useEffect(() => {
-    if (variations && variations.length > 0 && !variationsLoading) {
-      console.log("🎨 SIMPLE WIZARD - Carregando variações existentes:", variations.length);
-      
-      const formattedVariations = variations.map((variation) => ({
-        id: variation.id,
-        color: variation.color || "",
-        size: variation.size || "",
-        sku: variation.sku || "",
-        stock: variation.stock,
-        price_adjustment: variation.price_adjustment,
-        is_active: variation.is_active,
-        image_url: variation.image_url || "",
-      }));
-
-      updateFormData({ variations: formattedVariations });
-    } else if (
-      editingProduct &&
-      !variationsLoading &&
-      variations?.length === 0
-    ) {
-      // Se está editando um produto mas não há variações, limpar o array
-      updateFormData({ variations: [] });
-    }
-  }, [variations, variationsLoading, updateFormData, editingProduct?.id]);
-
-  // Limpar form ao fechar
-  useEffect(() => {
-    if (!isOpen && loadedProductRef.current) {
-      console.log("🧹 SIMPLE WIZARD - Dialog fechado, limpando dados");
-      resetForm();
-      clearImages();
-      clearVariationImages();
-      loadedProductRef.current = null;
-      imageUploadFunctionRef.current = null;
-    }
-  }, [isOpen, resetForm, clearImages, clearVariationImages]);
-
-  // Callback para receber a função de upload do componente de imagens
-  const handleImageUploadReady = useCallback(
-    (uploadFn: (productId: string) => Promise<string[]>) => {
-      imageUploadFunctionRef.current = uploadFn;
-    },
-    []
-  );
-
-  const handleSave = async () => {
-    try {
-      console.log("💾 SIMPLE WIZARD - Iniciando salvamento");
-
-      // Função para fazer upload das imagens após salvar o produto
-      const imageUploadFn = async (productId: string): Promise<string[]> => {
-        console.log("💾 SIMPLE WIZARD - Executando uploads para produto:", productId);
-        const uploadResults: string[] = [];
-
-        // Upload das imagens principais
-        if (imageUploadFunctionRef.current) {
-          console.log("💾 SIMPLE WIZARD - Upload de imagens principais");
-          try {
-            const result = await imageUploadFunctionRef.current(productId);
-            uploadResults.push(...result);
-            console.log("✅ SIMPLE WIZARD - Upload principal concluído:", result.length, "imagens");
-          } catch (error) {
-            console.error("❌ SIMPLE WIZARD - Erro no upload principal:", error);
-          }
-        }
-
-        // Para edição, usar uploadNewImages que preserva imagens existentes
-        if (editingProduct?.id) {
-          console.log("💾 SIMPLE WIZARD - Upload de novas imagens (modo edição)");
-          try {
-            const result = await uploadNewImages(productId);
-            uploadResults.push(...result);
-            console.log("✅ SIMPLE WIZARD - Upload de novas imagens concluído:", result.length);
-          } catch (error) {
-            console.error("❌ SIMPLE WIZARD - Erro no upload de novas imagens:", error);
-          }
-        }
-
-        // Upload das imagens das variações
-        try {
-          console.log("💾 SIMPLE WIZARD - Upload de imagens das variações");
-          const variationUploadResults = await uploadVariationImages(productId);
-          console.log("✅ SIMPLE WIZARD - Upload de variações concluído:", variationUploadResults.length);
-          
-          // Atualizar URLs das variações com as imagens enviadas
-          if (variationUploadResults.length > 0) {
-            const updatedVariations = formData.variations?.map((variation) => {
-              const uploadResult = variationUploadResults.find(
-                (result) => result.colorName.toLowerCase() === variation.color?.toLowerCase()
-              );
-              
-              if (uploadResult) {
-                return { ...variation, image_url: uploadResult.url };
-              }
-              return variation;
-            });
-            
-            if (updatedVariations) {
-              updateFormData({ variations: updatedVariations });
-            }
-          }
-        } catch (variationImageError) {
-          console.error("❌ SIMPLE WIZARD - Erro no upload das imagens das variações:", variationImageError);
-          // Não falhar por causa das imagens das variações
-        }
-
-        return uploadResults;
-      };
-
-      console.log("💾 SIMPLE WIZARD - Dados finais para salvamento:", {
-        name: formData.name,
-        retail_price: formData.retail_price,
-        variations: formData.variations?.length || 0,
-        price_tiers: formData.price_tiers?.length || 0,
-      });
-
-      const productId = await saveProduct(editingProduct?.id, imageUploadFn);
-
-      if (productId) {
-        console.log("✅ SIMPLE WIZARD - Produto salvo com sucesso:", productId);
-        if (onSuccess) {
-          onSuccess();
-        }
-        onClose();
-      }
-    } catch (error) {
-      console.error("💥 SIMPLE WIZARD - Erro durante salvamento:", error);
-    }
-  };
-
-  const handleClose = () => {
-    console.log("❌ SIMPLE WIZARD - Fechando wizard");
-    clearImages();
-    clearVariationImages();
-    onClose();
-  };
+  const steps = [
+    { id: 'details', title: 'Detalhes', description: 'Informações básicas do produto' },
+    { id: 'pricing', title: 'Preços', description: 'Defina os preços e níveis' },
+    { id: 'images', title: 'Imagens', description: 'Adicione fotos do produto' },
+  ];
 
   const isLastStep = currentStep === steps.length - 1;
 
-  // Calcular steps completados
-  const completedSteps: number[] = [];
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
 
-  // Step 0: Básico - precisa de nome
-  if ((formData.name || "").trim().length > 0) {
-    completedSteps.push(0);
-  }
-
-  // Step 1: Preços - precisa de preço válido e estoque >= 0
-  if (formData.retail_price > 0 && formData.stock >= 0) {
-    completedSteps.push(1);
-  }
-
-  // Steps 2-5 sempre podem ser completados (opcionais)
-  completedSteps.push(2, 3, 4, 5);
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const parsedValue = parseFloat(value);
+      return {
+        ...prev,
+        [name]: isNaN(parsedValue) ? 0 : parsedValue,
+      };
+    });
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl w-[95vw] sm:w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 mx-2 sm:mx-auto">
-        <DialogHeader className="p-3 sm:p-6 pb-0">
-          <DialogTitle className="text-lg sm:text-xl font-semibold truncate">
-            {editingProduct ? `Editar: ${editingProduct.name}` : "Novo Produto"}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="max-w-3xl mx-auto">
+      <WizardStepNavigation
+        steps={steps}
+        currentStep={currentStep}
+        onStepClick={(stepIndex) => {
+          if (stepIndex < currentStep) {
+            while (currentStep > stepIndex) {
+              goToPreviousStep();
+            }
+          } else if (stepIndex > currentStep) {
+            while (currentStep < stepIndex) {
+              if (validateCurrentStep()) {
+                goToNextStep();
+              } else {
+                return;
+              }
+            }
+          }
+        }}
+      />
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          {/* Navegação dos Steps */}
-          <ImprovedWizardStepNavigation
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={goToStep}
-            completedSteps={completedSteps.filter((step) => step < currentStep)}
+      <div className="p-4">
+        {currentStep === 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhes do Produto</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Descrição</Label>
+                <Input
+                  type="text"
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Categoria</Label>
+                  <Input
+                    type="text"
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sku">SKU</Label>
+                  <Input
+                    type="text"
+                    id="sku"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="barcode">Código de Barras</Label>
+                <Input
+                  type="text"
+                  id="barcode"
+                  name="barcode"
+                  value={formData.barcode}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 1 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Preços e Estoque</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="retail_price">Preço de Venda</Label>
+                  <Input
+                    type="number"
+                    id="retail_price"
+                    name="retail_price"
+                    value={formData.retail_price}
+                    onChange={handlePriceChange}
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="wholesale_price">Preço Atacado</Label>
+                  <Input
+                    type="number"
+                    id="wholesale_price"
+                    name="wholesale_price"
+                    value={formData.wholesale_price}
+                    onChange={handlePriceChange}
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="min_wholesale_qty">Qtd. Mínima Atacado</Label>
+                <Input
+                  type="number"
+                  id="min_wholesale_qty"
+                  name="min_wholesale_qty"
+                  value={formData.min_wholesale_qty}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="stock">Estoque</Label>
+                <Input
+                  type="number"
+                  id="stock"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="allow_negative_stock"
+                  name="allow_negative_stock"
+                  checked={formData.allow_negative_stock}
+                  onCheckedChange={checked => setFormData(prev => ({ ...prev, allow_negative_stock: checked }))}
+                />
+                <Label htmlFor="allow_negative_stock">Permitir estoque negativo</Label>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 2 && (
+          <ProductImagesForm
+            onImageUploadReady={handleImageUploadReady}
           />
+        )}
+      </div>
 
-          {/* Conteúdo do Step */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-3 sm:p-6">
-              <WizardStepContent
-                currentStep={currentStep}
-                formData={formData}
-                updateFormData={updateFormData}
-                productId={editingProduct?.id}
-                onImageUploadReady={handleImageUploadReady}
-              />
-            </div>
-          </div>
-
-          {/* Botões de Ação */}
-          <ImprovedWizardActionButtons
-            currentStep={currentStep}
-            totalSteps={steps.length}
-            canProceed={canProceed}
-            isSaving={isSaving}
-            onPrevious={prevStep}
-            onNext={nextStep}
-            onSave={handleSave}
-            onCancel={handleClose}
-            isLastStep={isLastStep}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+      <WizardActionButtons
+        currentStep={currentStep}
+        totalSteps={steps.length}
+        canProceed={canProceed}
+        isSaving={isSaving}
+        onPrevious={goToPreviousStep}
+        onNext={goToNextStep}
+        onSave={saveProduct}
+        onCancel={onCancel}
+        isLastStep={isLastStep}
+      />
+    </div>
   );
 };
 

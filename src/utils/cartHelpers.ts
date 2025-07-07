@@ -53,7 +53,10 @@ export const createCartItem = (
       retail_price: product.retail_price,
       wholesale_price: product.wholesale_price,
       min_wholesale_qty: product.min_wholesale_qty,
-      image_url: product.image_url
+      image_url: product.image_url,
+      store_id: product.store_id,
+      stock: product.stock || 0,
+      allow_negative_stock: product.allow_negative_stock || false
     },
     quantity: Math.max(1, Math.floor(quantity)),
     price: finalPrice,

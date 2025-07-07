@@ -3,37 +3,78 @@ import { useMemo } from 'react';
 import { useStorePriceModel } from '@/hooks/useStorePriceModel';
 
 interface CartItem {
-  product_id: string;
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    retail_price: number;
+    wholesale_price?: number;
+    min_wholesale_qty?: number;
+    image_url?: string;
+    store_id?: string;
+    stock: number;
+    allow_negative_stock: boolean;
+  };
   quantity: number;
-  retail_price: number;
-  wholesale_price?: number;
-  min_wholesale_qty?: number;
+  price: number;
+  originalPrice: number;
+  variation?: any;
+  catalogType: string;
 }
 
-export const useCartPriceCalculation = (storeId: string, items: CartItem[]) => {
-  const { priceModel } = useStorePriceModel(storeId);
+interface PriceCalculationResult {
+  total: number;
+  savings: number;
+  formattedTotal: string;
+  formattedSavings: string;
+  currentTier: {
+    tier_name: string;
+    price: number;
+  };
+  nextTierHint?: {
+    quantityNeeded: number;
+    potentialSavings: number;
+  };
+}
+
+export const useCartPriceCalculation = (item: CartItem): PriceCalculationResult => {
+  const { priceModel } = useStorePriceModel(item.product.store_id);
 
   return useMemo(() => {
-    let total = 0;
+    const quantity = item.quantity;
+    const retailPrice = item.product.retail_price;
+    const wholesalePrice = item.product.wholesale_price;
+    const minWholesaleQty = item.product.min_wholesale_qty || 1;
+    
+    let finalPrice = retailPrice;
+    let currentTierName = 'Varejo';
     let savings = 0;
+    let nextTierHint: { quantityNeeded: number; potentialSavings: number; } | undefined;
 
-    items.forEach(item => {
-      const unitPrice = item.retail_price;
-      
-      // Verificar se qualifica para preço de atacado
-      if (
-        priceModel?.simple_wholesale_enabled &&
-        item.wholesale_price && 
-        item.quantity >= (item.min_wholesale_qty || 1)
-      ) {
-        const wholesaleTotal = item.wholesale_price * item.quantity;
-        const retailTotal = item.retail_price * item.quantity;
-        total += wholesaleTotal;
-        savings += (retailTotal - wholesaleTotal);
-      } else {
-        total += unitPrice * item.quantity;
-      }
-    });
+    // Verificar se qualifica para preço de atacado
+    if (
+      priceModel?.simple_wholesale_enabled &&
+      wholesalePrice && 
+      quantity >= minWholesaleQty
+    ) {
+      finalPrice = wholesalePrice;
+      currentTierName = priceModel.simple_wholesale_name || 'Atacado';
+      savings = (retailPrice - wholesalePrice) * quantity;
+    } else if (
+      priceModel?.simple_wholesale_enabled &&
+      wholesalePrice &&
+      quantity < minWholesaleQty
+    ) {
+      // Dica para próximo nível
+      const neededQty = minWholesaleQty - quantity;
+      const potentialSavings = retailPrice - wholesalePrice;
+      nextTierHint = {
+        quantityNeeded: neededQty,
+        potentialSavings
+      };
+    }
+
+    const total = finalPrice * quantity;
 
     return {
       total,
@@ -46,6 +87,11 @@ export const useCartPriceCalculation = (storeId: string, items: CartItem[]) => {
         style: 'currency',
         currency: 'BRL',
       }).format(savings),
+      currentTier: {
+        tier_name: currentTierName,
+        price: finalPrice
+      },
+      nextTierHint
     };
-  }, [items, priceModel]);
+  }, [item, priceModel]);
 };

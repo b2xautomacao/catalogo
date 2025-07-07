@@ -52,7 +52,12 @@ export const useStorePriceModel = (storeId?: string) => {
         throw error;
       }
 
-      setPriceModel(data);
+      if (data) {
+        setPriceModel({
+          ...data,
+          price_model: data.price_model as PriceModelType
+        });
+      }
     } catch (err: any) {
       console.error('Error fetching price model:', err);
       setError(err.message);
@@ -76,7 +81,10 @@ export const useStorePriceModel = (storeId?: string) => {
 
       if (error) throw error;
 
-      setPriceModel(data);
+      setPriceModel({
+        ...data,
+        price_model: data.price_model as PriceModelType
+      });
       toast({
         title: 'Modelo de preço atualizado',
         description: 'As configurações foram salvas com sucesso.',
