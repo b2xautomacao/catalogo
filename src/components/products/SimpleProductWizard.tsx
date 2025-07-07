@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,22 +34,6 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
     validateCurrentStep,
   } = useSimpleProductWizard({ onComplete, onCancel });
 
-  const mockVariations = [
-    {
-      id: "temp-1",
-      product_id: "temp-product",
-      color: "Azul",
-      size: "M",
-      sku: "TEMP-001",
-      stock: 10,
-      price_adjustment: 0,
-      is_active: true,
-      image_url: "",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
   const steps = [
     { id: 'details', title: 'Detalhes', description: 'Informações básicas do produto' },
     { id: 'pricing', title: 'Preços', description: 'Defina os preços e níveis' },
@@ -58,21 +43,17 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   const isLastStep = currentStep === steps.length - 1;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setFormData({
       [name]: type === 'checkbox' ? checked : value,
-    }));
+    });
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => {
-      const parsedValue = parseFloat(value);
-      return {
-        ...prev,
-        [name]: isNaN(parsedValue) ? 0 : parsedValue,
-      };
+    setFormData({
+      [name]: parseFloat(value) || 0,
     });
   };
 
@@ -216,7 +197,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
                   id="allow_negative_stock"
                   name="allow_negative_stock"
                   checked={formData.allow_negative_stock}
-                  onCheckedChange={checked => setFormData(prev => ({ ...prev, allow_negative_stock: checked }))}
+                  onCheckedChange={checked => setFormData({ allow_negative_stock: !!checked })}
                 />
                 <Label htmlFor="allow_negative_stock">Permitir estoque negativo</Label>
               </div>
@@ -226,6 +207,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
 
         {currentStep === 2 && (
           <ProductImagesForm
+            productId={undefined}
             onImageUploadReady={handleImageUploadReady}
           />
         )}

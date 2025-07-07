@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +20,10 @@ interface ProductFormData {
   variations: ProductVariation[];
 }
 
-export const useSimpleProductWizard = () => {
+export const useSimpleProductWizard = (options?: {
+  onComplete?: (product: any) => void;
+  onCancel?: () => void;
+}) => {
   const [step, setStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -73,28 +77,9 @@ export const useSimpleProductWizard = () => {
     }
   };
 
+  const canProceed = validateCurrentStep();
+
   const saveVariations = async (variations: ProductVariation[]) => {
-    // try {
-    //   const { data, error } = await supabase
-    //     .from('product_variations')
-    //     .insert(variations);
-
-    //   if (error) throw error;
-
-    //   toast({
-    //     title: 'Variações salvas com sucesso!',
-    //     description: `Foram adicionadas ${variations.length} variações.`,
-    //   });
-    //   return true;
-    // } catch (error) {
-    //   console.error('Erro ao salvar variações:', error);
-    //   toast({
-    //     title: 'Erro ao salvar variações',
-    //     description: error instanceof Error ? error.message : 'Erro desconhecido',
-    //     variant: 'destructive',
-    //   });
-    //   return false;
-    // }
     return true;
   };
 
@@ -113,12 +98,6 @@ export const useSimpleProductWizard = () => {
       allow_negative_stock: false,
       variations: []
     });
-  };
-
-  const [onComplete, setOnComplete] = useState<(product: any) => void>();
-
-  const setCompletionHandler = (handler: (product: any) => void) => {
-    setOnComplete(() => handler);
   };
 
   const saveProduct = async () => {
@@ -167,7 +146,7 @@ export const useSimpleProductWizard = () => {
           description: `${formData.name} foi adicionado ao catálogo.`,
         });
 
-        onComplete?.(result.data);
+        options?.onComplete?.(result.data);
         return true;
       } else {
         throw new Error(result.error || 'Erro ao criar produto');
@@ -186,6 +165,7 @@ export const useSimpleProductWizard = () => {
   };
 
   return {
+    // Propriedades atuais
     step,
     formData,
     isSaving,
@@ -195,7 +175,15 @@ export const useSimpleProductWizard = () => {
     saveProduct,
     validateCurrentStep,
     resetWizard,
-    setCompletionHandler,
-    setImagesUploadFn
+    setImagesUploadFn,
+    
+    // Aliases para compatibilidade
+    currentStep: step,
+    draftImages,
+    canProceed,
+    goToNextStep: nextStep,
+    goToPreviousStep: prevStep,
+    setFormData: updateFormData,
+    handleImageUploadReady: setImagesUploadFn
   };
 };

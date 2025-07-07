@@ -1,3 +1,4 @@
+
 import React from "react";
 import SimpleProductWizard from "./SimpleProductWizard";
 
@@ -16,6 +17,8 @@ const ProductFormModal = ({
   initialData,
   mode,
 }: ProductFormModalProps) => {
+  if (!open) return null;
+
   const handleSuccess = (productData?: any) => {
     if (onSubmit) {
       try {
@@ -32,12 +35,14 @@ const ProductFormModal = ({
   };
 
   return (
-    <SimpleProductWizard
-      isOpen={open}
-      onClose={() => onOpenChange(false)}
-      editingProduct={mode === "edit" ? initialData : undefined}
-      onSuccess={handleSuccess}
-    />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <SimpleProductWizard
+          onComplete={handleSuccess}
+          onCancel={() => onOpenChange(false)}
+        />
+      </div>
+    </div>
   );
 };
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useStorePriceModel } from '@/hooks/useStorePriceModel';
 import { useAuth } from '@/hooks/useAuth';
-import { ProductPriceTiersManager } from './ProductPriceTiersManager';
+import ProductPriceTiersManager from './ProductPriceTiersManager';
 
 interface ProductPriceTiersSectionProps {
   productId?: string;
