@@ -4,6 +4,7 @@ export interface ProductVariation {
   product_id: string;
   color?: string;
   size?: string;
+  material?: string;
   sku?: string;
   stock: number;
   price_adjustment: number;
@@ -12,7 +13,6 @@ export interface ProductVariation {
   created_at: string;
   updated_at: string;
   // Propriedades adicionais para compatibilidade
-  material?: string;
   hex_color?: string;
   variation_value?: string;
   variation_type?: string;

@@ -6,12 +6,10 @@ import DraftImageUpload from "../DraftImageUpload";
 
 export interface ProductImagesFormProps {
   productId?: string;
-  onImageUploadReady?: (uploadFn: (productId: string) => Promise<string[]>) => void;
 }
 
 const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
   productId,
-  onImageUploadReady,
 }) => {
   return (
     <Card>
@@ -22,9 +20,7 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <DraftImageUpload
-          onUploadReady={onImageUploadReady}
-        />
+        <DraftImageUpload />
       </CardContent>
     </Card>
   );

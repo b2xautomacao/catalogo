@@ -3,13 +3,23 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { Product } from "@/types/product";
+import { CatalogType } from "@/hooks/useCatalog";
 
 interface ProductCardProps {
   product: Product;
+  catalogType?: CatalogType;
   onClick?: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  catalogType = 'retail',
+  onClick 
+}) => {
+  const displayPrice = catalogType === 'wholesale' && product.wholesale_price 
+    ? product.wholesale_price 
+    : product.retail_price;
+
   return (
     <div
       className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
@@ -36,7 +46,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-primary">
-            {formatCurrency(product.retail_price)}
+            {formatCurrency(displayPrice)}
           </p>
           
           {product.is_featured && (
@@ -46,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           )}
         </div>
         
-        {product.wholesale_price && (
+        {catalogType === 'retail' && product.wholesale_price && (
           <p className="text-sm text-gray-600 mt-1">
             Atacado: {formatCurrency(product.wholesale_price)}
           </p>

@@ -14,7 +14,7 @@ import WizardStepContent from "./wizard/WizardStepContent";
 import ImprovedWizardActionButtons from "./wizard/ImprovedWizardActionButtons";
 
 interface WizardStep {
-  id: number;
+  id: string;
   label: string;
   title: string;
   description: string;
@@ -63,8 +63,10 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
 
   // Convert steps to match WizardStep interface
   const steps: WizardStep[] = originalSteps.map(step => ({
-    ...step,
-    title: step.title || step.label
+    id: step.id.toString(),
+    label: step.label,
+    title: step.title || step.label,
+    description: step.description
   }));
 
   // Carregar dados completos do produto para edição
@@ -165,6 +167,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
             totalSteps={steps.length}
             canProceed={canProceed()}
             isSaving={isSaving}
+            isLastStep={currentStep === steps.length - 1}
             onPrevious={prevStep}
             onNext={nextStep}
             onSave={handleSave}
