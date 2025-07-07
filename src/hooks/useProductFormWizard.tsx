@@ -2,11 +2,11 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ProductVariation, ProductPriceTier } from '@/types/product';
+import { ProductVariation, ProductPriceTier, UnifiedPriceTier } from '@/types/product';
 
 export interface ProductFormData {
   name: string;
-  description: string;
+  description?: string;
   retail_price: number;
   wholesale_price?: number;
   min_wholesale_qty?: number;

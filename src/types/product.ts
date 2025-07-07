@@ -84,3 +84,12 @@ export interface ProductPriceTier {
   tier_order: number;
   is_active?: boolean;
 }
+
+// Interface unificada para form wizards
+export interface UnifiedPriceTier {
+  id: string;
+  name: string;
+  minQuantity: number;
+  price: number;
+  enabled: boolean;
+}

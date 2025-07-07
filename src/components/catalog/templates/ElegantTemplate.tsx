@@ -1,37 +1,31 @@
 
-import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
-import { Product } from "@/types/product";
-import { Store } from "@/types/store";
-import { CatalogType } from "@/hooks/useCatalog";
-import { Heart, ShoppingCart, Eye, Package } from "lucide-react";
+import React from 'react';
+import { Product } from '@/hooks/useProducts';
+import { CatalogType } from '@/hooks/useCatalog';
 
 export interface CatalogSettingsData {
   colors?: {
-    primary?: string;
-    secondary?: string;
-    surface?: string;
-    text?: string;
+    primary: string;
+    secondary: string;
+    surface: string;
+    text: string;
   };
   global?: {
-    borderRadius?: number;
-    fontSize?: {
-      small?: string;
-      medium?: string;
-      large?: string;
+    borderRadius: number;
+    fontSize: {
+      small: string;
+      medium: string;
+      large: string;
     };
   };
   productCard?: {
-    showQuickView?: boolean;
-    showAddToCart?: boolean;
-    productCardStyle?: string;
+    showQuickView: boolean;
+    showAddToCart: boolean;
+    productCardStyle: string;
   };
 }
 
-export interface ElegantTemplateProps {
+interface ElegantTemplateProps {
   product: Product;
   catalogType: CatalogType;
   onAddToCart: (product: Product) => void;
@@ -41,137 +35,163 @@ export interface ElegantTemplateProps {
   showPrices: boolean;
   showStock: boolean;
   editorSettings?: CatalogSettingsData;
-  store?: Store;
-  products?: Product[];
 }
 
 const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   product,
   catalogType,
-  onAddToCart = () => {},
-  onAddToWishlist = () => {},
-  onQuickView = () => {},
-  isInWishlist = false,
-  showPrices = true,
-  showStock = true,
+  onAddToCart,
+  onAddToWishlist,
+  onQuickView,
+  isInWishlist,
+  showPrices,
+  showStock,
   editorSettings = {}
 }) => {
-  const displayPrice = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
-
-  const handleAddToCart = () => {
-    onAddToCart(product);
+  const settings = {
+    colors: {
+      primary: '#0057FF',
+      secondary: '#FF6F00',
+      surface: '#FFFFFF',
+      text: '#1E293B',
+      ...editorSettings.colors
+    },
+    global: {
+      borderRadius: 8,
+      fontSize: {
+        small: '14px',
+        medium: '16px',
+        large: '20px'
+      },
+      ...editorSettings.global
+    },
+    productCard: {
+      showQuickView: true,
+      showAddToCart: true,
+      productCardStyle: 'default',
+      ...editorSettings.productCard
+    }
   };
 
-  const handleAddToWishlist = () => {
-    onAddToWishlist(product);
-  };
-
-  const handleQuickView = () => {
-    onQuickView(product);
-  };
+  const price = catalogType === 'wholesale' ? product.wholesale_price || product.retail_price : product.retail_price;
 
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
-      <div className="relative aspect-square overflow-hidden">
+    <div 
+      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border"
+      style={{ 
+        borderRadius: `${settings.global.borderRadius}px`,
+        borderColor: settings.colors.surface
+      }}
+    >
+      {/* Product Image */}
+      <div className="relative aspect-square bg-gray-100">
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-            <Package className="h-12 w-12" />
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <span>Sem imagem</span>
           </div>
         )}
         
-        {/* Overlay actions */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleQuickView}
-              className="backdrop-blur-sm bg-white/90"
+        {/* Quick actions overlay */}
+        {settings.productCard.showQuickView && (
+          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+            <button
+              onClick={() => onQuickView(product)}
+              className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:bg-gray-50 transition-colors"
+              style={{ 
+                borderRadius: `${settings.global.borderRadius * 2}px`,
+                fontSize: settings.global.fontSize.small
+              }}
             >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleAddToWishlist}
-              className={`backdrop-blur-sm ${
-                isInWishlist ? 'bg-red-100 text-red-600' : 'bg-white/90'
-              }`}
-            >
-              <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-current' : ''}`} />
-            </Button>
+              Visualizar
+            </button>
           </div>
-        </div>
-
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col space-y-1">
-          {product.is_featured && (
-            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-              Destaque
-            </Badge>
-          )}
-          {showStock && product.stock <= 5 && product.stock > 0 && (
-            <Badge variant="destructive">
-              Últimas unidades
-            </Badge>
-          )}
-        </div>
+        )}
       </div>
 
-      <CardContent className="p-4">
-        <div className="mb-3">
-          <h3 className="font-semibold text-lg mb-1 line-clamp-2 group-hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-          
-          {product.description && (
-            <p className="text-gray-600 text-sm line-clamp-2">
-              {product.description}
-            </p>
-          )}
-        </div>
+      {/* Product Info */}
+      <div className="p-4">
+        {/* Product Name */}
+        <h3 
+          className="font-medium text-gray-900 mb-2 line-clamp-2"
+          style={{ 
+            color: settings.colors.text,
+            fontSize: settings.global.fontSize.medium
+          }}
+        >
+          {product.name}
+        </h3>
 
+        {/* Price */}
         {showPrices && (
           <div className="mb-3">
-            <div className="text-2xl font-bold text-primary mb-1">
-              {formatCurrency(displayPrice)}
-            </div>
-            {catalogType === 'retail' && product.wholesale_price && (
-              <div className="text-sm text-gray-500">
-                Atacado: {formatCurrency(product.wholesale_price)}
+            <span 
+              className="text-lg font-bold"
+              style={{ 
+                color: settings.colors.primary,
+                fontSize: settings.global.fontSize.large
+              }}
+            >
+              R$ {price.toFixed(2)}
+            </span>
+            {catalogType === 'wholesale' && product.min_wholesale_qty && (
+              <div 
+                className="text-xs text-gray-500 mt-1"
+                style={{ fontSize: settings.global.fontSize.small }}
+              >
+                Mín. {product.min_wholesale_qty} unidades
               </div>
             )}
           </div>
         )}
 
+        {/* Stock */}
         {showStock && (
-          <div className="text-sm text-gray-500 mb-3">
-            {product.stock > 0 ? (
-              <>Estoque: {product.stock} unidades</>
-            ) : (
-              <span className="text-red-500">Fora de estoque</span>
-            )}
+          <div 
+            className="text-xs text-gray-500 mb-3"
+            style={{ fontSize: settings.global.fontSize.small }}
+          >
+            {product.stock > 0 ? `${product.stock} em estoque` : 'Fora de estoque'}
           </div>
         )}
 
-        <Button
-          onClick={handleAddToCart}
-          className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all duration-300"
-          disabled={product.stock === 0}
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          {product.stock === 0 ? 'Fora de Estoque' : 'Adicionar ao Carrinho'}
-        </Button>
-      </CardContent>
-    </Card>
+        {/* Actions */}
+        <div className="flex gap-2">
+          {settings.productCard.showAddToCart && (
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={product.stock <= 0}
+              className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                backgroundColor: product.stock > 0 ? settings.colors.primary : '#9CA3AF',
+                borderRadius: `${settings.global.borderRadius}px`,
+                fontSize: settings.global.fontSize.small
+              }}
+            >
+              {product.stock > 0 ? 'Adicionar' : 'Sem estoque'}
+            </button>
+          )}
+          
+          <button
+            onClick={() => onAddToWishlist(product)}
+            className="p-2 border rounded-md hover:bg-gray-50 transition-colors"
+            style={{ 
+              borderColor: settings.colors.surface,
+              borderRadius: `${settings.global.borderRadius}px`
+            }}
+          >
+            <span className={`text-lg ${isInWishlist ? 'text-red-500' : 'text-gray-400'}`}>
+              ♥
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
