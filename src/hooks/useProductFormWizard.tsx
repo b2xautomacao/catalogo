@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ProductVariation } from '@/types/product';
+import { ProductVariation, ProductPriceTier } from '@/types/product';
 
 export interface ProductFormData {
   name: string;
@@ -21,13 +21,7 @@ export interface ProductFormData {
   stock_alert_threshold?: number;
   is_active?: boolean;
   variations?: ProductVariation[];
-  price_tiers?: Array<{
-    tier_name: string;
-    tier_type: string;
-    min_quantity: number;
-    price: number;
-    tier_order: number;
-  }>;
+  price_tiers?: ProductPriceTier[];
 }
 
 export interface WizardStep {
@@ -297,4 +291,4 @@ export const useProductFormWizard = () => {
 };
 
 // Use export type for isolated modules
-export type { ProductVariation };
+export type { ProductVariation, ProductPriceTier };

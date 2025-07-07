@@ -39,9 +39,25 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   // Converter settings para o formato esperado pelo ElegantTemplate
   const editorSettings: CatalogSettingsData = {
-    colors: settings?.colors || {},
-    global: settings?.global || {},
-    productCard: settings?.productCard || {}
+    colors: settings?.colors || {
+      primary: '#0057FF',
+      secondary: '#FF6F00',
+      surface: '#FFFFFF',
+      text: '#1E293B'
+    },
+    global: settings?.global || {
+      borderRadius: 8,
+      fontSize: {
+        small: '14px',
+        medium: '16px',
+        large: '20px'
+      }
+    },
+    productCard: settings?.productCard || {
+      showQuickView: true,
+      showAddToCart: true,
+      productCardStyle: 'default'
+    }
   };
 
   const templateProps = {

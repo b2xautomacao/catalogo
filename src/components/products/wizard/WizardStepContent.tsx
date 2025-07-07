@@ -46,14 +46,30 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             stock={formData.stock}
             stockAlertThreshold={formData.stock_alert_threshold}
             allowNegativeStock={formData.allow_negative_stock}
-            priceTiers={formData.price_tiers || []}
+            priceTiers={formData.price_tiers?.map(tier => ({
+              id: tier.id || '',
+              name: tier.tier_name,
+              minQuantity: tier.min_quantity,
+              price: tier.price,
+              enabled: tier.is_active !== false
+            })) || []}
             onRetailPriceChange={(retail_price) => updateFormData({ retail_price })}
             onWholesalePriceChange={(wholesale_price) => updateFormData({ wholesale_price })}
             onMinWholesaleQtyChange={(min_wholesale_qty) => updateFormData({ min_wholesale_qty })}
             onStockChange={(stock) => updateFormData({ stock })}
             onStockAlertThresholdChange={(stock_alert_threshold) => updateFormData({ stock_alert_threshold })}
             onAllowNegativeStockChange={(allow_negative_stock) => updateFormData({ allow_negative_stock })}
-            onPriceTiersChange={(price_tiers) => updateFormData({ price_tiers })}
+            onPriceTiersChange={(tiers) => updateFormData({ 
+              price_tiers: tiers.map(tier => ({
+                id: tier.id,
+                tier_name: tier.name,
+                tier_type: 'custom',
+                min_quantity: tier.minQuantity,
+                price: tier.price,
+                tier_order: 1,
+                is_active: tier.enabled
+              }))
+            })}
           />
         );
 

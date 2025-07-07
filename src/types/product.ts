@@ -73,3 +73,14 @@ export interface CreateProductData {
 export interface UpdateProductData extends CreateProductData {
   id: string;
 }
+
+// Interface padronizada para tiers de preço
+export interface ProductPriceTier {
+  id?: string;
+  tier_name: string;
+  tier_type: string;
+  min_quantity: number;
+  price: number;
+  tier_order: number;
+  is_active?: boolean;
+}
