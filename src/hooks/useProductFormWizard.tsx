@@ -68,6 +68,8 @@ export const useProductFormWizard = () => {
     price_tiers: [],
   });
 
+  const [productId, setProductId] = useState<string | null>(null);
+
   const steps: WizardStep[] = [
     {
       id: "basic",
@@ -608,6 +610,49 @@ export const useProductFormWizard = () => {
     [loadProductPriceTiers]
   );
 
+  useEffect(() => {
+    if (!productId && profile?.store_id) {
+      (async () => {
+        const { data, error } = await createProduct({
+          store_id: profile.store_id,
+          name: "Novo Produto",
+          retail_price: 0.01, // valor mínimo para evitar erro de validação
+          stock: 0,
+        });
+        if (data?.id) {
+          setProductId(data.id);
+          setFormData((prev) => ({
+            ...prev,
+            id: data.id,
+            store_id: profile.store_id,
+          }));
+        }
+      })();
+    }
+  }, [productId, profile?.store_id, createProduct]);
+
+  const cancelAndCleanup = useCallback(async () => {
+    if (productId) {
+      // Excluir imagens, variações, tiers e o produto
+      await supabase
+        .from("product_images")
+        .delete()
+        .eq("product_id", productId);
+      await supabase
+        .from("product_variations")
+        .delete()
+        .eq("product_id", productId);
+      await supabase
+        .from("product_price_tiers")
+        .delete()
+        .eq("product_id", productId);
+      await supabase.from("products").delete().eq("id", productId);
+    }
+    setProductId(null);
+    resetForm();
+    clearDraftImages();
+  }, [productId, resetForm, clearDraftImages]);
+
   return {
     currentStep,
     steps,
@@ -626,5 +671,7 @@ export const useProductFormWizard = () => {
     isLoadingPriceTiers,
     loadProductPriceTiers,
     loadProductForEditing,
+    productId,
+    cancelAndCleanup,
   };
 };

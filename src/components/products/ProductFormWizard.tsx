@@ -45,6 +45,8 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
     canProceed,
     isLoadingPriceTiers,
     loadProductForEditing,
+    productId,
+    cancelAndCleanup,
   } = useProductFormWizard();
 
   const { loadExistingImages, clearDraftImages } = useDraftImages();
@@ -125,7 +127,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
 
   const handleClose = () => {
     console.log("❌ WIZARD - Fechando wizard");
-    clearDraftImages();
+    cancelAndCleanup();
     onClose();
   };
 
@@ -194,7 +196,7 @@ const ProductFormWizard: React.FC<ProductFormWizardProps> = ({
                   currentStep={currentStep}
                   formData={formData}
                   updateFormData={updateFormData}
-                  productId={editingProduct?.id}
+                  productId={productId || editingProduct?.id}
                 />
               )}
             </div>

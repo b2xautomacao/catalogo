@@ -30,10 +30,12 @@ const SimpleImageUpload = ({
     isUploading,
     isLoading,
     addImages,
+    addAndUploadImages,
     removeImage,
     loadExistingImages,
     uploadImages,
     uploadNewImages,
+    deleteAllProductImages,
   } = useSimpleDraftImages();
   const { toast } = useToast();
   const [mainImageId, setMainImageId] = useState(images[0]?.id || null);
@@ -94,17 +96,8 @@ const SimpleImageUpload = ({
     e.target.value = "";
   };
 
-  const handleFiles = (files: File[]) => {
-    console.log("📁 HANDLE FILES - Arquivos recebidos:", files.length);
-    console.log(
-      "📊 HANDLE FILES - Imagens atuais:",
-      images.length,
-      "Max:",
-      maxImages
-    );
-
+  const handleFiles = async (files: File[]) => {
     if (images.length >= maxImages) {
-      console.log("❌ HANDLE FILES - Limite atingido");
       toast({
         title: "Limite atingido",
         description: `Você pode adicionar no máximo ${maxImages} imagens`,
@@ -112,55 +105,10 @@ const SimpleImageUpload = ({
       });
       return;
     }
-
-    const remainingSlots = maxImages - images.length;
-    const filesToProcess = files.slice(0, remainingSlots);
-    const validFiles: File[] = [];
-
-    console.log("📋 HANDLE FILES - Slots restantes:", remainingSlots);
-    console.log(
-      "📋 HANDLE FILES - Arquivos para processar:",
-      filesToProcess.length
-    );
-
-    filesToProcess.forEach((file) => {
-      if (!file.type.startsWith("image/")) {
-        console.log("❌ HANDLE FILES - Arquivo não é imagem:", file.name);
-        toast({
-          title: "Arquivo inválido",
-          description: `${file.name} não é uma imagem válida`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        console.log(
-          "❌ HANDLE FILES - Arquivo muito grande:",
-          file.name,
-          file.size
-        );
-        toast({
-          title: "Arquivo muito grande",
-          description: `${file.name} excede o limite de 5MB`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log("✅ HANDLE FILES - Arquivo válido:", file.name);
-      validFiles.push(file);
-    });
-
-    if (validFiles.length > 0) {
-      console.log(
-        "🚀 HANDLE FILES - Adicionando",
-        validFiles.length,
-        "imagens"
-      );
-      addImages(validFiles);
+    if (productId) {
+      await addAndUploadImages(files, productId);
     } else {
-      console.log("⚠️ HANDLE FILES - Nenhum arquivo válido encontrado");
+      addImages(files);
     }
   };
 

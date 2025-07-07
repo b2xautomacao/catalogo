@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import HierarchicalVariationsManager from "../HierarchicalVariationsManager";
 import MasterVariationSelector from "../MasterVariationSelector";
 import VariationImageManager from "../VariationImageManager";
 import { Settings, Layers, Palette } from "lucide-react";
+import { useProductVariations } from "@/hooks/useProductVariations";
 
 interface ProductVariationsFormProps {
   variations: ProductVariation[];
@@ -23,6 +24,27 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
   const [systemType, setSystemType] = useState<
     "simple" | "hierarchical" | "master"
   >("master");
+  const { variations: loadedVariations, saveVariations } =
+    useProductVariations(productId);
+
+  // Carregar variações do banco ao abrir para edição
+  useEffect(() => {
+    if (loadedVariations && loadedVariations.length > 0) {
+      onVariationsChange(loadedVariations);
+    }
+    // Só popula se vier algo do banco
+    // eslint-disable-next-line
+  }, [loadedVariations]);
+
+  // Função para persistir variações imediatamente
+  const persistVariations = async (vars) => {
+    if (productId) {
+      await saveVariations(productId, vars);
+      onVariationsChange(vars);
+    } else {
+      onVariationsChange(vars);
+    }
+  };
 
   // Verificar se há variações com cor para mostrar o upload de imagens
   const hasColorVariations = variations.some((v) => v.color && v.color.trim());
@@ -95,7 +117,7 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
             <CardContent>
               <MasterVariationSelector
                 variations={variations}
-                onVariationsChange={onVariationsChange}
+                onVariationsChange={persistVariations}
               />
             </CardContent>
           </Card>
@@ -118,7 +140,7 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
             <CardContent>
               <ProductVariationsManager
                 variations={variations}
-                onChange={onVariationsChange}
+                onChange={persistVariations}
               />
             </CardContent>
           </Card>
@@ -162,7 +184,7 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
                 <HierarchicalVariationsManager
                   productId={productId}
                   variations={variations}
-                  onChange={onVariationsChange}
+                  onChange={persistVariations}
                 />
               ) : (
                 <div className="text-center py-8">
@@ -205,7 +227,7 @@ const ProductVariationsForm: React.FC<ProductVariationsFormProps> = ({
               "📊 PRODUCT VARIATIONS FORM - Total de variações atualizadas:",
               updatedVariations.filter((v) => v.image_url).length
             );
-            onVariationsChange(updatedVariations);
+            persistVariations(updatedVariations);
           }}
         />
       )}

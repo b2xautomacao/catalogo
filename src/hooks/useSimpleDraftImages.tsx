@@ -423,6 +423,52 @@ export const useSimpleDraftImages = () => {
     [images, toast, isUploading]
   );
 
+  // Novo método para upload imediato ao adicionar imagens
+  const addAndUploadImages = useCallback(
+    async (files: File[], productId?: string) => {
+      const newImages = addImages(files);
+      if (productId) {
+        // Upload imediato
+        for (let i = 0; i < newImages.length; i++) {
+          const image = newImages[i];
+          const fileExt = image.file!.name.split(".").pop();
+          const fileName = `${productId}/${Date.now()}-${i}.${fileExt}`;
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage
+              .from("product-images")
+              .upload(fileName, image.file!);
+          if (uploadError) continue;
+          const { data: urlData } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(uploadData.path);
+          const imageUrl = urlData.publicUrl;
+          await supabase.from("product_images").insert({
+            product_id: productId,
+            image_url: imageUrl,
+            image_order: i + 1,
+            is_primary: i === 0, // Primeira imagem como principal
+            alt_text: `Imagem ${i + 1} do produto`,
+          });
+          // Atualizar image_url do produto se for a primeira
+          if (i === 0) {
+            await supabase
+              .from("products")
+              .update({ image_url: imageUrl })
+              .eq("id", productId);
+          }
+        }
+      }
+      return newImages;
+    },
+    [addImages]
+  );
+
+  // Função para deletar todas as imagens órfãs de um productId
+  const deleteAllProductImages = useCallback(async (productId: string) => {
+    await supabase.from("product_images").delete().eq("product_id", productId);
+    // Opcional: deletar do storage também
+  }, []);
+
   return {
     images,
     isUploading,
@@ -433,5 +479,7 @@ export const useSimpleDraftImages = () => {
     uploadNewImages, // Upload apenas de novas (preserva existentes)
     loadExistingImages,
     clearImages,
+    addAndUploadImages,
+    deleteAllProductImages,
   };
 };

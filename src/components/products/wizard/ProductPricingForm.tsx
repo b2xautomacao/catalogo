@@ -16,6 +16,7 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
+import { useProductPriceTiers } from "@/hooks/useProductPriceTiers";
 
 interface GenericProductFormData {
   name: string;
@@ -65,6 +66,14 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
   const { profile } = useAuth();
   const { settings: catalogSettings } = useCatalogSettings();
   const { priceModel: storePriceModel } = useStorePriceModel(profile?.store_id);
+  const {
+    tiers,
+    loading,
+    updateTier,
+    deactivateTier,
+    createDefaultTiers,
+    refetch,
+  } = useProductPriceTiers(productId || "", formData.store_id);
 
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
     {
@@ -275,6 +284,21 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     }
   }, [formData.price_tiers, storePriceModel]);
 
+  // Carregar tiers do banco ao abrir para edição
+  useEffect(() => {
+    if (productId) {
+      refetch();
+    }
+  }, [productId]);
+
+  // Função para persistir tiers imediatamente
+  const persistTierChange = async (tierId, field, value) => {
+    if (tierId && field) {
+      await updateTier(tierId, { [field]: value });
+      refetch();
+    }
+  };
+
   const safeFormData = {
     ...formData,
     wholesale_price: formData.wholesale_price ?? 0,
@@ -407,7 +431,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                       <Switch
                         checked={tier.enabled}
                         onCheckedChange={(checked) =>
-                          handleTierChange(tier.id, "enabled", checked)
+                          persistTierChange(tier.id, "enabled", checked)
                         }
                       />
                       <span className="text-sm text-gray-600">Ativo</span>
@@ -423,7 +447,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                           min="1"
                           value={tier.minQuantity}
                           onChange={(e) =>
-                            handleTierChange(
+                            persistTierChange(
                               tier.id,
                               "minQuantity",
                               parseInt(e.target.value) || 1
@@ -437,7 +461,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                         <CurrencyInput
                           value={tier.price}
                           onChange={(value) =>
-                            handleTierChange(tier.id, "price", value)
+                            persistTierChange(tier.id, "price", value)
                           }
                           placeholder="R$ 0,00"
                         />
