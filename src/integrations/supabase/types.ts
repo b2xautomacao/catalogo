@@ -7,8 +7,163 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
+      bulk_import_jobs: {
+        Row: {
+          completed_at: string | null
+          config: Json
+          created_at: string | null
+          error_message: string | null
+          failed_products: number | null
+          file_size: number
+          filename: string
+          id: string
+          processed_products: number | null
+          started_at: string | null
+          status: string
+          store_id: string
+          successful_products: number | null
+          total_products: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          config?: Json
+          created_at?: string | null
+          error_message?: string | null
+          failed_products?: number | null
+          file_size: number
+          filename: string
+          id?: string
+          processed_products?: number | null
+          started_at?: string | null
+          status?: string
+          store_id: string
+          successful_products?: number | null
+          total_products?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          config?: Json
+          created_at?: string | null
+          error_message?: string | null
+          failed_products?: number | null
+          file_size?: number
+          filename?: string
+          id?: string
+          processed_products?: number | null
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          successful_products?: number | null
+          total_products?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_import_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_import_logs: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: string
+          job_id: string
+          message: string
+          product_name: string | null
+          row_number: number
+          sku: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          job_id: string
+          message: string
+          product_name?: string | null
+          row_number: number
+          sku?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          job_id?: string
+          message?: string
+          product_name?: string | null
+          row_number?: number
+          sku?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_import_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_import_temp_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          job_id: string
+          product_data: Json
+          row_number: number
+          validation_errors: Json | null
+          validation_status: string
+          variations_data: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          job_id: string
+          product_data: Json
+          row_number: number
+          validation_errors?: Json | null
+          validation_status?: string
+          variations_data?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          product_data?: Json
+          row_number?: number
+          validation_errors?: Json | null
+          validation_status?: string
+          variations_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_import_temp_products_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_banners: {
         Row: {
           banner_type: string
@@ -729,6 +884,53 @@ export type Database = {
           },
         ]
       }
+      product_price_tiers: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          min_quantity: number
+          price: number
+          product_id: string | null
+          tier_name: string
+          tier_order: number
+          tier_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_quantity?: number
+          price: number
+          product_id?: string | null
+          tier_name: string
+          tier_order: number
+          tier_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_quantity?: number
+          price?: number
+          product_id?: string | null
+          tier_name?: string
+          tier_order?: number
+          tier_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variations: {
         Row: {
           color: string | null
@@ -804,9 +1006,14 @@ export type Database = {
       products: {
         Row: {
           allow_negative_stock: boolean
+          barcode: string | null
+          bulk_price_large: number | null
+          bulk_price_small: number | null
           category: string | null
           created_at: string
+          depth: number | null
           description: string | null
+          height: number | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -819,17 +1026,26 @@ export type Database = {
           reserved_stock: number
           retail_price: number
           seo_slug: string | null
+          sku: string | null
           stock: number
           stock_alert_threshold: number | null
           store_id: string
+          tags: string[] | null
           updated_at: string
+          weight: number | null
           wholesale_price: number | null
+          width: number | null
         }
         Insert: {
           allow_negative_stock?: boolean
+          barcode?: string | null
+          bulk_price_large?: number | null
+          bulk_price_small?: number | null
           category?: string | null
           created_at?: string
+          depth?: number | null
           description?: string | null
+          height?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -842,17 +1058,26 @@ export type Database = {
           reserved_stock?: number
           retail_price?: number
           seo_slug?: string | null
+          sku?: string | null
           stock?: number
           stock_alert_threshold?: number | null
           store_id: string
+          tags?: string[] | null
           updated_at?: string
+          weight?: number | null
           wholesale_price?: number | null
+          width?: number | null
         }
         Update: {
           allow_negative_stock?: boolean
+          barcode?: string | null
+          bulk_price_large?: number | null
+          bulk_price_small?: number | null
           category?: string | null
           created_at?: string
+          depth?: number | null
           description?: string | null
+          height?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -865,11 +1090,15 @@ export type Database = {
           reserved_stock?: number
           retail_price?: number
           seo_slug?: string | null
+          sku?: string | null
           stock?: number
           stock_alert_threshold?: number | null
           store_id?: string
+          tags?: string[] | null
           updated_at?: string
+          weight?: number | null
           wholesale_price?: number | null
+          width?: number | null
         }
         Relationships: [
           {
@@ -986,8 +1215,89 @@ export type Database = {
           },
         ]
       }
+      store_price_models: {
+        Row: {
+          created_at: string | null
+          gradual_tiers_count: number | null
+          gradual_wholesale_enabled: boolean | null
+          id: string
+          price_model: string
+          show_next_tier_hint: boolean | null
+          show_price_tiers: boolean | null
+          show_savings_indicators: boolean | null
+          simple_wholesale_enabled: boolean | null
+          simple_wholesale_min_qty: number | null
+          simple_wholesale_name: string | null
+          store_id: string | null
+          tier_1_enabled: boolean | null
+          tier_1_name: string | null
+          tier_2_enabled: boolean | null
+          tier_2_name: string | null
+          tier_3_enabled: boolean | null
+          tier_3_name: string | null
+          tier_4_enabled: boolean | null
+          tier_4_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          gradual_tiers_count?: number | null
+          gradual_wholesale_enabled?: boolean | null
+          id?: string
+          price_model?: string
+          show_next_tier_hint?: boolean | null
+          show_price_tiers?: boolean | null
+          show_savings_indicators?: boolean | null
+          simple_wholesale_enabled?: boolean | null
+          simple_wholesale_min_qty?: number | null
+          simple_wholesale_name?: string | null
+          store_id?: string | null
+          tier_1_enabled?: boolean | null
+          tier_1_name?: string | null
+          tier_2_enabled?: boolean | null
+          tier_2_name?: string | null
+          tier_3_enabled?: boolean | null
+          tier_3_name?: string | null
+          tier_4_enabled?: boolean | null
+          tier_4_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          gradual_tiers_count?: number | null
+          gradual_wholesale_enabled?: boolean | null
+          id?: string
+          price_model?: string
+          show_next_tier_hint?: boolean | null
+          show_price_tiers?: boolean | null
+          show_savings_indicators?: boolean | null
+          simple_wholesale_enabled?: boolean | null
+          simple_wholesale_min_qty?: number | null
+          simple_wholesale_name?: string | null
+          store_id?: string | null
+          tier_1_enabled?: boolean | null
+          tier_1_name?: string | null
+          tier_2_enabled?: boolean | null
+          tier_2_name?: string | null
+          tier_3_enabled?: boolean | null
+          tier_3_name?: string | null
+          tier_4_enabled?: boolean | null
+          tier_4_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_price_models_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
+          about_us_content: string | null
           accent_color: string | null
           allow_categories_filter: boolean | null
           allow_price_filter: boolean | null
@@ -995,21 +1305,32 @@ export type Database = {
           border_color: string | null
           border_radius: number | null
           business_hours: Json | null
+          business_hours_text: string | null
           business_type: string | null
           catalog_mode: string | null
           catalog_url_slug: string | null
           checkout_type: string | null
+          contact_address: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           custom_domain: string | null
+          delivery_policy_content: string | null
           facebook_url: string | null
           font_family: string | null
+          footer_copyright_text: string | null
+          footer_custom_text: string | null
+          footer_enabled: boolean | null
           id: string
           instagram_url: string | null
           layout_spacing: number | null
+          linkedin_url: string | null
           mobile_columns: number | null
           payment_methods: Json | null
           primary_color: string | null
+          privacy_policy_content: string | null
           retail_catalog_active: boolean | null
+          returns_policy_content: string | null
           secondary_color: string | null
           seo_description: string | null
           seo_keywords: string | null
@@ -1019,7 +1340,9 @@ export type Database = {
           show_stock: boolean | null
           store_id: string
           template_name: string | null
+          terms_of_use_content: string | null
           text_color: string | null
+          tiktok_url: string | null
           twitter_url: string | null
           updated_at: string
           watermark_color: string | null
@@ -1033,8 +1356,10 @@ export type Database = {
           whatsapp_integration_active: boolean | null
           whatsapp_number: string | null
           wholesale_catalog_active: boolean | null
+          youtube_url: string | null
         }
         Insert: {
+          about_us_content?: string | null
           accent_color?: string | null
           allow_categories_filter?: boolean | null
           allow_price_filter?: boolean | null
@@ -1042,21 +1367,32 @@ export type Database = {
           border_color?: string | null
           border_radius?: number | null
           business_hours?: Json | null
+          business_hours_text?: string | null
           business_type?: string | null
           catalog_mode?: string | null
           catalog_url_slug?: string | null
           checkout_type?: string | null
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           custom_domain?: string | null
+          delivery_policy_content?: string | null
           facebook_url?: string | null
           font_family?: string | null
+          footer_copyright_text?: string | null
+          footer_custom_text?: string | null
+          footer_enabled?: boolean | null
           id?: string
           instagram_url?: string | null
           layout_spacing?: number | null
+          linkedin_url?: string | null
           mobile_columns?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
+          privacy_policy_content?: string | null
           retail_catalog_active?: boolean | null
+          returns_policy_content?: string | null
           secondary_color?: string | null
           seo_description?: string | null
           seo_keywords?: string | null
@@ -1066,7 +1402,9 @@ export type Database = {
           show_stock?: boolean | null
           store_id: string
           template_name?: string | null
+          terms_of_use_content?: string | null
           text_color?: string | null
+          tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           watermark_color?: string | null
@@ -1080,8 +1418,10 @@ export type Database = {
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
           wholesale_catalog_active?: boolean | null
+          youtube_url?: string | null
         }
         Update: {
+          about_us_content?: string | null
           accent_color?: string | null
           allow_categories_filter?: boolean | null
           allow_price_filter?: boolean | null
@@ -1089,21 +1429,32 @@ export type Database = {
           border_color?: string | null
           border_radius?: number | null
           business_hours?: Json | null
+          business_hours_text?: string | null
           business_type?: string | null
           catalog_mode?: string | null
           catalog_url_slug?: string | null
           checkout_type?: string | null
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           custom_domain?: string | null
+          delivery_policy_content?: string | null
           facebook_url?: string | null
           font_family?: string | null
+          footer_copyright_text?: string | null
+          footer_custom_text?: string | null
+          footer_enabled?: boolean | null
           id?: string
           instagram_url?: string | null
           layout_spacing?: number | null
+          linkedin_url?: string | null
           mobile_columns?: number | null
           payment_methods?: Json | null
           primary_color?: string | null
+          privacy_policy_content?: string | null
           retail_catalog_active?: boolean | null
+          returns_policy_content?: string | null
           secondary_color?: string | null
           seo_description?: string | null
           seo_keywords?: string | null
@@ -1113,7 +1464,9 @@ export type Database = {
           show_stock?: boolean | null
           store_id?: string
           template_name?: string | null
+          terms_of_use_content?: string | null
           text_color?: string | null
+          tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
           watermark_color?: string | null
@@ -1127,6 +1480,7 @@ export type Database = {
           whatsapp_integration_active?: boolean | null
           whatsapp_number?: string | null
           wholesale_catalog_active?: boolean | null
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -1188,6 +1542,121 @@ export type Database = {
           },
           {
             foreignKeyName: "store_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_variation_groups: {
+        Row: {
+          attribute_key: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean
+          master_group_id: string | null
+          name: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          attribute_key: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          master_group_id?: string | null
+          name: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          attribute_key?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          master_group_id?: string | null
+          name?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_variation_groups_master_group_id_fkey"
+            columns: ["master_group_id"]
+            isOneToOne: false
+            referencedRelation: "variation_master_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_variation_groups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_variation_values: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          group_id: string
+          hex_color: string | null
+          id: string
+          is_active: boolean
+          master_value_id: string | null
+          store_id: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          group_id: string
+          hex_color?: string | null
+          id?: string
+          is_active?: boolean
+          master_value_id?: string | null
+          store_id: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          group_id?: string
+          hex_color?: string | null
+          id?: string
+          is_active?: boolean
+          master_value_id?: string | null
+          store_id?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_variation_values_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "store_variation_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_variation_values_master_value_id_fkey"
+            columns: ["master_value_id"]
+            isOneToOne: false
+            referencedRelation: "variation_master_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_variation_values_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -1493,6 +1962,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_bulk_import_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_store_slug: {
         Args: { store_name: string; store_id: string }
         Returns: string
@@ -1533,6 +2006,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
+      }
+      initialize_store_variations: {
+        Args: { _store_id: string }
+        Returns: undefined
       }
       is_store_owner: {
         Args: { _user_id: string; _store_id: string }
@@ -1605,21 +2082,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1637,14 +2118,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1660,14 +2143,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1683,14 +2168,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1698,14 +2185,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

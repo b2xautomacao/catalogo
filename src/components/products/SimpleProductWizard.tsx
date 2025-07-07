@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
@@ -45,8 +46,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
     editingProduct?.id
   );
   const { clearImages, uploadNewImages } = useSimpleDraftImages();
-  const { uploadVariationImages, clearVariationImages } =
-    useVariationDraftImages();
+  const { uploadVariationImages, clearVariationImages } = useVariationDraftImages();
 
   // Ref para evitar múltiplas chamadas
   const loadedProductRef = useRef<string | null>(null);
@@ -61,6 +61,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
       isOpen &&
       loadedProductRef.current !== editingProduct.id
     ) {
+      console.log("📂 SIMPLE WIZARD - Carregando produto para edição:", editingProduct.id);
       loadProductData(editingProduct);
       loadedProductRef.current = editingProduct.id;
     }
@@ -69,6 +70,8 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   // Carregar variações existentes
   useEffect(() => {
     if (variations && variations.length > 0 && !variationsLoading) {
+      console.log("🎨 SIMPLE WIZARD - Carregando variações existentes:", variations.length);
+      
       const formattedVariations = variations.map((variation) => ({
         id: variation.id,
         color: variation.color || "",
@@ -94,6 +97,7 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   // Limpar form ao fechar
   useEffect(() => {
     if (!isOpen && loadedProductRef.current) {
+      console.log("🧹 SIMPLE WIZARD - Dialog fechado, limpando dados");
       resetForm();
       clearImages();
       clearVariationImages();
@@ -113,95 +117,85 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   const handleSave = async () => {
     try {
       console.log("💾 SIMPLE WIZARD - Iniciando salvamento");
-      console.log("💾 SIMPLE WIZARD - formData atual:", formData);
 
       // Função para fazer upload das imagens após salvar o produto
       const imageUploadFn = async (productId: string) => {
-        console.log(
-          "💾 SIMPLE WIZARD - Executando upload de imagens para:",
-          productId
-        );
-        console.log(
-          "💾 SIMPLE WIZARD - imageUploadFunctionRef.current existe:",
-          !!imageUploadFunctionRef.current
-        );
-        console.log(
-          "💾 SIMPLE WIZARD - editingProduct?.id:",
-          editingProduct?.id
-        );
+        console.log("💾 SIMPLE WIZARD - Executando uploads para produto:", productId);
 
+        // Upload das imagens principais
         if (imageUploadFunctionRef.current) {
           console.log("💾 SIMPLE WIZARD - Upload de imagens principais");
           try {
             const result = await imageUploadFunctionRef.current(productId);
-            console.log(
-              "💾 SIMPLE WIZARD - Resultado do upload principal:",
-              result
-            );
+            console.log("✅ SIMPLE WIZARD - Upload principal concluído:", result.length, "imagens");
           } catch (error) {
-            console.error(
-              "💾 SIMPLE WIZARD - Erro no upload principal:",
-              error
-            );
+            console.error("❌ SIMPLE WIZARD - Erro no upload principal:", error);
           }
-        } else {
-          console.log(
-            "⚠️ SIMPLE WIZARD - imageUploadFunctionRef.current não existe"
-          );
         }
 
         // Para edição, usar uploadNewImages que preserva imagens existentes
         if (editingProduct?.id) {
-          console.log("💾 SIMPLE WIZARD - Upload de novas imagens");
+          console.log("💾 SIMPLE WIZARD - Upload de novas imagens (modo edição)");
           try {
             const result = await uploadNewImages(productId);
-            console.log(
-              "💾 SIMPLE WIZARD - Resultado do upload de novas imagens:",
-              result
-            );
+            console.log("✅ SIMPLE WIZARD - Upload de novas imagens concluído:", result.length);
           } catch (error) {
-            console.error(
-              "💾 SIMPLE WIZARD - Erro no upload de novas imagens:",
-              error
-            );
+            console.error("❌ SIMPLE WIZARD - Erro no upload de novas imagens:", error);
           }
-        } else {
-          console.log(
-            "💾 SIMPLE WIZARD - Não é edição, pulando uploadNewImages"
-          );
         }
 
         // Upload das imagens das variações
         try {
           console.log("💾 SIMPLE WIZARD - Upload de imagens das variações");
-          await uploadVariationImages(productId);
+          const variationUploadResults = await uploadVariationImages(productId);
+          console.log("✅ SIMPLE WIZARD - Upload de variações concluído:", variationUploadResults.length);
+          
+          // Atualizar URLs das variações com as imagens enviadas
+          if (variationUploadResults.length > 0) {
+            const updatedVariations = formData.variations?.map((variation) => {
+              const uploadResult = variationUploadResults.find(
+                (result) => result.colorName.toLowerCase() === variation.color?.toLowerCase()
+              );
+              
+              if (uploadResult) {
+                return { ...variation, image_url: uploadResult.url };
+              }
+              return variation;
+            });
+            
+            if (updatedVariations) {
+              updateFormData({ variations: updatedVariations });
+            }
+          }
         } catch (variationImageError) {
-          console.error(
-            "Erro no upload das imagens das variações:",
-            variationImageError
-          );
+          console.error("❌ SIMPLE WIZARD - Erro no upload das imagens das variações:", variationImageError);
           // Não falhar por causa das imagens das variações
         }
       };
 
-      // Garantir que os dados estejam sincronizados antes de salvar
-      console.log("💾 SIMPLE WIZARD - Dados finais para salvamento:", formData);
+      console.log("💾 SIMPLE WIZARD - Dados finais para salvamento:", {
+        name: formData.name,
+        retail_price: formData.retail_price,
+        variations: formData.variations?.length || 0,
+        price_tiers: formData.price_tiers?.length || 0,
+      });
 
       const productId = await saveProduct(editingProduct?.id, imageUploadFn);
 
       if (productId) {
-        console.log("💾 SIMPLE WIZARD - Produto salvo com sucesso:", productId);
+        console.log("✅ SIMPLE WIZARD - Produto salvo com sucesso:", productId);
         if (onSuccess) {
-          onSuccess(formData);
+          onSuccess();
         }
         onClose();
       }
     } catch (error) {
-      console.error("💥 Erro durante salvamento:", error);
+      console.error("💥 SIMPLE WIZARD - Erro durante salvamento:", error);
     }
   };
 
   const handleClose = () => {
+    console.log("❌ SIMPLE WIZARD - Fechando wizard");
     clearImages();
     clearVariationImages();
     onClose();
@@ -253,17 +247,6 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
                 productId={editingProduct?.id}
                 onImageUploadReady={handleImageUploadReady}
               />
-              {/* Debug info */}
-              {process.env.NODE_ENV === "development" && (
-                <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-                  <div>Debug: productId = {editingProduct?.id || "null"}</div>
-                  <div>Debug: currentStep = {currentStep}</div>
-                  <div>Debug: retail_price = {formData.retail_price}</div>
-                  <div>
-                    Debug: price_tiers = {formData.price_tiers?.length || 0}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

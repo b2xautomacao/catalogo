@@ -1,316 +1,164 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Upload, X, Camera } from "lucide-react";
+
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useVariationImageUpload } from "@/hooks/useVariationImageUpload";
-import { ProductVariation } from "@/types/variation";
+import { Upload, Image as ImageIcon, X, Camera } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface VariationImageUploaderProps {
-  productId?: string;
-  variations: ProductVariation[];
-  onImagesUpdated?: () => void;
-}
-
-interface ImagePreview {
-  color: string;
-  variationId: string;
-  file?: File;
-  imageUrl?: string;
-  preview?: string;
-  isUploading?: boolean;
+  colorName: string;
+  onImageSelected: (colorName: string, file: File) => void;
+  onImageRemoved: (colorName: string) => void;
+  currentImage?: string | File;
+  disabled?: boolean;
 }
 
 const VariationImageUploader: React.FC<VariationImageUploaderProps> = ({
-  productId,
-  variations,
-  onImagesUpdated,
+  colorName,
+  onImageSelected,
+  onImageRemoved,
+  currentImage,
+  disabled = false,
 }) => {
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
-  const {
-    isUploading,
-    uploadVariationImage,
-    loadVariationImages,
-    removeVariationImage,
-  } = useVariationImageUpload();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  // Filtrar apenas variações com cor
-  const colorVariations = variations.filter((v) => v.color && v.color.trim());
-
-  // Carregar imagens existentes quando o componente é montado
-  useEffect(() => {
-    if (productId && colorVariations.length > 0) {
-      loadExistingImages();
-    }
-  }, [productId, colorVariations.length]);
-
-  const loadExistingImages = async () => {
-    if (!productId) return;
-
-    const imageMap = await loadVariationImages(productId);
-
-    // Criar previews para todas as cores, com ou sem imagem
-    const previews: ImagePreview[] = colorVariations.map((variation) => ({
-      color: variation.color!,
-      variationId: variation.id!,
-      imageUrl: imageMap[variation.color!],
-    }));
-
-    setImagePreviews(previews);
-  };
-
-  const handleImageSelect = useCallback(
-    (
-      event: React.ChangeEvent<HTMLInputElement>,
-      color: string,
-      variationId: string
-    ) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      // Validar tipo de arquivo
-      if (!file.type.startsWith("image/")) {
-        return;
+  React.useEffect(() => {
+    if (currentImage) {
+      if (typeof currentImage === "string") {
+        setPreviewUrl(currentImage);
+      } else if (currentImage instanceof File) {
+        const url = URL.createObjectURL(currentImage);
+        setPreviewUrl(url);
+        return () => URL.revokeObjectURL(url);
       }
-
-      // Criar preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const preview = e.target?.result as string;
-
-        setImagePreviews((prev) =>
-          prev.map((img) =>
-            img.color === color
-              ? { ...img, file, preview, imageUrl: undefined }
-              : img
-          )
-        );
-      };
-      reader.readAsDataURL(file);
-
-      // Reset do input
-      event.target.value = "";
-    },
-    []
-  );
-
-  const handleUploadImage = async (color: string, variationId: string) => {
-    const imagePreview = imagePreviews.find((img) => img.color === color);
-    if (!imagePreview?.file || !productId) return;
-
-    // Marcar como fazendo upload
-    setImagePreviews((prev) =>
-      prev.map((img) =>
-        img.color === color ? { ...img, isUploading: true } : img
-      )
-    );
-
-    try {
-      const uploadedUrl = await uploadVariationImage(
-        productId,
-        variationId,
-        imagePreview.file,
-        color
-      );
-
-      if (uploadedUrl) {
-        // Atualizar com a URL definitiva
-        setImagePreviews((prev) =>
-          prev.map((img) =>
-            img.color === color
-              ? {
-                  ...img,
-                  file: undefined,
-                  preview: undefined,
-                  imageUrl: uploadedUrl,
-                  isUploading: false,
-                }
-              : img
-          )
-        );
-
-        onImagesUpdated?.();
-      }
-    } catch (error) {
-      console.error("Erro no upload:", error);
-    } finally {
-      // Remover estado de upload
-      setImagePreviews((prev) =>
-        prev.map((img) =>
-          img.color === color ? { ...img, isUploading: false } : img
-        )
-      );
+    } else {
+      setPreviewUrl(null);
     }
-  };
+  }, [currentImage]);
 
-  const handleRemoveImage = async (color: string, variationId: string) => {
-    const imagePreview = imagePreviews.find((img) => img.color === color);
-    if (!imagePreview) return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    // Se tem arquivo local (não enviado), apenas remover preview
-    if (imagePreview.file) {
-      setImagePreviews((prev) =>
-        prev.map((img) =>
-          img.color === color
-            ? { ...img, file: undefined, preview: undefined }
-            : img
-        )
-      );
+    // Validações
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione apenas arquivos de imagem",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Se tem URL (já enviada), remover do servidor
-    if (imagePreview.imageUrl) {
-      const success = await removeVariationImage(
-        variationId,
-        imagePreview.imageUrl
-      );
-      if (success) {
-        setImagePreviews((prev) =>
-          prev.map((img) =>
-            img.color === color ? { ...img, imageUrl: undefined } : img
-          )
-        );
-        onImagesUpdated?.();
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A imagem deve ter no máximo 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log(`📷 VARIATION IMAGE - Imagem selecionada para ${colorName}:`, file.name);
+    onImageSelected(colorName, file);
+
+    // Limpar input para permitir selecionar o mesmo arquivo novamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
-  if (colorVariations.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Imagens das Variações
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Nenhuma variação de cor encontrada. Adicione variações de cor para
-            fazer upload de imagens específicas.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleRemoveImage = () => {
+    console.log(`🗑️ VARIATION IMAGE - Removendo imagem para ${colorName}`);
+    onImageRemoved(colorName);
+    setPreviewUrl(null);
+  };
+
+  const handleUploadClick = () => {
+    if (!disabled && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Camera className="h-5 w-5" />
-          Imagens das Variações
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Faça upload de imagens específicas para cada cor do produto
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {imagePreviews.map((imagePreview) => (
-            <div key={imagePreview.color} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-xs">
-                  {imagePreview.color}
-                </Badge>
-                {(imagePreview.file || imagePreview.imageUrl) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      handleRemoveImage(
-                        imagePreview.color,
-                        imagePreview.variationId
-                      )
-                    }
-                    disabled={imagePreview.isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="relative">
-                {/* Preview da imagem */}
-                {imagePreview.preview || imagePreview.imageUrl ? (
-                  <div className="relative aspect-square rounded-lg overflow-hidden border">
-                    <img
-                      src={imagePreview.preview || imagePreview.imageUrl}
-                      alt={`Cor ${imagePreview.color}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {imagePreview.isUploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="text-white text-sm">Enviando...</div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Área de upload */
-                  <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors">
-                    <div className="text-center">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">
-                        Clique para adicionar
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Input de arquivo */}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleImageSelect(
-                      e,
-                      imagePreview.color,
-                      imagePreview.variationId
-                    )
-                  }
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={imagePreview.isUploading}
-                />
-              </div>
-
-              {/* Botão de upload para arquivo selecionado */}
-              {imagePreview.file && productId && (
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    handleUploadImage(
-                      imagePreview.color,
-                      imagePreview.variationId
-                    )
-                  }
-                  disabled={imagePreview.isUploading || isUploading}
-                  className="w-full"
-                >
-                  {imagePreview.isUploading ? "Enviando..." : "Enviar Imagem"}
-                </Button>
-              )}
-
-              {/* Indicador de imagem salva */}
-              {imagePreview.imageUrl && !imagePreview.file && (
-                <div className="text-center">
-                  <Badge variant="secondary" className="text-xs">
-                    ✓ Salva
-                  </Badge>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {!productId && (
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800">
-              💡 Salve o produto primeiro para fazer upload de imagens das
-              variações
-            </p>
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Camera className="w-4 h-4" />
+            Imagem para {colorName}
           </div>
+          {previewUrl && (
+            <Badge variant="secondary" className="text-xs">
+              Imagem definida
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {previewUrl ? (
+          <div className="relative">
+            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+              <img
+                src={previewUrl}
+                alt={`Imagem da variação ${colorName}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error(`❌ Erro ao carregar preview para ${colorName}`);
+                  setPreviewUrl(null);
+                }}
+              />
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="absolute top-2 right-2 h-8 w-8 p-0"
+              onClick={handleRemoveImage}
+              disabled={disabled}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div
+            className={`aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+              disabled
+                ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+                : "border-gray-300 hover:border-primary hover:bg-gray-50"
+            }`}
+            onClick={handleUploadClick}
+          >
+            <Upload className={`w-8 h-8 mb-2 ${disabled ? "text-gray-400" : "text-gray-500"}`} />
+            <p className={`text-sm text-center ${disabled ? "text-gray-400" : "text-gray-600"}`}>
+              {disabled ? "Salve o produto primeiro" : "Clique para selecionar"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG • Máx 5MB</p>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={disabled}
+        />
+
+        {!previewUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleUploadClick}
+            disabled={disabled}
+          >
+            <ImageIcon className="w-4 h-4 mr-2" />
+            {disabled ? "Salve primeiro para adicionar" : "Selecionar Imagem"}
+          </Button>
         )}
       </CardContent>
     </Card>
