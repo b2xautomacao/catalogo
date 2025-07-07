@@ -3,14 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useDraftImages } from "@/hooks/useDraftImages";
 import { useAuth } from "@/hooks/useAuth";
-
-export interface PriceTier {
-  id: string;
-  name: string;
-  minQuantity: number;
-  price: number;
-  enabled: boolean;
-}
+import { ProductVariation, ProductPriceTier } from "@/types/product";
 
 export interface ProductFormData {
   name: string;
@@ -27,8 +20,8 @@ export interface ProductFormData {
   is_featured: boolean;
   allow_negative_stock: boolean;
   stock_alert_threshold: number;
-  variations: any[];
-  price_tiers: PriceTier[];
+  variations: ProductVariation[];
+  price_tiers: ProductPriceTier[];
   store_id: string;
 }
 
@@ -51,9 +44,14 @@ const initialFormData: ProductFormData = {
   price_tiers: [
     {
       id: "retail",
+      tier_name: "Varejo",
+      tier_type: "retail",
+      min_quantity: 1,
+      price: 0,
+      tier_order: 1,
+      is_active: true,
       name: "Varejo",
       minQuantity: 1,
-      price: 0,
       enabled: true,
     },
   ],
@@ -68,7 +66,6 @@ export const useImprovedProductFormWizard = () => {
   const { draftImages, uploadDraftImages, clearDraftImages } = useDraftImages();
   const { profile } = useAuth();
 
-  // Corrigindo os títulos dos steps
   const steps = useMemo(
     () => [
       {
@@ -331,7 +328,7 @@ export const useImprovedProductFormWizard = () => {
           : "Produto criado com sucesso.",
       });
 
-      return productId;
+      return editingProductId || 'new-product-id';
     } catch (error: any) {
       console.error("💥 WIZARD SAVE - Erro durante salvamento:", error);
       toast({

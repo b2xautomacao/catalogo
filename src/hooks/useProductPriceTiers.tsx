@@ -95,11 +95,10 @@ export const useProductPriceTiers = (productId?: string) => {
 
       if (error) throw error;
 
-      setTiers(prev => 
-        prev.map(tier => tier.id === tierId ? { ...tier, ...data } : tier)
-          .sort((a, b) => a.tier_order - b.tier_order)
-      );
-      
+      setTiers(prev => prev.map(tier => 
+        tier.id === tierId ? { ...tier, ...data } : tier
+      ).sort((a, b) => a.tier_order - b.tier_order));
+
       toast({
         title: "Sucesso",
         description: "Nível de preço atualizado com sucesso",
@@ -127,7 +126,7 @@ export const useProductPriceTiers = (productId?: string) => {
       if (error) throw error;
 
       setTiers(prev => prev.filter(tier => tier.id !== tierId));
-      
+
       toast({
         title: "Sucesso",
         description: "Nível de preço removido com sucesso",
@@ -143,62 +142,9 @@ export const useProductPriceTiers = (productId?: string) => {
     }
   }, [toast]);
 
-  const createDefaultTiers = useCallback(async () => {
-    if (!productId) return;
-
-    try {
-      const defaultTiers = [
-        {
-          product_id: productId,
-          tier_name: 'Varejo',
-          tier_type: 'retail',
-          min_quantity: 1,
-          price: 0,
-          tier_order: 1,
-          is_active: true
-        },
-        {
-          product_id: productId,
-          tier_name: 'Atacado',
-          tier_type: 'wholesale',
-          min_quantity: 10,
-          price: 0,
-          tier_order: 2,
-          is_active: true
-        }
-      ];
-
-      const { data, error } = await supabase
-        .from('product_price_tiers')
-        .insert(defaultTiers)
-        .select();
-
-      if (error) throw error;
-
-      setTiers(data || []);
-      
-      toast({
-        title: "Sucesso",
-        description: "Níveis de preço padrão criados",
-      });
-
-      return data;
-    } catch (err: any) {
-      console.error('Error creating default tiers:', err);
-      toast({
-        title: "Erro",
-        description: "Falha ao criar níveis de preço padrão",
-        variant: "destructive",
-      });
-      throw err;
-    }
-  }, [productId, toast]);
-
   useEffect(() => {
-    if (productId) {
-      fetchTiers();
-    }
-  }, [fetchTiers, productId]);
+    fetchTiers();
+  }, [fetchTiers]);
 
   return {
     tiers,
@@ -208,6 +154,5 @@ export const useProductPriceTiers = (productId?: string) => {
     createTier,
     updateTier,
     deleteTier,
-    createDefaultTiers
   };
 };

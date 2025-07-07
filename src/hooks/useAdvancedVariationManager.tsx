@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ProductVariation } from "@/types/variation";
+import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 
 export interface VariationCombination {
@@ -25,7 +25,6 @@ export const useAdvancedVariationManager = (
     [onVariationsChange]
   );
 
-  // Verificar se uma combinação específica existe
   const combinationExists = useCallback(
     (combination: VariationCombination): boolean => {
       return variations.some(
@@ -38,7 +37,6 @@ export const useAdvancedVariationManager = (
     [variations]
   );
 
-  // Buscar variação por combinação
   const getVariationByCombination = useCallback(
     (combination: VariationCombination): ProductVariation | undefined => {
       return variations.find(
@@ -51,7 +49,6 @@ export const useAdvancedVariationManager = (
     [variations]
   );
 
-  // Criar uma nova variação
   const createVariation = useCallback(
     (
       combination: VariationCombination,
@@ -66,22 +63,23 @@ export const useAdvancedVariationManager = (
         return false;
       }
 
-      // Gerar ID único para evitar duplicatas
       const uniqueId = `variation-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}`;
 
       const newVariation: ProductVariation = {
         id: uniqueId,
-        variation_type: "master",
+        product_id: '',
         color: combination.color,
         size: combination.size,
+        material: combination.material,
         stock: 0,
         price_adjustment: 0,
         is_active: true,
         sku: "",
-        image_url: null,
-        image_file: null,
+        image_url: "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         ...initialData,
       };
 
@@ -89,7 +87,7 @@ export const useAdvancedVariationManager = (
 
       toast({
         title: "Variação criada",
-        description: `Variação ${[combination.color, combination.size]
+        description: `Variação ${[combination.color, combination.size, combination.material]
           .filter(Boolean)
           .join(" - ")} criada com sucesso.`,
       });
@@ -99,7 +97,6 @@ export const useAdvancedVariationManager = (
     [variations, combinationExists, updateVariationsState, toast]
   );
 
-  // Remover uma variação
   const removeVariation = useCallback(
     (combination: VariationCombination) => {
       const existingIndex = variations.findIndex(
@@ -125,7 +122,7 @@ export const useAdvancedVariationManager = (
 
       toast({
         title: "Variação removida",
-        description: `Variação ${[combination.color, combination.size]
+        description: `Variação ${[combination.color, combination.size, combination.material]
           .filter(Boolean)
           .join(" - ")} removida com sucesso.`,
       });
@@ -320,7 +317,6 @@ export const useAdvancedVariationManager = (
     getVariationByCombination,
     createVariation,
     removeVariation,
-    toggleVariation,
     updateVariation,
     createAllCombinations,
     clearAllVariations,

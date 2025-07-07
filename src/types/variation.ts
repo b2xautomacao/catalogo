@@ -1,4 +1,7 @@
 
+// Re-exportar interface unificada do product.ts
+export type { ProductVariation } from './product';
+
 export interface VariationGroup {
   id?: string;
   product_id: string;
@@ -14,7 +17,7 @@ export interface HierarchicalVariation {
   variation_group_id?: string;
   parent_variation_id?: string;
   variation_type: 'main' | 'sub' | 'simple';
-  variation_value: string; // 'Azul', '35', etc.
+  variation_value: string;
   color?: string | null;
   size?: string | null;
   sku?: string | null;
@@ -26,23 +29,7 @@ export interface HierarchicalVariation {
   display_order: number;
   created_at?: string;
   updated_at?: string;
-  // Para subvariações, referência à variação pai
   children?: HierarchicalVariation[];
-}
-
-export interface ProductVariation {
-  id?: string;
-  product_id?: string;
-  color?: string | null;
-  size?: string | null;
-  sku?: string | null;
-  stock: number;
-  price_adjustment: number;
-  is_active: boolean;
-  image_url?: string | null;
-  image_file?: File;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface VariationFormData {
@@ -56,7 +43,6 @@ export interface VariationFormData {
   image_file?: File;
 }
 
-// Interface para compatibilidade com formulários existentes
 export interface LegacyProductVariation {
   color?: string;
   size?: string;
@@ -65,7 +51,6 @@ export interface LegacyProductVariation {
   price_adjustment: number;
 }
 
-// Tipos para o sistema hierárquico
 export type VariationAttribute = 'color' | 'size' | 'material' | 'style' | 'weight';
 
 export interface VariationTemplate {
