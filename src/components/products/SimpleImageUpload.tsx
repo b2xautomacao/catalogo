@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Upload,
   X,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSimpleDraftImages } from "@/hooks/useSimpleDraftImages";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SimpleImageUploadProps {
   productId?: string;
@@ -35,6 +36,7 @@ const SimpleImageUpload = ({
     uploadNewImages,
   } = useSimpleDraftImages();
   const { toast } = useToast();
+  const [mainImageId, setMainImageId] = useState(images[0]?.id || null);
 
   useEffect(() => {
     if (productId) {
@@ -55,6 +57,22 @@ const SimpleImageUpload = ({
       onUploadReady(uploadNewImages);
     }
   }, [onUploadReady, uploadNewImages]);
+
+  // Atualizar mainImageId quando imagens mudarem
+  useEffect(() => {
+    if (!images.find((img) => img.id === mainImageId)) {
+      setMainImageId(images[0]?.id || null);
+    }
+  }, [images]);
+
+  // Notificar imagem principal para o componente pai
+  useEffect(() => {
+    if (onImagesChange) {
+      onImagesChange(
+        images.map((img) => ({ ...img, isMain: img.id === mainImageId }))
+      );
+    }
+  }, [images, mainImageId, onImagesChange]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -167,6 +185,17 @@ const SimpleImageUpload = ({
     // prossegue com upload normalmente
   };
 
+  const setMainImage = async (image) => {
+    setMainImageId(image.id);
+    // Atualiza no banco imediatamente
+    if (productId && (image.url || image.preview)) {
+      await supabase
+        .from("products")
+        .update({ image_url: image.url || image.preview })
+        .eq("id", productId);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -274,14 +303,24 @@ const SimpleImageUpload = ({
                     )}
                   </div>
 
-                  {/* Principal Badge */}
-                  {index === 0 && (
-                    <div className="absolute top-2 right-8">
+                  {/* Principal Badge e Botão de Seleção */}
+                  <div className="absolute top-2 right-8 flex flex-col items-end gap-1">
+                    {mainImageId === image.id ? (
                       <div className="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium">
                         Principal
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs px-2 py-1"
+                        onClick={() => setMainImage(image)}
+                        type="button"
+                      >
+                        Definir como principal
+                      </Button>
+                    )}
+                  </div>
 
                   {/* Remove Button */}
                   <Button

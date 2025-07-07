@@ -336,17 +336,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(
                   </span>
                 </div>
 
-                {/* Wholesale Price */}
-                {product.wholesale_price && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">
-                      Atacado (min {product.min_wholesale_qty || 1}):
-                    </span>
-                    <span className="font-bold text-blue-600">
-                      R$ {product.wholesale_price.toFixed(2)}
-                    </span>
-                  </div>
-                )}
+                {/* Remover exibição direta de wholesale_price/min_wholesale_qty */}
+                {/* Toda exibição de tiers será feita pelo ProductPriceTiersDisplay */}
               </div>
 
               {/* Indicador de economia potencial */}
@@ -367,7 +358,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
                 </div>
               )}
 
-              {/* Price Tiers Display */}
+              {/* Price Tiers Display - agora centraliza toda a exibição de atacado/tier */}
               <ProductPriceTiersDisplay
                 productId={product.id}
                 storeId={product.store_id}

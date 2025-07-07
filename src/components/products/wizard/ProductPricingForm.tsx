@@ -218,86 +218,82 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     }
   }, [formData.retail_price, formData.wholesale_price]);
 
+  // Adicione este useEffect para garantir que sempre haja tiers para editar
+  useEffect(() => {
+    if (
+      (!formData.price_tiers || formData.price_tiers.length === 0) &&
+      storePriceModel
+    ) {
+      const tiers: PriceTier[] = [
+        {
+          id: "retail",
+          name: "Varejo",
+          minQuantity: 1,
+          price: formData.retail_price || 0,
+          enabled: true,
+        },
+      ];
+      if (storePriceModel.price_model === "simple_wholesale") {
+        tiers.push({
+          id: "wholesale",
+          name: storePriceModel.simple_wholesale_name || "Atacado",
+          minQuantity: storePriceModel.simple_wholesale_min_qty || 5,
+          price: 0,
+          enabled: false,
+        });
+      } else if (storePriceModel.price_model === "gradual_wholesale") {
+        if (storePriceModel.tier_2_enabled) {
+          tiers.push({
+            id: "tier2",
+            name: storePriceModel.tier_2_name || "Atacarejo",
+            minQuantity: 5,
+            price: 0,
+            enabled: false,
+          });
+        }
+        if (storePriceModel.tier_3_enabled) {
+          tiers.push({
+            id: "tier3",
+            name: storePriceModel.tier_3_name || "Atacado Pequeno",
+            minQuantity: 10,
+            price: 0,
+            enabled: false,
+          });
+        }
+        if (storePriceModel.tier_4_enabled) {
+          tiers.push({
+            id: "tier4",
+            name: storePriceModel.tier_4_name || "Atacado Grande",
+            minQuantity: 50,
+            price: 0,
+            enabled: false,
+          });
+        }
+      }
+      setPriceTiers(tiers);
+      updateFormData({ price_tiers: tiers });
+    }
+  }, [formData.price_tiers, storePriceModel]);
+
+  const safeFormData = {
+    ...formData,
+    wholesale_price: formData.wholesale_price ?? 0,
+    min_wholesale_qty: formData.min_wholesale_qty ?? 1,
+  };
+
   const handleTierChange = (
     tierId: string,
     field: keyof PriceTier,
     value: any
   ) => {
-    console.log("🔧 PRODUCT PRICING FORM - handleTierChange chamado:", {
-      tierId,
-      field,
-      value,
-    });
-
-    // Atualizar priceTiers local
     const updatedTiers = priceTiers.map((tier) =>
       tier.id === tierId ? { ...tier, [field]: value } : tier
     );
-
-    console.log(
-      "🔧 PRODUCT PRICING FORM - priceTiers atualizados:",
-      updatedTiers
-    );
     setPriceTiers(updatedTiers);
-
-    // Atualizar formData baseado no tipo de tier
-    if (field === "price") {
-      if (tierId === "retail") {
-        console.log(
-          "🔧 PRODUCT PRICING FORM - Atualizando retail_price:",
-          value
-        );
-        updateFormData({ retail_price: value });
-      } else if (tierId === "wholesale") {
-        console.log(
-          "🔧 PRODUCT PRICING FORM - Atualizando wholesale_price:",
-          value
-        );
-        updateFormData({ wholesale_price: value });
-      }
-    } else if (field === "minQuantity") {
-      if (tierId === "wholesale") {
-        console.log(
-          "🔧 PRODUCT PRICING FORM - Atualizando min_wholesale_qty:",
-          value
-        );
-        updateFormData({ min_wholesale_qty: value });
-      }
-    }
-
-    // Atualizar price_tiers no formData com os dados atualizados
-    const tiersForFormData = updatedTiers.map((tier) => ({
-      id: tier.id,
-      name: tier.name,
-      minQuantity: tier.minQuantity,
-      price: tier.price,
-      enabled: tier.enabled,
-    }));
-
-    console.log(
-      "🔧 PRODUCT PRICING FORM - Atualizando price_tiers no formData:",
-      tiersForFormData
-    );
-
-    // Forçar atualização completa do formData
-    updateFormData({
-      price_tiers: tiersForFormData,
-    });
-
-    // Garantir que os preços básicos também sejam atualizados
-    const retailTier = updatedTiers.find((tier) => tier.id === "retail");
-    const wholesaleTier = updatedTiers.find((tier) => tier.id === "wholesale");
-
-    if (retailTier && field === "price") {
-      updateFormData({ retail_price: retailTier.price });
-    }
-
-    if (wholesaleTier && field === "price") {
-      updateFormData({ wholesale_price: wholesaleTier.price });
-    }
-
-    if (wholesaleTier && field === "minQuantity") {
-      updateFormData({ min_wholesale_qty: wholesaleTier.minQuantity });
+    updateFormData({ price_tiers: updatedTiers });
+    // Sincronizar retail_price apenas para o tier de varejo
+    if (tierId === "retail" && field === "price") {
+      updateFormData({ retail_price: value });
     }
   };
 
@@ -370,7 +366,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
             <div>
               <Label htmlFor="retail_price">Preço Unitário *</Label>
               <CurrencyInput
-                value={formData.retail_price}
+                value={safeFormData.retail_price}
                 onChange={(value) => updateFormData({ retail_price: value })}
                 placeholder="R$ 0,00"
               />
@@ -381,7 +377,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                 id="stock"
                 type="number"
                 min="0"
-                value={formData.stock || undefined}
+                value={safeFormData.stock || undefined}
                 onChange={(e) =>
                   updateFormData({ stock: parseInt(e.target.value) || 0 })
                 }
@@ -392,8 +388,8 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Níveis de Preço (Apenas para catálogo híbrido) */}
-      {catalogSettings?.catalog_mode === "hybrid" && priceTiers.length > 1 && (
+      {/* Níveis de Preço (Sempre visível, independente do modo do catálogo) */}
+      {priceTiers.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -479,7 +475,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
               </Label>
               <Switch
                 id="allow_negative_stock"
-                checked={formData.allow_negative_stock || false}
+                checked={safeFormData.allow_negative_stock || false}
                 onCheckedChange={(checked) =>
                   updateFormData({ allow_negative_stock: checked })
                 }
@@ -494,7 +490,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                 id="stock_alert_threshold"
                 type="number"
                 min="0"
-                value={formData.stock_alert_threshold || undefined}
+                value={safeFormData.stock_alert_threshold || undefined}
                 onChange={(e) =>
                   updateFormData({
                     stock_alert_threshold: parseInt(e.target.value) || 5,
