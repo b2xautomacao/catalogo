@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Settings } from 'lucide-react';
 
 interface ProductAdvancedFormProps {
@@ -26,33 +26,27 @@ const ProductAdvancedForm: React.FC<ProductAdvancedFormProps> = ({
           Configurações Avançadas
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="is_active">Produto Ativo</Label>
-            <p className="text-sm text-muted-foreground">
-              Produto visível no catálogo
-            </p>
-          </div>
-          <Switch
-            id="is_active"
-            checked={isActive !== false}
-            onCheckedChange={onIsActiveChange}
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="is_featured">Produto Destacado</Label>
-            <p className="text-sm text-muted-foreground">
-              Produto aparece em destaque no catálogo
-            </p>
-          </div>
-          <Switch
+      <CardContent className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox
             id="is_featured"
             checked={isFeatured || false}
-            onCheckedChange={onIsFeaturedChange}
+            onCheckedChange={(checked) => onIsFeaturedChange(!!checked)}
           />
+          <Label htmlFor="is_featured">
+            Produto em destaque
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_active"
+            checked={isActive !== false}
+            onCheckedChange={(checked) => onIsActiveChange(!!checked)}
+          />
+          <Label htmlFor="is_active">
+            Produto ativo
+          </Label>
         </div>
       </CardContent>
     </Card>

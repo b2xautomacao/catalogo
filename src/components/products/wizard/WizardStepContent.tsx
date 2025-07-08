@@ -1,12 +1,12 @@
 
 import React from "react";
 import ProductBasicInfoForm from "./ProductBasicInfoForm";
-import ProductPricingForm from "./ProductPricingForm";
+import IntelligentProductPricingForm from "./IntelligentProductPricingForm";
 import ProductImagesForm from "./ProductImagesForm";
-import ProductVariationsForm from "./ProductVariationsForm";
-import ProductSEOForm from "./ProductSEOForm";
+import HierarchicalVariationsManager from "../HierarchicalVariationsManager";
+import IntelligentSEOForm from "./IntelligentSEOForm";
 import ProductAdvancedForm from "./ProductAdvancedForm";
-import { ProductFormData } from "@/hooks/useProductFormWizard";
+import { ProductFormData } from "@/hooks/useImprovedProductFormWizard";
 
 interface WizardStepContentProps {
   currentStep: number;
@@ -39,13 +39,11 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
 
       case 1:
         return (
-          <ProductPricingForm
+          <IntelligentProductPricingForm
             retailPrice={formData.retail_price}
             wholesalePrice={formData.wholesale_price}
             minWholesaleQty={formData.min_wholesale_qty}
             stock={formData.stock}
-            stockAlertThreshold={formData.stock_alert_threshold}
-            allowNegativeStock={formData.allow_negative_stock}
             priceTiers={formData.price_tiers?.map(tier => ({
               id: tier.id || '',
               name: tier.tier_name,
@@ -57,8 +55,6 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             onWholesalePriceChange={(wholesale_price) => updateFormData({ wholesale_price })}
             onMinWholesaleQtyChange={(min_wholesale_qty) => updateFormData({ min_wholesale_qty })}
             onStockChange={(stock) => updateFormData({ stock })}
-            onStockAlertThresholdChange={(stock_alert_threshold) => updateFormData({ stock_alert_threshold })}
-            onAllowNegativeStockChange={(allow_negative_stock) => updateFormData({ allow_negative_stock })}
             onPriceTiersChange={(tiers) => updateFormData({ 
               price_tiers: tiers.map(tier => ({
                 id: tier.id,
@@ -83,16 +79,18 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
 
       case 3:
         return (
-          <ProductVariationsForm
-            variations={formData.variations || []}
-            onVariationsChange={(variations) => updateFormData({ variations })}
+          <HierarchicalVariationsManager
             productId={productId}
+            variations={formData.variations || []}
+            onChange={(variations) => updateFormData({ variations })}
           />
         );
 
       case 4:
         return (
-          <ProductSEOForm
+          <IntelligentSEOForm
+            productName={formData.name}
+            category={formData.category}
             metaTitle={formData.meta_title}
             metaDescription={formData.meta_description}
             keywords={formData.keywords}
