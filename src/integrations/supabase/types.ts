@@ -839,31 +839,40 @@ export type Database = {
       product_images: {
         Row: {
           alt_text: string | null
+          color_association: string | null
           created_at: string
+          display_order: number | null
           id: string
           image_order: number
           image_url: string
           is_primary: boolean
+          is_variation_image: boolean | null
           product_id: string
           variation_id: string | null
         }
         Insert: {
           alt_text?: string | null
+          color_association?: string | null
           created_at?: string
+          display_order?: number | null
           id?: string
           image_order?: number
           image_url: string
           is_primary?: boolean
+          is_variation_image?: boolean | null
           product_id: string
           variation_id?: string | null
         }
         Update: {
           alt_text?: string | null
+          color_association?: string | null
           created_at?: string
+          display_order?: number | null
           id?: string
           image_order?: number
           image_url?: string
           is_primary?: boolean
+          is_variation_image?: boolean | null
           product_id?: string
           variation_id?: string | null
         }
@@ -936,6 +945,7 @@ export type Database = {
           color: string | null
           created_at: string
           display_order: number | null
+          hex_color: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -944,9 +954,11 @@ export type Database = {
           product_id: string
           size: string | null
           sku: string | null
+          sort_order: number | null
           stock: number
           updated_at: string
           variation_group_id: string | null
+          variation_name: string | null
           variation_type: string | null
           variation_value: string | null
         }
@@ -954,6 +966,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           display_order?: number | null
+          hex_color?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -962,9 +975,11 @@ export type Database = {
           product_id: string
           size?: string | null
           sku?: string | null
+          sort_order?: number | null
           stock?: number
           updated_at?: string
           variation_group_id?: string | null
+          variation_name?: string | null
           variation_type?: string | null
           variation_value?: string | null
         }
@@ -972,6 +987,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           display_order?: number | null
+          hex_color?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -980,9 +996,11 @@ export type Database = {
           product_id?: string
           size?: string | null
           sku?: string | null
+          sort_order?: number | null
           stock?: number
           updated_at?: string
           variation_group_id?: string | null
+          variation_name?: string | null
           variation_type?: string | null
           variation_value?: string | null
         }
@@ -1005,7 +1023,9 @@ export type Database = {
       }
       products: {
         Row: {
+          ai_generated_description: boolean | null
           allow_negative_stock: boolean
+          auto_seo_slug: boolean | null
           barcode: string | null
           bulk_price_large: number | null
           bulk_price_small: number | null
@@ -1013,6 +1033,7 @@ export type Database = {
           created_at: string
           depth: number | null
           description: string | null
+          generated_keywords: string[] | null
           height: number | null
           id: string
           image_url: string | null
@@ -1037,7 +1058,9 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          ai_generated_description?: boolean | null
           allow_negative_stock?: boolean
+          auto_seo_slug?: boolean | null
           barcode?: string | null
           bulk_price_large?: number | null
           bulk_price_small?: number | null
@@ -1045,6 +1068,7 @@ export type Database = {
           created_at?: string
           depth?: number | null
           description?: string | null
+          generated_keywords?: string[] | null
           height?: number | null
           id?: string
           image_url?: string | null
@@ -1069,7 +1093,9 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          ai_generated_description?: boolean | null
           allow_negative_stock?: boolean
+          auto_seo_slug?: boolean | null
           barcode?: string | null
           bulk_price_large?: number | null
           bulk_price_small?: number | null
@@ -1077,6 +1103,7 @@ export type Database = {
           created_at?: string
           depth?: number | null
           description?: string | null
+          generated_keywords?: string[] | null
           height?: number | null
           id?: string
           image_url?: string | null
@@ -1208,6 +1235,44 @@ export type Database = {
           },
           {
             foreignKeyName: "stock_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_prompts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          prompt_template: string
+          prompt_type: string
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          prompt_template: string
+          prompt_type: string
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          prompt_template?: string
+          prompt_type?: string
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_prompts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"

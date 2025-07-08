@@ -12,17 +12,23 @@ const SimpleProductWizard: React.FC<SimpleProductWizardProps> = ({
   onCancel,
 }) => {
   const handleSuccess = () => {
-    // O ImprovedProductFormWizard não passa o produto no onSuccess
-    // então chamamos onComplete sem parâmetros ou com um objeto vazio
+    console.log('✅ SIMPLE PRODUCT WIZARD - Produto salvo com sucesso');
     if (onComplete) {
       onComplete({});
+    }
+  };
+
+  const handleClose = () => {
+    console.log('❌ SIMPLE PRODUCT WIZARD - Cancelando wizard');
+    if (onCancel) {
+      onCancel();
     }
   };
 
   return (
     <ImprovedProductFormWizard
       isOpen={true}
-      onClose={onCancel || (() => {})}
+      onClose={handleClose}
       onSuccess={handleSuccess}
     />
   );
