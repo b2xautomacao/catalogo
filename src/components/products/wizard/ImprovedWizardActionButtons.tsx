@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Save, Loader2 } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
 
 interface ImprovedWizardActionButtonsProps {
   currentStep: number;
@@ -15,7 +14,9 @@ interface ImprovedWizardActionButtonsProps {
   isLastStep: boolean;
 }
 
-const ImprovedWizardActionButtons: React.FC<ImprovedWizardActionButtonsProps> = ({
+const ImprovedWizardActionButtons: React.FC<
+  ImprovedWizardActionButtonsProps
+> = ({
   currentStep,
   totalSteps,
   canProceed,
@@ -24,7 +25,7 @@ const ImprovedWizardActionButtons: React.FC<ImprovedWizardActionButtonsProps> = 
   onNext,
   onSave,
   onCancel,
-  isLastStep
+  isLastStep,
 }) => {
   return (
     <div className="flex items-center justify-between p-6 border-t bg-gray-50/50">
@@ -55,7 +56,10 @@ const ImprovedWizardActionButtons: React.FC<ImprovedWizardActionButtonsProps> = 
         {/* Next/Save Button */}
         {isLastStep ? (
           <Button
-            onClick={onSave}
+            onClick={() => {
+              console.log("🔘 BOTÃO SALVAR CLICADO - Step:", currentStep);
+              onSave();
+            }}
             disabled={!canProceed || isSaving}
             className="min-w-[130px] bg-primary hover:bg-primary/90"
           >

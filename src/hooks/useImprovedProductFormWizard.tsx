@@ -1,8 +1,7 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useDraftImages } from "@/hooks/useDraftImages";
+import { useDraftImagesContext } from "@/contexts/DraftImagesContext";
 import { useAuth } from "@/hooks/useAuth";
 import { ProductVariation, ProductPriceTier } from "@/types/product";
 
@@ -53,7 +52,7 @@ export const useImprovedProductFormWizard = () => {
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const { uploadAllImages, clearDraftImages } = useDraftImages();
+  const { uploadAllImages, clearDraftImages } = useDraftImagesContext();
   const { profile } = useAuth();
 
   const steps = useMemo(
@@ -89,30 +88,30 @@ export const useImprovedProductFormWizard = () => {
       console.log("📊 WIZARD - Atualizando formData:", updates);
       setFormData((prev) => {
         const updated = { ...prev, ...updates };
-        
+
         // Garantir store_id sempre presente
         if (!updated.store_id && profile?.store_id) {
           updated.store_id = profile.store_id;
         }
-        
+
         // Debug específico para nome
         if (updates.name !== undefined) {
           console.log("🔍 NOME UPDATE:", {
             original: prev.name,
             novo: updates.name,
             trimmed: updates.name?.trim(),
-            isEmpty: !updates.name?.trim()
+            isEmpty: !updates.name?.trim(),
           });
         }
-        
+
         console.log("📊 WIZARD - FormData atualizado:", {
           name: `"${updated.name}"`,
           nameLength: updated.name?.length || 0,
-          hasTrimmedName: !!(updated.name?.trim()),
+          hasTrimmedName: !!updated.name?.trim(),
           retail_price: updated.retail_price,
-          store_id: updated.store_id
+          store_id: updated.store_id,
         });
-        
+
         return updated;
       });
     },
@@ -121,7 +120,7 @@ export const useImprovedProductFormWizard = () => {
 
   const canProceed = useMemo(() => {
     const trimmedName = (formData.name || "").trim();
-    
+
     console.log("🔍 CAN PROCEED CHECK:", {
       currentStep,
       name: `"${trimmedName}"`,
@@ -129,7 +128,7 @@ export const useImprovedProductFormWizard = () => {
       retail_price: formData.retail_price,
       stock: formData.stock,
       rawName: `"${formData.name}"`,
-      hasName: trimmedName.length > 0
+      hasName: trimmedName.length > 0,
     });
 
     switch (currentStep) {
@@ -159,7 +158,10 @@ export const useImprovedProductFormWizard = () => {
       setCurrentStep((prev) => prev + 1);
       console.log("✅ NEXT STEP - Sucesso para step:", currentStep + 1);
     } else {
-      console.log("❌ NEXT STEP - Bloqueado:", { canProceed, isLastStep: currentStep >= steps.length - 1 });
+      console.log("❌ NEXT STEP - Bloqueado:", {
+        canProceed,
+        isLastStep: currentStep >= steps.length - 1,
+      });
     }
   }, [canProceed, currentStep, steps.length]);
 
@@ -183,7 +185,7 @@ export const useImprovedProductFormWizard = () => {
   ): Promise<string | null> => {
     // Usar o nome atual do formData com trim
     const trimmedName = (formData.name || "").trim();
-    
+
     console.log("💾 SAVE PRODUCT - Validação inicial:", {
       name: `"${trimmedName}"`,
       nameLength: trimmedName.length,
@@ -191,7 +193,7 @@ export const useImprovedProductFormWizard = () => {
       retail_price: formData.retail_price,
       stock: formData.stock,
       editingProductId,
-      storeId: profile?.store_id
+      storeId: profile?.store_id,
     });
 
     // Validações críticas
@@ -276,12 +278,19 @@ export const useImprovedProductFormWizard = () => {
       if (productId) {
         console.log("📷 SAVE - Processando imagens...");
         const uploadResult = await uploadAllImages(productId);
-        console.log("📷 SAVE - Resultado upload:", uploadResult.length, "imagens");
+        console.log(
+          "📷 SAVE - Resultado upload:",
+          uploadResult.length,
+          "imagens"
+        );
       }
 
       // Salvar variações se houver
       if (formData.variations.length > 0 && productId) {
-        console.log("🎨 SAVE - Salvando variações:", formData.variations.length);
+        console.log(
+          "🎨 SAVE - Salvando variações:",
+          formData.variations.length
+        );
 
         // Remover variações existentes
         await supabase
@@ -307,10 +316,61 @@ export const useImprovedProductFormWizard = () => {
             .insert(variationsToSave);
 
           if (variationsError) {
-            console.error("❌ SAVE - Erro ao salvar variações:", variationsError);
+            console.error(
+              "❌ SAVE - Erro ao salvar variações:",
+              variationsError
+            );
             throw variationsError;
           }
           console.log("✅ SAVE - Variações salvas com sucesso");
+        }
+      }
+
+      // Salvar tiers de preço (atacado gradual)
+      if (
+        productId &&
+        formData.price_tiers &&
+        Array.isArray(formData.price_tiers)
+      ) {
+        console.log(
+          "💰 SAVE - Salvando tiers de preço:",
+          formData.price_tiers.length
+        );
+        // Remover tiers antigos
+        const { error: deleteError } = await supabase
+          .from("product_price_tiers")
+          .delete()
+          .eq("product_id", productId);
+        if (deleteError) {
+          console.error("❌ Erro ao remover tiers antigos:", deleteError);
+          throw deleteError;
+        }
+        // Pequeno delay para garantir deleção
+        await new Promise((r) => setTimeout(r, 200));
+        // Ordenar tiers por min_quantity e limitar a 4
+        const sortedTiers = [...formData.price_tiers]
+          .sort((a, b) => a.min_quantity - b.min_quantity)
+          .slice(0, 4);
+        // Atribuir tier_order único (1 a 4)
+        const tiersToSave = sortedTiers.map((tier, idx) => ({
+          product_id: productId,
+          tier_name: tier.tier_name || `Nível ${idx + 1}`,
+          tier_type: tier.tier_type || "gradual",
+          min_quantity: tier.min_quantity,
+          price: tier.price,
+          tier_order: idx + 1,
+          is_active: tier.is_active !== false,
+        }));
+        console.log("📝 Tiers a serem salvos:", tiersToSave);
+        if (tiersToSave.length > 0) {
+          const { error: tiersError } = await supabase
+            .from("product_price_tiers")
+            .insert(tiersToSave);
+          if (tiersError) {
+            console.error("❌ SAVE - Erro ao salvar tiers:", tiersError);
+            throw tiersError;
+          }
+          console.log("✅ SAVE - Tiers salvos com sucesso");
         }
       }
 
@@ -321,7 +381,7 @@ export const useImprovedProductFormWizard = () => {
           : "Produto criado com sucesso.",
       });
 
-      return productId || 'success';
+      return productId || "success";
     } catch (error: any) {
       console.error("💥 SAVE - Erro durante salvamento:", error);
       toast({

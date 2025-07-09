@@ -1,6 +1,5 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ProductImage {
   id: string;
@@ -28,13 +27,13 @@ export const useProductImages = (productId?: string) => {
     isFetchingRef.current = true;
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data, error: fetchError } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', id)
-        .order('image_order');
+        .from("product_images")
+        .select("*")
+        .eq("product_id", id)
+        .order("image_order", { ascending: true });
 
       if (fetchError) {
         throw fetchError;
@@ -43,8 +42,8 @@ export const useProductImages = (productId?: string) => {
       setImages(data || []);
       lastProductIdRef.current = id;
     } catch (err) {
-      console.error('Erro ao buscar imagens do produto:', err);
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      console.error("Erro ao buscar imagens do produto:", err);
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
       setImages([]);
     } finally {
       setLoading(false);
@@ -61,8 +60,8 @@ export const useProductImages = (productId?: string) => {
     }
   }, [productId, fetchImages]);
 
-  const primaryImage = images.find(img => img.is_primary);
-  const secondaryImages = images.filter(img => !img.is_primary);
+  const primaryImage = images.find((img) => img.is_primary);
+  const secondaryImages = images.filter((img) => !img.is_primary);
 
   const refetchImages = useCallback(() => {
     if (productId) {
@@ -77,6 +76,6 @@ export const useProductImages = (productId?: string) => {
     secondaryImages,
     loading,
     error,
-    refetchImages
+    refetchImages,
   };
 };

@@ -1,6 +1,8 @@
 import React from "react";
 import { Badge } from "../ui/badge";
 import { TrendingDown, ArrowUp, Info } from "lucide-react";
+import { usePriceCalculation } from "@/hooks/usePriceCalculation";
+import { useProductPriceTiers } from "@/hooks/useProductPriceTiers";
 
 interface CartItemPriceDisplayProps {
   item: any;
@@ -11,78 +13,28 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
   item,
   className = "",
 }) => {
-  // Função para calcular preço baseado na quantidade
-  const calculatePriceInfo = () => {
-    const product = item.product;
-    const quantity = item.quantity;
-    const originalPrice = item.originalPrice || product.retail_price;
-
-    console.log("💰 CartItemPriceDisplay - Calculando preços:", {
-      productName: product.name,
-      quantity,
-      originalPrice,
-      wholesalePrice: product.wholesale_price,
-      minWholesaleQty: product.min_wholesale_qty,
-    });
-
-    // Verificar se tem atacado simples configurado
-    if (product.wholesale_price && product.min_wholesale_qty) {
-      const hasWholesaleQty = quantity >= product.min_wholesale_qty;
-      const currentPrice = hasWholesaleQty
-        ? product.wholesale_price
-        : originalPrice;
-      const savingsAmount = hasWholesaleQty
-        ? originalPrice - product.wholesale_price
-        : 0;
-      const savingsPercentage = hasWholesaleQty
-        ? (savingsAmount / originalPrice) * 100
-        : 0;
-
-      let nextTierHint = null;
-      if (!hasWholesaleQty) {
-        const qtyNeeded = product.min_wholesale_qty - quantity;
-        const potentialSavings = originalPrice - product.wholesale_price;
-        nextTierHint = {
-          quantityNeeded: qtyNeeded,
-          potentialSavings,
-          nextTierName: "Atacado",
-        };
-      }
-
-      return {
-        currentTier: {
-          tier_name: hasWholesaleQty ? "Atacado" : "Varejo",
-          price: currentPrice,
-        },
-        price: currentPrice,
-        savings: { amount: savingsAmount, percentage: savingsPercentage },
-        nextTierHint,
-      };
-    }
-
-    // Caso não tenha atacado configurado
-    return {
-      currentTier: {
-        tier_name: "Varejo",
-        price: originalPrice,
-      },
-      price: item.price || originalPrice,
-      savings: { amount: 0, percentage: 0 },
-      nextTierHint: null,
-    };
-  };
-
-  const calculation = calculatePriceInfo();
-  const totalPrice = calculation.price * item.quantity;
-  const totalRetailPrice = item.originalPrice * item.quantity;
-  const totalSavings = totalRetailPrice - totalPrice;
-
-  console.log("📊 CartItemPriceDisplay - Resultado:", {
-    calculation,
-    totalPrice,
-    totalRetailPrice,
-    totalSavings,
+  const product = item.product;
+  const quantity = item.quantity;
+  const originalPrice = item.originalPrice || product.retail_price;
+  // Buscar tiers do produto
+  const { tiers: priceTiers } = useProductPriceTiers(product.id, {
+    wholesale_price: product.wholesale_price,
+    min_wholesale_qty: product.min_wholesale_qty,
+    retail_price: product.retail_price,
   });
+  // Usar hook padronizado
+  const calculation = usePriceCalculation(product.store_id, {
+    product_id: product.id,
+    retail_price: product.retail_price,
+    wholesale_price: product.wholesale_price,
+    min_wholesale_qty: product.min_wholesale_qty,
+    quantity,
+    price_tiers: priceTiers,
+  });
+
+  const totalPrice = calculation.price * quantity;
+  const totalRetailPrice = originalPrice * quantity;
+  const totalSavings = totalRetailPrice - totalPrice;
 
   return (
     <div className={`space-y-1 ${className}`}>
@@ -90,20 +42,20 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-1">
           <span className="text-gray-600">Preço:</span>
-          {calculation.savings.percentage > 0 && (
+          {calculation.percentage > 0 && (
             <Badge
               variant="secondary"
               className="text-xs bg-green-100 text-green-700"
             >
               <TrendingDown className="h-3 w-3 mr-1" />-
-              {calculation.savings.percentage.toFixed(0)}%
+              {calculation.percentage.toFixed(0)}%
             </Badge>
           )}
         </div>
         <div className="flex items-center gap-1">
-          {calculation.savings.percentage > 0 && (
+          {calculation.percentage > 0 && (
             <span className="text-xs text-gray-400 line-through">
-              R$ {item.originalPrice.toFixed(2).replace(".", ",")}
+              R$ {originalPrice.toFixed(2).replace(".", ",")}
             </span>
           )}
           <span className="font-semibold text-green-700">
@@ -114,9 +66,7 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
 
       {/* Total */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600">
-          Total ({item.quantity} un):
-        </span>
+        <span className="text-sm text-gray-600">Total ({quantity} un):</span>
         <div className="flex items-center gap-1">
           {totalSavings > 0 && (
             <span className="text-xs text-gray-400 line-through">
@@ -149,8 +99,10 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
               +{calculation.nextTierHint.quantityNeeded}
             </strong>{" "}
             unidades para ativar o{" "}
-            <strong>{calculation.nextTierHint.nextTierName}</strong> e
-            economizar{" "}
+            <strong>
+              {calculation.nextTierHint.nextTierName || "próximo nível"}
+            </strong>{" "}
+            e economizar{" "}
             <strong className="text-green-600">
               R${" "}
               {calculation.nextTierHint.potentialSavings

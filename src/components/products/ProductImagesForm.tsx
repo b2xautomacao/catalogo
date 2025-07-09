@@ -1,284 +1,235 @@
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { X, Upload, Eye, Droplet, Loader2 } from 'lucide-react';
-import { useImageWatermark } from '@/hooks/useImageWatermark';
-import WatermarkPreview from './WatermarkPreview';
-
-interface ProductImage {
-  file?: File;
-  url?: string;
-  alt?: string;
-  isPrimary?: boolean;
-}
+import React, { useState, useCallback, useEffect } from "react";
+import { useDropzone } from "react-dropzone";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { X, Upload, Loader2, GripVertical } from "lucide-react";
+import { useProductImages, ProductImage } from "@/hooks/useProductImages";
+import { useProductImageManager } from "@/hooks/useProductImageManager";
 
 interface ProductImagesFormProps {
-  images: ProductImage[];
-  onChange: (images: ProductImage[]) => void;
+  productId: string;
 }
 
-const ProductImagesForm: React.FC<ProductImagesFormProps> = ({
-  images,
-  onChange
+const DraggableImageCard = ({
+  image,
+  index,
+  moveImage,
+  onRemove,
+  onSetPrimary,
 }) => {
-  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
-  const [showWatermarkPreview, setShowWatermarkPreview] = useState(false);
-  const { applyWatermark, processing, watermarkEnabled } = useImageWatermark();
+  const ref = React.useRef<HTMLDivElement>(null);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const newImages: ProductImage[] = [];
-    
-    for (const file of acceptedFiles) {
-      let processedFile = file;
-      
-      // Aplicar marca d'água automaticamente se estiver habilitada
-      if (watermarkEnabled) {
-        try {
-          processedFile = await applyWatermark(file);
-        } catch (error) {
-          console.error('Erro ao aplicar marca d\'água:', error);
-          // Continuar com o arquivo original se falhar
-        }
+  const [, drop] = useDrop({
+    accept: "image",
+    hover(item: { index: number }) {
+      if (!ref.current) return;
+      if (item.index === index) return;
+      moveImage(item.index, index);
+      item.index = index;
+    },
+  });
+
+  const [{ isDragging }, drag, preview] = useDrag({
+    type: "image",
+    item: { index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  drag(drop(ref));
+
+  return (
+    <div
+      ref={preview}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+      className="relative group"
+    >
+      <div
+        ref={ref}
+        className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center"
+      >
+        <img
+          src={image.image_url}
+          alt={image.alt_text || `Imagem ${index + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <div className="absolute top-2 left-2 flex gap-1">
+        {image.is_primary && (
+          <Badge variant="default" className="text-xs">
+            Principal
+          </Badge>
+        )}
+      </div>
+
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          size="sm"
+          variant="destructive"
+          className="h-6 w-6 p-0"
+          onClick={() => onRemove(image.id, image.image_url)}
+          title="Remover"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {!image.is_primary && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="absolute bottom-2 left-2 right-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => onSetPrimary(image.id)}
+        >
+          Tornar Principal
+        </Button>
+      )}
+      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move">
+        <GripVertical ref={drag} className="h-5 w-5 text-white" />
+      </div>
+    </div>
+  );
+};
+
+const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ productId }) => {
+  const {
+    images: initialImages,
+    loading: loadingImages,
+    refetchImages,
+  } = useProductImages(productId);
+  const {
+    isUploading,
+    uploadProductImage,
+    deleteProductImage,
+    updateImageOrder,
+  } = useProductImageManager(productId);
+  const [images, setImages] = useState<ProductImage[]>([]);
+
+  useEffect(() => {
+    setImages(initialImages);
+  }, [initialImages]);
+
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      for (const file of acceptedFiles) {
+        await uploadProductImage(file, images.length);
       }
-      
-      newImages.push({
-        file: processedFile,
-        url: URL.createObjectURL(processedFile),
-        alt: file.name,
-        isPrimary: images.length === 0 && newImages.length === 0
-      });
-    }
-    
-    onChange([...images, ...newImages]);
-  }, [images, onChange, applyWatermark, watermarkEnabled]);
+      refetchImages();
+    },
+    [images, uploadProductImage, refetchImages]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
-    },
-    multiple: true
+    accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp"] },
+    multiple: true,
   });
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    
-    // Se removeu a imagem principal, tornar a primeira como principal
-    if (images[index]?.isPrimary && newImages.length > 0) {
-      newImages[0].isPrimary = true;
-    }
-    
-    onChange(newImages);
+  const handleRemoveImage = async (imageId: string, imageUrl: string) => {
+    await deleteProductImage(imageId, imageUrl);
+    refetchImages();
   };
 
-  const setPrimaryImage = (index: number) => {
-    const newImages = images.map((img, i) => ({
-      ...img,
-      isPrimary: i === index
+  const handleSetPrimary = async (newPrimaryId: string) => {
+    const updates = images.map((img) => ({
+      id: img.id,
+      image_order: img.id === newPrimaryId ? 1 : img.image_order, // Nova imagem principal fica na posição 1
+      is_primary: img.id === newPrimaryId,
     }));
-    onChange(newImages);
+    await updateImageOrder(updates);
+    refetchImages();
   };
 
-  const handleWatermarkApplied = (index: number, watermarkedFile: File) => {
-    const newImages = [...images];
-    newImages[index] = {
-      ...newImages[index],
-      file: watermarkedFile,
-      url: URL.createObjectURL(watermarkedFile)
-    };
-    onChange(newImages);
-    setPreviewImageIndex(null);
-    setShowWatermarkPreview(false);
-  };
+  const moveImage = useCallback(
+    async (dragIndex: number, hoverIndex: number) => {
+      const draggedImage = images[dragIndex];
+      const newImages = [...images];
+      newImages.splice(dragIndex, 1);
+      newImages.splice(hoverIndex, 0, draggedImage);
+
+      setImages(newImages);
+
+      const updates = newImages.map((img, index) => ({
+        id: img.id,
+        image_order: index + 1, // image_order deve começar em 1, não 0
+        is_primary: img.is_primary,
+      }));
+
+      await updateImageOrder(updates);
+      refetchImages();
+    },
+    [images, updateImageOrder, refetchImages]
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Imagens do Produto
-          {watermarkEnabled && (
-            <Badge variant="outline" className="text-xs">
-              <Droplet className="h-3 w-3 mr-1" />
-              Marca d'água ativa
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Upload Area */}
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-blue-400'
-          }`}
-        >
-          <input {...getInputProps()} />
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          {isDragActive ? (
-            <p className="text-blue-600">Solte as imagens aqui...</p>
-          ) : (
-            <div>
-              <p className="text-gray-600 mb-2">
-                Arraste e solte imagens aqui, ou clique para selecionar
-              </p>
-              <p className="text-sm text-gray-500">
-                Formatos suportados: JPG, PNG, WebP
-              </p>
-              {watermarkEnabled && (
-                <p className="text-xs text-blue-600 mt-2">
-                  ✨ Marca d'água será aplicada automaticamente
+    <DndProvider backend={HTML5Backend}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Imagens do Produto
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragActive
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-blue-400"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            {isDragActive ? (
+              <p className="text-blue-600">Solte as imagens aqui...</p>
+            ) : (
+              <div>
+                <p className="text-gray-600 mb-2">
+                  Arraste e solte imagens aqui, ou clique para selecionar
                 </p>
-              )}
+                <p className="text-sm text-gray-500">
+                  Formatos suportados: JPG, PNG, WebP
+                </p>
+              </div>
+            )}
+          </div>
+
+          {(isUploading || loadingImages) && (
+            <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg">
+              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+              <span className="text-blue-600 text-sm">
+                {loadingImages ? "Carregando imagens..." : "Enviando..."}
+              </span>
             </div>
           )}
-        </div>
 
-        {/* Images Grid */}
-        {images.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {images.map((image, index) => (
-              <div key={index} className="relative group">
-                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                  <img
-                    src={image.url}
-                    alt={image.alt || `Imagem ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                {/* Badges */}
-                <div className="absolute top-2 left-2 flex gap-1">
-                  {image.isPrimary && (
-                    <Badge variant="default" className="text-xs">
-                      Principal
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-6 w-6 p-0"
-                    onClick={() => {
-                      setPreviewImageIndex(index);
-                      setShowWatermarkPreview(true);
-                    }}
-                    title="Aplicar marca d'água"
-                  >
-                    <Droplet className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setPreviewImageIndex(index)}
-                    title="Visualizar"
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="h-6 w-6 p-0"
-                    onClick={() => removeImage(index)}
-                    title="Remover"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-
-                {/* Set as Primary */}
-                {!image.isPrimary && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="absolute bottom-2 left-2 right-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setPrimaryImage(index)}
-                  >
-                    Tornar Principal
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Processing Indicator */}
-        {processing && (
-          <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-            <span className="text-blue-600 text-sm">Aplicando marca d'água...</span>
-          </div>
-        )}
-
-        {/* Preview Modal */}
-        {previewImageIndex !== null && !showWatermarkPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-4 rounded-lg max-w-2xl max-h-[80vh]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Preview da Imagem</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPreviewImageIndex(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <img
-                src={images[previewImageIndex]?.url}
-                alt="Preview"
-                className="max-w-full max-h-[60vh] object-contain"
-              />
+          {images.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {images.map((image, index) => (
+                <DraggableImageCard
+                  key={image.id}
+                  index={index}
+                  image={image}
+                  moveImage={moveImage}
+                  onRemove={handleRemoveImage}
+                  onSetPrimary={handleSetPrimary}
+                />
+              ))}
             </div>
-          </div>
-        )}
-
-        {/* Watermark Preview Modal */}
-        {showWatermarkPreview && previewImageIndex !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Aplicar Marca d'Água</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowWatermarkPreview(false);
-                    setPreviewImageIndex(null);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <WatermarkPreview
-                imageFile={images[previewImageIndex]?.file || null}
-                onWatermarkApplied={(watermarkedFile) => 
-                  handleWatermarkApplied(previewImageIndex, watermarkedFile)
-                }
-              />
-            </div>
-          </div>
-        )}
-
-        <p className="text-sm text-gray-500">
-          A primeira imagem será usada como imagem principal do produto.
-          {watermarkEnabled && (
-            <span className="block mt-1 text-blue-600">
-              Marca d'água está ativa e será aplicada automaticamente em novas imagens.
-            </span>
           )}
-        </p>
-      </CardContent>
-    </Card>
+          <p className="text-sm text-gray-500">
+            Arraste as imagens para reordenar. A primeira imagem será a
+            principal.
+          </p>
+        </CardContent>
+      </Card>
+    </DndProvider>
   );
 };
 

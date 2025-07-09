@@ -1,29 +1,33 @@
-
-import React from 'react';
-import ImprovedVariationManager from '@/components/variations/ImprovedVariationManager';
-import { ProductVariation } from '@/types/product';
+import React from "react";
+import IntelligentVariationsForm from "./IntelligentVariationsForm";
+import { ProductVariation } from "@/types/product";
 
 interface FluidVariationsManagerProps {
   productId?: string;
   variations: ProductVariation[];
   onChange: (variations: ProductVariation[]) => void;
+  storeId?: string;
 }
 
 const FluidVariationsManager: React.FC<FluidVariationsManagerProps> = ({
   productId,
   variations,
   onChange,
+  storeId,
 }) => {
-  console.log('🌊 FLUID VARIATIONS MANAGER - Props:', {
+  console.log("🌊 FLUID VARIATIONS MANAGER - Props:", {
     productId,
+    storeId,
     variationsCount: variations.length,
-    hasOnChange: !!onChange
+    hasOnChange: !!onChange,
   });
 
   return (
-    <ImprovedVariationManager
+    <IntelligentVariationsForm
       variations={variations}
       onVariationsChange={onChange}
+      productId={productId}
+      storeId={storeId}
     />
   );
 };

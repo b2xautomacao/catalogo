@@ -1,19 +1,26 @@
-
-import React, { useEffect } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2, AlertCircle, Star, StarOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useDraftImages } from '@/hooks/useDraftImages';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect } from "react";
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  AlertCircle,
+  Star,
+  StarOff,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useDraftImagesContext } from "@/contexts/DraftImagesContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ImprovedDraftImageUploadProps {
   productId?: string;
   maxImages?: number;
 }
 
-const ImprovedDraftImageUpload = ({ 
+const ImprovedDraftImageUpload = ({
   productId,
-  maxImages = 5
+  maxImages = 5,
 }: ImprovedDraftImageUploadProps) => {
   const {
     draftImages,
@@ -22,21 +29,21 @@ const ImprovedDraftImageUpload = ({
     addDraftImages,
     removeDraftImage,
     setPrimaryImage,
-    loadExistingImages
-  } = useDraftImages();
+    loadExistingImages,
+  } = useDraftImagesContext();
   const { toast } = useToast();
 
-  console.log('🖼 IMPROVED DRAFT IMAGE UPLOAD - Estado:', {
+  console.log("🖼 IMPROVED DRAFT IMAGE UPLOAD - Estado:", {
     productId,
     imagesCount: draftImages.length,
     uploading,
     isLoading,
-    primaryImage: draftImages.find(img => img.isPrimary)?.id
+    primaryImage: draftImages.find((img) => img.isPrimary)?.id,
   });
 
   useEffect(() => {
     if (productId) {
-      console.log('📂 Carregando imagens existentes para produto:', productId);
+      console.log("📂 Carregando imagens existentes para produto:", productId);
       loadExistingImages(productId);
     }
   }, [productId, loadExistingImages]);
@@ -49,7 +56,7 @@ const ImprovedDraftImageUpload = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   };
@@ -60,8 +67,8 @@ const ImprovedDraftImageUpload = ({
   };
 
   const handleFiles = (files: File[]) => {
-    console.log('📁 Arquivos selecionados:', files.length);
-    
+    console.log("📁 Arquivos selecionados:", files.length);
+
     if (draftImages.length >= maxImages) {
       toast({
         title: "Limite atingido",
@@ -75,8 +82,8 @@ const ImprovedDraftImageUpload = ({
     const filesToProcess = files.slice(0, remainingSlots);
     const validFiles: File[] = [];
 
-    filesToProcess.forEach(file => {
-      if (!file.type.startsWith('image/')) {
+    filesToProcess.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
         toast({
           title: "Arquivo inválido",
           description: `${file.name} não é uma imagem válida`,
@@ -98,13 +105,13 @@ const ImprovedDraftImageUpload = ({
     });
 
     if (validFiles.length > 0) {
-      console.log('➕ Adicionando arquivos válidos:', validFiles.length);
+      console.log("➕ Adicionando arquivos válidos:", validFiles.length);
       addDraftImages(validFiles);
     }
   };
 
   const handleSetPrimary = (imageId: string) => {
-    console.log('⭐ Definindo imagem principal:', imageId);
+    console.log("⭐ Definindo imagem principal:", imageId);
     setPrimaryImage(imageId);
     toast({
       title: "Imagem principal definida",
@@ -145,12 +152,17 @@ const ImprovedDraftImageUpload = ({
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => !uploading && document.getElementById('improved-image-upload')?.click()}
+            onClick={() =>
+              !uploading &&
+              document.getElementById("improved-image-upload")?.click()
+            }
           >
             {uploading ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <p className="text-primary font-medium">Processando imagens...</p>
+                <p className="text-primary font-medium">
+                  Processando imagens...
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center">
@@ -159,7 +171,8 @@ const ImprovedDraftImageUpload = ({
                   Arraste e solte imagens aqui, ou clique para selecionar
                 </p>
                 <p className="text-sm text-gray-500">
-                  PNG, JPG, JPEG, GIF, WEBP • Máximo {maxImages} imagens • 5MB por arquivo
+                  PNG, JPG, JPEG, GIF, WEBP • Máximo {maxImages} imagens • 5MB
+                  por arquivo
                 </p>
               </div>
             )}
@@ -188,24 +201,30 @@ const ImprovedDraftImageUpload = ({
                 </span>
               )}
             </h4>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {draftImages.map((image, index) => (
                 <div key={image.id} className="relative group">
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition-colors">
                     {image.preview || image.url ? (
                       <img
-                        src={image.preview || image.url || ''}
+                        src={image.preview || image.url || ""}
                         alt={`Preview ${index + 1}`}
                         className="w-full h-full object-cover"
-                        style={{ aspectRatio: '1/1' }}
+                        style={{ aspectRatio: "1/1" }}
                         onError={(e) => {
-                          console.error('❌ Erro ao carregar imagem:', image.id);
+                          console.error(
+                            "❌ Erro ao carregar imagem:",
+                            image.id
+                          );
                           const target = e.currentTarget;
-                          target.style.display = 'none';
-                          const errorDiv = target.parentElement?.querySelector('.error-placeholder');
+                          target.style.display = "none";
+                          const errorDiv =
+                            target.parentElement?.querySelector(
+                              ".error-placeholder"
+                            );
                           if (errorDiv) {
-                            (errorDiv as HTMLElement).style.display = 'flex';
+                            (errorDiv as HTMLElement).style.display = "flex";
                           }
                         }}
                       />
@@ -214,12 +233,12 @@ const ImprovedDraftImageUpload = ({
                         <ImageIcon className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
-                    
+
                     <div className="error-placeholder w-full h-full items-center justify-center bg-gray-100 hidden">
                       <AlertCircle className="h-8 w-8 text-red-400" />
                     </div>
                   </div>
-                  
+
                   {/* Status da imagem */}
                   <div className="absolute top-2 left-2">
                     {image.uploaded ? (
@@ -260,14 +279,14 @@ const ImprovedDraftImageUpload = ({
                       Principal
                     </Button>
                   )}
-                  
+
                   {/* Botão remover */}
                   <Button
                     variant="destructive"
                     size="sm"
                     className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => {
-                      console.log('🗑 Removendo imagem:', image.id);
+                      console.log("🗑 Removendo imagem:", image.id);
                       removeDraftImage(image.id);
                     }}
                     disabled={uploading}
@@ -286,13 +305,17 @@ const ImprovedDraftImageUpload = ({
         )}
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h5 className="font-medium text-blue-900 mb-2">💡 Dicas importantes:</h5>
+          <h5 className="font-medium text-blue-900 mb-2">
+            💡 Dicas importantes:
+          </h5>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Clique no botão "Principal" para definir a imagem de capa</li>
             <li>• Use imagens quadradas (1:1) para melhor visualização</li>
             <li>• Máximo de {maxImages} imagens por produto</li>
             <li>• Formatos aceitos: PNG, JPG, JPEG, GIF, WEBP</li>
-            <li>• As imagens serão salvas automaticamente ao concluir o cadastro</li>
+            <li>
+              • As imagens serão salvas automaticamente ao concluir o cadastro
+            </li>
           </ul>
         </div>
       </CardContent>

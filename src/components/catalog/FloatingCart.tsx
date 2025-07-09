@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/useCart";
 import { useCartPriceCalculation } from "@/hooks/useCartPriceCalculation";
 import CartItemThumbnail from "./checkout/CartItemThumbnail";
 import CartItemPriceDisplay from "./CartItemPriceDisplay";
+import TierProgressIndicator from "./TierProgressIndicator";
 
 const formatCurrency = (value: number | undefined | null): string => {
   if (typeof value !== "number" || isNaN(value)) return "R$ 0,00";
@@ -20,7 +21,15 @@ const CartItem: React.FC<{
   onUpdateQuantity: (id: string, quantity: number) => void;
   onRemoveItem: (id: string) => void;
 }> = ({ item, onUpdateQuantity, onRemoveItem }) => {
-  const calculation = useCartPriceCalculation(item);
+  // LOG: Estado do item recebido
+  console.log("🟨 [CartItem] Renderizando", item.product?.name, {
+    price: item.price,
+    quantity: item.quantity,
+    currentTier: item.currentTier,
+    nextTier: item.nextTier,
+    nextTierQuantityNeeded: item.nextTierQuantityNeeded,
+    nextTierPotentialSavings: item.nextTierPotentialSavings,
+  });
   const quantity = item.quantity || 1;
   const stock =
     item.variation && typeof item.variation.stock === "number"
@@ -50,10 +59,16 @@ const CartItem: React.FC<{
     }
   };
 
+  const handleCompleteTier = () => {
+    if (item.nextTier && item.nextTierQuantityNeeded > 0) {
+      onUpdateQuantity(item.id, quantity + item.nextTierQuantityNeeded);
+    }
+  };
+
   return (
     <div
       className={`cart-item-card rounded-xl p-4 border-2 ${
-        calculation.currentTier.tier_name === "Atacado Grande"
+        item.currentTier?.tier_name === "Atacado Grande"
           ? "border-yellow-400"
           : "border-gray-200"
       } bg-white flex flex-col gap-2`}
@@ -83,19 +98,11 @@ const CartItem: React.FC<{
             {/* Bloco de preço/desconto/economia */}
             <div className="flex flex-col gap-1 min-w-[120px] items-end text-right">
               <CartItemPriceDisplay item={item} />
-              {/* Incentivo para próximo nível */}
-              {calculation.nextTierHint && (
-                <span className="text-xs text-blue-700 flex items-center gap-1">
-                  <TrendingUp size={12} /> Faltam{" "}
-                  <b>{calculation.nextTierHint.quantityNeeded}</b> un. para
-                  próximo nível
-                </span>
-              )}
             </div>
           </div>
         </div>
       </div>
-      {/* Rodapé: botões e badge */}
+      {/* Rodapé: botões, badge e incentivo individual */}
       <div className="flex flex-row items-center justify-between mt-3 gap-2 flex-wrap border-t pt-2">
         <div className="flex items-center gap-2">
           <Button
@@ -141,12 +148,33 @@ const CartItem: React.FC<{
         {/* Badge no rodapé usando o cálculo centralizado */}
         <span
           className={`px-3 py-1 rounded-lg text-xs font-bold border ${getBadgeStyle(
-            calculation.currentTier.tier_name
+            item.currentTier?.tier_name || "Varejo"
           )}`}
         >
-          {calculation.currentTier.tier_name}
+          {item.currentTier?.tier_name || "Varejo"}
         </span>
       </div>
+      {/* Incentivo individual para próximo nível */}
+      {item.nextTier && item.nextTierQuantityNeeded > 0 && (
+        <div className="flex items-center gap-2 mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800">
+          <TrendingUp size={14} />
+          Adicione mais <b>{item.nextTierQuantityNeeded}</b> unidade(s) para
+          ativar o próximo desconto!
+          {item.nextTierPotentialSavings > 0 && (
+            <span className="ml-1 text-green-700 font-bold">
+              Economize R$ {item.nextTierPotentialSavings.toFixed(2)} por un.
+            </span>
+          )}
+          <Button
+            size="xs"
+            variant="outline"
+            className="ml-2 px-2 py-1 h-6 text-xs border-blue-400 text-blue-700 hover:bg-blue-100"
+            onClick={handleCompleteTier}
+          >
+            Completar para {item.nextTier.tier_name}
+          </Button>
+        </div>
+      )}
       {/* Mensagem de erro de estoque */}
       {erroEstoque && (
         <div className="text-xs text-red-600 mt-1">
@@ -288,14 +316,6 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                 </h2>
               </div>
 
-              {canGetWholesalePrice && potentialSavings > 0 && (
-                <div className="px-6 py-3 bg-yellow-50 border-b text-yellow-800 text-sm">
-                  <TrendingUp size={16} className="inline mr-1" />
-                  Adicione +{itemsToWholesale} itens e economize{" "}
-                  {formatCurrency(potentialSavings)}
-                </div>
-              )}
-
               {/* Mensagem quando carrinho está vazio */}
               {items.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center p-8">
@@ -329,16 +349,7 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                   </div>
 
                   <div className="border-t bg-gray-50 p-6 space-y-4">
-                    {potentialSavings > 0 && (
-                      <div className="p-3 bg-orange-100 rounded-lg border border-orange-200">
-                        <div className="flex justify-between items-center text-sm font-medium text-orange-800">
-                          <span>💡 Economia potencial:</span>
-                          <span className="font-bold">
-                            {formatCurrency(potentialSavings)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    {/* Removido: <TierProgressIndicator /> e economia potencial geral */}
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold">Total:</span>
                       <span className="text-2xl font-bold text-blue-600">

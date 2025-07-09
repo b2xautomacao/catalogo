@@ -1,4 +1,3 @@
-
 export interface ProductVariation {
   id: string;
   product_id: string;
@@ -48,6 +47,7 @@ export interface Product {
   updated_at?: string;
   variations?: ProductVariation[];
   whatsapp_number?: string;
+  price_tiers?: ProductPriceTier[];
 }
 
 export interface CreateProductData {

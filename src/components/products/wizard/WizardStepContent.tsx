@@ -1,4 +1,3 @@
-
 import React from "react";
 import ProductBasicInfoForm from "./ProductBasicInfoForm";
 import ImprovedProductPricingForm from "./ImprovedProductPricingForm";
@@ -13,7 +12,9 @@ interface WizardStepContentProps {
   formData: ProductFormData;
   updateFormData: (data: Partial<ProductFormData>) => void;
   productId?: string;
-  onImageUploadReady?: (uploadFn: (productId: string) => Promise<string[]>) => void;
+  onImageUploadReady?: (
+    uploadFn: (productId: string) => Promise<string[]>
+  ) => void;
 }
 
 const WizardStepContent: React.FC<WizardStepContentProps> = ({
@@ -23,7 +24,12 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
   productId,
   onImageUploadReady,
 }) => {
-  console.log('📋 WIZARD STEP CONTENT - Step:', currentStep, 'ProductId:', productId);
+  console.log(
+    "📋 WIZARD STEP CONTENT - Step:",
+    currentStep,
+    "ProductId:",
+    productId
+  );
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -34,7 +40,9 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             description={formData.description}
             category={formData.category}
             onNameChange={(name) => updateFormData({ name })}
-            onDescriptionChange={(description) => updateFormData({ description })}
+            onDescriptionChange={(description) =>
+              updateFormData({ description })
+            }
             onCategoryChange={(category) => updateFormData({ category })}
           />
         );
@@ -46,28 +54,38 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             wholesalePrice={formData.wholesale_price}
             minWholesaleQty={formData.min_wholesale_qty}
             stock={formData.stock}
-            priceTiers={formData.price_tiers?.map(tier => ({
-              id: tier.id || '',
-              name: tier.tier_name,
-              minQuantity: tier.min_quantity,
-              price: tier.price,
-              enabled: tier.is_active !== false
-            })) || []}
-            onRetailPriceChange={(retail_price) => updateFormData({ retail_price })}
-            onWholesalePriceChange={(wholesale_price) => updateFormData({ wholesale_price })}
-            onMinWholesaleQtyChange={(min_wholesale_qty) => updateFormData({ min_wholesale_qty })}
-            onStockChange={(stock) => updateFormData({ stock })}
-            onPriceTiersChange={(tiers) => updateFormData({ 
-              price_tiers: tiers.map(tier => ({
-                id: tier.id,
-                tier_name: tier.name,
-                tier_type: 'custom',
-                min_quantity: tier.minQuantity,
+            priceTiers={
+              formData.price_tiers?.map((tier) => ({
+                id: tier.id || "",
+                name: tier.tier_name,
+                minQuantity: tier.min_quantity,
                 price: tier.price,
-                tier_order: 1,
-                is_active: tier.enabled
-              }))
-            })}
+                enabled: tier.is_active !== false,
+              })) || []
+            }
+            onRetailPriceChange={(retail_price) =>
+              updateFormData({ retail_price })
+            }
+            onWholesalePriceChange={(wholesale_price) =>
+              updateFormData({ wholesale_price })
+            }
+            onMinWholesaleQtyChange={(min_wholesale_qty) =>
+              updateFormData({ min_wholesale_qty })
+            }
+            onStockChange={(stock) => updateFormData({ stock })}
+            onPriceTiersChange={(tiers) =>
+              updateFormData({
+                price_tiers: tiers.map((tier) => ({
+                  id: tier.id,
+                  tier_name: tier.name,
+                  tier_type: "custom",
+                  min_quantity: tier.minQuantity,
+                  price: tier.price,
+                  tier_order: 1,
+                  is_active: tier.enabled,
+                })),
+              })
+            }
           />
         );
 
@@ -85,9 +103,10 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             productId={productId}
             variations={formData.variations || []}
             onChange={(variations) => {
-              console.log('🎨 Variações atualizadas:', variations.length);
+              console.log("🎨 Variações atualizadas:", variations.length);
               updateFormData({ variations });
             }}
+            storeId={formData.store_id}
           />
         );
 
@@ -101,7 +120,9 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
             keywords={formData.keywords}
             seoSlug={formData.seo_slug}
             onMetaTitleChange={(meta_title) => updateFormData({ meta_title })}
-            onMetaDescriptionChange={(meta_description) => updateFormData({ meta_description })}
+            onMetaDescriptionChange={(meta_description) =>
+              updateFormData({ meta_description })
+            }
             onKeywordsChange={(keywords) => updateFormData({ keywords })}
             onSeoSlugChange={(seo_slug) => updateFormData({ seo_slug })}
           />
@@ -112,7 +133,9 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
           <ProductAdvancedForm
             isFeatured={formData.is_featured}
             isActive={formData.is_active}
-            onIsFeaturedChange={(is_featured) => updateFormData({ is_featured })}
+            onIsFeaturedChange={(is_featured) =>
+              updateFormData({ is_featured })
+            }
             onIsActiveChange={(is_active) => updateFormData({ is_active })}
           />
         );
@@ -122,11 +145,7 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {renderStepContent()}
-    </div>
-  );
+  return <div className="space-y-6">{renderStepContent()}</div>;
 };
 
 export default WizardStepContent;

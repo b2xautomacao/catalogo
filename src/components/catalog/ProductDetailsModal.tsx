@@ -100,6 +100,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   catalogType = "retail",
   isInWishlist = false,
 }) => {
+  // ✅ VERIFICAÇÃO ANTES DOS HOOKS
+  if (!product) {
+    return null;
+  }
+
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] =
     useState<ProductVariation | null>(null);
@@ -113,7 +118,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   // Hook para carregar variações do produto
   const { variations, loading: variationsLoading } = useProductVariations(
-    product?.id
+    product.id
   );
 
   // Obter imagem da variação selecionada
@@ -142,10 +147,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       setSelectedVariation(null);
     }
   }, [variations, selectedVariation]);
-
-  if (!product) {
-    return null;
-  }
 
   const hasVariations = variations && variations.length > 0;
   const requiresVariationSelection = hasVariations;
@@ -198,7 +199,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
         });
       }
     },
-    [quantity, minQty, maxQty, quantityChangeKey, toast]
+    [quantity, minQty, maxQty, toast]
   );
 
   const handleVariationChange = useCallback(
@@ -285,7 +286,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     availableStock,
     onAddToCart,
     product,
-    finalPrice,
     onClose,
     toast,
   ]);

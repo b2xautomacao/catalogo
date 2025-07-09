@@ -22,6 +22,20 @@ export interface CartItem {
   variation?: ProductVariation;
   catalogType: "retail" | "wholesale";
   isWholesalePrice?: boolean;
+  currentTier?: {
+    tier_name: string;
+    min_quantity: number;
+    price: number;
+    tier_order: number;
+  };
+  nextTier?: {
+    tier_name: string;
+    min_quantity: number;
+    price: number;
+    tier_order: number;
+  };
+  nextTierQuantityNeeded?: number | null;
+  nextTierPotentialSavings?: number | null;
 }
 
 interface CartContextType {
@@ -38,6 +52,18 @@ interface CartContextType {
   potentialSavings: number;
   canGetWholesalePrice: boolean;
   itemsToWholesale: number;
+  // ✅ NOVAS PROPRIEDADES PARA NÍVEIS DE PREÇO
+  currentTierLevel: number;
+  nextTierLevel: number | null;
+  nextTierSavings: number;
+  itemsToNextTier: number;
+  tierProgress: {
+    [productId: string]: {
+      current: number;
+      next: number | null;
+      savings: number;
+    };
+  };
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -131,33 +157,59 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const product = item.product;
       const quantity = item.quantity;
 
-      console.log(`🔄 Recalculando preços para ${product.name}:`, {
-        quantity,
-        hasWholesalePrice: !!product.wholesale_price,
-        minWholesaleQty: product.min_wholesale_qty,
-        originalPrice: item.originalPrice,
-      });
+      // LOG: Estado do cache de tiers
+      console.log(
+        `🟦 [recalculateItemPrices] Tiers cache para ${product.name}:`,
+        priceTiersCache[product.id]
+      );
 
       // Verificar se temos níveis em cache
       const tiers = priceTiersCache[product.id];
 
-      if (tiers && tiers.length > 1) {
-        // Encontrar o melhor nível baseado na quantidade
+      if (tiers && tiers.length > 0) {
+        // Ordenar por quantidade mínima (crescente) para encontrar o nível correto
         const sortedTiers = [...tiers].sort(
-          (a, b) => b.min_quantity - a.min_quantity
-        );
-        const bestTier = sortedTiers.find(
-          (tier) => quantity >= tier.min_quantity
+          (a, b) => a.min_quantity - b.min_quantity
         );
 
-        if (bestTier && bestTier.tier_order > 1) {
+        // Selecionar todos os tiers elegíveis
+        const eligibleTiers = sortedTiers.filter(
+          (tier) => quantity >= tier.min_quantity
+        );
+        // O melhor tier é o de maior min_quantity atingido
+        const bestTier =
+          eligibleTiers.length > 0
+            ? eligibleTiers[eligibleTiers.length - 1]
+            : sortedTiers[0];
+        // Encontrar o próximo tier
+        const nextTier = sortedTiers.find(
+          (tier) => quantity < tier.min_quantity
+        );
+
+        if (bestTier) {
           console.log(
-            `✅ Aplicando tier ${bestTier.tier_name}: R$${bestTier.price}`
+            `✅ [recalculateItemPrices] ${product.name}: Aplicando tier '${bestTier.tier_name}' (qtd: ${bestTier.min_quantity}+): R$${bestTier.price}`
           );
+          if (nextTier) {
+            console.log(
+              `➡️ [recalculateItemPrices] ${product.name}: Faltam ${
+                nextTier.min_quantity - quantity
+              } para '${nextTier.tier_name}' (R$${nextTier.price})`
+            );
+          }
           return {
             ...item,
             price: bestTier.price,
-            isWholesalePrice: true,
+            isWholesalePrice: bestTier.tier_order > 1,
+            currentTier: bestTier,
+            nextTier: nextTier || null,
+            nextTierQuantityNeeded: nextTier
+              ? nextTier.min_quantity - quantity
+              : null,
+            nextTierPotentialSavings:
+              nextTier && bestTier.price > nextTier.price
+                ? bestTier.price - nextTier.price
+                : null,
           };
         }
       }
@@ -169,7 +221,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         quantity >= product.min_wholesale_qty
       ) {
         console.log(
-          `✅ Aplicando preço atacado simples: R$${product.wholesale_price}`
+          `✅ [recalculateItemPrices] ${product.name}: Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${product.wholesale_price}`
         );
         return {
           ...item,
@@ -179,7 +231,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Usar preço original (varejo)
-      console.log(`📋 Mantendo preço varejo: R$${item.originalPrice}`);
+      console.log(
+        `📋 [recalculateItemPrices] ${product.name}: Mantendo preço varejo: R$${item.originalPrice}`
+      );
       return {
         ...item,
         price: item.originalPrice,
@@ -417,6 +471,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Calcular valores com validação de segurança
+  // LOG: Total do carrinho e detalhes dos itens
   const totalAmount = items.reduce((total, item) => {
     const itemPrice =
       typeof item.price === "number" && !isNaN(item.price) ? item.price : 0;
@@ -426,10 +481,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         : 0;
     const subtotal = itemPrice * itemQuantity;
     console.log(
-      `💰 Item ${item.product?.name}: ${itemQuantity} x R$${itemPrice} = R$${subtotal}`
+      `💰 [useCart] Item ${
+        item.product?.name
+      }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${
+        item.currentTier?.tier_name || "-"
+      }`
     );
     return total + subtotal;
   }, 0);
+  console.log(`🟩 [useCart] TOTAL calculado: R$${totalAmount}`);
 
   const totalItems = items.reduce((total, item) => {
     const itemQuantity =
@@ -476,6 +536,102 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     return total;
   }, 0);
 
+  // ✅ CALCULAR PROGRESSO DOS NÍVEIS DE PREÇO
+  const calculateTierProgress = () => {
+    const progress: {
+      [productId: string]: {
+        current: number;
+        next: number | null;
+        savings: number;
+      };
+    } = {};
+
+    items.forEach((item) => {
+      const tiers = priceTiersCache[item.product.id];
+      if (!tiers || tiers.length === 0) return;
+
+      // Ordenar níveis por quantidade mínima
+      const sortedTiers = [...tiers].sort(
+        (a, b) => a.min_quantity - b.min_quantity
+      );
+
+      // Encontrar nível atual
+      const currentTier = sortedTiers.find(
+        (tier) => item.quantity >= tier.min_quantity
+      );
+      const currentLevel = currentTier ? currentTier.tier_order : 1;
+
+      // Encontrar próximo nível
+      const nextTier = sortedTiers.find(
+        (tier) => item.quantity < tier.min_quantity
+      );
+      const nextLevel = nextTier ? nextTier.tier_order : null;
+
+      // Calcular economia potencial do próximo nível
+      let potentialSavings = 0;
+      if (nextTier) {
+        const currentPrice = currentTier
+          ? currentTier.price
+          : item.originalPrice;
+        potentialSavings = (currentPrice - nextTier.price) * item.quantity;
+      }
+
+      progress[item.product.id] = {
+        current: currentLevel,
+        next: nextLevel,
+        savings: Math.max(0, potentialSavings),
+      };
+    });
+
+    return progress;
+  };
+
+  // ✅ CALCULAR NÍVEL ATUAL DO CARRINHO
+  const calculateCurrentTierLevel = () => {
+    const progress = calculateTierProgress();
+    const levels = Object.values(progress).map((p) => p.current);
+    return levels.length > 0 ? Math.min(...levels) : 1;
+  };
+
+  // ✅ CALCULAR PRÓXIMO NÍVEL DISPONÍVEL
+  const calculateNextTierLevel = () => {
+    const progress = calculateTierProgress();
+    const nextLevels = Object.values(progress)
+      .map((p) => p.next)
+      .filter((level) => level !== null);
+
+    return nextLevels.length > 0 ? Math.min(...nextLevels) : null;
+  };
+
+  // ✅ CALCULAR ECONOMIA DO PRÓXIMO NÍVEL
+  const calculateNextTierSavings = () => {
+    const progress = calculateTierProgress();
+    return Object.values(progress).reduce((total, p) => total + p.savings, 0);
+  };
+
+  // ✅ CALCULAR ITENS NECESSÁRIOS PARA PRÓXIMO NÍVEL
+  const calculateItemsToNextTier = () => {
+    let totalItemsNeeded = 0;
+
+    items.forEach((item) => {
+      const tiers = priceTiersCache[item.product.id];
+      if (!tiers || tiers.length === 0) return;
+
+      const sortedTiers = [...tiers].sort(
+        (a, b) => a.min_quantity - b.min_quantity
+      );
+      const nextTier = sortedTiers.find(
+        (tier) => item.quantity < tier.min_quantity
+      );
+
+      if (nextTier) {
+        totalItemsNeeded += nextTier.min_quantity - item.quantity;
+      }
+    });
+
+    return totalItemsNeeded;
+  };
+
   const value: CartContextType = {
     items,
     addItem,
@@ -490,6 +646,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     potentialSavings,
     canGetWholesalePrice,
     itemsToWholesale,
+    // ✅ NOVAS PROPRIEDADES PARA NÍVEIS DE PREÇO
+    currentTierLevel: calculateCurrentTierLevel(),
+    nextTierLevel: calculateNextTierLevel(),
+    nextTierSavings: calculateNextTierSavings(),
+    itemsToNextTier: calculateItemsToNextTier(),
+    tierProgress: calculateTierProgress(),
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

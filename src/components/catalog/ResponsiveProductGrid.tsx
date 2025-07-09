@@ -11,7 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/useDebounce";
-import EnhancedProductCard from "./EnhancedProductCard";
+import { useCart } from "@/hooks/useCart";
+import ProductCard from "./ProductCard";
+import ProductDetailsModal from "./ProductDetailsModal";
 import AdvancedFilterSidebar, {
   AdvancedFilterState,
 } from "./AdvancedFilterSidebar";
@@ -44,7 +46,10 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const { addItem } = useCart();
 
   const [filters, setFilters] = useState<AdvancedFilterState>({
     searchQuery: "",
@@ -230,6 +235,55 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     setFilters(clearedFilters);
     setSearchQuery("");
   }, []);
+
+  // ✅ FUNÇÃO PARA VER DETALHES DO PRODUTO
+  const handleViewDetails = useCallback((product: Product) => {
+    console.log("📱 Visualizar detalhes do produto:", product.name);
+    setSelectedProduct(product);
+    setIsDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetailsModal = useCallback(() => {
+    setIsDetailsModalOpen(false);
+    setSelectedProduct(null);
+  }, []);
+
+  // ✅ FUNÇÃO PARA ADICIONAR AO CARRINHO
+  const handleAddToCart = useCallback(
+    (product: Product, quantity: number = 1, variation?: any) => {
+      console.log(
+        "🛒 Adicionando ao carrinho:",
+        product.name,
+        quantity,
+        variation
+      );
+
+      // Criar item do carrinho
+      const cartItem = {
+        id: `${product.id}-${variation?.id || Date.now()}`, // ID único para o item do carrinho
+        product: {
+          id: product.id,
+          name: product.name,
+          retail_price: product.retail_price,
+          wholesale_price: product.wholesale_price,
+          min_wholesale_qty: product.min_wholesale_qty,
+          image_url: product.image_url,
+          store_id: product.store_id,
+          stock: product.stock,
+          allow_negative_stock: product.allow_negative_stock || false,
+        },
+        quantity: quantity,
+        price: product.retail_price,
+        originalPrice: product.retail_price,
+        catalogType: catalogType,
+        isWholesalePrice: false,
+        variation: variation,
+      };
+
+      addItem(cartItem);
+    },
+    [catalogType, addItem]
+  );
 
   const removeFilter = (type: string, value?: string) => {
     switch (type) {
@@ -425,11 +479,12 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
         ) : sortedProducts.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedProducts.map((product) => (
-              <EnhancedProductCard
+              <ProductCard
                 key={product.id}
                 product={product}
                 catalogType={catalogType}
-                storeIdentifier={storeIdentifier}
+                onViewDetails={handleViewDetails}
+                onAddToCart={handleAddToCart}
               />
             ))}
           </div>
@@ -462,6 +517,15 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
         products={products}
         isMobile={true}
         activeFiltersCount={activeFiltersCount}
+      />
+
+      {/* ✅ MODAL DE DETALHES DO PRODUTO */}
+      <ProductDetailsModal
+        product={selectedProduct}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        onAddToCart={handleAddToCart}
+        catalogType={catalogType}
       />
     </div>
   );
