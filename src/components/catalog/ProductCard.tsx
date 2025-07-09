@@ -52,7 +52,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       {/* Imagem do Produto */}
       <div className="aspect-square bg-gray-50 relative overflow-hidden">
         {product.image_url ? (
@@ -60,6 +60,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             src={product.image_url}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -71,19 +72,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
         
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
           {product.is_featured && (
-            <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-600">
-              Destaque
+            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
+              ⭐ Destaque
             </Badge>
           )}
           {product.stock <= 0 && (
-            <Badge variant="destructive">
+            <Badge variant="destructive" className="text-xs">
               Sem estoque
             </Badge>
           )}
           {product.stock > 0 && product.stock <= (product.stock_alert_threshold || 5) && (
-            <Badge variant="outline" className="bg-orange-500 text-white border-orange-500">
+            <Badge className="bg-orange-500 text-white text-xs">
               Estoque baixo
             </Badge>
           )}
@@ -93,7 +94,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {onToggleWishlist && (
           <button
             onClick={handleToggleWishlist}
-            className={`absolute top-2 right-2 p-2 rounded-full transition-all ${
+            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${
               isInWishlist 
                 ? 'bg-red-500 text-white hover:bg-red-600' 
                 : 'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'
@@ -102,39 +103,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-current' : ''}`} />
           </button>
         )}
-
-        {/* Overlay com botões de ação */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <div className="flex gap-2">
-            {onViewDetails && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleViewDetails}
-                className="bg-white/90 text-gray-900 hover:bg-white"
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Ver Detalhes
-              </Button>
-            )}
-            {onAddToCart && product.stock > 0 && (
-              <Button
-                size="sm"
-                onClick={handleAddToCart}
-                className="bg-primary text-white hover:bg-primary/90"
-              >
-                <ShoppingCart className="h-4 w-4 mr-1" />
-                Adicionar
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
       
       {/* Conteúdo do Card */}
-      <div className="p-4 cursor-pointer" onClick={onClick}>
+      <div className="p-4">
         <div className="space-y-3">
-          <div>
+          <div className="cursor-pointer" onClick={onClick}>
             <h3 className="font-semibold text-base mb-1 line-clamp-2 hover:text-primary transition-colors">
               {product.name}
             </h3>
@@ -145,15 +119,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          {/* Preços */}
+          {/* Preço */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-lg font-bold text-primary">
+              <span className="text-xl font-bold text-primary">
                 {formatCurrency(displayPrice)}
               </span>
               {product.stock > 0 && (
-                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                  {product.stock} em estoque
+                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                  {product.stock} disponível
                 </span>
               )}
             </div>
@@ -168,39 +142,44 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Categoria */}
           {product.category && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                {product.category}
-              </span>
-            </div>
+            <span className="inline-block text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+              {product.category}
+            </span>
           )}
-        </div>
-      </div>
 
-      {/* Botões de ação mobile (sempre visíveis em mobile) */}
-      <div className="p-3 border-t bg-gray-50 md:hidden">
-        <div className="flex gap-2">
-          {onViewDetails && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleViewDetails}
-              className="flex-1"
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              Detalhes
-            </Button>
-          )}
-          {onAddToCart && product.stock > 0 && (
-            <Button
-              size="sm"
-              onClick={handleAddToCart}
-              className="flex-1"
-            >
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              Carrinho
-            </Button>
-          )}
+          {/* Botões de Ação */}
+          <div className="flex gap-2 pt-2">
+            {onViewDetails && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleViewDetails}
+                className="flex-1 h-9"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Detalhes
+              </Button>
+            )}
+            {onAddToCart && product.stock > 0 && (
+              <Button
+                size="sm"
+                onClick={handleAddToCart}
+                className="flex-1 h-9 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                Adicionar
+              </Button>
+            )}
+            {product.stock <= 0 && (
+              <Button
+                size="sm"
+                disabled
+                className="flex-1 h-9"
+              >
+                Indisponível
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

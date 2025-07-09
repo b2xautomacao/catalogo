@@ -150,32 +150,26 @@ export const useDraftImages = () => {
     const uploadedUrls: string[] = [];
 
     try {
-      // Atualizar imagens existentes se necessário
-      if (existingImages.length > 0) {
-        console.log('🔄 Atualizando imagens existentes...');
-        for (const image of existingImages) {
-          await supabase
-            .from('product_images')
-            .update({
-              is_primary: image.isPrimary,
-              display_order: image.displayOrder
-            })
-            .eq('id', image.id);
-        }
-      }
+      // Primeiro remover todas as imagens existentes do produto
+      console.log('🗑️ Removendo imagens existentes do produto...');
+      await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', productId);
 
-      // Upload de novas imagens
-      if (imagesToUpload.length > 0) {
-        console.log('📤 Iniciando upload de', imagesToUpload.length, 'novas imagens');
+      // Processar todas as imagens na ordem correta
+      const allImagesOrdered = draftImages.sort((a, b) => a.displayOrder - b.displayOrder);
+      
+      for (let i = 0; i < allImagesOrdered.length; i++) {
+        const image = allImagesOrdered[i];
+        let imageUrl = image.url;
 
-        for (let i = 0; i < imagesToUpload.length; i++) {
-          const image = imagesToUpload[i];
-          if (!image.file) continue;
-
+        // Se é uma nova imagem, fazer upload
+        if (!image.uploaded && image.file) {
+          console.log('📤 Fazendo upload da nova imagem:', i + 1);
+          
           const fileExt = image.file.name.split('.').pop()?.toLowerCase();
           const fileName = `products/${productId}/${Date.now()}-${i}.${fileExt}`;
-
-          console.log('📁 Upload arquivo:', fileName);
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('product-images')
@@ -193,45 +187,53 @@ export const useDraftImages = () => {
             .from('product-images')
             .getPublicUrl(fileName);
 
-          console.log('🔗 URL pública gerada:', publicUrl);
+          imageUrl = publicUrl;
+          uploadedUrls.push(publicUrl);
+        }
 
+        // Salvar no banco de dados
+        if (imageUrl) {
+          console.log('💾 Salvando imagem no banco:', i + 1, 'Primary:', image.isPrimary);
+          
           const { error: dbError } = await supabase
             .from('product_images')
             .insert({
               product_id: productId,
-              image_url: publicUrl,
-              display_order: image.displayOrder,
+              image_url: imageUrl,
+              display_order: i,
               is_primary: image.isPrimary,
-              alt_text: `Produto ${image.displayOrder + 1}`
+              alt_text: `Produto ${i + 1}`
             });
 
           if (dbError) {
             console.error('❌ Erro ao salvar no banco:', dbError);
             throw dbError;
           }
-
-          uploadedUrls.push(publicUrl);
-          console.log('✅ Imagem salva com sucesso');
-
-          // Atualizar estado local
-          setDraftImages(prev => 
-            prev.map(img => 
-              img.id === image.id 
-                ? { ...img, uploaded: true, url: publicUrl, isExisting: true }
-                : img
-            )
-          );
         }
       }
 
-      const totalProcessed = uploadedUrls.length + existingImages.length;
+      // Atualizar a imagem principal do produto
+      const primaryImage = allImagesOrdered.find(img => img.isPrimary);
+      if (primaryImage && (primaryImage.url || uploadedUrls.length > 0)) {
+        const primaryUrl = primaryImage.url || uploadedUrls[0];
+        
+        console.log('🖼️ Atualizando imagem principal do produto:', primaryUrl);
+        
+        await supabase
+          .from('products')
+          .update({ image_url: primaryUrl })
+          .eq('id', productId);
+      }
+
+      const totalProcessed = allImagesOrdered.length;
       if (totalProcessed > 0) {
         toast({
-          title: "Imagens processadas!",
+          title: "✅ Imagens salvas!",
           description: `${totalProcessed} imagem(s) processada(s) com sucesso.`,
         });
       }
 
+      console.log('✅ UPLOAD ALL IMAGES - Concluído com sucesso');
       return uploadedUrls;
     } catch (error) {
       console.error('💥 Erro no processamento das imagens:', error);
