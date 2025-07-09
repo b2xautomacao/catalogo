@@ -17,7 +17,11 @@ export interface DraftImage {
 export const useDraftImages = () => {
   const [draftImages, setDraftImages] = useState<DraftImage[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Manter compatibilidade com código existente
+  const isUploading = uploading;
 
   const addDraftImage = useCallback((file: File) => {
     const reader = new FileReader();
@@ -28,7 +32,7 @@ export const useDraftImages = () => {
         preview: e.target?.result as string,
         uploaded: false,
         isExisting: false,
-        isPrimary: draftImages.length === 0, // Primeira imagem é principal por padrão
+        isPrimary: draftImages.length === 0,
         displayOrder: draftImages.length,
       };
 
@@ -37,10 +41,14 @@ export const useDraftImages = () => {
     reader.readAsDataURL(file);
   }, [draftImages.length]);
 
+  // Versão plural para compatibilidade
+  const addDraftImages = useCallback((files: File[]) => {
+    files.forEach(file => addDraftImage(file));
+  }, [addDraftImage]);
+
   const removeDraftImage = useCallback((imageId: string) => {
     setDraftImages(prev => {
       const filtered = prev.filter(img => img.id !== imageId);
-      // Se removeu a imagem principal e ainda há imagens, torna a primeira como principal
       if (prev.find(img => img.id === imageId)?.isPrimary && filtered.length > 0) {
         filtered[0].isPrimary = true;
       }
@@ -71,6 +79,7 @@ export const useDraftImages = () => {
   }, []);
 
   const loadExistingImages = useCallback(async (productId: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('product_images')
@@ -92,6 +101,8 @@ export const useDraftImages = () => {
       setDraftImages(existingImages);
     } catch (error) {
       console.error('Erro ao carregar imagens existentes:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -126,7 +137,6 @@ export const useDraftImages = () => {
           .from('product-images')
           .getPublicUrl(fileName);
 
-        // Salvar no banco de dados
         const { error: dbError } = await supabase
           .from('product_images')
           .insert({
@@ -141,7 +151,6 @@ export const useDraftImages = () => {
 
         uploadedUrls.push(publicUrl);
 
-        // Marcar como enviada
         setDraftImages(prev => 
           prev.map(img => 
             img.id === image.id 
@@ -170,6 +179,9 @@ export const useDraftImages = () => {
     }
   }, [draftImages, toast]);
 
+  // Alias para compatibilidade
+  const uploadDraftImages = uploadAllImages;
+
   const clearDraftImages = useCallback(() => {
     setDraftImages([]);
   }, []);
@@ -177,12 +189,16 @@ export const useDraftImages = () => {
   return {
     draftImages,
     uploading,
+    isUploading, // Compatibilidade
+    isLoading,
     addDraftImage,
+    addDraftImages, // Compatibilidade
     removeDraftImage,
     setPrimaryImage,
     reorderImages,
     loadExistingImages,
     uploadAllImages,
+    uploadDraftImages, // Compatibilidade
     clearDraftImages,
   };
 };

@@ -17,7 +17,7 @@ const ImprovedDraftImageUpload = ({
 }: ImprovedDraftImageUploadProps) => {
   const {
     draftImages,
-    isUploading,
+    uploading,
     isLoading,
     addDraftImages,
     removeDraftImage,
@@ -28,11 +28,10 @@ const ImprovedDraftImageUpload = ({
   console.log('🖼 IMPROVED DRAFT IMAGE UPLOAD - Renderizando:', {
     productId,
     imagesCount: draftImages.length,
-    isUploading,
+    uploading,
     isLoading
   });
 
-  // Carregar imagens existentes quando em modo de edição
   useEffect(() => {
     if (productId) {
       console.log('📂 IMPROVED DRAFT IMAGE UPLOAD - Carregando imagens existentes para:', productId);
@@ -84,7 +83,7 @@ const ImprovedDraftImageUpload = ({
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Arquivo muito grande",
           description: `${file.name} excede o limite de 5MB`,
@@ -135,9 +134,9 @@ const ImprovedDraftImageUpload = ({
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => !isUploading && document.getElementById('improved-image-upload')?.click()}
+            onClick={() => !uploading && document.getElementById('improved-image-upload')?.click()}
           >
-            {isUploading ? (
+            {uploading ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
                 <p className="text-primary font-medium">Processando imagens...</p>
@@ -163,7 +162,7 @@ const ImprovedDraftImageUpload = ({
           accept="image/*"
           onChange={handleFileInput}
           className="hidden"
-          disabled={isUploading}
+          disabled={uploading}
         />
 
         {/* Preview das Imagens */}
@@ -171,7 +170,7 @@ const ImprovedDraftImageUpload = ({
           <div className="space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               Imagens Selecionadas
-              {isUploading && (
+              {uploading && (
                 <span className="text-sm text-blue-600 flex items-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Processando...
@@ -205,13 +204,11 @@ const ImprovedDraftImageUpload = ({
                       </div>
                     )}
                     
-                    {/* Placeholder de erro (oculto por padrão) */}
                     <div className="error-placeholder w-full h-full items-center justify-center bg-gray-100 hidden">
                       <AlertCircle className="h-8 w-8 text-red-400" />
                     </div>
                   </div>
                   
-                  {/* Status Badge */}
                   <div className="absolute top-2 left-2">
                     {image.uploaded ? (
                       <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
@@ -228,7 +225,6 @@ const ImprovedDraftImageUpload = ({
                     )}
                   </div>
 
-                  {/* Principal Badge */}
                   {index === 0 && (
                     <div className="absolute top-2 right-8">
                       <div className="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium">
@@ -237,7 +233,6 @@ const ImprovedDraftImageUpload = ({
                     </div>
                   )}
                   
-                  {/* Remove Button */}
                   <Button
                     variant="destructive"
                     size="sm"
@@ -246,12 +241,11 @@ const ImprovedDraftImageUpload = ({
                       console.log('🗑 IMPROVED DRAFT IMAGE UPLOAD - Removendo:', image.id);
                       removeDraftImage(image.id);
                     }}
-                    disabled={isUploading}
+                    disabled={uploading}
                   >
                     <X className="h-3 w-3" />
                   </Button>
 
-                  {/* Ordem da Imagem */}
                   <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                     {index + 1}
                   </div>
@@ -261,7 +255,6 @@ const ImprovedDraftImageUpload = ({
           </div>
         )}
 
-        {/* Dicas */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h5 className="font-medium text-blue-900 mb-2">💡 Dicas importantes:</h5>
           <ul className="text-sm text-blue-800 space-y-1">

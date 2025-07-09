@@ -14,16 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import {
   useStoreVariations,
-  StoreVariationGroup,
+  VariationGroup,
 } from "@/hooks/useStoreVariations";
 import { useToast } from "@/hooks/use-toast";
 
 interface StoreQuickValueAddProps {
-  group: StoreVariationGroup;
+  group: VariationGroup;
   onValueAdded?: () => void;
 }
 
-// Componente reutilizável para seleção de cores
 const ColorSelector: React.FC<{
   selectedColors: string[];
   onColorsChange: (colors: string[], hexColors: string[]) => void;
@@ -129,7 +128,7 @@ const ColorSelector: React.FC<{
         <div>
           <Label className="text-sm font-medium">Cores Selecionadas</Label>
           <div className="flex flex-wrap gap-1 mt-2">
-            {selectedColors.map((color, index) => (
+            {selectedColors.map((color) => (
               <Badge
                 key={color}
                 variant="secondary"
@@ -141,7 +140,6 @@ const ColorSelector: React.FC<{
                   if (colorToRemove) {
                     toggleColor(color, colorToRemove.hex);
                   } else {
-                    // Cor personalizada
                     const newColors = selectedColors.filter((c) => c !== color);
                     const newHexColors = newColors.map((name) => {
                       const found = predefinedColors.find(
@@ -178,7 +176,6 @@ const StoreQuickValueAdd: React.FC<StoreQuickValueAddProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Para cores, verificar se há cores selecionadas ou valor manual
     if (group.attribute_key === "color") {
       if (selectedColors.length === 0 && !newValue.trim()) {
         return;
@@ -190,14 +187,13 @@ const StoreQuickValueAdd: React.FC<StoreQuickValueAddProps> = ({
     setLoading(true);
     try {
       if (group.attribute_key === "color" && selectedColors.length > 0) {
-        // Criar cor composta
         const colorValue = selectedColors.join(" e ");
         const valueData = {
           store_id: group.store_id,
           group_id: group.id,
-          master_value_id: '', // Valor padrão temporário
+          master_value_id: '',
           value: colorValue,
-          hex_color: selectedColors.length === 1 ? hexColor : null, // Só usar hex para cor única
+          hex_color: selectedColors.length === 1 ? hexColor : null,
           is_active: true,
           display_order: 999,
         };
@@ -215,11 +211,10 @@ const StoreQuickValueAdd: React.FC<StoreQuickValueAddProps> = ({
           });
         }
       } else {
-        // Criar valor normal
         const valueData = {
           store_id: group.store_id,
           group_id: group.id,
-          master_value_id: '', // Valor padrão temporário
+          master_value_id: '',
           value: newValue.trim(),
           hex_color: group.attribute_key === "color" ? hexColor : null,
           is_active: true,
