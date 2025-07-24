@@ -3,6 +3,7 @@ import React from "react";
 import { Product } from "@/types/product";
 import { CatalogType } from "../CatalogExample";
 import ProductCard from "../ProductCard";
+import { Loader2 } from "lucide-react";
 
 export interface IndustrialTemplateProps {
   products: Product[];
@@ -33,22 +34,27 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="bg-gray-300 aspect-square rounded mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-gray-600">Carregando produtos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-gray-400 text-6xl mb-4">📦</div>
+        <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhum produto encontrado</h3>
+        <p className="text-gray-500">Não há produtos disponíveis no momento.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
       {products.map((product) => (
         <ProductCard
           key={product.id}
@@ -61,9 +67,9 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           showPrices={showPrices}
           showStock={showStock}
           storeId={storeId}
-          className="bg-gray-100 border-2 border-gray-400 hover:border-gray-600 transition-all duration-200"
-          imageClassName="bg-gray-200"
-          contentClassName="p-4 bg-gray-50"
+          className="bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors duration-200"
+          imageClassName="bg-gray-100"
+          contentClassName="bg-white"
         />
       ))}
     </div>
