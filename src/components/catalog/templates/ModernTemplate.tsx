@@ -1,22 +1,27 @@
+
 import React from 'react';
-import { Product } from '@/types';
+import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/useCart';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { toast } from 'sonner';
 
 interface ModernTemplateProps {
   product: Product;
   onProductClick?: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
-const ModernTemplate: React.FC<ModernTemplateProps> = ({ product, onProductClick }) => {
-  const { addToCart } = useCart();
+const ModernTemplate: React.FC<ModernTemplateProps> = ({ product, onProductClick, onAddToCart }) => {
+  const { addItem } = useShoppingCart();
 
   const handleAddToCart = (product: Product) => {
     console.log('🚀 MODERN - Adicionando produto ao carrinho:', product);
     
-    // Use product directly since it already matches the Product interface
-    addToCart(product, 1);
+    if (onAddToCart) {
+      onAddToCart(product);
+    } else {
+      addItem(product, 1);
+    }
     
     toast.success(`${product.name} adicionado ao carrinho!`);
   };
@@ -48,11 +53,11 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ product, onProductClick
         <div className="mt-4 flex items-center justify-between">
           <div>
             <span className="font-bold text-gray-900">
-              ${product.retail_price}
+              R$ {product.retail_price}
             </span>
           </div>
           <Button size="sm" onClick={(e) => {
-              e.stopPropagation(); // Prevent click from propagating to the parent div
+              e.stopPropagation();
               handleAddToCart(product);
             }}>
             Adicionar

@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
-import { Product } from '@/types';
+import { Product } from '@/types/product';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from 'sonner'
-import { useShoppingCart } from '@/hooks/use-shopping-cart';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Carousel,
@@ -17,27 +18,39 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from '@/lib/utils';
 
+export type CatalogType = 'retail' | 'wholesale';
+
 interface ResponsiveProductGridProps {
   products: Product[];
   isLoading?: boolean;
+  loading?: boolean;
   mode?: 'grid' | 'carousel';
   onProductClick?: (product: Product) => void;
   catalogSettings?: any;
+  catalogType?: CatalogType;
+  storeIdentifier?: string;
+  className?: string;
 }
 
 const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   products,
   isLoading,
+  loading,
   mode = 'grid',
   onProductClick,
   catalogSettings,
+  catalogType = 'retail',
+  storeIdentifier,
+  className,
 }) => {
   const { addItem: addToCart } = useShoppingCart();
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
+  const actualLoading = isLoading || loading;
+
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsSmallScreen(window.innerWidth < 768); // Define a largura para considerar como tela pequena (ex: 768px)
+      setIsSmallScreen(window.innerWidth < 768);
     };
 
     checkScreenSize();
@@ -89,26 +102,13 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   const handleAddToCart = (product: Product, selectedVariation?: any) => {
     console.log('📦 GRID - Adicionando ao carrinho:', product, selectedVariation);
     
-    // Transform the product to match the expected structure
-    const productForCart = {
-      id: product.id,
-      name: product.name,
-      retail_price: product.retail_price,
-      wholesale_price: product.wholesale_price,
-      min_wholesale_qty: product.min_wholesale_qty,
-      image_url: product.image_url,
-      store_id: product.store_id,
-      stock: product.stock,
-      allow_negative_stock: product.allow_negative_stock,
-    };
-
-    addToCart(productForCart, 1, selectedVariation);
+    addToCart(product, 1, selectedVariation);
     toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
-  if (isLoading) {
+  if (actualLoading) {
     return (
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div className={cn("grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3", className)}>
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="group/product relative transition-shadow hover:shadow-lg">
             <CardHeader>
@@ -151,7 +151,7 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div className={cn("grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3", className)}>
       {products.map((product) => renderProductCard(product))}
     </div>
   );

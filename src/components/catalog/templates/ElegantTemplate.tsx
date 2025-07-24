@@ -1,22 +1,61 @@
+
 import React from 'react';
-import { Product } from '@/types';
+import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useShoppingCart } from '@/hooks/use-shopping-cart';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
+
+export interface CatalogSettingsData {
+  colors?: {
+    primary: string;
+    secondary: string;
+    surface: string;
+    text: string;
+  };
+  global?: {
+    borderRadius: number;
+    fontSize: {
+      small: string;
+      medium: string;
+      large: string;
+    };
+  };
+  productCard?: {
+    showQuickView: boolean;
+    showAddToCart: boolean;
+    productCardStyle: string;
+  };
+}
 
 interface ElegantTemplateProps {
   product: Product;
-  index: number;
+  index?: number;
+  catalogType?: string;
+  onAddToCart?: (product: Product) => void;
+  onAddToWishlist?: (product: Product) => void;
+  onQuickView?: (product: Product) => void;
+  isInWishlist?: boolean;
+  showPrices?: boolean;
+  showStock?: boolean;
+  editorSettings?: CatalogSettingsData;
 }
 
-const ElegantTemplate: React.FC<ElegantTemplateProps> = ({ product, index }) => {
-  const { addItem: addToCart } = useShoppingCart();
+const ElegantTemplate: React.FC<ElegantTemplateProps> = ({ 
+  product, 
+  index = 0,
+  onAddToCart,
+  editorSettings 
+}) => {
+  const { addItem } = useShoppingCart();
 
   const handleAddToCart = (product: Product) => {
     console.log('🛍️ ELEGANT - Adicionando produto ao carrinho:', product);
     
-    // Use product directly since it already matches the Product interface
-    addToCart(product, 1);
+    if (onAddToCart) {
+      onAddToCart(product);
+    } else {
+      addItem(product, 1);
+    }
     
     toast.success(`${product.name} adicionado ao carrinho!`);
   };

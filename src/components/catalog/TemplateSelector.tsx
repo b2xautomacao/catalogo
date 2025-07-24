@@ -69,7 +69,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     isInWishlist,
     showPrices,
     showStock,
-    editorSettings
+    editorSettings,
+    index: 0  // Adicionar index padrão
   };
 
   // Verificar se o produto tem variações
