@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +18,19 @@ import {
   X,
   Share2,
   TrendingDown,
+  AlertCircle,
 } from "lucide-react";
 import { Product } from "@/types/product";
 import { CatalogType } from "@/hooks/useCatalog";
 import { useProductVariations } from "@/hooks/useProductVariations";
 import { useToast } from "@/hooks/use-toast";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { usePriceCalculation } from "@/hooks/usePriceCalculation";
+import { useProductPriceTiers } from "@/hooks/useProductPriceTiers";
 import { PriceModelType } from "@/types/price-models";
+import ProductVariationSelector from "./ProductVariationSelector";
+import ProductPriceDisplay from "./ProductPriceDisplay";
+import { formatCurrency } from "@/lib/utils";
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -43,84 +49,29 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  const { variations } = useProductVariations(product?.id);
+  const { variations, loading: variationsLoading } = useProductVariations(product?.id);
+  const { priceModel, loading: priceModelLoading } = useStorePriceModel(product?.store_id);
+  const { tiers } = useProductPriceTiers(product?.id, {
+    wholesale_price: product?.wholesale_price,
+    min_wholesale_qty: product?.min_wholesale_qty,
+    retail_price: product?.retail_price,
+  });
   const { toast } = useToast();
-  const { priceModel, loading } = useStorePriceModel(product?.store_id);
+  
   const modelKey = priceModel?.price_model || ("retail_only" as PriceModelType);
 
-  const rating = useMemo(() => {
-    if (!product?.id) return 4.0;
-    const hash = product.id.split("").reduce((a, b) => {
-      a = (a << 5) - a + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    return 3.5 + (Math.abs(hash) % 15) / 10; // Entre 3.5 e 5.0
-  }, [product?.id]);
+  // Calcular preço usando o hook de cálculo de preços
+  const priceCalculation = usePriceCalculation(product?.store_id || '', {
+    product_id: product?.id || '',
+    retail_price: product?.retail_price || 0,
+    wholesale_price: product?.wholesale_price,
+    min_wholesale_qty: product?.min_wholesale_qty,
+    quantity,
+    price_tiers: product?.enable_gradual_wholesale ? tiers : [],
+    enable_gradual_wholesale: product?.enable_gradual_wholesale,
+  });
 
-  const reviewCount = useMemo(() => {
-    if (!product?.name || !product?.retail_price) return 10;
-    const hash = product.name.length + (product.retail_price || 0);
-    return Math.floor(5 + (hash % 45)); // Entre 5 e 50 avaliações
-  }, [product?.name, product?.retail_price]);
-
-  // Calcular desconto potencial
-  const potentialSavings = useMemo(() => {
-    if (!product?.wholesale_price || !product?.retail_price) return null;
-
-    const maxSavings = product.retail_price - product.wholesale_price;
-    const maxPercent = (maxSavings / product.retail_price) * 100;
-
-    return {
-      savings: maxSavings,
-      savingsPercentage: maxPercent,
-      maxDiscountPercent: Math.round(maxPercent),
-    };
-  }, [product?.wholesale_price, product?.retail_price]);
-
-  const handleAddToCart = useCallback(() => {
-    if (!product) return;
-    
-    let qty = quantity;
-    let price = product.retail_price;
-    let isWholesale = false;
-
-    if (modelKey === "wholesale_only") {
-      qty = Math.max(quantity, product.min_wholesale_qty || 1);
-      price = product.wholesale_price || product.retail_price;
-      isWholesale = true;
-    }
-
-    // Garantir que o produto tenha allow_negative_stock definido
-    const productWithDefaults = {
-      ...product,
-      allow_negative_stock: product.allow_negative_stock || false,
-      price_model: modelKey
-    };
-
-    onAddToCart(productWithDefaults, qty, selectedVariation);
-    onClose();
-  }, [product, quantity, selectedVariation, onAddToCart, onClose, modelKey]);
-
-  const handleQuantityChange = useCallback((newQuantity: number) => {
-    if (!product) return;
-    
-    if (modelKey === "wholesale_only") {
-      const minQty = product.min_wholesale_qty || 1;
-      setQuantity(Math.max(newQuantity, minQty));
-    } else {
-      setQuantity(Math.max(newQuantity, 1));
-    }
-  }, [modelKey, product?.min_wholesale_qty, product]);
-
-  const currentPrice = useMemo(() => {
-    if (!product) return 0;
-    
-    if (modelKey === "wholesale_only") {
-      return product.wholesale_price || product.retail_price;
-    }
-    return product.retail_price;
-  }, [modelKey, product]);
-
+  // Determinar quantidade mínima baseada no modelo de preço
   const minQuantity = useMemo(() => {
     if (!product) return 1;
     
@@ -130,12 +81,79 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     return 1;
   }, [modelKey, product?.min_wholesale_qty]);
 
+  // Resetar quantidade quando o produto muda
+  useEffect(() => {
+    if (product && modelKey === "wholesale_only") {
+      setQuantity(Math.max(minQuantity, 1));
+    } else {
+      setQuantity(1);
+    }
+    setSelectedVariation(null);
+  }, [product?.id, modelKey, minQuantity]);
+
+  const handleAddToCart = useCallback(() => {
+    if (!product) return;
+    
+    // Verificar se precisa de variação
+    if (variations.length > 0 && !selectedVariation) {
+      toast({
+        title: "Selecione uma variação",
+        description: "Este produto possui variações. Selecione uma opção antes de adicionar ao carrinho.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar estoque da variação ou produto
+    const availableStock = selectedVariation ? selectedVariation.stock : product.stock;
+    if (!product.allow_negative_stock && availableStock < quantity) {
+      toast({
+        title: "Estoque insuficiente",
+        description: `Apenas ${availableStock} unidades disponíveis.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Garantir quantidade mínima para wholesale_only
+    let finalQuantity = quantity;
+    if (modelKey === "wholesale_only") {
+      finalQuantity = Math.max(quantity, minQuantity);
+    }
+
+    // Produto com configurações de modelo de preço
+    const productWithModel = {
+      ...product,
+      allow_negative_stock: product.allow_negative_stock || false,
+      price_model: modelKey,
+      enable_gradual_wholesale: product.enable_gradual_wholesale || false,
+    };
+
+    onAddToCart(productWithModel, finalQuantity, selectedVariation);
+    onClose();
+
+    toast({
+      title: "Produto adicionado!",
+      description: `${finalQuantity} unidade(s) adicionada(s) ao carrinho.`,
+    });
+  }, [product, quantity, selectedVariation, variations.length, modelKey, minQuantity, onAddToCart, onClose, toast]);
+
+  const handleQuantityChange = useCallback((newQuantity: number) => {
+    if (!product) return;
+    
+    const finalQuantity = Math.max(newQuantity, minQuantity);
+    setQuantity(finalQuantity);
+  }, [minQuantity]);
+
   // Se não há produto, não renderizar o modal
   if (!product) {
     return null;
   }
 
-  const canAddMore = product.stock > quantity || product.allow_negative_stock;
+  const loading = priceModelLoading || variationsLoading;
+  const canAddMore = selectedVariation ? 
+    (selectedVariation.stock > quantity || product.allow_negative_stock) :
+    (product.stock > quantity || product.allow_negative_stock);
   const canDecrease = quantity > minQuantity;
 
   return (
@@ -143,7 +161,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            {product.name}
+            <span className="line-clamp-1">{product.name}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -158,9 +176,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Product Image */}
           <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-            {product.image_url ? (
+            {(selectedVariation?.image_url || product.image_url) ? (
               <img
-                src={product.image_url}
+                src={selectedVariation?.image_url || product.image_url}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -173,104 +191,156 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
           {/* Product Details */}
           <div className="space-y-4">
-            {/* Category */}
-            {product.category && (
-              <Badge variant="secondary">{product.category}</Badge>
-            )}
-
-            {/* Description */}
-            {product.description && (
-              <p className="text-gray-600">{product.description}</p>
-            )}
-
-            {/* Price */}
-            <div className="space-y-2">
-              {loading ? (
-                <div className="text-gray-500">Carregando preços...</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-gray-900">
-                    R$ {currentPrice.toFixed(2)}
-                  </div>
-                  {modelKey === "wholesale_only" && product.min_wholesale_qty && (
-                    <div className="text-sm text-orange-600">
-                      Quantidade mínima: {product.min_wholesale_qty} unidades
-                    </div>
-                  )}
-                  {modelKey !== "wholesale_only" && product.wholesale_price && (
-                    <div className="text-sm text-gray-500">
-                      Atacado: R$ {product.wholesale_price.toFixed(2)}
-                      {product.min_wholesale_qty && (
-                        <span> (min. {product.min_wholesale_qty})</span>
-                      )}
-                    </div>
-                  )}
-                </>
+            {/* Category and SKU */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {product.category && (
+                <Badge variant="secondary">{product.category}</Badge>
+              )}
+              {selectedVariation?.sku && (
+                <Badge variant="outline" className="text-xs">
+                  SKU: {selectedVariation.sku}
+                </Badge>
+              )}
+              {modelKey === "wholesale_only" && (
+                <Badge className="bg-orange-500 text-white">
+                  Apenas Atacado
+                </Badge>
               )}
             </div>
 
-            {/* Stock */}
-            <div className="text-sm text-gray-600">
-              {product.stock > 0 ? (
-                <span className="text-green-600">
-                  {product.stock} em estoque
-                </span>
+            {/* Description */}
+            {product.description && (
+              <p className="text-gray-600 text-sm">{product.description}</p>
+            )}
+
+            {/* Price Display */}
+            {loading ? (
+              <div className="text-gray-500">Carregando preços...</div>
+            ) : (
+              <ProductPriceDisplay
+                storeId={product.store_id}
+                productId={product.id}
+                retailPrice={product.retail_price}
+                wholesalePrice={product.wholesale_price}
+                minWholesaleQty={product.min_wholesale_qty}
+                quantity={quantity}
+                priceTiers={product.enable_gradual_wholesale ? tiers : []}
+                catalogType={catalogType}
+                showSavings={true}
+                showNextTierHint={true}
+                showTierName={true}
+                size="lg"
+              />
+            )}
+
+            {/* Stock Information */}
+            <div className="text-sm">
+              {selectedVariation ? (
+                <div className="flex items-center gap-2">
+                  <span className={selectedVariation.stock > 0 ? "text-green-600" : "text-red-600"}>
+                    {selectedVariation.stock > 0 ? 
+                      `${selectedVariation.stock} em estoque` : 
+                      "Produto esgotado"
+                    }
+                  </span>
+                  {product.allow_negative_stock && selectedVariation.stock === 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      Aceita pedido sem estoque
+                    </Badge>
+                  )}
+                </div>
               ) : (
-                <span className="text-red-600">Produto esgotado</span>
+                <div className="flex items-center gap-2">
+                  <span className={product.stock > 0 ? "text-green-600" : "text-red-600"}>
+                    {product.stock > 0 ? 
+                      `${product.stock} em estoque` : 
+                      "Produto esgotado"
+                    }
+                  </span>
+                  {product.allow_negative_stock && product.stock === 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      Aceita pedido sem estoque
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
             <Separator />
 
+            {/* Variation Selector */}
+            {variations.length > 0 && (
+              <>
+                <ProductVariationSelector
+                  variations={variations}
+                  selectedVariation={selectedVariation}
+                  onVariationChange={setSelectedVariation}
+                  loading={variationsLoading}
+                />
+                <Separator />
+              </>
+            )}
+
             {/* Quantity Selector */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Quantidade</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Quantidade</label>
+                {modelKey === "wholesale_only" && product.min_wholesale_qty && (
+                  <div className="text-xs text-orange-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Mín: {product.min_wholesale_qty} un.</span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuantityChange(quantity - 1)}
                   disabled={!canDecrease}
-                  className="h-8 w-8 p-0"
+                  className="h-10 w-10 p-0"
                 >
-                  <Minus className="h-3 w-3" />
+                  <Minus className="h-4 w-4" />
                 </Button>
-                <span className="mx-4 text-lg font-medium w-12 text-center">
-                  {quantity}
-                </span>
+                <div className="flex-1 text-center">
+                  <span className="text-lg font-medium">{quantity}</span>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleQuantityChange(quantity + 1)}
                   disabled={!canAddMore}
-                  className="h-8 w-8 p-0"
+                  className="h-10 w-10 p-0"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              {modelKey === "wholesale_only" && product.min_wholesale_qty && (
-                <div className="text-xs text-gray-500">
-                  Quantidade mínima: {product.min_wholesale_qty}
-                </div>
-              )}
             </div>
 
             {/* Add to Cart */}
             <Button
               onClick={handleAddToCart}
-              disabled={product.stock === 0 && !product.allow_negative_stock}
+              disabled={(!product.allow_negative_stock && 
+                ((selectedVariation && selectedVariation.stock === 0) || 
+                 (!selectedVariation && product.stock === 0)))}
               className="w-full"
               size="lg"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
-              Adicionar ao Carrinho - R$ {(currentPrice * quantity).toFixed(2)}
+              Adicionar ao Carrinho - {formatCurrency(priceCalculation.price * quantity)}
             </Button>
 
-            {/* Share Button */}
-            <Button variant="outline" size="sm" className="w-full">
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar Produto
-            </Button>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm">
+                <Heart className="h-4 w-4 mr-2" />
+                Favoritar
+              </Button>
+              <Button variant="outline" size="sm">
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartilhar
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
