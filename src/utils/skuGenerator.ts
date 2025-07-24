@@ -6,32 +6,55 @@ const normalizeText = (text: string): string => {
   return text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-') // Substitui caracteres especiais por hífen
-    .replace(/-+/g, '-') // Remove hífens duplicados
-    .replace(/^-|-$/g, ''); // Remove hífens do início e fim
+    .replace(/[^a-zA-Z0-9]/g, '') // Remove caracteres especiais
+    .toUpperCase();
+};
+
+// Função para gerar SKU base a partir de um texto
+export const generateBaseSKU = (text: string, maxLength: number = 8): string => {
+  const normalized = normalizeText(text);
+  
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  
+  // Se for muito longo, pega as primeiras letras de cada palavra
+  const words = text.split(/\s+/);
+  if (words.length > 1) {
+    const initials = words
+      .map(word => normalizeText(word).charAt(0))
+      .join('')
+      .substring(0, maxLength);
+    
+    if (initials.length >= 3) {
+      return initials;
+    }
+  }
+  
+  // Fallback: primeiros caracteres
+  return normalized.substring(0, maxLength);
 };
 
 // Função para verificar se SKU já existe
-export const checkSKUExists = async (sku: string, excludeProductId?: string): Promise<boolean> => {
+export const checkSKUExists = async (sku: string, excludeId?: string): Promise<boolean> => {
   try {
     let query = supabase
       .from('products')
       .select('id')
       .eq('sku', sku);
-
-    if (excludeProductId) {
-      query = query.neq('id', excludeProductId);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
     }
-
+    
     const { data, error } = await query;
-
+    
     if (error) {
       console.error('Erro ao verificar SKU:', error);
       return false;
     }
-
-    return data && data.length > 0;
+    
+    return (data && data.length > 0);
   } catch (error) {
     console.error('Erro ao verificar SKU:', error);
     return false;
@@ -39,115 +62,135 @@ export const checkSKUExists = async (sku: string, excludeProductId?: string): Pr
 };
 
 // Função para verificar se SKU de variação já existe
-export const checkVariationSKUExists = async (sku: string, excludeVariationId?: string): Promise<boolean> => {
+export const checkVariationSKUExists = async (sku: string, excludeId?: string): Promise<boolean> => {
   try {
     let query = supabase
       .from('product_variations')
       .select('id')
       .eq('sku', sku);
-
-    if (excludeVariationId) {
-      query = query.neq('id', excludeVariationId);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
     }
-
+    
     const { data, error } = await query;
-
+    
     if (error) {
       console.error('Erro ao verificar SKU de variação:', error);
       return false;
     }
-
-    return data && data.length > 0;
+    
+    return (data && data.length > 0);
   } catch (error) {
     console.error('Erro ao verificar SKU de variação:', error);
     return false;
   }
 };
 
-// Função para gerar SKU base do produto
-export const generateProductSKU = async (productName: string, category?: string, excludeProductId?: string): Promise<string> => {
-  const baseName = normalizeText(productName);
-  const baseCategory = category ? normalizeText(category) : '';
+// Função para gerar SKU único para produto
+export const generateUniqueProductSKU = async (
+  productName: string, 
+  excludeId?: string,
+  maxAttempts: number = 100
+): Promise<string> => {
+  const baseSKU = generateBaseSKU(productName);
   
-  let baseSKU = '';
-  
-  if (baseCategory) {
-    baseSKU = `${baseCategory.substring(0, 3)}-${baseName.substring(0, 10)}`;
-  } else {
-    baseSKU = baseName.substring(0, 15);
-  }
-
-  // Verificar se SKU base já existe
-  const exists = await checkSKUExists(baseSKU, excludeProductId);
-  
-  if (!exists) {
+  // Primeiro tenta o SKU base
+  const baseExists = await checkSKUExists(baseSKU, excludeId);
+  if (!baseExists) {
     return baseSKU;
   }
-
-  // Se existir, adicionar sufixo numérico
-  let counter = 1;
-  let newSKU = `${baseSKU}-${counter}`;
   
-  while (await checkSKUExists(newSKU, excludeProductId)) {
-    counter++;
-    newSKU = `${baseSKU}-${counter}`;
+  // Se existe, adiciona sufixos incrementais
+  for (let i = 1; i <= maxAttempts; i++) {
+    const candidate = `${baseSKU}${i.toString().padStart(2, '0')}`;
+    const exists = await checkSKUExists(candidate, excludeId);
+    
+    if (!exists) {
+      return candidate;
+    }
   }
   
-  return newSKU;
+  // Fallback com timestamp se todos os tentativas falharam
+  const timestamp = Date.now().toString().slice(-4);
+  const fallbackSKU = `${baseSKU.substring(0, 4)}${timestamp}`;
+  
+  return fallbackSKU;
 };
 
-// Função para gerar SKU de variação
-export const generateVariationSKU = async (
-  productSKU: string,
-  variationData: {
-    color?: string;
-    size?: string;
-    material?: string;
-    variation_value?: string;
-  },
-  excludeVariationId?: string
+// Função para gerar SKU único para variação
+export const generateUniqueVariationSKU = async (
+  productName: string,
+  variationData: { color?: string; size?: string },
+  excludeId?: string,
+  maxAttempts: number = 100
 ): Promise<string> => {
-  const parts = [productSKU];
+  const productBase = generateBaseSKU(productName, 4);
   
+  let variationPart = '';
   if (variationData.color) {
-    parts.push(normalizeText(variationData.color).substring(0, 3));
+    variationPart += generateBaseSKU(variationData.color, 2);
   }
-  
   if (variationData.size) {
-    parts.push(normalizeText(variationData.size).substring(0, 3));
+    variationPart += generateBaseSKU(variationData.size, 2);
   }
   
-  if (variationData.material) {
-    parts.push(normalizeText(variationData.material).substring(0, 3));
+  // Se não tem dados de variação, usa um sufixo genérico
+  if (!variationPart) {
+    variationPart = 'VAR';
   }
   
-  if (variationData.variation_value) {
-    parts.push(normalizeText(variationData.variation_value).substring(0, 3));
-  }
+  const baseSKU = `${productBase}-${variationPart}`;
   
-  let baseSKU = parts.join('-');
-  
-  // Verificar se SKU já existe
-  const exists = await checkVariationSKUExists(baseSKU, excludeVariationId);
-  
-  if (!exists) {
+  // Primeiro tenta o SKU base
+  const baseExists = await checkVariationSKUExists(baseSKU, excludeId);
+  if (!baseExists) {
     return baseSKU;
   }
-
-  // Se existir, adicionar sufixo numérico
-  let counter = 1;
-  let newSKU = `${baseSKU}-${counter}`;
   
-  while (await checkVariationSKUExists(newSKU, excludeVariationId)) {
+  // Se existe, adiciona sufixos incrementais
+  for (let i = 1; i <= maxAttempts; i++) {
+    const candidate = `${baseSKU}${i.toString().padStart(2, '0')}`;
+    const exists = await checkVariationSKUExists(candidate, excludeId);
+    
+    if (!exists) {
+      return candidate;
+    }
+  }
+  
+  // Fallback com timestamp
+  const timestamp = Date.now().toString().slice(-3);
+  const fallbackSKU = `${baseSKU.substring(0, 8)}${timestamp}`;
+  
+  return fallbackSKU;
+};
+
+// Função para gerar um novo SKU incrementado
+export const generateIncrementedSKU = async (baseSKU: string): Promise<string> => {
+  let newSKU = baseSKU;
+  let counter = 1;
+  
+  while (await checkSKUExists(newSKU) || await checkVariationSKUExists(newSKU)) {
+    const suffix = counter.toString().padStart(2, '0');
+    
+    // Remove qualquer sufixo numérico existente
+    const cleanBase = baseSKU.replace(/\d+$/, '');
+    newSKU = `${cleanBase}${suffix}`;
     counter++;
-    newSKU = `${baseSKU}-${counter}`;
+    
+    // Evita loop infinito
+    if (counter > 99) {
+      const timestamp = Date.now().toString().slice(-3);
+      newSKU = `${cleanBase.substring(0, 5)}${timestamp}`;
+      break;
+    }
   }
   
   return newSKU;
 };
 
 // Função para gerar SKU único (compatibilidade)
-export const generateUniqueSKU = (
+export const generateUniqueSKU = async (
   productName: string, 
   variationData?: { 
     color?: string; 
@@ -155,33 +198,27 @@ export const generateUniqueSKU = (
     name?: string; 
     index?: number;
   }
-): string => {
-  const baseName = normalizeText(productName);
-  const parts = [baseName.substring(0, 8)];
-  
-  if (variationData?.color) {
-    parts.push(normalizeText(variationData.color).substring(0, 3));
+): Promise<string> => {
+  if (variationData) {
+    return await generateUniqueVariationSKU(productName, variationData);
+  } else {
+    return await generateUniqueProductSKU(productName);
   }
-  
-  if (variationData?.size) {
-    parts.push(normalizeText(variationData.size).substring(0, 3));
-  }
-  
-  if (variationData?.index !== undefined) {
-    parts.push(String(variationData.index + 1).padStart(2, '0'));
-  }
-  
-  return parts.join('-').toUpperCase();
 };
 
 // Função para gerar SKUs em lote
-export const generateBatchSKUs = (
+export const generateBatchSKUs = async (
   productName: string,
   variations: Array<{ color?: string; size?: string; name?: string }>
-): string[] => {
-  return variations.map((variation, index) => 
-    generateUniqueSKU(productName, { ...variation, index })
-  );
+): Promise<string[]> => {
+  const skus: string[] = [];
+  
+  for (const variation of variations) {
+    const sku = await generateUniqueVariationSKU(productName, variation);
+    skus.push(sku);
+  }
+  
+  return skus;
 };
 
 // Função para validar unicidade de SKUs
@@ -195,26 +232,10 @@ export const suggestSKU = async (input: string, type: 'product' | 'variation' = 
   const normalized = normalizeText(input);
   
   if (type === 'product') {
-    return await generateProductSKU(input);
+    return await generateUniqueProductSKU(input);
   } else {
-    // Para variações, retorna apenas a versão normalizada
-    // O SKU completo será gerado quando o produto for salvo
-    return normalized.substring(0, 10);
+    // Para variações, gera um SKU mais simples
+    const baseSKU = generateBaseSKU(input, 6);
+    return await generateIncrementedSKU(baseSKU);
   }
-};
-
-// Função para validar formato de SKU
-export const validateSKUFormat = (sku: string): boolean => {
-  // SKU deve ter entre 3 e 50 caracteres, apenas letras, números e hífens
-  const skuRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{2,49}$/;
-  return skuRegex.test(sku);
-};
-
-// Função para limpar e formatar SKU inserido manualmente
-export const formatSKU = (sku: string): string => {
-  return sku
-    .toUpperCase()
-    .replace(/[^A-Z0-9-]/g, '') // Remove caracteres inválidos
-    .replace(/-+/g, '-') // Remove hífens duplicados
-    .replace(/^-|-$/g, ''); // Remove hífens do início e fim
 };

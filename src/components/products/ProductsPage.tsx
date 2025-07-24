@@ -14,7 +14,7 @@ const ProductsPage = () => {
   const { profile } = useAuth();
   const currentStore = profile?.store_id;
   
-  const { products, refetch } = useProducts();
+  const { products, fetchProducts } = useProducts();
 
   return (
     <div className="container mx-auto p-6">
@@ -65,7 +65,7 @@ const ProductsPage = () => {
         isOpen={isBulkStockModalOpen}
         onClose={() => setIsBulkStockModalOpen(false)}
         products={products}
-        onStockUpdated={refetch}
+        onStockUpdated={fetchProducts}
       />
     </div>
   );

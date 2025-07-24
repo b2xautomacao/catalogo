@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Upload, Settings, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import ImprovedProductFormWizard from "@/components/products/ImprovedProductForm
 import ImprovedAIToolsModal from "@/components/products/ImprovedAIToolsModal";
 import SimpleBulkImportModal from "@/components/products/SimpleBulkImportModal";
 import SimplePricingConfig from "@/components/catalog/SimplePricingConfig";
-import BulkStockManager from "@/components/products/BulkStockManager";
+import BulkStockModal from "@/components/products/BulkStockModal";
 import { useProducts } from "@/hooks/useProducts";
 import { useStores } from "@/hooks/useStores";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +20,7 @@ const Products = () => {
   const [showAIModal, setShowAIModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPricingConfig, setShowPricingConfig] = useState(false);
-  const [showBulkStockManager, setShowBulkStockManager] = useState(false);
+  const [showBulkStockModal, setShowBulkStockModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const {
@@ -147,7 +148,7 @@ const Products = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => setShowBulkStockManager(true)}
+            onClick={() => setShowBulkStockModal(true)}
             className="shrink-0"
           >
             <Package className="mr-2 h-4 w-4" />
@@ -233,11 +234,12 @@ const Products = () => {
         storeId={currentStore?.id}
       />
 
-      {/* Novo modal de estoque em massa */}
-      <BulkStockManager
-        isOpen={showBulkStockManager}
-        onClose={() => setShowBulkStockManager(false)}
-        storeId={currentStore?.id || ''}
+      {/* Modal de estoque em massa */}
+      <BulkStockModal
+        isOpen={showBulkStockModal}
+        onClose={() => setShowBulkStockModal(false)}
+        products={mappedProducts}
+        onStockUpdated={fetchProducts}
       />
     </div>
   );
