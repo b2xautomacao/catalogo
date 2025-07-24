@@ -5,7 +5,7 @@ import { useStorePriceModel } from '@/hooks/useStorePriceModel';
 import { PriceModelType } from '@/types/price-models';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useDraftImages } from '@/hooks/useDraftImages';
+import { useDraftImagesContext } from '@/contexts/DraftImagesContext';
 
 export interface WizardFormData {
   // Basic product info
@@ -52,7 +52,6 @@ export const useImprovedProductFormWizard = () => {
   const { profile } = useAuth();
   const { priceModel } = useStorePriceModel(profile?.store_id);
   const { toast } = useToast();
-  const { uploadAllImages } = useDraftImages();
   
   const [formData, setFormData] = useState<WizardFormData>({
     name: '',
@@ -317,22 +316,6 @@ export const useImprovedProductFormWizard = () => {
       }
 
       console.log('✅ WIZARD - Produto salvo:', result);
-
-      // Salvar imagens se existirem
-      if (result?.id) {
-        try {
-          console.log('📸 WIZARD - Salvando imagens do produto:', result.id);
-          await uploadAllImages(result.id);
-        } catch (imageError) {
-          console.error('📸 WIZARD - Erro ao salvar imagens:', imageError);
-          // Não bloquear o salvamento do produto por erro nas imagens
-          toast({
-            variant: "default",
-            title: "Produto salvo com aviso",
-            description: "Produto salvo, mas houve erro ao processar algumas imagens.",
-          });
-        }
-      }
 
       toast({
         title: "Produto salvo!",

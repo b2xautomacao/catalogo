@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Star, StarOff, Camera, MoveUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useDraftImages } from '@/hooks/useDraftImages';
+import { useDraftImagesContext } from '@/contexts/DraftImagesContext';
 
 interface ImprovedProductImagesFormProps {
   productId?: string;
@@ -23,14 +22,23 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
     removeDraftImage, 
     uploadAllImages,
     setPrimaryImage,
-    reorderImages
-  } = useDraftImages();
+    reorderImages,
+    loadExistingImages
+  } = useDraftImagesContext();
 
   React.useEffect(() => {
+    console.log("📷 IMPROVED FORM - useEffect triggered:", { productId, hasUploadReady: !!onImageUploadReady });
+    
+    if (productId) {
+      console.log("📷 IMPROVED FORM - Carregando imagens existentes para:", productId);
+      loadExistingImages(productId);
+    }
+    
     if (onImageUploadReady) {
+      console.log("📷 IMPROVED FORM - Registrando função de upload");
       onImageUploadReady(uploadAllImages);
     }
-  }, [onImageUploadReady, uploadAllImages]);
+  }, [productId, onImageUploadReady, uploadAllImages, loadExistingImages]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -90,11 +98,13 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
         return;
       }
 
+      console.log("📷 IMPROVED FORM - Adicionando imagem:", file.name);
       addDraftImage(file);
     });
   };
 
   const handleSetPrimary = (imageId: string) => {
+    console.log("📷 IMPROVED FORM - Definindo imagem principal:", imageId);
     setPrimaryImage(imageId);
     toast({
       title: "Imagem principal definida",
@@ -108,6 +118,8 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
       reorderImages(imageId, currentIndex - 1);
     }
   };
+
+  console.log("📷 IMPROVED FORM - Renderizando com", draftImages.length, "imagens");
 
   return (
     <Card>
@@ -173,7 +185,10 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
                   {/* Action Buttons */}
                   <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => removeDraftImage(image.id)}
+                      onClick={() => {
+                        console.log("📷 IMPROVED FORM - Removendo imagem:", image.id);
+                        removeDraftImage(image.id);
+                      }}
                       className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                       title="Remover imagem"
                     >

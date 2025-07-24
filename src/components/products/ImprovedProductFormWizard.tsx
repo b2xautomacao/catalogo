@@ -2,6 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useImprovedProductFormWizard } from '@/hooks/useImprovedProductFormWizard';
+import { DraftImagesProvider } from '@/contexts/DraftImagesContext';
 import ImprovedWizardStepNavigation from './wizard/ImprovedWizardStepNavigation';
 import WizardStepContent from './wizard/WizardStepContent';
 import ImprovedWizardActionButtons from './wizard/ImprovedWizardActionButtons';
@@ -34,7 +35,10 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
   } = useImprovedProductFormWizard();
 
   React.useEffect(() => {
+    console.log("🧙 WIZARD - useEffect triggered:", { editingProduct: !!editingProduct, isOpen });
+    
     if (editingProduct && isOpen) {
+      console.log("🧙 WIZARD - Carregando dados do produto para edição:", editingProduct.id);
       // Load product data for editing
       updateFormData({
         name: editingProduct.name || '',
@@ -89,47 +93,49 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
   }));
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            {editingProduct ? 'Editar Produto' : 'Novo Produto'}
-          </DialogTitle>
-        </DialogHeader>
+    <DraftImagesProvider>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              {editingProduct ? 'Editar Produto' : 'Novo Produto'}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Step Navigation */}
-          <ImprovedWizardStepNavigation
-            steps={navigationSteps}
-            currentStep={currentStep}
-            onStepClick={goToStep}
-          />
-
-          {/* Step Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <WizardStepContent
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Step Navigation */}
+            <ImprovedWizardStepNavigation
+              steps={navigationSteps}
               currentStep={currentStep}
-              formData={formData}
-              updateFormData={updateFormData}
-              productId={editingProduct?.id}
+              onStepClick={goToStep}
+            />
+
+            {/* Step Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <WizardStepContent
+                currentStep={currentStep}
+                formData={formData}
+                updateFormData={updateFormData}
+                productId={editingProduct?.id}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <ImprovedWizardActionButtons
+              currentStep={currentStep}
+              totalSteps={steps.length}
+              canProceed={canProceed()}
+              isSaving={loading}
+              onPrevious={prevStep}
+              onNext={nextStep}
+              onSave={handleSave}
+              onCancel={handleClose}
+              isLastStep={isLastStep}
             />
           </div>
-
-          {/* Action Buttons */}
-          <ImprovedWizardActionButtons
-            currentStep={currentStep}
-            totalSteps={steps.length}
-            canProceed={canProceed()}
-            isSaving={loading}
-            onPrevious={prevStep}
-            onNext={nextStep}
-            onSave={handleSave}
-            onCancel={handleClose}
-            isLastStep={isLastStep}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </DraftImagesProvider>
   );
 };
 
