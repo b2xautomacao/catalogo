@@ -1,8 +1,9 @@
 import React from "react";
-import { Product } from "@/hooks/useProducts";
+import { Product } from "@/types/product";
 import { CatalogType } from "@/hooks/useCatalog";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useCart } from "@/hooks/useCart";
+import { PriceModelType } from "@/types/price-models";
 
 export interface CatalogSettingsData {
   colors?: {
@@ -76,7 +77,7 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
 
   const { addItem } = useCart();
   const { priceModel, loading } = useStorePriceModel(product.store_id);
-  const modelKey = priceModel?.price_model || "retail_only";
+  const modelKey = priceModel?.price_model || ("retail_only" as PriceModelType);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -94,7 +95,11 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
     addItem(
       {
         id: `${product.id}-default`,
-        product: { ...product, price_model: modelKey },
+        product: { 
+          ...product, 
+          price_model: modelKey,
+          allow_negative_stock: product.allow_negative_stock || false
+        },
         quantity: qty,
         price,
         originalPrice: price,

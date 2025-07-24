@@ -57,6 +57,7 @@ export interface Product {
   whatsapp_number?: string;
   price_tiers?: ProductPriceTier[];
   enable_gradual_wholesale?: boolean; // Toggle para ativar/desativar atacado gradativo
+  price_model?: string; // Adicionar propriedade price_model
 }
 
 export interface CreateProductData {
