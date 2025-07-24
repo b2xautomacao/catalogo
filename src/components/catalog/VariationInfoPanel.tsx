@@ -20,26 +20,30 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
   const hasStock = variation.stock > 0;
 
   return (
-    <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
-      {/* Header */}
+    <div className="p-4 bg-slate-50 rounded-lg border-2 border-slate-200 space-y-4">
+      {/* Header com contraste melhorado */}
       <div className="flex items-center justify-between">
-        <h5 className="font-semibold text-base flex items-center gap-2">
+        <h5 className="font-bold text-lg flex items-center gap-2 text-slate-800">
           {isGrade ? (
             <>
-              <Package className="h-4 w-4 text-primary" />
-              Grade Selecionada
+              <Package className="h-5 w-5 text-blue-600" />
+              <span className="text-blue-800">Grade Selecionada</span>
             </>
           ) : (
             <>
-              <Palette className="h-4 w-4 text-primary" />
-              Variação Selecionada
+              <Palette className="h-5 w-5 text-primary" />
+              <span className="text-slate-800">Variação Selecionada</span>
             </>
           )}
         </h5>
         
         <Badge 
           variant={hasStock ? "default" : "destructive"}
-          className="flex items-center gap-1"
+          className={`flex items-center gap-1 font-semibold px-3 py-1 ${
+            hasStock 
+              ? "bg-green-100 text-green-800 border-green-300" 
+              : "bg-red-100 text-red-800 border-red-300"
+          }`}
         >
           {hasStock ? (
             <>
@@ -55,66 +59,66 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
         </Badge>
       </div>
 
-      {/* Basic Info */}
+      {/* Basic Info com contraste melhorado */}
       <div className="grid grid-cols-2 gap-4">
         {isGrade ? (
           <>
             {variation.grade_name && (
-              <div>
-                <span className="text-sm text-muted-foreground">Nome da Grade:</span>
-                <p className="font-medium">{variation.grade_name}</p>
+              <div className="bg-white p-3 rounded-md border">
+                <span className="text-sm font-medium text-slate-600">Nome da Grade:</span>
+                <p className="font-bold text-slate-800 text-lg">{variation.grade_name}</p>
               </div>
             )}
             {variation.grade_color && (
-              <div>
-                <span className="text-sm text-muted-foreground">Cor:</span>
-                <p className="font-medium">{variation.grade_color}</p>
+              <div className="bg-white p-3 rounded-md border">
+                <span className="text-sm font-medium text-slate-600">Cor:</span>
+                <p className="font-bold text-slate-800 text-lg">{variation.grade_color}</p>
               </div>
             )}
           </>
         ) : (
           <>
             {variation.color && (
-              <div>
-                <span className="text-sm text-muted-foreground">Cor:</span>
-                <p className="font-medium">{variation.color}</p>
+              <div className="bg-white p-3 rounded-md border">
+                <span className="text-sm font-medium text-slate-600">Cor:</span>
+                <p className="font-bold text-slate-800">{variation.color}</p>
               </div>
             )}
             {variation.size && (
-              <div>
-                <span className="text-sm text-muted-foreground">Tamanho:</span>
-                <p className="font-medium">{variation.size}</p>
+              <div className="bg-white p-3 rounded-md border">
+                <span className="text-sm font-medium text-slate-600">Tamanho:</span>
+                <p className="font-bold text-slate-800">{variation.size}</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Grade Composition - Compact Display */}
+      {/* Grade Composition com contraste melhorado */}
       {isGrade && variation.grade_sizes && variation.grade_sizes.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 bg-white p-4 rounded-md border-2 border-blue-200">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">
+            <h6 className="text-base font-bold text-blue-800">
               Composição da Grade:
-            </span>
-            <Badge variant="outline" className="text-xs">
+            </h6>
+            <Badge variant="outline" className="text-sm bg-blue-100 text-blue-800 border-blue-300 font-semibold">
               {variation.grade_sizes.length} tamanhos
             </Badge>
           </div>
           
-          {/* Compact Size Grid */}
-          <div className="grid grid-cols-6 gap-1.5">
+          {/* Grade com contraste melhorado */}
+          <div className="grid grid-cols-4 gap-2">
             {variation.grade_sizes.map((size, index) => {
               const pairCount = variation.grade_pairs && variation.grade_pairs[index] ? variation.grade_pairs[index] : 0;
               return (
                 <div 
                   key={index}
-                  className="flex flex-col items-center justify-center p-1.5 bg-background rounded border text-center min-h-[2.5rem]"
+                  className="flex flex-col items-center justify-center p-3 bg-blue-50 rounded-md border-2 border-blue-200 text-center min-h-[3rem]"
                 >
-                  <span className="text-xs font-semibold text-primary">{size}</span>
+                  <span className="text-sm font-bold text-blue-800">{size}</span>
                   {pairCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground leading-none">
-                      {pairCount}p
+                    <span className="text-xs text-blue-600 font-semibold">
+                      {pairCount} pares
                     </span>
                   )}
                 </div>
@@ -122,11 +126,11 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
             })}
           </div>
           
-          {/* Total Pairs Summary */}
+          {/* Total Pairs Summary com contraste melhorado */}
           {variation.grade_pairs && variation.grade_pairs.length > 0 && (
-            <div className="flex items-center justify-between text-xs bg-background/50 rounded p-2">
-              <span className="text-muted-foreground">Total de pares:</span>
-              <span className="font-semibold text-primary">
+            <div className="flex items-center justify-between text-sm bg-blue-100 rounded-md p-3 border border-blue-300">
+              <span className="font-medium text-blue-700">Total de pares:</span>
+              <span className="font-bold text-blue-800 text-lg">
                 {variation.grade_pairs.reduce((total, pairs) => total + (pairs || 0), 0)} pares
               </span>
             </div>
@@ -134,20 +138,20 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
         </div>
       )}
 
-      {/* Price Info */}
-      <div className="flex items-center justify-between p-3 bg-background rounded-md border">
+      {/* Price Info com contraste melhorado */}
+      <div className="flex items-center justify-between p-4 bg-green-50 rounded-md border-2 border-green-200">
         <div>
-          <span className="text-sm text-muted-foreground">Preço final:</span>
-          <p className="text-lg font-bold text-primary">
+          <span className="text-sm font-medium text-green-700">Preço final:</span>
+          <p className="text-2xl font-bold text-green-800">
             R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
         
         {variation.price_adjustment !== 0 && (
           <div className="text-right">
-            <span className="text-sm text-muted-foreground">Ajuste:</span>
-            <p className={`font-medium ${
-              variation.price_adjustment > 0 ? 'text-destructive' : 'text-green-600'
+            <span className="text-sm font-medium text-slate-600">Ajuste:</span>
+            <p className={`font-bold text-lg ${
+              variation.price_adjustment > 0 ? 'text-red-600' : 'text-green-600'
             }`}>
               {variation.price_adjustment > 0 ? '+' : ''}
               R$ {variation.price_adjustment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -156,27 +160,27 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
         )}
       </div>
 
-      {/* Advanced Info */}
+      {/* Advanced Info com contraste melhorado */}
       {showAdvancedInfo && (
-        <div className="grid grid-cols-1 gap-2 pt-2 border-t border-border/50">
+        <div className="space-y-3 pt-3 border-t-2 border-slate-200">
           {variation.sku && (
-            <div className="flex items-center gap-2">
-              <Hash className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs font-mono text-muted-foreground">
-                SKU: {variation.sku}
+            <div className="flex items-center gap-2 bg-white p-2 rounded border">
+              <Hash className="h-4 w-4 text-slate-500" />
+              <span className="text-sm font-mono text-slate-700 font-medium">
+                SKU: <span className="font-bold text-slate-800">{variation.sku}</span>
               </span>
             </div>
           )}
           
           {variation.image_url && (
-            <div className="mt-2">
-              <span className="text-sm text-muted-foreground block mb-2">
+            <div className="bg-white p-3 rounded border">
+              <span className="text-sm font-medium text-slate-600 block mb-2">
                 Imagem da variação:
               </span>
               <img
                 src={variation.image_url}
                 alt={`${variation.color || variation.grade_name || 'Variação'}`}
-                className="w-20 h-20 object-cover rounded border"
+                className="w-24 h-24 object-cover rounded-md border-2 border-slate-200"
               />
             </div>
           )}

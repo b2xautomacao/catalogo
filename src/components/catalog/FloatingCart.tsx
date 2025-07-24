@@ -34,7 +34,7 @@ const CartItem: React.FC<{
   const allowNegative = item.product?.allow_negative_stock ?? false;
 
   const { priceModel } = useStorePriceModel(item.product?.store_id);
-  const modelKey = item.product?.price_model || priceModel?.price_model || "retail_only";
+  const modelKey = priceModel?.price_model || "retail_only";
   const minQty = modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
 
   // Validação de estoque
@@ -62,11 +62,9 @@ const CartItem: React.FC<{
       case "gradual_wholesale":
         return {
           text: item.currentTier?.tier_name || "Varejo",
-          className: item.currentTier?.tier_name === "Atacado Grande"
-            ? "bg-yellow-100 text-yellow-800 border-yellow-400"
-            : "bg-green-100 text-green-800 border-green-300"
+          className: "bg-purple-100 text-purple-800 border-purple-300"
         };
-      default:
+      default: // retail_only
         return {
           text: "Varejo",
           className: "bg-blue-100 text-blue-800 border-blue-300"
@@ -82,7 +80,7 @@ const CartItem: React.FC<{
       if (needed > 0) {
         onUpdateQuantity(item.id, quantity + needed);
       }
-    } else if (item.nextTier && item.nextTierQuantityNeeded > 0) {
+    } else if (item.nextTierQuantityNeeded > 0) {
       onUpdateQuantity(item.id, quantity + item.nextTierQuantityNeeded);
     }
   };
@@ -92,7 +90,7 @@ const CartItem: React.FC<{
       const needed = item.product.min_wholesale_qty - quantity;
       if (needed > 0) {
         return {
-          text: `Adicione mais ${needed} unidade(s) para ativar preço de atacado!`,
+          text: `Adicione mais ${needed} unidade${needed > 1 ? 's' : ''} para atacado`,
           buttonText: "Ativar Atacado",
           showSavings: true,
           savings: item.product.wholesale_price ? 
@@ -101,8 +99,8 @@ const CartItem: React.FC<{
       }
     } else if (modelKey === "gradual_wholesale" && item.nextTierQuantityNeeded > 0) {
       return {
-        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade(s) para próximo nível!`,
-        buttonText: `Ativar ${item.nextTier?.tier_name || "Próximo Nível"}`,
+        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade${item.nextTierQuantityNeeded > 1 ? 's' : ''} para próximo nível`,
+        buttonText: `Próximo Nível`,
         showSavings: true,
         savings: item.nextTierPotentialSavings || 0
       };
@@ -114,7 +112,7 @@ const CartItem: React.FC<{
 
   return (
     <div className={`cart-item-card rounded-xl p-4 border-2 ${
-      badgeInfo.text === "Atacado Grande" ? "border-yellow-400" : "border-gray-200"
+      badgeInfo.text.includes("Atacado") ? "border-green-400" : "border-gray-200"
     } bg-white flex flex-col gap-2`}>
       <div className="flex flex-row gap-4 items-start">
         {/* Imagem */}
@@ -134,7 +132,7 @@ const CartItem: React.FC<{
                 {item.product?.name || "Produto sem nome"}
               </h4>
               
-              {/* Badges de Grade e Atacado Gradativo */}
+              {/* Badges de Grade e modelo especial */}
               <div className="flex flex-wrap items-center gap-1 mt-1">
                 {item.gradeInfo && (
                   <Badge className="bg-blue-600 text-white text-xs px-1.5 py-0.5">
@@ -142,8 +140,8 @@ const CartItem: React.FC<{
                   </Badge>
                 )}
                 {modelKey === "gradual_wholesale" && (
-                  <Badge className="bg-yellow-500 text-white text-xs px-1.5 py-0.5" title="Descontos progressivos por quantidade">
-                    Atacado Progressivo
+                  <Badge className="bg-purple-500 text-white text-xs px-1.5 py-0.5" title="Descontos progressivos por quantidade">
+                    Atacado Gradativo
                   </Badge>
                 )}
               </div>
@@ -238,7 +236,7 @@ const CartItem: React.FC<{
             {incentive.text}
             {incentive.showSavings && incentive.savings > 0 && (
               <span className="ml-1 text-green-700 font-bold">
-                Economize R$ {incentive.savings.toFixed(2)} no total!
+                Economize R$ {incentive.savings.toFixed(2).replace(".", ",")}!
               </span>
             )}
           </div>
