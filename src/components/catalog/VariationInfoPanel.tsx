@@ -16,7 +16,7 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
   showAdvancedInfo = true,
 }) => {
   const isGrade = variation.is_grade || variation.variation_type === 'grade';
-  const finalPrice = basePrice + (variation.price_adjustment || 0);
+  const finalPrice = (basePrice || 0) + (variation.price_adjustment || 0);
   const hasStock = variation.stock > 0;
 
   return (

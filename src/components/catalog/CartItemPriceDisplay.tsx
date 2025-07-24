@@ -31,18 +31,17 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
   
   // Determinar se deve mostrar badge baseado no modelo de preço da loja
   const showTierBadge = (() => {
-    // Se não temos store_id no produto, mostrar baseado no tier_name
-    if (!product.store_id) {
-      return currentTier.tier_name !== 'Varejo';
+    // Para wholesale_only, sempre mostrar badge "Atacado"
+    if (priceCalculation.priceModel === 'wholesale_only') {
+      return true;
     }
     
-    // Verificar modelo da loja através do item
-    const isRetailOnly = item.catalogType === 'retail' && currentTier.tier_name === 'Varejo';
+    // Para retail_only, nunca mostrar badge
+    if (priceCalculation.priceModel === 'retail_only') {
+      return false;
+    }
     
-    // Não mostrar badge para retail_only quando está no varejo
-    if (isRetailOnly) return false;
-    
-    // Para outros casos, mostrar se não for Varejo
+    // Para outros modelos, mostrar se não for Varejo
     return currentTier.tier_name !== 'Varejo';
   })();
 

@@ -35,6 +35,7 @@ interface PriceCalculationResult {
     quantityNeeded: number;
     potentialSavings: number;
   };
+  priceModel?: string;
 }
 
 export const useCartPriceCalculation = (item: CartItem): PriceCalculationResult => {
@@ -61,12 +62,10 @@ export const useCartPriceCalculation = (item: CartItem): PriceCalculationResult 
         break;
 
       case 'wholesale_only':
-        // Apenas atacado
+        // Apenas atacado - não mostrar economia pois é o preço padrão
         finalPrice = wholesalePrice || retailPrice;
         currentTierName = 'Atacado';
-        if (wholesalePrice && wholesalePrice < retailPrice) {
-          savings = (retailPrice - wholesalePrice) * quantity;
-        }
+        savings = 0; // Não mostrar economia para wholesale_only
         break;
 
       case 'simple_wholesale':
@@ -140,7 +139,8 @@ export const useCartPriceCalculation = (item: CartItem): PriceCalculationResult 
         tier_name: currentTierName,
         price: finalPrice
       },
-      nextTierHint
+      nextTierHint,
+      priceModel: modelType // Adicionar modelo de preço para uso nos componentes
     };
   }, [item, priceModel]);
 };

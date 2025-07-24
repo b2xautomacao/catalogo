@@ -10,6 +10,13 @@ interface CustomerData {
   name: string;
   email: string;
   phone: string;
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 interface ShippingAddress {
@@ -121,6 +128,13 @@ export const CheckoutProvider: React.FC<CheckoutProviderProps> = ({
     name: "",
     email: "",
     phone: "",
+    zipCode: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
   });
 
   // Determinar tipo de checkout baseado nas configurações da loja

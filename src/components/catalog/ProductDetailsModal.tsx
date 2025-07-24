@@ -367,7 +367,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       selectedVariation={selectedVariation}
                       onVariationChange={setSelectedVariation}
                       loading={variationsLoading}
-                      basePrice={product.retail_price}
+                      basePrice={modelKey === "wholesale_only" ? 
+                        (product.wholesale_price || product.retail_price) : 
+                        product.retail_price
+                      }
                       showPriceInCards={true}
                     />
 
