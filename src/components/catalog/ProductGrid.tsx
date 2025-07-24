@@ -3,7 +3,7 @@ import React from 'react';
 import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useMobileLayout } from '@/hooks/useMobileLayout';
-import TemplateSelector from './TemplateSelector';
+import ProductCard from './ProductCard';
 
 interface ProductGridProps {
   products: Product[];
@@ -65,18 +65,16 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <div className={getMobileGridClasses()}>
       {products.map((product) => (
-        <TemplateSelector
+        <ProductCard
           key={product.id}
           product={product}
           catalogType={catalogType}
-          templateName={templateName}
-          onAddToCart={handleAddToCart}
-          onAddToWishlist={onAddToWishlist}
-          onQuickView={onQuickView}
+          onAddToCart={() => handleAddToCart(product)}
+          onAddToWishlist={() => onAddToWishlist(product)}
+          onQuickView={() => onQuickView(product)}
           isInWishlist={wishlist.some(item => item.id === product.id)}
           showPrices={showPrices}
           showStock={showStock}
-          storeIdentifier={storeIdentifier}
         />
       ))}
     </div>

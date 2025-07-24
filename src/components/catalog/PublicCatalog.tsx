@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useCatalog, CatalogType } from "@/hooks/useCatalog";
 import { useCatalogSettings } from "@/hooks/useCatalogSettings";
@@ -252,7 +251,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
                 <ResponsiveProductGrid
                   products={filteredProducts}
                   catalogType={catalogType}
-                  storeIdentifier={storeIdentifier}
                   loading={loading}
                 />
               </div>
