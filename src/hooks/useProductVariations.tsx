@@ -32,7 +32,7 @@ export const useProductVariations = (productId?: string) => {
 
       // Processar variações para o formato compatível
       const processedVariations =
-        data?.map((v) => ({
+        data?.map((v: any) => ({
           id: v.id,
           product_id: v.product_id,
           color: v.color,
@@ -45,13 +45,13 @@ export const useProductVariations = (productId?: string) => {
           created_at: v.created_at,
           updated_at: v.updated_at,
           variation_type: v.variation_type,
-          name: v.name,
-          is_grade: v.is_grade,
-          grade_name: v.grade_name,
-          grade_color: v.grade_color,
-          grade_quantity: v.grade_quantity,
-          grade_sizes: v.grade_sizes,
-          grade_pairs: v.grade_pairs,
+          name: v.name || null,
+          is_grade: v.is_grade || false,
+          grade_name: v.grade_name || null,
+          grade_color: v.grade_color || null,
+          grade_quantity: v.grade_quantity || null,
+          grade_sizes: v.grade_sizes || null,
+          grade_pairs: v.grade_pairs || null,
         })) || [];
 
       console.log(

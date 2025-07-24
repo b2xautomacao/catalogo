@@ -86,6 +86,7 @@ export interface UpdateProductData extends CreateProductData {
 // Interface unificada para price tiers - suporta ambos os formatos
 export interface ProductPriceTier {
   id: string;
+  product_id?: string; // Tornar opcional
   tier_name: string;
   tier_type: string;
   min_quantity: number;

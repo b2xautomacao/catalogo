@@ -59,6 +59,10 @@ export const useImprovedProductFormWizard = () => {
   const { profile } = useAuth();
   const { priceModel } = useStorePriceModel(formData.store_id);
 
+  const isWholesaleOnly = useMemo(() => {
+    return priceModel?.price_model === ("wholesale_only" as PriceModelType);
+  }, [priceModel]);
+
   const steps = useMemo(
     () => [
       {

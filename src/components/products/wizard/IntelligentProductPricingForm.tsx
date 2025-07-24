@@ -1,513 +1,513 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { DollarSign, Info } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  PRICE_MODEL_CONFIGS,
+  PriceModelType,
+  StorePriceModel,
+  DEFAULT_TIER_CONFIGS,
+  TierConfig,
+} from "@/types/price-models";
+import { useToast } from "@/hooks/use-toast";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useAuth } from "@/hooks/useAuth";
-import { PriceModelType } from "@/types/price-models";
-
-interface PriceTier {
-  id: string;
-  name: string;
-  minQuantity: number;
-  price: number;
-  enabled: boolean;
-}
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2 } from "lucide-react";
 
 interface IntelligentProductPricingFormProps {
-  retailPrice: number;
-  wholesalePrice?: number;
-  minWholesaleQty?: number;
-  stock: number;
-  priceTiers: PriceTier[];
-  onRetailPriceChange: (price: number) => void;
-  onWholesalePriceChange: (price: number) => void;
-  onMinWholesaleQtyChange: (qty: number) => void;
-  onStockChange: (stock: number) => void;
-  onPriceTiersChange: (tiers: PriceTier[]) => void;
+  storeId: string;
+  productId?: string;
+  onSettingsChange: (settings: StorePriceModel) => void;
 }
+
+const formSchema = z.object({
+  price_model: z.enum([
+    "retail_only",
+    "simple_wholesale",
+    "gradual_wholesale",
+    "wholesale_only",
+  ]),
+  simple_wholesale_enabled: z.boolean().default(false),
+  simple_wholesale_name: z.string().default("Atacado"),
+  simple_wholesale_min_qty: z.number().min(1).default(5),
+  gradual_wholesale_enabled: z.boolean().default(false),
+  gradual_tiers_count: z.number().min(2).max(4).default(3),
+  tier_1_name: z.string().default("Varejo"),
+  tier_2_name: z.string().default("Atacado 1"),
+  tier_3_name: z.string().default("Atacado 2"),
+  tier_4_name: z.string().default("Atacado 3"),
+  tier_1_enabled: z.boolean().default(true),
+  tier_2_enabled: z.boolean().default(true),
+  tier_3_enabled: z.boolean().default(false),
+  tier_4_enabled: z.boolean().default(false),
+  show_price_tiers: z.boolean().default(true),
+  show_savings_indicators: z.boolean().default(true),
+  show_next_tier_hint: z.boolean().default(true),
+});
 
 const IntelligentProductPricingForm: React.FC<
   IntelligentProductPricingFormProps
-> = ({
-  retailPrice,
-  wholesalePrice,
-  minWholesaleQty,
-  stock,
-  priceTiers,
-  onRetailPriceChange,
-  onWholesalePriceChange,
-  onMinWholesaleQtyChange,
-  onStockChange,
-  onPriceTiersChange,
-}) => {
+> = ({ storeId, productId, onSettingsChange }) => {
+  const { toast } = useToast();
   const { profile } = useAuth();
-  const { priceModel } = useStorePriceModel(profile?.store_id);
+  const { priceModel, loading, error, updatePriceModel } =
+    useStorePriceModel(storeId);
+  const [isEditingTiers, setIsEditingTiers] = useState(false);
 
-  console.log(
-    "💰 INTELLIGENT PRICING - Modelo de preço:",
-    priceModel?.price_model
-  );
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      price_model: "retail_only",
+      simple_wholesale_enabled: false,
+      simple_wholesale_name: "Atacado",
+      simple_wholesale_min_qty: 5,
+      gradual_wholesale_enabled: false,
+      gradual_tiers_count: 3,
+      tier_1_name: "Varejo",
+      tier_2_name: "Atacado 1",
+      tier_3_name: "Atacado 2",
+      tier_4_name: "Atacado 3",
+      tier_1_enabled: true,
+      tier_2_enabled: true,
+      tier_3_enabled: false,
+      tier_4_enabled: false,
+      show_price_tiers: true,
+      show_savings_indicators: true,
+      show_next_tier_hint: true,
+    },
+  });
 
-  const handleTierPriceChange = (tierId: string, price: number) => {
-    const updatedTiers = priceTiers.map((tier) =>
-      tier.id === tierId ? { ...tier, price } : tier
-    );
-    onPriceTiersChange(updatedTiers);
+  useEffect(() => {
+    if (priceModel) {
+      form.reset(priceModel);
+    }
+  }, [priceModel, form]);
+
+  const isRetailOnly = useMemo(() => {
+    return priceModel?.price_model === "retail_only";
+  }, [priceModel]);
+
+  const isSimpleWholesale = useMemo(() => {
+    return priceModel?.price_model === "simple_wholesale";
+  }, [priceModel]);
+
+  const isGradualWholesale = useMemo(() => {
+    return priceModel?.price_model === "gradual_wholesale";
+  }, [priceModel]);
+
+  const isWholesaleOnly = useMemo(() => {
+    return priceModel?.price_model === "wholesale_only" as PriceModelType;
+  }, [priceModel]);
+
+  const handlePriceModelChange = (model: PriceModelType) => {
+    if (model === "wholesale_only" as PriceModelType) {
+      // Lógica para wholesale_only
+    }
+    form.setValue("price_model", model);
   };
 
-  const renderPriceFields = () => {
-    const catalogMode = priceModel?.price_model || "retail_only";
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      console.log("💾 Salvando modelo de preços:", values);
 
-    switch (catalogMode) {
-      case "retail_only":
-        return (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-blue-800">
-                <Info className="h-4 w-4" />
-                <span className="font-medium">Modo: Apenas Varejo</span>
-              </div>
-              <p className="text-sm text-blue-700 mt-1">
-                Apenas o preço de varejo será configurado.
-              </p>
-            </div>
+      if (!profile?.store_id) {
+        toast({
+          title: "Erro",
+          description: "ID da loja não encontrado.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-            <div>
-              <Label htmlFor="retail_price">Preço Varejo (R$) *</Label>
-              <Input
-                id="retail_price"
-                type="number"
-                step="0.01"
-                value={retailPrice}
-                onChange={(e) =>
-                  onRetailPriceChange(parseFloat(e.target.value) || 0)
-                }
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-        );
+      await updatePriceModel(profile.store_id, values);
 
-      case "simple_wholesale":
-        return (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-green-800">
-                <Info className="h-4 w-4" />
-                <span className="font-medium">Modo: Atacado Simples</span>
-              </div>
-              <p className="text-sm text-green-700 mt-1">
-                Configure preços de varejo e atacado com quantidade mínima.
-              </p>
-            </div>
+      toast({
+        title: "Sucesso",
+        description: "Modelo de preços atualizado com sucesso.",
+      });
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="retail_price">Preço Varejo (R$) *</Label>
-                <Input
-                  id="retail_price"
-                  type="number"
-                  step="0.01"
-                  value={retailPrice}
-                  onChange={(e) =>
-                    onRetailPriceChange(parseFloat(e.target.value) || 0)
-                  }
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="wholesale_price">
-                  Preço {priceModel?.simple_wholesale_name || "Atacado"} (R$) *
-                </Label>
-                <Input
-                  id="wholesale_price"
-                  type="number"
-                  step="0.01"
-                  value={wholesalePrice || ""}
-                  onChange={(e) =>
-                    onWholesalePriceChange(parseFloat(e.target.value) || 0)
-                  }
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="min_wholesale_qty">
-                Quantidade Mínima para{" "}
-                {priceModel?.simple_wholesale_name || "Atacado"}
-              </Label>
-              <Input
-                id="min_wholesale_qty"
-                type="number"
-                value={minWholesaleQty || 1}
-                onChange={(e) =>
-                  onMinWholesaleQtyChange(parseInt(e.target.value) || 1)
-                }
-                placeholder="1"
-              />
-            </div>
-          </div>
-        );
-
-      case "wholesale_only":
-        return (
-          <div className="space-y-4">
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-orange-800">
-                <Info className="h-4 w-4" />
-                <span className="font-medium">Modo: Apenas Atacado</span>
-              </div>
-              <p className="text-sm text-orange-700 mt-1">
-                Configure apenas o preço de atacado com quantidade mínima
-                obrigatória.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="wholesale_price">
-                  Preço {priceModel?.simple_wholesale_name || "Atacado"} (R$) *
-                </Label>
-                <Input
-                  id="wholesale_price"
-                  type="number"
-                  step="0.01"
-                  value={wholesalePrice || ""}
-                  onChange={(e) =>
-                    onWholesalePriceChange(parseFloat(e.target.value) || 0)
-                  }
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="min_wholesale_qty">
-                  Quantidade Mínima para{" "}
-                  {priceModel?.simple_wholesale_name || "Atacado"} *
-                </Label>
-                <Input
-                  id="min_wholesale_qty"
-                  type="number"
-                  value={minWholesaleQty || 1}
-                  onChange={(e) =>
-                    onMinWholesaleQtyChange(parseInt(e.target.value) || 1)
-                  }
-                  placeholder="1"
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case "gradual_wholesale":
-        return (
-          <div className="space-y-4">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-purple-800">
-                <Info className="h-4 w-4" />
-                <span className="font-medium">Modo: Atacado Gradativo</span>
-              </div>
-              <p className="text-sm text-purple-700 mt-1">
-                Configure múltiplos níveis de preço com quantidades mínimas.
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="retail_price">Preço Varejo (R$) *</Label>
-              <Input
-                id="retail_price"
-                type="number"
-                step="0.01"
-                value={retailPrice}
-                onChange={(e) =>
-                  onRetailPriceChange(parseFloat(e.target.value) || 0)
-                }
-                placeholder="0.00"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">Níveis de Atacado</h4>
-
-              {priceModel?.tier_2_enabled && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>{priceModel.tier_2_name || "Atacarejo"} (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={
-                        priceTiers.find((t) => t.id === "tier2")?.price || ""
-                      }
-                      onChange={(e) =>
-                        handleTierPriceChange(
-                          "tier2",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <Label>Quantidade Mínima</Label>
-                    <Input
-                      type="number"
-                      value={
-                        priceTiers.find((t) => t.id === "tier2")?.minQuantity ||
-                        5
-                      }
-                      onChange={(e) => {
-                        const updatedTiers = priceTiers.map((tier) =>
-                          tier.id === "tier2"
-                            ? {
-                                ...tier,
-                                minQuantity: parseInt(e.target.value) || 5,
-                              }
-                            : tier
-                        );
-                        onPriceTiersChange(updatedTiers);
-                      }}
-                      placeholder="5"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {priceModel?.tier_3_enabled && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>
-                      {priceModel.tier_3_name || "Atacado Pequeno"} (R$)
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={
-                        priceTiers.find((t) => t.id === "tier3")?.price || ""
-                      }
-                      onChange={(e) =>
-                        handleTierPriceChange(
-                          "tier3",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <Label>Quantidade Mínima</Label>
-                    <Input
-                      type="number"
-                      value={
-                        priceTiers.find((t) => t.id === "tier3")?.minQuantity ||
-                        10
-                      }
-                      onChange={(e) => {
-                        const updatedTiers = priceTiers.map((tier) =>
-                          tier.id === "tier3"
-                            ? {
-                                ...tier,
-                                minQuantity: parseInt(e.target.value) || 10,
-                              }
-                            : tier
-                        );
-                        onPriceTiersChange(updatedTiers);
-                      }}
-                      placeholder="10"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {priceModel?.tier_4_enabled && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>
-                      {priceModel.tier_4_name || "Atacado Grande"} (R$)
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={
-                        priceTiers.find((t) => t.id === "tier4")?.price || ""
-                      }
-                      onChange={(e) =>
-                        handleTierPriceChange(
-                          "tier4",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <Label>Quantidade Mínima</Label>
-                    <Input
-                      type="number"
-                      value={
-                        priceTiers.find((t) => t.id === "tier4")?.minQuantity ||
-                        20
-                      }
-                      onChange={(e) => {
-                        const updatedTiers = priceTiers.map((tier) =>
-                          tier.id === "tier4"
-                            ? {
-                                ...tier,
-                                minQuantity: parseInt(e.target.value) || 20,
-                              }
-                            : tier
-                        );
-                        onPriceTiersChange(updatedTiers);
-                      }}
-                      placeholder="20"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div>
-            <Label htmlFor="retail_price">Preço Varejo (R$) *</Label>
-            <Input
-              id="retail_price"
-              type="number"
-              step="0.01"
-              value={retailPrice}
-              onChange={(e) =>
-                onRetailPriceChange(parseFloat(e.target.value) || 0)
-              }
-              placeholder="0.00"
-            />
-          </div>
-        );
+      onSettingsChange(values as StorePriceModel);
+    } catch (error) {
+      console.error("❌ Erro ao salvar modelo de preços:", error);
+      toast({
+        title: "Erro",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Erro ao atualizar modelo de preços.",
+        variant: "destructive",
+      });
     }
   };
 
-  const renderPriceModelInfo = () => {
-    switch (priceModel?.price_model) {
-      case "wholesale_only":
-        return (
-          <div className="mb-4 p-3 rounded bg-orange-100 border border-orange-300 text-orange-900 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="font-medium">Modelo de Preço: Apenas Atacado</span>
-            <span className="ml-2 text-sm">
-              Venda somente em quantidade mínima, sem preço de varejo.
-            </span>
-          </div>
-        );
-      case "simple_wholesale":
-        return (
-          <div className="mb-4 p-3 rounded bg-green-100 border border-green-300 text-green-900 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="font-medium">
-              Modelo de Preço: Varejo + Atacado
-            </span>
-            <span className="ml-2 text-sm">
-              Preço de varejo e preço de atacado com quantidade mínima.
-            </span>
-          </div>
-        );
-      case "gradual_wholesale":
-        return (
-          <div className="mb-4 p-3 rounded bg-purple-100 border border-purple-300 text-purple-900 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="font-medium">
-              Modelo de Preço: Atacado Gradual
-            </span>
-            <span className="ml-2 text-sm">
-              Múltiplos níveis de preço conforme a quantidade.
-            </span>
-          </div>
-        );
-      default:
-        return (
-          <div className="mb-4 p-3 rounded bg-blue-100 border border-blue-300 text-blue-900 flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="font-medium">Modelo de Preço: Apenas Varejo</span>
-            <span className="ml-2 text-sm">
-              Preço único para todos os clientes.
-            </span>
-          </div>
-        );
-    }
-  };
+  if (loading) {
+    return <div>Carregando configurações de preço...</div>;
+  }
+
+  if (error) {
+    return <div>Erro ao carregar configurações de preço: {error}</div>;
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Preços Inteligentes
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Log visual para debug do modelo de preço */}
-        <div
-          style={{
-            background: "#ffeeba",
-            color: "#856404",
-            padding: 8,
-            borderRadius: 4,
-            fontSize: 13,
-            marginBottom: 8,
-          }}
-        >
-          <strong>DEBUG:</strong> priceModel?.price_model ={" "}
-          <code>{String(priceModel?.price_model)}</code>
-        </div>
-        {renderPriceModelInfo()}
-        {renderPriceFields()}
-        {/* Exibir estoque sempre, mas ocultar resumo de preço base se for apenas atacado */}
-        <Separator />
-        <div>
-          <Label htmlFor="stock">Estoque *</Label>
-          <Input
-            id="stock"
-            type="number"
-            value={stock}
-            onChange={(e) => onStockChange(parseInt(e.target.value) || 0)}
-            placeholder="0"
-          />
-        </div>
-        {/* Resumo de preço só se não for wholesale_only */}
-        {priceModel?.price_model !== "wholesale_only" && (
-          <div className="mt-4">
-            <div className="bg-gray-50 border rounded p-4 flex flex-col md:flex-row gap-4">
-              <div>
-                <span className="block text-xs text-gray-500 mb-1">
-                  Preço Base
-                </span>
-                <span className="text-lg font-semibold text-blue-700">
-                  {retailPrice?.toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  })}
-                </span>
-              </div>
-              <div>
-                <span className="block text-xs text-gray-500 mb-1">
-                  Estoque
-                </span>
-                <span className="text-lg font-semibold text-gray-700">
-                  {stock} unidades
-                </span>
-              </div>
-            </div>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-8 max-w-3xl mx-auto"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Modelo de Preços</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="price_model"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Modelo de Preços</Label>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um modelo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(PRICE_MODEL_CONFIGS).map(
+                        ([key, model]) => (
+                          <SelectItem key={key} value={key}>
+                            {model.displayName}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Configurações de Atacado Simples */}
+        {form.watch("price_model") === "simple_wholesale" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Atacado Simples</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="simple_wholesale_enabled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="simple_wholesale_enabled">
+                        Ativar Atacado Simples
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Ofereça um preço especial para compras em quantidade.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="simple_wholesale_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="simple_wholesale_name">
+                      Nome do Nível de Atacado
+                    </Label>
+                    <FormControl>
+                      <Input
+                        id="simple_wholesale_name"
+                        placeholder="Ex: Atacado"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="simple_wholesale_min_qty"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="simple_wholesale_min_qty">
+                      Quantidade Mínima para Atacado
+                    </Label>
+                    <FormControl>
+                      <Input
+                        id="simple_wholesale_min_qty"
+                        type="number"
+                        placeholder="Ex: 10"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Configurações de Atacado Gradual */}
+        {form.watch("price_model") === "gradual_wholesale" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Atacado Gradual</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="gradual_wholesale_enabled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="gradual_wholesale_enabled">
+                        Ativar Atacado Gradual
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Ofereça descontos progressivos por quantidade.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gradual_tiers_count"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Número de Níveis de Atacado</Label>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a quantidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {[2, 3, 4].map((count) => (
+                          <SelectItem key={count} value={count.toString()}>
+                            {count} níveis
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+
+              {[...Array(form.watch("gradual_tiers_count"))].map((_, i) => {
+                const tierNumber = i + 1;
+                return (
+                  <div key={tierNumber} className="space-y-2">
+                    <h4 className="text-sm font-medium">
+                      Nível {tierNumber}
+                    </h4>
+                    <FormField
+                      control={form.control}
+                      name={`tier_${tierNumber}_name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label htmlFor={`tier_${tierNumber}_name`}>
+                            Nome do Nível {tierNumber}
+                          </Label>
+                          <FormControl>
+                            <Input
+                              id={`tier_${tierNumber}_name`}
+                              placeholder={`Ex: Atacado ${tierNumber}`}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`tier_${tierNumber}_enabled`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <Label htmlFor={`tier_${tierNumber}_enabled`}>
+                              Ativar Nível {tierNumber}
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              Permitir descontos neste nível.
+                            </p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Configurações de Exibição */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Exibição</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="show_price_tiers"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show_price_tiers">
+                      Mostrar Níveis de Preço
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Exibir os níveis de preço na página do produto.
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="show_savings_indicators"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show_savings_indicators">
+                      Mostrar Indicadores de Economia
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Destacar a economia ao comprar em maior quantidade.
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="show_next_tier_hint"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show_next_tier_hint">
+                      Mostrar Dica do Próximo Nível
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Incentivar o cliente a adicionar mais itens para obter um
+                      desconto maior.
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {priceModel?.price_model === ("wholesale_only" as PriceModelType) && (
+          <div>
+            <Badge variant="destructive">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-alert-triangle mr-2 h-4 w-4"
+              >
+                <path d="M8.76 3.5c1.58-2.28 4.42-2.28 6 0" />
+                <line x1="12" x2="12" y1="9" y2="17" />
+                <line x1="12" y1="21" x2="12.01" y2="21" />
+                <path d="M21.73 20.49c-1.58 2.28-4.42 2.28-6 0l-5.46-7.84c-1.58-2.28-4.42-2.28-6 0L2.27 20.49c-1.58 2.28-4.42 2.28-6 0" />
+              </svg>
+              Atenção: Este produto está configurado para ser vendido apenas no
+              atacado.
+            </Badge>
           </div>
         )}
-      </CardContent>
-    </Card>
+
+        <Button type="submit">Salvar Configurações</Button>
+      </form>
+    </Form>
   );
 };
 

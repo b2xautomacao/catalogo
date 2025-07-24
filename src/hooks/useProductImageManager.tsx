@@ -1,160 +1,197 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { ProductImage } from "@/hooks/useProductImages";
+
+interface ProductImage {
+  id: string;
+  image_url: string;
+  alt_text: string;
+  is_primary: boolean;
+  image_order: number;
+  product_id: string;
+  is_variation_image: boolean;
+  display_order: number;
+  color_association: string | null;
+  variation_id: string | null;
+  created_at: string;
+}
 
 export const useProductImageManager = (productId?: string) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const uploadProductImage = useCallback(
-    async (file: File, imageOrder: number): Promise<ProductImage | null> => {
-      if (!productId) {
-        toast({
-          title: "Erro",
-          description: "ID do produto não encontrado para o upload.",
-          variant: "destructive",
-        });
-        return null;
+  const fetchImages = async (productId: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("*")
+        .eq("product_id", productId)
+        .order("image_order", { ascending: true });
+
+      if (error) {
+        setError(error.message);
+        return;
       }
 
-      setIsUploading(true);
-      try {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `products/${productId}/${Date.now()}.${fileExt}`;
+      setImages(
+        data.map((img) => ({
+          id: img.id,
+          image_url: img.image_url,
+          alt_text: img.alt_text || "",
+          is_primary: img.is_primary || false,
+          image_order: img.image_order || 0,
+          product_id: img.product_id,
+          is_variation_image: img.is_variation_image || false,
+          display_order: img.display_order || 0,
+          color_association: img.color_association || null,
+          variation_id: img.variation_id || null,
+          created_at: img.created_at,
+        }))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao buscar imagens");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // 1. Upload para o Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(fileName, file);
-
-        if (uploadError) {
-          throw new Error(`Erro no upload: ${uploadError.message}`);
-        }
-
-        // 2. Obter URL pública
-        const { data: urlData } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(uploadData.path);
-
-        const imageUrl = urlData.publicUrl;
-
-        // 3. Inserir na tabela product_images
-        const newImageData = {
+  const addImage = async (
+    image_url: string,
+    alt_text: string,
+    is_primary: boolean
+  ) => {
+    try {
+      const { data, error } = await supabase.from("product_images").insert([
+        {
+          image_url,
+          alt_text,
+          is_primary,
           product_id: productId,
-          image_url: imageUrl,
-          image_order: imageOrder + 1, // image_order deve começar em 1, não 0
-          is_primary: imageOrder === 0, // A primeira imagem é a principal
-          alt_text: "", // Pode ser adicionado depois
-        };
+          image_order: images.length,
+        },
+      ]);
 
-        const { data: newImage, error: insertError } = await supabase
-          .from("product_images")
-          .insert(newImageData)
-          .select()
-          .single();
+      if (error) throw error;
 
-        if (insertError) {
-          throw new Error(`Erro ao salvar imagem: ${insertError.message}`);
-        }
+      setImages([
+        ...images,
+        {
+          id: data![0].id,
+          image_url,
+          alt_text,
+          is_primary,
+          product_id: productId,
+          image_order: images.length,
+          is_variation_image: false,
+          display_order: images.length,
+          color_association: null,
+          variation_id: null,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar imagem");
+    }
+  };
 
-        toast({
-          title: "Sucesso!",
-          description: "Imagem do produto enviada com sucesso.",
-        });
+  const updateImage = async (
+    id: string,
+    updates: Partial<{
+      image_url: string;
+      alt_text: string;
+      is_primary: boolean;
+      image_order: number;
+    }>
+  ) => {
+    try {
+      const { data, error } = await supabase
+        .from("product_images")
+        .update(updates)
+        .eq("id", id);
 
-        return newImage;
-      } catch (error) {
-        console.error("💥 Erro no upload da imagem do produto:", error);
-        toast({
-          title: "Erro no upload",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Falha no upload da imagem.",
-          variant: "destructive",
-        });
-        return null;
-      } finally {
-        setIsUploading(false);
-      }
-    },
-    [productId, toast]
-  );
+      if (error) throw error;
 
-  const deleteProductImage = useCallback(
-    async (imageId: string, imageUrl: string): Promise<boolean> => {
-      try {
-        // 1. Remover da tabela product_images
-        const { error: deleteError } = await supabase
-          .from("product_images")
-          .delete()
-          .eq("id", imageId);
+      setImages(
+        images.map((img) =>
+          img.id === id ? { ...img, ...updates } : img
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao atualizar imagem");
+    }
+  };
 
-        if (deleteError) {
-          throw new Error(`Erro ao deletar imagem: ${deleteError.message}`);
-        }
+  const deleteImage = async (id: string) => {
+    try {
+      const { error } = await supabase.from("product_images").delete().eq("id", id);
 
-        // 2. Remover do Storage
-        const pathMatch = imageUrl.match(/\/product-images\/(.+)$/);
-        if (pathMatch) {
-          await supabase.storage.from("product-images").remove([pathMatch[1]]);
-        }
+      if (error) throw error;
 
-        toast({
-          title: "Sucesso!",
-          description: "Imagem removida.",
-        });
+      setImages(images.filter((img) => img.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao deletar imagem");
+    }
+  };
 
-        return true;
-      } catch (error) {
-        console.error("💥 Erro ao remover imagem do produto:", error);
-        toast({
-          title: "Erro",
-          description:
-            error instanceof Error ? error.message : "Falha ao remover imagem.",
-          variant: "destructive",
-        });
-        return false;
-      }
-    },
-    [toast]
-  );
+  const updateImageOrder = async (reorderedImages: { id: string; image_order: number; is_primary: boolean; image_url: string; product_id: string }[]) => {
+    try {
+      console.log('🔄 Atualizando ordem das imagens:', reorderedImages);
+      
+      // Preparar dados com todas as propriedades necessárias
+      const updates = reorderedImages.map(img => ({
+        id: img.id,
+        image_order: img.image_order,
+        is_primary: img.is_primary,
+        image_url: img.image_url,
+        product_id: img.product_id,
+      }));
+      
+      const { error } = await supabase
+        .from('product_images')
+        .upsert(updates);
 
-  const updateImageOrder = useCallback(
-    async (
-      updates: { id: string; image_order: number; is_primary: boolean }[]
-    ) => {
-      try {
-        const { error } = await supabase.from("product_images").upsert(updates);
+      if (error) throw error;
+      
+      console.log('✅ Ordem das imagens atualizada com sucesso');
+      
+      // Atualizar estado local
+      setImages(reorderedImages.map(img => ({
+        id: img.id,
+        image_url: img.image_url,
+        is_primary: img.is_primary,
+        image_order: img.image_order,
+        product_id: img.product_id,
+        alt_text: '',
+        is_variation_image: false,
+        display_order: img.image_order,
+        color_association: null,
+        variation_id: null,
+        created_at: new Date().toISOString(),
+      })));
+      
+    } catch (error) {
+      console.error('❌ Erro ao atualizar ordem das imagens:', error);
+    }
+  };
 
-        if (error) {
-          throw new Error(`Erro ao reordenar imagens: ${error.message}`);
-        }
-
-        toast({
-          title: "Sucesso!",
-          description: "Ordem das imagens atualizada.",
-        });
-      } catch (error) {
-        console.error("💥 Erro ao reordenar imagens:", error);
-        toast({
-          title: "Erro",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Falha ao reordenar imagens.",
-          variant: "destructive",
-        });
-      }
-    },
-    [toast]
-  );
+  useEffect(() => {
+    if (productId) {
+      fetchImages(productId);
+    }
+  }, [productId]);
 
   return {
-    isUploading,
-    uploadProductImage,
-    deleteProductImage,
+    images,
+    loading,
+    error,
+    fetchImages,
+    addImage,
+    updateImage,
+    deleteImage,
     updateImageOrder,
+    setImages,
   };
 };

@@ -18,19 +18,29 @@ import { ProductVariation } from "@/types/product";
 
 type GradeMode = "single" | "variations" | "grade";
 
-interface SimpleGradeWizardProps {
+export interface SimpleGradeWizardProps {
   onClose: () => void;
   onSave: (variations: ProductVariation[]) => void;
   initialVariations?: ProductVariation[];
+  variations?: ProductVariation[];
+  onVariationsChange?: (variations: ProductVariation[]) => void;
+  productId?: string;
+  storeId?: string;
+  category?: string;
+  productName?: string;
 }
 
 const SimpleGradeWizard: React.FC<SimpleGradeWizardProps> = ({
   onClose,
   onSave,
   initialVariations = [],
+  variations: propVariations,
+  onVariationsChange,
 }) => {
   const [mode, setMode] = useState<GradeMode>("single");
-  const [variations, setVariations] = useState<ProductVariation[]>(initialVariations);
+  const [variations, setVariations] = useState<ProductVariation[]>(
+    propVariations || initialVariations
+  );
   const [gradeConfig, setGradeConfig] = useState({
     name: "",
     colors: [""],
@@ -128,6 +138,9 @@ const SimpleGradeWizard: React.FC<SimpleGradeWizardProps> = ({
   const handleSave = () => {
     if (mode === "grade") {
       generateGradeVariations();
+    }
+    if (onVariationsChange) {
+      onVariationsChange(variations);
     }
     onSave(variations);
   };

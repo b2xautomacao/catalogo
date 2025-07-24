@@ -1,382 +1,217 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useStorePriceModel, PriceModelType } from "@/hooks/useStorePriceModel";
-import { Badge } from "@/components/ui/badge";
-import { Settings, DollarSign, TrendingUp, Package } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Separator } from "@/components/ui/separator"
+import { useToast } from "@/hooks/use-toast"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useSettings } from '@/hooks/useSettings';
+import { useAuth } from '@/hooks/useAuth';
+import { useStorePriceModel } from '@/hooks/useStorePriceModel';
+import { PriceModelType } from '@/types/price-models';
 
-interface CatalogModeSettingsProps {
-  storeId?: string;
-}
+const formSchema = z.object({
+  catalog_mode: z.enum(['separated', 'hybrid', 'toggle']),
+  retail_catalog_active: z.boolean().default(true),
+  wholesale_catalog_active: z.boolean().default(false),
+  store_id: z.string().optional(),
+});
 
-const CatalogModeSettings: React.FC<CatalogModeSettingsProps> = ({
-  storeId,
-}) => {
-  const { priceModel, loading, updatePriceModel } = useStorePriceModel(storeId);
-  const [localModel, setLocalModel] = useState(priceModel);
+const CatalogModeSettings = () => {
+  const { toast } = useToast();
+  const { profile } = useAuth();
+  const { settings, updateSettings, isLoading } = useSettings(profile?.store_id);
+  const { priceModel } = useStorePriceModel(profile?.store_id);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const isWholesaleOnly = settings?.catalog_mode === "wholesale_only" || 
+  priceModel?.price_model === ("wholesale_only" as PriceModelType);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      catalog_mode: settings?.catalog_mode || 'separated',
+      retail_catalog_active: settings?.retail_catalog_active !== false,
+      wholesale_catalog_active: settings?.wholesale_catalog_active === true,
+      store_id: profile?.store_id,
+    },
+    mode: "onChange",
+  })
 
   useEffect(() => {
-    setLocalModel(priceModel);
-  }, [priceModel]);
+    form.reset({
+      catalog_mode: settings?.catalog_mode || 'separated',
+      retail_catalog_active: settings?.retail_catalog_active !== false,
+      wholesale_catalog_active: settings?.wholesale_catalog_active === true,
+      store_id: profile?.store_id,
+    });
+  }, [settings, profile?.store_id, form]);
 
-  const handlePriceModelChange = (value: string) => {
-    const newModel = { ...localModel, price_model: value as PriceModelType };
-    setLocalModel(newModel);
-    updatePriceModel({ price_model: value as PriceModelType });
-  };
-
-  const handleToggleChange = (
-    field: keyof typeof localModel,
-    value: boolean
-  ) => {
-    const newModel = { ...localModel, [field]: value };
-    setLocalModel(newModel);
-    updatePriceModel({ [field]: value });
-  };
-
-  const handleInputChange = (
-    field: keyof typeof localModel,
-    value: string | number
-  ) => {
-    const newModel = { ...localModel, [field]: value };
-    setLocalModel(newModel);
-  };
-
-  const handleSave = () => {
-    updatePriceModel(localModel);
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Configurações de Preços
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">Carregando configurações...</div>
-        </CardContent>
-      </Card>
-    );
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsEditing(false);
+    try {
+      await updateSettings(values);
+      toast({
+        title: "Configurações salvas!",
+        description: "As configurações do catálogo foram atualizadas.",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar as configurações.",
+      })
+    }
   }
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditing(false);
+    form.reset({
+      catalog_mode: settings?.catalog_mode || 'separated',
+      retail_catalog_active: settings?.retail_catalog_active !== false,
+      wholesale_catalog_active: settings?.wholesale_catalog_active === true,
+      store_id: profile?.store_id,
+    });
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Configurações de Preços
-        </CardTitle>
+        <CardTitle>Modo de Catálogo</CardTitle>
+        <CardDescription>
+          Configure como seus produtos são exibidos para os clientes.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Modelo de Preços */}
-        <div className="space-y-4">
-          <Label className="text-base font-semibold">Modelo de Preços</Label>
-          <RadioGroup
-            value={localModel.price_model}
-            onValueChange={handlePriceModelChange}
-          >
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="retail_only" id="retail_only" />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="retail_only"
-                    className="font-medium cursor-pointer"
-                  >
-                    Apenas Varejo
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Preço único para todos os clientes
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  <Package className="h-3 w-3 mr-1" />
-                  Simples
-                </Badge>
-              </div>
+      <CardContent className="space-y-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="catalog_mode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modo de Catálogo</FormLabel>
+                  <FormControl>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      {...field}
+                      disabled={!isEditing || isLoading}
+                    >
+                      <option value="separated">Separado (Varejo)</option>
+                      <option value="hybrid">Híbrido (Varejo/Atacado)</option>
+                      <option value="toggle">Alternável (Varejo/Atacado)</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem
-                  value="simple_wholesale"
-                  id="simple_wholesale"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="simple_wholesale"
-                    className="font-medium cursor-pointer"
-                  >
-                    Varejo + Atacado Simples
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Dois preços: varejo e atacado com quantidade mínima
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  <DollarSign className="h-3 w-3 mr-1" />
-                  Básico
-                </Badge>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="wholesale_only" id="wholesale_only" />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="wholesale_only"
-                    className="font-medium cursor-pointer"
-                  >
-                    Apenas Atacado
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Venda apenas no atacado, com quantidade mínima obrigatória
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  <DollarSign className="h-3 w-3 mr-1" />
-                  Atacado
-                </Badge>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem
-                  value="gradual_wholesale"
-                  id="gradual_wholesale"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="gradual_wholesale"
-                    className="font-medium cursor-pointer"
-                  >
-                    Níveis Graduais
-                  </Label>
-                  <p className="text-sm text-gray-600">
-                    Múltiplos níveis de preço com descontos progressivos
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Avançado
-                </Badge>
-              </div>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Configurações do Atacado Simples */}
-        {localModel.price_model === "simple_wholesale" && (
-          <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-900">
-              Configurações do Atacado Simples
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="wholesale-name">Nome do Atacado</Label>
-                <Input
-                  id="wholesale-name"
-                  value={localModel.simple_wholesale_name}
-                  onChange={(e) =>
-                    handleInputChange("simple_wholesale_name", e.target.value)
-                  }
-                  placeholder="Ex: Atacado, Distribuidor"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="wholesale-min-qty">Quantidade Mínima</Label>
-                <Input
-                  id="wholesale-min-qty"
-                  type="number"
-                  value={localModel.simple_wholesale_min_qty}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "simple_wholesale_min_qty",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  min="1"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Configurações do Apenas Atacado */}
-        {localModel.price_model === "wholesale_only" && (
-          <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h3 className="font-semibold text-green-900">
-              Configurações do Apenas Atacado
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="wholesale-name">Nome do Atacado</Label>
-                <Input
-                  id="wholesale-name"
-                  value={localModel.simple_wholesale_name}
-                  onChange={(e) =>
-                    handleInputChange("simple_wholesale_name", e.target.value)
-                  }
-                  placeholder="Ex: Atacado, Distribuidor"
-                />
-              </div>
-              <div>
-                <Label htmlFor="wholesale-min-qty">Quantidade Mínima</Label>
-                <Input
-                  id="wholesale-min-qty"
-                  type="number"
-                  value={localModel.simple_wholesale_min_qty}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "simple_wholesale_min_qty",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  min="1"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Configurações dos Níveis Graduais */}
-        {localModel.price_model === "gradual_wholesale" && (
-          <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h3 className="font-semibold text-green-900">
-              Configurações dos Níveis Graduais
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="tiers-count">Número de Níveis</Label>
-                <Input
-                  id="tiers-count"
-                  type="number"
-                  value={localModel.gradual_tiers_count}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "gradual_tiers_count",
-                      parseInt(e.target.value) || 2
-                    )
-                  }
-                  min="2"
-                  max="4"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2, 3, 4]
-                  .slice(0, localModel.gradual_tiers_count)
-                  .map((tier) => (
-                    <div key={tier} className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={
-                            localModel[
-                              `tier_${tier}_enabled` as keyof typeof localModel
-                            ] as boolean
-                          }
-                          onCheckedChange={(checked) =>
-                            handleToggleChange(
-                              `tier_${tier}_enabled` as keyof typeof localModel,
-                              checked
-                            )
-                          }
-                        />
-                        <Label>Nível {tier}</Label>
+            {form.getValues('catalog_mode') === 'toggle' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="retail_catalog_active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Varejo Ativo</FormLabel>
+                        <FormDescription>
+                          Mostrar catálogo de varejo.
+                        </FormDescription>
                       </div>
-                      {localModel[
-                        `tier_${tier}_enabled` as keyof typeof localModel
-                      ] && (
-                        <Input
-                          value={
-                            localModel[
-                              `tier_${tier}_name` as keyof typeof localModel
-                            ] as string
-                          }
-                          onChange={(e) =>
-                            handleInputChange(
-                              `tier_${tier}_name` as keyof typeof localModel,
-                              e.target.value
-                            )
-                          }
-                          placeholder={`Nome do Nível ${tier}`}
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!isEditing || isLoading}
                         />
-                      )}
-                    </div>
-                  ))}
-              </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="wholesale_catalog_active"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Atacado Ativo</FormLabel>
+                        <FormDescription>
+                          Mostrar catálogo de atacado.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!isEditing || isLoading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            <div className="flex justify-end gap-2">
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCancelClick}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    Salvar
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleEditClick}
+                  disabled={isLoading}
+                >
+                  Editar
+                </Button>
+              )}
             </div>
-          </div>
-        )}
-
-        {/* Configurações de Exibição */}
-        <div className="space-y-4">
-          <Label className="text-base font-semibold">
-            Configurações de Exibição
-          </Label>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Mostrar Níveis de Preço</Label>
-                <p className="text-sm text-gray-600">
-                  Exibir tabela de preços no produto
-                </p>
-              </div>
-              <Switch
-                checked={localModel.show_price_tiers}
-                onCheckedChange={(checked) =>
-                  handleToggleChange("show_price_tiers", checked)
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Indicadores de Economia</Label>
-                <p className="text-sm text-gray-600">
-                  Mostrar quanto o cliente economiza
-                </p>
-              </div>
-              <Switch
-                checked={localModel.show_savings_indicators}
-                onCheckedChange={(checked) =>
-                  handleToggleChange("show_savings_indicators", checked)
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Dica do Próximo Nível</Label>
-                <p className="text-sm text-gray-600">
-                  Sugerir próximo nível de desconto
-                </p>
-              </div>
-              <Switch
-                checked={localModel.show_next_tier_hint}
-                onCheckedChange={(checked) =>
-                  handleToggleChange("show_next_tier_hint", checked)
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-4">
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Salvando..." : "Salvar Configurações"}
-          </Button>
-        </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
 };
 
 export default CatalogModeSettings;
+
+const FormDescription = ({ children }: { children?: React.ReactNode }) => {
+  return <p className="text-sm text-muted-foreground">{children}</p>
+}

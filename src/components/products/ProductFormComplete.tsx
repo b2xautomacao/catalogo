@@ -1,11 +1,35 @@
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Product } from "@/types/product";
+import { createProductSchema } from "@/lib/validations/product";
+import ProductImageManager from "./ProductImageManager";
+import ProductPriceTiersManager from "./ProductPriceTiersManager";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -13,432 +37,444 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { useCategories } from "@/hooks/useCategories";
-import { useDraftImages } from "@/hooks/useDraftImages";
-import DraftImageUpload from "./DraftImageUpload";
-import CategoryFormDialog from "./CategoryFormDialog";
-import ProductDescriptionAI from "@/components/ai/ProductDescriptionAI";
-import ProductVariationsManager from "./ProductVariationsManager";
-import { ProductVariation } from "@/hooks/useProductFormWizard";
-import { useProductVariations } from "@/hooks/useProductVariations";
-import {
-  Package,
-  DollarSign,
-  Hash,
-  Tag,
-  FileText,
-  Image,
-  Loader2,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const productSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  description: z.string().optional(),
-  category: z.string().min(1, "Categoria é obrigatória"),
-  retail_price: z.number().min(0, "Preço deve ser maior que zero"),
-  wholesale_price: z.number().optional(),
-  min_wholesale_qty: z.number().min(1).optional(),
-  stock: z.number().min(0, "Estoque não pode ser negativo"),
-  is_active: z.boolean(),
-  meta_title: z.string().optional(),
-  meta_description: z.string().optional(),
-  keywords: z.string().optional(),
-});
-
-type ProductFormData = z.infer<typeof productSchema>;
-
-interface ProductFormCompleteProps {
-  onSubmit: (data: any) => void;
-  initialData?: any;
-  mode: "create" | "edit";
+interface ProductFormProps {
+  onSubmit: (data: any) => Promise<any>;
+  initialValues?: Product;
+  onSuccess?: () => void;
 }
 
-const ProductFormComplete = ({
+const ProductFormComplete: React.FC<ProductFormProps> = ({
   onSubmit,
-  initialData,
-  mode,
-}: ProductFormCompleteProps) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [variations, setVariations] = useState<ProductVariation[]>([]);
+  initialValues,
+  onSuccess,
+}) => {
+  const { toast } = useToast();
+  const { profile } = useAuth();
+  const { priceModel } = useStorePriceModel(profile?.store_id);
+  const [priceTiers, setPriceTiers] = useState([]);
 
-  // Hook para salvar variações
-  const { saveVariations } = useProductVariations(initialData?.id);
-
-  const {
-    categories,
-    loading: categoriesLoading,
-    fetchCategories,
-  } = useCategories();
-  const {
-    draftImages,
-    addDraftImages,
-    removeDraftImage,
-    uploadDraftImages,
-    clearDraftImages,
-  } = useDraftImages();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setValue,
-    watch,
-    reset,
-  } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+  const form = useForm<Product>({
+    resolver: zodResolver(createProductSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      category: "",
-      retail_price: 0,
-      wholesale_price: undefined,
-      min_wholesale_qty: 1,
-      stock: 0,
-      is_active: true,
-      meta_title: "",
-      meta_description: "",
-      keywords: "",
-      ...initialData,
+      store_id: profile?.store_id || "",
+      name: initialValues?.name || "",
+      description: initialValues?.description || "",
+      retail_price: initialValues?.retail_price || 0,
+      wholesale_price: initialValues?.wholesale_price || 0,
+      category: initialValues?.category || "",
+      stock: initialValues?.stock || 0,
+      min_wholesale_qty: initialValues?.min_wholesale_qty || 1,
+      meta_title: initialValues?.meta_title || "",
+      meta_description: initialValues?.meta_description || "",
+      keywords: initialValues?.keywords || "",
+      seo_slug: initialValues?.seo_slug || "",
+      is_featured: initialValues?.is_featured || false,
+      allow_negative_stock: initialValues?.allow_negative_stock || false,
+      stock_alert_threshold: initialValues?.stock_alert_threshold || 5,
+      is_active: initialValues?.is_active ?? true,
+      enable_gradual_wholesale: initialValues?.enable_gradual_wholesale || false,
+      price_model: initialValues?.price_model || priceModel?.price_model || "retail_only",
     },
+    mode: "onChange",
   });
 
-  // Carregar variações existentes se estiver no modo edição
-  useEffect(() => {
-    if (mode === "edit" && initialData?.variations) {
-      setVariations(initialData.variations);
-    }
-  }, [mode, initialData]);
-
-  const handleCategoryCreated = async (newCategory: any) => {
-    console.log("ProductFormComplete: Nova categoria criada:", newCategory);
-    await fetchCategories();
-    setValue("category", newCategory.name);
-  };
-
-  const handleDescriptionGenerated = (description: string) => {
-    setValue("description", description);
-  };
-
-  const handleImageAdd = (file: File) => {
-    addDraftImages([file]);
-  };
-
-  const handleImageRemove = (id: string) => {
-    const index = draftImages.findIndex((img) => img.id === id);
-    if (index !== -1) {
-      removeDraftImage(id);
-    }
-  };
-
-  const onFormSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: any) => {
     try {
-      setUploading(true);
-
-      let imageUrls: string[] = [];
-
-      if (draftImages.length > 0) {
-        console.log("Fazendo upload das imagens...");
-        // Corrigir aqui: uploadDraftImages precisa de um productId, mas ainda não temos
-        // Por isso vamos criar o produto primeiro e depois fazer upload das imagens
+      console.log('📤 PRODUTO - Enviando dados:', data);
+    
+      const result = await onSubmit(data);
+      console.log('✅ PRODUTO - Salvo com sucesso:', result);
+    
+      // Verificar se result tem id antes de tentar acessá-lo
+      if (result && typeof result === 'object' && 'id' in result) {
+        console.log('🆔 PRODUTO - ID gerado:', result.id);
       }
-
-      const productData = {
-        ...data,
-        wholesale_price: data.wholesale_price || null,
-        min_wholesale_qty: data.min_wholesale_qty || 1,
-        image_url: imageUrls[0] || null,
-        additional_images: imageUrls.slice(1),
-        variations: variations.length > 0 ? variations : undefined,
-      };
-
-      console.log("Dados do produto para envio:", productData);
-
-      // Salvar produto (criação ou edição)
-      const produtoSalvo = await onSubmit(productData);
-      // Obter o id do produto salvo
-      const productId = produtoSalvo?.id || initialData?.id;
-      // Salvar variações no banco
-      if (productId && variations.length > 0) {
-        await saveVariations(productId, variations);
-      }
-
-      if (mode === "create") {
-        reset();
-        setVariations([]);
-        clearDraftImages();
-      }
+    
+      toast({
+        title: "Produto salvo!",
+        description: "O produto foi salvo com sucesso.",
+      });
+    
+      onSuccess?.();
     } catch (error) {
-      console.error("Erro ao enviar formulário:", error);
-    } finally {
-      setUploading(false);
+      console.error('❌ PRODUTO - Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar produto",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
     }
   };
 
-  const watchedName = watch("name");
-  const watchedCategory = watch("category");
-
-  if (categoriesLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Carregando categorias...</span>
-      </div>
-    );
-  }
+  const handleTiersChange = (tiers: any[]) => {
+    setPriceTiers(tiers);
+  };
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-      {/* Informações Básicas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Informações Básicas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="name">Nome do Produto *</Label>
-            <Input
-              id="name"
-              {...register("name")}
-              placeholder="Nome do produto"
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive mt-1">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>
+          {initialValues ? "Editar Produto" : "Novo Produto"}
+        </CardTitle>
+        <CardDescription>
+          Preencha os campos abaixo para {initialValues ? "editar" : "criar"} um
+          produto.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Produto</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Camiseta Algodão" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="description">Descrição</Label>
-              <ProductDescriptionAI
-                productName={watchedName}
-                category={watchedCategory}
-                onDescriptionGenerated={handleDescriptionGenerated}
-                disabled={!watchedName || !watchedCategory}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Vestuário" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <Textarea
-              id="description"
-              {...register("description")}
-              placeholder="Descrição detalhada do produto"
-              rows={4}
-            />
-          </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="category">Categoria *</Label>
-              <CategoryFormDialog onCategoryCreated={handleCategoryCreated} />
-            </div>
-            <Select
-              value={watch("category")}
-              onValueChange={(value) => setValue("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.category && (
-              <p className="text-sm text-destructive mt-1">
-                {errors.category.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_active"
-              checked={watch("is_active")}
-              onCheckedChange={(checked) => setValue("is_active", checked)}
-            />
-            <Label htmlFor="is_active">Produto ativo</Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Preços e Estoque */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Preços e Estoque
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="retail_price">Preço Varejo (R$) *</Label>
-              <Input
-                id="retail_price"
-                type="number"
-                step="0.01"
-                {...register("retail_price", { valueAsNumber: true })}
-                placeholder="0.00"
-              />
-              {errors.retail_price && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.retail_price.message}
-                </p>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Descrição detalhada do produto"
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
 
-            <div>
-              <Label htmlFor="wholesale_price">Preço Atacado (R$)</Label>
-              <Input
-                id="wholesale_price"
-                type="number"
-                step="0.01"
-                {...register("wholesale_price", { valueAsNumber: true })}
-                placeholder="0.00"
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="retail_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Varejo</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="wholesale_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Atacado</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="min_wholesale_qty"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Qtd. Mínima Atacado</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="stock">Estoque *</Label>
-              <Input
-                id="stock"
-                type="number"
-                {...register("stock", { valueAsNumber: true })}
-                placeholder="0"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="stock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.stock && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.stock.message}
-                </p>
+
+              <FormField
+                control={form.control}
+                name="stock_alert_threshold"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alerta de Estoque Mínimo</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="5" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="is_active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Ativar Produto</FormLabel>
+                      <FormDescription>
+                        Produto ativo no catálogo
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="allow_negative_stock"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Permitir Estoque Negativo</FormLabel>
+                      <FormDescription>
+                        Permitir vendas mesmo sem estoque
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="is_featured"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Produto em Destaque</FormLabel>
+                    <FormDescription>
+                      Exibir este produto na página inicial
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
               )}
-            </div>
+            />
 
-            <div>
-              <Label htmlFor="min_wholesale_qty">Qtd. Mínima Atacado</Label>
-              <Input
-                id="min_wholesale_qty"
-                type="number"
-                {...register("min_wholesale_qty", { valueAsNumber: true })}
-                placeholder="1"
+            <Separator />
+
+            <FormField
+              control={form.control}
+              name="enable_gradual_wholesale"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Atacado Gradual</FormLabel>
+                    <FormDescription>
+                      Múltiplos níveis de preço com descontos progressivos
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="price_model"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modelo de Preço</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um modelo de preço" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="retail_only">Apenas Varejo</SelectItem>
+                      <SelectItem value="simple_wholesale">Varejo + Atacado</SelectItem>
+                      <SelectItem value="gradual_wholesale">Atacado Gradual</SelectItem>
+                      <SelectItem value="wholesale_only">Apenas Atacado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Separator />
+
+            <ProductPriceTiersManager
+              productId={initialValues?.id}
+              retailPrice={form.getValues("retail_price")}
+              onTiersChange={handleTiersChange}
+            />
+
+            <Separator />
+
+            <ProductImageManager productId={initialValues?.id} />
+
+            <Separator />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="meta_title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meta Título</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Título para SEO" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="meta_description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meta Descrição</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Descrição para SEO"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Variações do Produto */}
-      <ProductVariationsManager
-        variations={variations}
-        onChange={setVariations}
-        productId={initialData?.id}
-        storeId={initialData?.store_id}
-        category={watchedCategory}
-        productName={watchedName}
-      />
+            <FormField
+              control={form.control}
+              name="keywords"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Palavras-chave</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Palavras-chave para SEO" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      {/* Imagens */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Image className="h-5 w-5" />
-            Imagens do Produto
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DraftImageUpload
-            draftImages={draftImages}
-            onImageAdd={handleImageAdd}
-            onImageRemove={handleImageRemove}
-            uploading={uploading}
-          />
-        </CardContent>
-      </Card>
+            <FormField
+              control={form.control}
+              name="seo_slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Slug SEO</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Slug para SEO" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      {/* SEO Avançado */}
-      <Card>
-        <CardHeader>
-          <CardTitle
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            <FileText className="h-5 w-5" />
-            SEO e Configurações Avançadas
-            <span className="text-sm text-muted-foreground ml-2">
-              {showAdvanced
-                ? "(Clique para ocultar)"
-                : "(Clique para expandir)"}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        {showAdvanced && (
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="meta_title">Título SEO</Label>
-              <Input
-                id="meta_title"
-                {...register("meta_title")}
-                placeholder="Título otimizado para mecanismos de busca"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="meta_description">Descrição SEO</Label>
-              <Textarea
-                id="meta_description"
-                {...register("meta_description")}
-                placeholder="Descrição otimizada para mecanismos de busca"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="keywords">Palavras-chave</Label>
-              <Input
-                id="keywords"
-                {...register("keywords")}
-                placeholder="palavra1, palavra2, palavra3"
-              />
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Botões de Ação */}
-      <div className="flex gap-4">
-        <Button
-          type="submit"
-          disabled={isSubmitting || uploading}
-          className="flex-1"
-        >
-          {isSubmitting || uploading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {uploading
-                ? "Enviando imagens..."
-                : mode === "create"
-                ? "Criando..."
-                : "Atualizando..."}
-            </>
-          ) : mode === "create" ? (
-            "Criar Produto"
-          ) : (
-            "Atualizar Produto"
-          )}
-        </Button>
-      </div>
-    </form>
+            <CardFooter>
+              <Button type="submit">Salvar Produto</Button>
+            </CardFooter>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 
 export default ProductFormComplete;
+
+interface FormDescriptionProps {
+  children?: React.ReactNode;
+}
+
+function FormDescription({ children, ...props }: FormDescriptionProps) {
+  return (
+    <p
+      className={cn("text-sm text-muted-foreground", props.className)}
+      {...props}
+    >
+      {children}
+    </p>
+  )
+}
