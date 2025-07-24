@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
-import { Package, Eye, ShoppingCart, TrendingDown, Palette, Layers } from 'lucide-react';
+import { Package, Eye, ShoppingCart, TrendingDown, Palette, Layers, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ProductVariation } from '@/types/product';
@@ -39,9 +39,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
   });
   
   const [quantity] = useState(1);
-  const [selectedVariation] = useState<ProductVariation | null>(null);
 
   const modelKey = priceModel?.price_model || "retail_only";
+
+  // Verificar se o produto tem variações ativas
+  const hasVariations = useMemo(() => {
+    return product.variations && product.variations.length > 0;
+  }, [product.variations]);
 
   // Usar o hook de cálculo de preços para obter informações precisas
   const priceCalculation = usePriceCalculation(product.store_id, {
@@ -75,9 +79,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
     };
   }, [product.variations]);
 
-  const handleAddToCart = () => {
-    const minQty = modelKey === "wholesale_only" ? (product.min_wholesale_qty || 1) : quantity;
-    onAddToCart(product, minQty, selectedVariation);
+  const handleAction = () => {
+    if (hasVariations) {
+      // Se tem variações, sempre abrir detalhes
+      if (onViewDetails) {
+        onViewDetails(product);
+      }
+    } else {
+      // Se não tem variações, adicionar diretamente ao carrinho
+      const minQty = modelKey === "wholesale_only" ? (product.min_wholesale_qty || 1) : quantity;
+      onAddToCart(product, minQty);
+    }
   };
 
   const handleViewDetails = (e: React.MouseEvent) => {
@@ -135,6 +147,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {variationInfo.grades} grades
               </Badge>
             )}
+          </div>
+        )}
+
+        {/* Variation Required Indicator */}
+        {hasVariations && (
+          <div className="absolute bottom-2 right-2">
+            <Badge className="bg-blue-500 text-white text-xs flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Variações
+            </Badge>
           </div>
         )}
       </div>
@@ -235,12 +257,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
           <Button 
             size="sm" 
-            onClick={handleAddToCart}
+            onClick={handleAction}
             disabled={product.stock === 0 && !product.allow_negative_stock}
             className="flex-1"
           >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            {modelKey === "wholesale_only" ? 'Atacado' : 'Comprar'}
+            {hasVariations ? (
+              <>
+                <Package className="mr-2 h-4 w-4" />
+                Ver Opções
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {modelKey === "wholesale_only" ? 'Atacado' : 'Comprar'}
+              </>
+            )}
           </Button>
         </div>
       </div>

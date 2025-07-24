@@ -33,6 +33,8 @@ import { useProductPriceTiers } from "@/hooks/useProductPriceTiers";
 import { PriceModelType } from "@/types/price-models";
 import ProductVariationSelector from "./ProductVariationSelector";
 import ProductPriceDisplay from "./ProductPriceDisplay";
+import MultipleVariationSelector from "./MultipleVariationSelector";
+import VariationModeSelector from "./VariationModeSelector";
 import { formatCurrency } from "@/lib/utils";
 
 interface ProductDetailsModalProps {
@@ -52,6 +54,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
+  const [selectionMode, setSelectionMode] = useState<'single' | 'multiple'>('single');
   const { variations, loading: variationsLoading } = useProductVariations(product?.id);
   const { priceModel, loading: priceModelLoading } = useStorePriceModel(product?.store_id);
   const { tiers } = useProductPriceTiers(product?.id, {
@@ -62,6 +65,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const { toast } = useToast();
   
   const modelKey = priceModel?.price_model || ("retail_only" as PriceModelType);
+
+  // Verificar se produto tem variações
+  const hasVariations = useMemo(() => {
+    return variations.length > 0;
+  }, [variations]);
 
   // Calcular informações sobre variações
   const variationInfo = useMemo(() => {
@@ -106,7 +114,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     return 1;
   }, [modelKey, product?.min_wholesale_qty]);
 
-  // Resetar quantidade quando o produto muda
+  // Resetar estado quando o produto muda
   useEffect(() => {
     if (product && modelKey === "wholesale_only") {
       setQuantity(Math.max(minQuantity, 1));
@@ -114,13 +122,14 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       setQuantity(1);
     }
     setSelectedVariation(null);
+    setSelectionMode('single');
   }, [product?.id, modelKey, minQuantity]);
 
-  const handleAddToCart = useCallback(() => {
+  const handleSingleVariationAdd = useCallback(() => {
     if (!product) return;
     
     // Verificar se precisa de variação
-    if (variations.length > 0 && !selectedVariation) {
+    if (hasVariations && !selectedVariation) {
       toast({
         title: "Selecione uma variação",
         description: "Este produto possui variações. Selecione uma opção antes de adicionar ao carrinho.",
@@ -161,7 +170,31 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       title: "Produto adicionado!",
       description: `${finalQuantity} unidade(s) adicionada(s) ao carrinho.`,
     });
-  }, [product, quantity, selectedVariation, variations.length, modelKey, minQuantity, onAddToCart, onClose, toast]);
+  }, [product, quantity, selectedVariation, hasVariations, modelKey, minQuantity, onAddToCart, onClose, toast]);
+
+  const handleMultipleVariationAdd = useCallback((selections: any[]) => {
+    if (!product) return;
+    
+    // Adicionar cada seleção ao carrinho
+    selections.forEach(selection => {
+      const productWithModel = {
+        ...product,
+        allow_negative_stock: product.allow_negative_stock || false,
+        price_model: modelKey,
+        enable_gradual_wholesale: product.enable_gradual_wholesale || false,
+      };
+      
+      onAddToCart(productWithModel, selection.quantity, selection.variation);
+    });
+
+    onClose();
+
+    const totalItems = selections.reduce((total, sel) => total + sel.quantity, 0);
+    toast({
+      title: "Produtos adicionados!",
+      description: `${totalItems} itens de ${selections.length} variações adicionados ao carrinho.`,
+    });
+  }, [product, modelKey, onAddToCart, onClose, toast]);
 
   const handleQuantityChange = useCallback((newQuantity: number) => {
     if (!product) return;
@@ -180,6 +213,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     (selectedVariation.stock > quantity || product.allow_negative_stock) :
     (product.stock > quantity || product.allow_negative_stock);
   const canDecrease = quantity > minQuantity;
+
+  // Verificar se pode adicionar ao carrinho (só para modo single)
+  const canAddToCart = !hasVariations || (selectionMode === 'single' && selectedVariation);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -363,67 +399,155 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
             <Separator />
 
-            {/* Variation Selector */}
-            {variations.length > 0 && (
-              <>
-                <ProductVariationSelector
-                  variations={variations}
-                  selectedVariation={selectedVariation}
-                  onVariationChange={setSelectedVariation}
-                  loading={variationsLoading}
+            {/* Variation Selection */}
+            {hasVariations && (
+              <div className="space-y-4">
+                {/* Mode Selector */}
+                <VariationModeSelector
+                  mode={selectionMode}
+                  onModeChange={setSelectionMode}
+                  variationCount={variations.length}
                 />
-                <Separator />
-              </>
-            )}
 
-            {/* Quantity Selector */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Quantidade</label>
-                {modelKey === "wholesale_only" && product.min_wholesale_qty && (
-                  <div className="text-xs text-orange-600 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    <span>Mín: {product.min_wholesale_qty} un.</span>
+                <Separator />
+
+                {/* Variation Selectors */}
+                {selectionMode === 'single' ? (
+                  <div className="space-y-4">
+                    <ProductVariationSelector
+                      variations={variations}
+                      selectedVariation={selectedVariation}
+                      onVariationChange={setSelectedVariation}
+                      loading={variationsLoading}
+                    />
+                    
+                    {/* Validation Message */}
+                    {!selectedVariation && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-amber-800">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            Selecione uma variação para continuar
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quantity Selector for Single Mode */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Quantidade</label>
+                        {modelKey === "wholesale_only" && product.min_wholesale_qty && (
+                          <div className="text-xs text-orange-600 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            <span>Mín: {product.min_wholesale_qty} un.</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuantityChange(quantity - 1)}
+                          disabled={!canDecrease}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <div className="flex-1 text-center">
+                          <span className="text-lg font-medium">{quantity}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuantityChange(quantity + 1)}
+                          disabled={!canAddMore}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Add to Cart for Single Mode */}
+                    <Button
+                      onClick={handleSingleVariationAdd}
+                      disabled={!canAddToCart || (!product.allow_negative_stock && 
+                        ((selectedVariation && selectedVariation.stock === 0) || 
+                         (!selectedVariation && product.stock === 0)))}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      {selectedVariation ? 
+                        `Adicionar ao Carrinho - ${formatCurrency(priceCalculation.price * quantity)}` :
+                        'Selecione uma variação'
+                      }
+                    </Button>
                   </div>
+                ) : (
+                  /* Multiple Selection Mode */
+                  <MultipleVariationSelector
+                    product={product}
+                    variations={variations}
+                    onAddToCart={handleMultipleVariationAdd}
+                    catalogType={catalogType}
+                  />
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuantityChange(quantity - 1)}
-                  disabled={!canDecrease}
-                  className="h-10 w-10 p-0"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <div className="flex-1 text-center">
-                  <span className="text-lg font-medium">{quantity}</span>
+            )}
+
+            {/* For products without variations, show quantity and add to cart */}
+            {!hasVariations && (
+              <div className="space-y-4">
+                {/* Quantity Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Quantidade</label>
+                    {modelKey === "wholesale_only" && product.min_wholesale_qty && (
+                      <div className="text-xs text-orange-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>Mín: {product.min_wholesale_qty} un.</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(quantity - 1)}
+                      disabled={!canDecrease}
+                      className="h-10 w-10 p-0"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 text-center">
+                      <span className="text-lg font-medium">{quantity}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(quantity + 1)}
+                      disabled={!canAddMore}
+                      className="h-10 w-10 p-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Add to Cart */}
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuantityChange(quantity + 1)}
-                  disabled={!canAddMore}
-                  className="h-10 w-10 p-0"
+                  onClick={handleSingleVariationAdd}
+                  disabled={(!product.allow_negative_stock && product.stock === 0)}
+                  className="w-full"
+                  size="lg"
                 >
-                  <Plus className="h-4 w-4" />
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Adicionar ao Carrinho - {formatCurrency(priceCalculation.price * quantity)}
                 </Button>
               </div>
-            </div>
-
-            {/* Add to Cart */}
-            <Button
-              onClick={handleAddToCart}
-              disabled={(!product.allow_negative_stock && 
-                ((selectedVariation && selectedVariation.stock === 0) || 
-                 (!selectedVariation && product.stock === 0)))}
-              className="w-full"
-              size="lg"
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Adicionar ao Carrinho - {formatCurrency(priceCalculation.price * quantity)}
-            </Button>
+            )}
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-2">
