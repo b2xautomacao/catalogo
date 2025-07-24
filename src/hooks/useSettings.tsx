@@ -11,8 +11,15 @@ export interface Settings {
   updated_at: string;
 }
 
+export interface CatalogSettings {
+  catalog_mode: 'separated' | 'hybrid' | 'toggle';
+  retail_catalog_active: boolean;
+  wholesale_catalog_active: boolean;
+}
+
 export const useSettings = (storeId?: string) => {
   const [settings, setSettings] = useState<Settings[]>([]);
+  const [catalogSettings, setCatalogSettings] = useState<CatalogSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +39,25 @@ export const useSettings = (storeId?: string) => {
       }
 
       setSettings(data || []);
+      
+      // Convert settings array to catalog settings object
+      const catalogData: CatalogSettings = {
+        catalog_mode: 'separated',
+        retail_catalog_active: true,
+        wholesale_catalog_active: false
+      };
+
+      data?.forEach(setting => {
+        if (setting.setting_key === 'catalog_mode') {
+          catalogData.catalog_mode = setting.setting_value;
+        } else if (setting.setting_key === 'retail_catalog_active') {
+          catalogData.retail_catalog_active = setting.setting_value;
+        } else if (setting.setting_key === 'wholesale_catalog_active') {
+          catalogData.wholesale_catalog_active = setting.setting_value;
+        }
+      });
+
+      setCatalogSettings(catalogData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar configurações');
     } finally {
@@ -60,6 +86,24 @@ export const useSettings = (storeId?: string) => {
     }
   };
 
+  const updateSettings = async (newSettings: Partial<CatalogSettings>) => {
+    if (!storeId) return;
+
+    try {
+      setLoading(true);
+      
+      // Update each setting individually
+      for (const [key, value] of Object.entries(newSettings)) {
+        await updateSetting(key, value);
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar configurações');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (storeId) {
       fetchSettings(storeId);
@@ -67,10 +111,12 @@ export const useSettings = (storeId?: string) => {
   }, [storeId]);
 
   return {
-    settings,
+    settings: catalogSettings,
     loading,
+    isLoading: loading,
     error,
     updateSetting,
+    updateSettings,
     refetch: () => storeId ? fetchSettings(storeId) : Promise.resolve()
   };
 };
