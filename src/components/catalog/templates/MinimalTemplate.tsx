@@ -2,7 +2,7 @@
 import React from "react";
 import { Product } from "@/types/product";
 import { CatalogType } from "../CatalogExample";
-import ProductCard from "@/components/catalog/ProductCard";
+import ProductCard from "../ProductCard";
 import { useCart } from "@/hooks/useCart";
 
 export interface MinimalTemplateProps {
@@ -30,8 +30,6 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
   showStock,
   editorSettings
 }) => {
-  const { addItem } = useCart();
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -53,22 +51,14 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
       {products.map((product) => (
         <ProductCard
           key={product.id}
-          id={product.id}
-          name={product.name}
-          retail_price={product.retail_price}
-          wholesale_price={product.wholesale_price}
-          min_wholesale_qty={product.min_wholesale_qty}
-          image_url={product.image_url}
-          store_id={product.store_id}
-          stock={product.stock}
-          allow_negative_stock={product.allow_negative_stock}
+          product={product}
           catalogType={catalogType}
-          showPrices={showPrices}
-          showStock={showStock}
-          onAddToCart={() => addItem(product)}
+          onAddToCart={() => onAddToCart(product)}
           onAddToWishlist={() => onAddToWishlist(product)}
           onQuickView={() => onQuickView(product)}
           isInWishlist={isInWishlist(product.id)}
+          showPrices={showPrices}
+          showStock={showStock}
         />
       ))}
     </div>

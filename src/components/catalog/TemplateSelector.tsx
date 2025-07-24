@@ -1,10 +1,8 @@
+
 import React from "react";
 import { Product } from "@/types/product";
 import { CatalogType } from "./CatalogExample";
-import MinimalTemplate from "./templates/MinimalTemplate";
-import ModernTemplate from "./templates/ModernTemplate";
-import ElegantTemplate from "./templates/ElegantTemplate";
-import IndustrialTemplate from "./templates/IndustrialTemplate";
+import ResponsiveProductGrid from "./ResponsiveProductGrid";
 
 export interface TemplateSelectorProps {
   selectedTemplate: 'minimal' | 'modern' | 'elegant' | 'industrial';
@@ -29,36 +27,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     store_id: "sample-store",
     stock: 25,
     allow_negative_stock: false,
-    category_id: "sample-category",
+    category: "sample-category",
     description: "Este é um produto de exemplo para visualização do template.",
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
-  };
-
-  const handleAddToCart = (product: Product) => {
-    console.log('Preview - adicionar ao carrinho:', product.name);
-  };
-
-  const handleAddToWishlist = (product: Product) => {
-    console.log('Preview - adicionar à wishlist:', product.name);
-  };
-
-  const handleQuickView = (product: Product) => {
-    console.log('Preview - visualização rápida:', product.name);
-  };
-
-  const commonProps = {
-    products: [sampleProduct],
-    catalogType,
-    onAddToCart: handleAddToCart,
-    onAddToWishlist: handleAddToWishlist,
-    onQuickView: handleQuickView,
-    isInWishlist: () => false,
-    loading: false,
-    showPrices: editorSettings.showPrices !== false,
-    showStock: editorSettings.showStock !== false,
-    editorSettings
   };
 
   const templates = [
@@ -66,25 +39,21 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       id: 'minimal',
       name: 'Minimalista',
       description: 'Design limpo e simples',
-      component: <MinimalTemplate {...commonProps} />
     },
     {
       id: 'modern',
       name: 'Moderno',
       description: 'Design com foco na imagem',
-      component: <ModernTemplate {...commonProps} />
     },
     {
       id: 'elegant',
       name: 'Elegante',
       description: 'Design sofisticado e atraente',
-      component: <ElegantTemplate {...commonProps} />
     },
     {
       id: 'industrial',
       name: 'Industrial',
       description: 'Design robusto e direto',
-      component: <IndustrialTemplate {...commonProps} />
     },
   ];
 
@@ -121,7 +90,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </div>
             
             <div className="bg-gray-50 rounded-lg p-4 transform scale-75 origin-top-left">
-              {template.component}
+              <ResponsiveProductGrid
+                products={[sampleProduct]}
+                catalogType={catalogType}
+                template={template.id as any}
+                editorSettings={editorSettings}
+                loading={false}
+              />
             </div>
           </div>
         ))}

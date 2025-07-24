@@ -4,10 +4,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { Product } from "@/types/product";
 import { CatalogType } from "./CatalogExample";
-import MinimalTemplate from "./templates/MinimalTemplate";
-import ModernTemplate from "./templates/ModernTemplate";
-import ElegantTemplate from "./templates/ElegantTemplate";
-import IndustrialTemplate from "./templates/IndustrialTemplate";
+import ProductCard from "./ProductCard";
 import QuickViewModal from "./QuickViewModal";
 import { Loader2 } from "lucide-react";
 
@@ -53,19 +50,6 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     setQuickViewProduct(product);
   };
 
-  const templateProps = {
-    products: filteredProducts,
-    catalogType,
-    onAddToCart: handleAddToCart,
-    onAddToWishlist: handleAddToWishlist,
-    onQuickView: handleQuickView,
-    isInWishlist: (productId: string) => isInWishlist(productId),
-    loading,
-    showPrices: editorSettings.showPrices !== false,
-    showStock: editorSettings.showStock !== false,
-    editorSettings
-  };
-
   if (loading) {
     return (
       <div className={`flex items-center justify-center py-16 ${className}`}>
@@ -88,22 +72,23 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     );
   }
 
-  const renderTemplate = () => {
-    switch (template) {
-      case 'modern':
-        return <ModernTemplate {...templateProps} />;
-      case 'elegant':
-        return <ElegantTemplate {...templateProps} />;
-      case 'industrial':
-        return <IndustrialTemplate {...templateProps} />;
-      default:
-        return <MinimalTemplate {...templateProps} />;
-    }
-  };
-
   return (
     <div className={className}>
-      {renderTemplate()}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            catalogType={catalogType}
+            onAddToCart={() => handleAddToCart(product)}
+            onAddToWishlist={() => handleAddToWishlist(product)}
+            onQuickView={() => handleQuickView(product)}
+            isInWishlist={isInWishlist(product.id)}
+            showPrices={editorSettings.showPrices !== false}
+            showStock={editorSettings.showStock !== false}
+          />
+        ))}
+      </div>
       
       {quickViewProduct && (
         <QuickViewModal
