@@ -241,9 +241,6 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
                           : itemPrice;
                       const itemTotal = safeCalculate(itemPrice, itemQuantity);
 
-                      // Determinar se é preço de atacado baseado no tier atual
-                      const isWholesalePrice = item.currentTier?.tier_name !== "Varejo";
-
                       return (
                         <div
                           key={item.id}
@@ -253,12 +250,12 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
                           <span
                             className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-bold z-10
                             ${
-                              isWholesalePrice
+                              item.isWholesalePrice
                                 ? "bg-green-100 text-green-800 border border-green-300"
                                 : "bg-blue-100 text-blue-800 border border-blue-300"
                             }`}
                           >
-                            {item.currentTier?.tier_name || "Varejo"}
+                            {item.isWholesalePrice ? "Atacado" : "Varejo"}
                           </span>
 
                           <CartItemThumbnail

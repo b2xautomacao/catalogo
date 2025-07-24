@@ -1,158 +1,532 @@
-
-import React, { useState, useEffect } from 'react';
-import { Product } from '@/types/product';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { toast } from 'sonner'
-import { useShoppingCart } from '@/hooks/useShoppingCart';
-import { Skeleton } from "@/components/ui/skeleton"
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { ArrowUpDown, Eye, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from '@/lib/utils';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useCart } from "@/hooks/useCart";
+import ProductCard from "./ProductCard";
+import ProductDetailsModal from "./ProductDetailsModal";
+import AdvancedFilterSidebar, {
+  AdvancedFilterState,
+} from "./AdvancedFilterSidebar";
+import { Product } from "@/types/product";
+import { CatalogType } from "@/hooks/useCatalog";
 
-export type CatalogType = 'retail' | 'wholesale';
+export type SortOption =
+  | "name"
+  | "price-asc"
+  | "price-desc"
+  | "newest"
+  | "rating"
+  | "stock";
 
 interface ResponsiveProductGridProps {
   products: Product[];
-  isLoading?: boolean;
-  loading?: boolean;
-  mode?: 'grid' | 'carousel';
-  onProductClick?: (product: Product) => void;
-  catalogSettings?: any;
-  catalogType?: CatalogType;
+  catalogType: CatalogType;
   storeIdentifier?: string;
+  loading?: boolean;
   className?: string;
 }
 
 const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   products,
-  isLoading,
-  loading,
-  mode = 'grid',
-  onProductClick,
-  catalogSettings,
-  catalogType = 'retail',
+  catalogType,
   storeIdentifier,
-  className,
+  loading = false,
+  className = "",
 }) => {
-  const { addItem: addToCart } = useShoppingCart();
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const { addItem } = useCart();
 
-  const actualLoading = isLoading || loading;
+  const [filters, setFilters] = useState<AdvancedFilterState>({
+    searchQuery: "",
+    categories: [],
+    priceRange: [0, 1000],
+    inStock: false,
+    featured: false,
+    rating: 0,
+    variations: {
+      colors: [],
+      sizes: [],
+      materials: [],
+    },
+    discount: false,
+  });
 
+  // Atualizar filtros quando a busca mudar
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsSmallScreen(window.innerWidth < 768);
-    };
+    setFilters((prev) => ({ ...prev, searchQuery: debouncedSearch }));
+  }, [debouncedSearch]);
 
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
+  // Função inteligente de filtragem
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
 
-    return () => {
-      window.removeEventListener('resize', checkScreenSize);
-    };
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase().trim();
+      const searchTerms = query.split(" ").filter((term) => term.length > 0);
+
+      filtered = filtered.filter((product) => {
+        const searchableText = [
+          product.name,
+          product.description,
+          product.category,
+          ...(
+            product.variations?.map((v) => [v.color, v.size].filter(Boolean)) ||
+            []
+          ).flat(),
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchTerms.every((term) => searchableText.includes(term));
+      });
+    }
+
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter((product) =>
+        filters.categories.includes(product.category || "")
+      );
+    }
+
+    filtered = filtered.filter((product) => {
+      const price = product.retail_price || 0;
+      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+    });
+
+    if (filters.inStock) {
+      filtered = filtered.filter((product) => (product.stock || 0) > 0);
+    }
+
+    if (filters.featured) {
+      filtered = filtered.filter((product) => product.is_featured);
+    }
+
+    if (
+      filters.variations.colors.length > 0 ||
+      filters.variations.sizes.length > 0
+    ) {
+      filtered = filtered.filter((product) => {
+        if (!product.variations || product.variations.length === 0)
+          return false;
+
+        return product.variations.some((variation) => {
+          const colorMatch =
+            filters.variations.colors.length === 0 ||
+            (variation.color &&
+              filters.variations.colors.includes(variation.color));
+
+          const sizeMatch =
+            filters.variations.sizes.length === 0 ||
+            (variation.size &&
+              filters.variations.sizes.includes(variation.size));
+
+          return colorMatch && sizeMatch;
+        });
+      });
+    }
+
+    if (filters.rating > 0) {
+      filtered = filtered.filter((product) => {
+        const hash = product.id.split("").reduce((a, b) => {
+          a = (a << 5) - a + b.charCodeAt(0);
+          return a & a;
+        }, 0);
+        const rating = 3.5 + (Math.abs(hash) % 15) / 10;
+        return rating >= filters.rating;
+      });
+    }
+
+    return filtered;
+  }, [products, filters]);
+
+  // Função de ordenação inteligente
+  const sortedProducts = useMemo(() => {
+    const sorted = [...filteredProducts];
+
+    switch (sortBy) {
+      case "name":
+        return sorted.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
+      case "price-asc":
+        return sorted.sort(
+          (a, b) => (a.retail_price || 0) - (b.retail_price || 0)
+        );
+
+      case "price-desc":
+        return sorted.sort(
+          (a, b) => (b.retail_price || 0) - (a.retail_price || 0)
+        );
+
+      case "newest":
+        return sorted.sort(
+          (a, b) =>
+            new Date(b.created_at || 0).getTime() -
+            new Date(a.created_at || 0).getTime()
+        );
+
+      case "rating":
+        return sorted.sort((a, b) => {
+          const getRating = (product: Product) => {
+            const hash = product.id.split("").reduce((acc, char) => {
+              acc = (acc << 5) - acc + char.charCodeAt(0);
+              return acc & acc;
+            }, 0);
+            return 3.5 + (Math.abs(hash) % 15) / 10;
+          };
+          return getRating(b) - getRating(a);
+        });
+
+      case "stock":
+        return sorted.sort((a, b) => (b.stock || 0) - (a.stock || 0));
+
+      default:
+        return sorted;
+    }
+  }, [filteredProducts, sortBy]);
+
+  // Contar filtros ativos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.searchQuery) count++;
+    if (filters.categories.length > 0) count++;
+    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 1000) count++;
+    if (filters.inStock) count++;
+    if (filters.featured) count++;
+    if (filters.rating > 0) count++;
+    if (filters.variations.colors.length > 0) count++;
+    if (filters.variations.sizes.length > 0) count++;
+    if (filters.discount) count++;
+    return count;
+  }, [filters]);
+
+  const handleFilterChange = useCallback((newFilters: AdvancedFilterState) => {
+    setFilters(newFilters);
   }, []);
 
-  const renderProductCard = (product: Product) => (
-    <Card key={product.id} className="group/product relative transition-shadow hover:shadow-lg">
-      <CardHeader>
-        <CardTitle>{product.name}</CardTitle>
-        <CardDescription>{product.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        <AspectRatio ratio={16 / 9}>
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="object-cover rounded-md"
-            onClick={() => onProductClick?.(product)}
-            style={{ cursor: 'pointer' }}
-          />
-        </AspectRatio>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between">
-        <div className="flex flex-col space-y-1">
-          <span className="text-sm font-medium">R$ {product.retail_price}</span>
-          {product.stock <= 5 && product.stock > 0 && (
-            <Badge variant="secondary">
-              Apenas {product.stock} restantes
-            </Badge>
-          )}
-          {product.stock === 0 && (
-            <Badge variant="destructive">
-              Sem estoque
-            </Badge>
-          )}
-        </div>
-        <Button size="sm" onClick={() => handleAddToCart(product)}>
-          Adicionar
-        </Button>
-      </CardFooter>
-    </Card>
+  const clearAllFilters = useCallback(() => {
+    const clearedFilters: AdvancedFilterState = {
+      searchQuery: "",
+      categories: [],
+      priceRange: [0, 1000],
+      inStock: false,
+      featured: false,
+      rating: 0,
+      variations: {
+        colors: [],
+        sizes: [],
+        materials: [],
+      },
+      discount: false,
+    };
+    setFilters(clearedFilters);
+    setSearchQuery("");
+  }, []);
+
+  // ✅ FUNÇÃO PARA VER DETALHES DO PRODUTO
+  const handleViewDetails = useCallback((product: Product) => {
+    console.log("📱 Visualizar detalhes do produto:", product.name);
+    setSelectedProduct(product);
+    setIsDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetailsModal = useCallback(() => {
+    setIsDetailsModalOpen(false);
+    setSelectedProduct(null);
+  }, []);
+
+  // ✅ FUNÇÃO PARA ADICIONAR AO CARRINHO
+  const handleAddToCart = useCallback(
+    (product: Product, quantity: number = 1, variation?: any) => {
+      console.log(
+        "🛒 Adicionando ao carrinho:",
+        product.name,
+        quantity,
+        variation
+      );
+
+      // Criar item do carrinho
+      const cartItem = {
+        id: `${product.id}-${variation?.id || Date.now()}`, // ID único para o item do carrinho
+        product: {
+          id: product.id,
+          name: product.name,
+          retail_price: product.retail_price,
+          wholesale_price: product.wholesale_price,
+          min_wholesale_qty: product.min_wholesale_qty,
+          image_url: product.image_url,
+          store_id: product.store_id,
+          stock: product.stock,
+          allow_negative_stock: product.allow_negative_stock || false,
+        },
+        quantity: quantity,
+        price: product.retail_price,
+        originalPrice: product.retail_price,
+        catalogType: catalogType,
+        isWholesalePrice: false,
+        variation: variation,
+      };
+
+      addItem(cartItem);
+    },
+    [catalogType, addItem]
   );
 
-  const handleAddToCart = (product: Product, selectedVariation?: any) => {
-    console.log('📦 GRID - Adicionando ao carrinho:', product, selectedVariation);
-    
-    addToCart(product, 1, selectedVariation);
-    toast.success(`${product.name} adicionado ao carrinho!`);
+  const removeFilter = (type: string, value?: string) => {
+    switch (type) {
+      case "category":
+        setFilters((prev) => ({
+          ...prev,
+          categories: prev.categories.filter((c) => c !== value),
+        }));
+        break;
+      case "inStock":
+        setFilters((prev) => ({ ...prev, inStock: false }));
+        break;
+      case "featured":
+        setFilters((prev) => ({ ...prev, featured: false }));
+        break;
+      case "rating":
+        setFilters((prev) => ({ ...prev, rating: 0 }));
+        break;
+      case "color":
+        setFilters((prev) => ({
+          ...prev,
+          variations: {
+            ...prev.variations,
+            colors: prev.variations.colors.filter((c) => c !== value),
+          },
+        }));
+        break;
+      case "size":
+        setFilters((prev) => ({
+          ...prev,
+          variations: {
+            ...prev.variations,
+            sizes: prev.variations.sizes.filter((s) => s !== value),
+          },
+        }));
+        break;
+    }
   };
 
-  if (actualLoading) {
-    return (
-      <div className={cn("grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3", className)}>
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="group/product relative transition-shadow hover:shadow-lg">
-            <CardHeader>
-              <CardTitle><Skeleton className="h-4 w-[80%]" /></CardTitle>
-              <CardDescription><Skeleton className="h-4 w-[60%]" /></CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <AspectRatio ratio={16 / 9}>
-                <Skeleton className="w-full h-full rounded-md" />
-              </AspectRatio>
-            </CardContent>
-            <CardFooter className="flex items-center justify-between">
-              <div className="flex flex-col space-y-1">
-                <Skeleton className="h-4 w-[50%]" />
-              </div>
-              <Skeleton className="h-8 w-20" />
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (mode === 'carousel') {
-    return (
-      <Carousel className="w-full max-w-5xl">
-        <CarouselContent className="-ml-1 pl-1">
-          {products.map((product) => (
-            <CarouselItem key={product.id} className="md:basis-1/2 lg:basis-1/3">
-              <div className="p-1">
-                {renderProductCard(product)}
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-    );
-  }
-
   return (
-    <div className={cn("grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3", className)}>
-      {products.map((product) => renderProductCard(product))}
+    <div className={`w-full ${className}`}>
+      {/* Barra de Controles - Estilo Mercado Livre */}
+      <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 mb-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 items-stretch sm:items-center justify-between w-full overflow-x-auto">
+          {/* Busca */}
+          <div className="w-full sm:flex-1 max-w-full sm:max-w-md">
+            <Input
+              placeholder="Buscar produtos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 w-full min-w-0"
+            />
+          </div>
+
+          {/* Controles à direita */}
+          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center sm:gap-4 flex-shrink-0">
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              size="sm"
+              className="lg:hidden"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+
+            <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+              {sortedProducts.length} produtos
+            </span>
+
+            {/* Ordenação */}
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as SortOption)}
+            >
+              <SelectTrigger className="w-full sm:w-48 h-10 min-w-0">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Mais recentes</SelectItem>
+                <SelectItem value="name">Nome A-Z</SelectItem>
+                <SelectItem value="price-asc">Menor preço</SelectItem>
+                <SelectItem value="price-desc">Maior preço</SelectItem>
+                <SelectItem value="rating">Melhor avaliação</SelectItem>
+                <SelectItem value="stock">Maior estoque</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Filtros Ativos */}
+        {activeFiltersCount > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex flex-wrap gap-2">
+              {filters.categories.map((category) => (
+                <Badge key={category} variant="secondary" className="text-xs">
+                  {category}
+                  <button
+                    onClick={() => removeFilter("category", category)}
+                    className="ml-1 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+
+              {filters.inStock && (
+                <Badge variant="secondary" className="text-xs">
+                  Em estoque
+                  <button
+                    onClick={() => removeFilter("inStock")}
+                    className="ml-1 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+
+              {filters.featured && (
+                <Badge variant="secondary" className="text-xs">
+                  Destaque
+                  <button
+                    onClick={() => removeFilter("featured")}
+                    className="ml-1 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+
+              {filters.variations.colors.map((color) => (
+                <Badge key={color} variant="secondary" className="text-xs">
+                  {color}
+                  <button
+                    onClick={() => removeFilter("color", color)}
+                    className="ml-1 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+
+              {filters.variations.sizes.map((size) => (
+                <Badge key={size} variant="secondary" className="text-xs">
+                  {size}
+                  <button
+                    onClick={() => removeFilter("size", size)}
+                    className="ml-1 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-xs"
+              >
+                Limpar todos
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Grid de Produtos - 2 colunas mobile, 3 colunas desktop (estilo Mercado Livre) */}
+      <div className="min-h-96">
+        {loading ? (
+          // Loading Skeleton
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg shadow-sm border overflow-hidden animate-pulse"
+              >
+                <div className="aspect-square bg-gray-200"></div>
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : sortedProducts.length > 0 ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {sortedProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                catalogType={catalogType}
+                onViewDetails={handleViewDetails}
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+        ) : (
+          // Estado Vazio
+          <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+            <Eye className="h-16 w-16 mb-4 text-gray-300" />
+            <h3 className="text-xl font-medium mb-2">
+              Nenhum produto encontrado
+            </h3>
+            <p className="text-sm text-center max-w-md mb-6">
+              {activeFiltersCount > 0
+                ? "Tente ajustar os filtros ou termos de busca para encontrar produtos."
+                : "Nenhum produto está disponível no momento."}
+            </p>
+            {activeFiltersCount > 0 && (
+              <Button onClick={clearAllFilters} variant="outline">
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Filtros Mobile */}
+      <AdvancedFilterSidebar
+        onFilter={handleFilterChange}
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        products={products}
+        isMobile={true}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      {/* ✅ MODAL DE DETALHES DO PRODUTO */}
+      <ProductDetailsModal
+        product={selectedProduct}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        onAddToCart={handleAddToCart}
+        catalogType={catalogType}
+      />
     </div>
   );
 };

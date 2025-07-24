@@ -1,28 +1,34 @@
-
 import React from "react";
 import { useCart } from "@/hooks/useCart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Product } from "@/types/product";
 
 const CartTest: React.FC = () => {
   const cart = useCart();
 
   const addTestItem = () => {
-    const testProduct: Product = {
-      id: "prod-test-" + Math.random(),
-      store_id: "store-1",
-      name: "Produto Teste " + Math.floor(Math.random() * 100),
-      retail_price: 19.99,
-      wholesale_price: 15.99,
-      min_wholesale_qty: 5,
-      stock: 100,
-      image_url: "/placeholder.svg",
-      allow_negative_stock: false,
+    const testItem = {
+      id: "test-" + Date.now(),
+      product: {
+        id: "prod-test-" + Math.random(),
+        name: "Produto Teste " + Math.floor(Math.random() * 100),
+        retail_price: 19.99,
+        wholesale_price: 15.99,
+        min_wholesale_qty: 5,
+        image_url: "/placeholder.svg",
+        store_id: "store-1",
+        stock: 100,
+        allow_negative_stock: false,
+      },
+      quantity: 1,
+      price: 19.99,
+      originalPrice: 19.99,
+      catalogType: "retail" as const,
+      isWholesalePrice: false,
     };
 
-    console.log("➕ Adicionando produto teste:", testProduct);
-    cart.addItem(testProduct, 1);
+    console.log("➕ Adicionando item teste:", testItem);
+    cart.addItem(testItem);
   };
 
   const addBulkItems = () => {
