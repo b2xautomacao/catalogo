@@ -42,6 +42,8 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
     setGeneratingDescription(true);
     
     try {
+      console.log('🤖 Gerando descrição para:', formData.name);
+      
       const { data, error } = await supabase.functions.invoke('ai-content-generator', {
         body: {
           productName: formData.name,
@@ -50,9 +52,26 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
         }
       });
 
+      console.log('🤖 Resposta da IA:', { data, error });
+
       if (error) {
         console.error('Erro na função:', error);
-        throw new Error(error.message || 'Erro na API de IA');
+        
+        // Verificar se é erro de configuração da OpenAI
+        if (error.message?.includes('OpenAI API key not configured')) {
+          toast({
+            title: "Configuração necessária",
+            description: "A chave da API OpenAI não está configurada. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro na geração",
+            description: error.message || "Não foi possível gerar a descrição. Tente novamente.",
+            variant: "destructive",
+          });
+        }
+        return;
       }
 
       if (data?.content) {
@@ -62,7 +81,11 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
           description: "A IA gerou uma descrição para o produto",
         });
       } else {
-        throw new Error('Nenhum conteúdo foi gerado pela IA');
+        toast({
+          title: "Erro na geração",
+          description: "Nenhum conteúdo foi gerado pela IA",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       console.error('Erro ao gerar descrição:', error);
