@@ -18,7 +18,7 @@ export interface ResponsiveProductGridProps {
   className?: string;
   template?: 'minimal' | 'modern' | 'elegant' | 'industrial';
   editorSettings?: any;
-  storeId?: string;
+  storeId: string; // Deve ser sempre um UUID válido
 }
 
 const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
@@ -33,6 +33,12 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
+  // Validar se storeId é um UUID válido
+  const isValidUUID = useMemo(() => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return storeId && uuidRegex.test(storeId);
+  }, [storeId]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => product.is_active !== false);
@@ -77,6 +83,11 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     );
   }
 
+  // Se o storeId não é válido, mostrar aviso
+  if (!isValidUUID) {
+    console.warn('ResponsiveProductGrid: storeId inválido:', storeId);
+  }
+
   const renderTemplate = () => {
     const templateProps = {
       products: filteredProducts,
@@ -89,7 +100,7 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
       showPrices: editorSettings.showPrices !== false,
       showStock: editorSettings.showStock !== false,
       editorSettings,
-      storeId: storeId || ''
+      storeId: isValidUUID ? storeId : '' // Só passar storeId se for válido
     };
 
     switch (template) {
@@ -116,7 +127,7 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
           onAddToCart={handleAddToCart}
           onAddToWishlist={handleAddToWishlist}
           isInWishlist={isInWishlist(quickViewProduct.id)}
-          storeId={storeId}
+          storeId={isValidUUID ? storeId : undefined}
         />
       )}
     </div>

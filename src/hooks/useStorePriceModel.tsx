@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,11 @@ export interface StorePriceModel {
   updated_at: string;
 }
 
+const isValidUUID = (uuid: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 export const useStorePriceModel = (storeId?: string) => {
   const [priceModel, setPriceModel] = useState<StorePriceModel | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,12 +41,24 @@ export const useStorePriceModel = (storeId?: string) => {
   const { toast } = useToast();
 
   const fetchPriceModel = async () => {
-    if (!storeId) return;
+    if (!storeId) {
+      console.log('useStorePriceModel: Store ID não fornecido');
+      return;
+    }
+
+    // Validar se é um UUID válido
+    if (!isValidUUID(storeId)) {
+      console.warn('useStorePriceModel: Store ID não é um UUID válido:', storeId);
+      setError('Store ID inválido');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
+      console.log('useStorePriceModel: Buscando price model para store_id:', storeId);
+
       const { data, error } = await supabase
         .from('store_price_models')
         .select('*')
@@ -52,13 +70,17 @@ export const useStorePriceModel = (storeId?: string) => {
       }
 
       if (data) {
+        console.log('useStorePriceModel: Price model encontrado:', data);
         setPriceModel({
           ...data,
           price_model: data.price_model as PriceModelType
         });
+      } else {
+        console.log('useStorePriceModel: Nenhum price model encontrado, usando padrão');
+        setPriceModel(null);
       }
     } catch (err: any) {
-      console.error('Error fetching price model:', err);
+      console.error('useStorePriceModel: Erro ao buscar price model:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -66,7 +88,10 @@ export const useStorePriceModel = (storeId?: string) => {
   };
 
   const updatePriceModel = async (updates: Partial<StorePriceModel>) => {
-    if (!storeId) return;
+    if (!storeId || !isValidUUID(storeId)) {
+      console.warn('useStorePriceModel: Store ID inválido para update:', storeId);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -99,7 +124,10 @@ export const useStorePriceModel = (storeId?: string) => {
   };
 
   const createDefaultPriceModel = async () => {
-    if (!storeId) return;
+    if (!storeId || !isValidUUID(storeId)) {
+      console.warn('useStorePriceModel: Store ID inválido para create:', storeId);
+      return;
+    }
 
     const defaultModel = {
       store_id: storeId,
@@ -151,7 +179,12 @@ export const useStorePriceModel = (storeId?: string) => {
   };
 
   useEffect(() => {
-    fetchPriceModel();
+    if (storeId && isValidUUID(storeId)) {
+      fetchPriceModel();
+    } else if (storeId) {
+      console.warn('useStorePriceModel: Store ID fornecido não é um UUID válido:', storeId);
+      setError('Store ID inválido');
+    }
   }, [storeId]);
 
   return {

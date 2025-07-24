@@ -15,7 +15,7 @@ export interface PublicCatalogProps {
 }
 
 export default function PublicCatalog({ storeIdentifier, catalogType = 'retail' }: PublicCatalogProps) {
-  const { products, loading } = useCatalog(storeIdentifier, catalogType);
+  const { store, products, loading, storeError } = useCatalog(storeIdentifier, catalogType);
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
   const { isReady, templateName } = useGlobalTemplateStyles(storeIdentifier);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,12 +45,36 @@ export default function PublicCatalog({ storeIdentifier, catalogType = 'retail' 
     }
   }, [products]);
 
+  // Mostrar erro se a loja não foi encontrada
+  if (storeError) {
+    return (
+      <div className="min-h-screen bg-template-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-template-text mb-2">Loja não encontrada</h1>
+          <p className="text-gray-600">{storeError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar loading enquanto carrega a loja
+  if (loading || !store) {
+    return (
+      <div className="min-h-screen bg-template-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-template-primary mx-auto mb-4"></div>
+          <p className="text-template-text">Carregando catálogo...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-template-background">
       <header className="bg-template-surface py-4 shadow-sm">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-template-text">
-            Catálogo Público
+            {store.name}
           </h1>
           <nav>
             <ul className="flex space-x-4">
@@ -147,7 +171,7 @@ export default function PublicCatalog({ storeIdentifier, catalogType = 'retail' 
                   catalogType={catalogType}
                   loading={loading}
                   template={settings?.template_name as any || 'minimal'}
-                  storeId={storeIdentifier}
+                  storeId={store.id}
                   editorSettings={{
                     showPrices: true,
                     showStock: true
