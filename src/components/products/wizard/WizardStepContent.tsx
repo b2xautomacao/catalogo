@@ -63,7 +63,6 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
       return (
         <ReviewStep
           formData={formData}
-          updateFormData={updateFormData}
         />
       );
     default:

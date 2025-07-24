@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type PriceModelType = 'retail_only' | 'simple_wholesale' | 'gradual_wholesale';
+export type PriceModelType = 'retail_only' | 'wholesale_only' | 'simple_wholesale' | 'gradual_wholesale';
 
 export interface StorePriceModel {
   id: string;
@@ -132,6 +131,8 @@ export const useStorePriceModel = (storeId?: string) => {
     switch (modelType) {
       case 'retail_only':
         return priceModel.price_model === 'retail_only';
+      case 'wholesale_only':
+        return priceModel.price_model === 'wholesale_only';
       case 'simple_wholesale':
         return priceModel.simple_wholesale_enabled;
       case 'gradual_wholesale':
