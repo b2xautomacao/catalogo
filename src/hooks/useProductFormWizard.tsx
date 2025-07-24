@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +23,11 @@ export interface ProductFormData {
   variations: ProductVariation[];
   price_tiers: ProductPriceTier[];
   store_id: string;
-  enable_gradual_wholesale?: boolean; // Toggle para ativar/desativar atacado gradativo
+  enable_gradual_wholesale?: boolean;
+  // Adicionar propriedades faltantes para compatibilidade
+  price_model: string;
+  simple_wholesale_enabled: boolean;
+  gradual_wholesale_enabled: boolean;
 }
 
 export interface WizardStep {
@@ -57,6 +62,10 @@ export const useProductFormWizard = () => {
     variations: [],
     price_tiers: [],
     store_id: "",
+    // Adicionar valores padrão para as novas propriedades
+    price_model: "wholesale_only",
+    simple_wholesale_enabled: true,
+    gradual_wholesale_enabled: false,
   });
 
   const steps: WizardStep[] = [
@@ -163,6 +172,10 @@ export const useProductFormWizard = () => {
       price_tiers: product.price_tiers || [],
       store_id: product.store_id || "",
       enable_gradual_wholesale: product.enable_gradual_wholesale || false,
+      // Adicionar valores para as novas propriedades
+      price_model: "wholesale_only",
+      simple_wholesale_enabled: true,
+      gradual_wholesale_enabled: product.enable_gradual_wholesale || false,
     };
 
     setFormData(productData);
@@ -281,6 +294,10 @@ export const useProductFormWizard = () => {
       price_tiers: [],
       store_id: "",
       enable_gradual_wholesale: false,
+      // Adicionar valores padrão para reset
+      price_model: "wholesale_only",
+      simple_wholesale_enabled: true,
+      gradual_wholesale_enabled: false,
     });
     setCurrentStep(0);
     setProductId(null);
