@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Wand2, Package, Save, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/product";
-import { generateUniqueSKU, generateBatchSKUs, validateSKUUniqueness } from "@/utils/skuGenerator";
+import { generateUniqueVariationSKU, validateSKUUniqueness } from "@/utils/skuGenerator";
 
 interface UnifiedVariationWizardProps {
   variations: ProductVariation[];
@@ -64,13 +64,20 @@ const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
     setIsGeneratingSKU(true);
     
     try {
-      const variationData = localVariations.map(v => ({
-        color: v.color,
-        size: v.size,
-        name: v.name,
-      }));
-
-      const newSKUs = generateBatchSKUs(productName, variationData);
+      const newSKUs: string[] = [];
+      
+      // Gerar SKUs um por um para garantir unicidade
+      for (const variation of localVariations) {
+        const newSKU = await generateUniqueVariationSKU(
+          productName,
+          {
+            color: variation.color,
+            size: variation.size,
+          },
+          variation.id
+        );
+        newSKUs.push(newSKU);
+      }
       
       if (!validateSKUUniqueness(newSKUs)) {
         throw new Error("Erro na geração de SKUs únicos");
@@ -78,12 +85,7 @@ const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
 
       const updatedVariations = localVariations.map((variation, index) => ({
         ...variation,
-        sku: newSKUs[index] || generateUniqueSKU(productName, { 
-          color: variation.color,
-          size: variation.size,
-          name: variation.name,
-          index 
-        }),
+        sku: newSKUs[index],
       }));
 
       updateLocalVariations(updatedVariations);

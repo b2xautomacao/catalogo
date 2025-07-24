@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { generateUniqueSKU } from '@/utils/skuGenerator';
+import { generateUniqueProductSKU } from '@/utils/skuGenerator';
 
 interface GradeConfigurationFormProps {
   variations: ProductVariation[];
@@ -180,15 +180,6 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
       return;
     }
 
-    if (!storeId) {
-      toast({
-        title: "Erro de configuração",
-        description: "Store ID não encontrado para geração de SKUs únicos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     console.log('🎨 GRADE - Gerando variações...');
     console.log('📋 Cores selecionadas:', selectedColors);
     console.log('📐 Configuração de pares:', sizePairConfigs);
@@ -200,15 +191,10 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
       for (let colorIndex = 0; colorIndex < selectedColors.length; colorIndex++) {
         const color = selectedColors[colorIndex];
         
-        // Gerar SKU único para esta grade
-        const uniqueSKU = await generateUniqueSKU(
-          productName,
-          storeId,
-          { 
-            color: color,
-            name: `${gradeName}-${color}`,
-            index: colorIndex 
-          }
+        // Gerar SKU único para esta grade - corrigido para 2 argumentos
+        const uniqueSKU = await generateUniqueProductSKU(
+          `${productName}-${color}`,
+          productId
         );
 
         console.log(`🎨 Criando grade para cor: ${color} com SKU: ${uniqueSKU}`);
