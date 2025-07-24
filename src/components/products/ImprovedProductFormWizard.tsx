@@ -31,7 +31,8 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
     loading,
     resetForm,
     steps,
-    saveProduct
+    saveProduct,
+    loadProductForEditing
   } = useImprovedProductFormWizard();
 
   React.useEffect(() => {
@@ -39,26 +40,10 @@ const ImprovedProductFormWizard: React.FC<ImprovedProductFormWizardProps> = ({
     
     if (editingProduct && isOpen) {
       console.log("🧙 WIZARD - Carregando dados do produto para edição:", editingProduct.id);
-      // Load product data for editing
-      updateFormData({
-        name: editingProduct.name || '',
-        description: editingProduct.description || '',
-        category: editingProduct.category || '',
-        retail_price: editingProduct.retail_price || 0,
-        wholesale_price: editingProduct.wholesale_price || 0,
-        stock: editingProduct.stock || 0,
-        min_wholesale_qty: editingProduct.min_wholesale_qty || 1,
-        is_featured: editingProduct.is_featured || false,
-        is_active: editingProduct.is_active !== false,
-        allow_negative_stock: editingProduct.allow_negative_stock || false,
-        stock_alert_threshold: editingProduct.stock_alert_threshold || 5,
-        meta_title: editingProduct.meta_title || '',
-        meta_description: editingProduct.meta_description || '',
-        keywords: editingProduct.keywords || '',
-        seo_slug: editingProduct.seo_slug || '',
-      });
+      // Usar a função integrada que carrega tanto dados quanto imagens
+      loadProductForEditing(editingProduct);
     }
-  }, [editingProduct, isOpen, updateFormData]);
+  }, [editingProduct, isOpen, loadProductForEditing]);
 
   const handleSave = async () => {
     try {
