@@ -90,27 +90,47 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
         )}
       </div>
 
-      {/* Grade Sizes */}
+      {/* Grade Composition - Compact Display */}
       {isGrade && variation.grade_sizes && variation.grade_sizes.length > 0 && (
-        <div className="space-y-2">
-          <span className="text-sm font-medium text-muted-foreground">
-            Tamanhos incluídos nesta grade:
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {variation.grade_sizes.map((size, index) => (
-              <div 
-                key={index}
-                className="flex flex-col items-center p-2 bg-background rounded-md border min-w-[3rem]"
-              >
-                <span className="text-sm font-medium">{size}</span>
-                {variation.grade_pairs && variation.grade_pairs[index] && (
-                  <span className="text-xs text-muted-foreground">
-                    {variation.grade_pairs[index]} pares
-                  </span>
-                )}
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">
+              Composição da Grade:
+            </span>
+            <Badge variant="outline" className="text-xs">
+              {variation.grade_sizes.length} tamanhos
+            </Badge>
           </div>
+          
+          {/* Compact Size Grid */}
+          <div className="grid grid-cols-6 gap-1.5">
+            {variation.grade_sizes.map((size, index) => {
+              const pairCount = variation.grade_pairs && variation.grade_pairs[index] ? variation.grade_pairs[index] : 0;
+              return (
+                <div 
+                  key={index}
+                  className="flex flex-col items-center justify-center p-1.5 bg-background rounded border text-center min-h-[2.5rem]"
+                >
+                  <span className="text-xs font-semibold text-primary">{size}</span>
+                  {pairCount > 0 && (
+                    <span className="text-[10px] text-muted-foreground leading-none">
+                      {pairCount}p
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Total Pairs Summary */}
+          {variation.grade_pairs && variation.grade_pairs.length > 0 && (
+            <div className="flex items-center justify-between text-xs bg-background/50 rounded p-2">
+              <span className="text-muted-foreground">Total de pares:</span>
+              <span className="font-semibold text-primary">
+                {variation.grade_pairs.reduce((total, pairs) => total + (pairs || 0), 0)} pares
+              </span>
+            </div>
+          )}
         </div>
       )}
 
