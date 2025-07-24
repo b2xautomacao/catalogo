@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +7,7 @@ import { ProductVariation } from '@/types/product';
 
 export interface WizardFormData {
   name: string;
-  description: string;
+  description?: string; // Tornar opcional para alinhar com ProductFormData
   category: string;
   retail_price: number;
   wholesale_price: number;
