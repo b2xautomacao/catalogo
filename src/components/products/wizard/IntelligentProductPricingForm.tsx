@@ -1,513 +1,254 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  PRICE_MODEL_CONFIGS,
-  PriceModelType,
-  StorePriceModel,
-  DEFAULT_TIER_CONFIGS,
-  TierConfig,
-} from "@/types/price-models";
-import { useToast } from "@/hooks/use-toast";
-import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2 } from "lucide-react";
+import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { StorePriceModel } from "@/types/price-models";
 
 interface IntelligentProductPricingFormProps {
-  storeId: string;
-  productId?: string;
-  onSettingsChange: (settings: StorePriceModel) => void;
+  formData: any;
+  onFormDataChange: (data: any) => void;
 }
 
-const formSchema = z.object({
-  price_model: z.enum([
-    "retail_only",
-    "simple_wholesale",
-    "gradual_wholesale",
-    "wholesale_only",
-  ]),
-  simple_wholesale_enabled: z.boolean().default(false),
-  simple_wholesale_name: z.string().default("Atacado"),
-  simple_wholesale_min_qty: z.number().min(1).default(5),
-  gradual_wholesale_enabled: z.boolean().default(false),
-  gradual_tiers_count: z.number().min(2).max(4).default(3),
-  tier_1_name: z.string().default("Varejo"),
-  tier_2_name: z.string().default("Atacado 1"),
-  tier_3_name: z.string().default("Atacado 2"),
-  tier_4_name: z.string().default("Atacado 3"),
-  tier_1_enabled: z.boolean().default(true),
-  tier_2_enabled: z.boolean().default(true),
-  tier_3_enabled: z.boolean().default(false),
-  tier_4_enabled: z.boolean().default(false),
-  show_price_tiers: z.boolean().default(true),
-  show_savings_indicators: z.boolean().default(true),
-  show_next_tier_hint: z.boolean().default(true),
-});
-
-const IntelligentProductPricingForm: React.FC<
-  IntelligentProductPricingFormProps
-> = ({ storeId, productId, onSettingsChange }) => {
-  const { toast } = useToast();
+const IntelligentProductPricingForm: React.FC<IntelligentProductPricingFormProps> = ({
+  formData,
+  onFormDataChange,
+}) => {
   const { profile } = useAuth();
-  const { priceModel, loading, error, updatePriceModel } =
-    useStorePriceModel(storeId);
-  const [isEditingTiers, setIsEditingTiers] = useState(false);
+  const { priceModel, loading: modelLoading } = useStorePriceModel(
+    formData.store_id || profile?.store_id || ""
+  );
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      price_model: "retail_only",
-      simple_wholesale_enabled: false,
-      simple_wholesale_name: "Atacado",
-      simple_wholesale_min_qty: 5,
-      gradual_wholesale_enabled: false,
-      gradual_tiers_count: 3,
-      tier_1_name: "Varejo",
-      tier_2_name: "Atacado 1",
-      tier_3_name: "Atacado 2",
-      tier_4_name: "Atacado 3",
-      tier_1_enabled: true,
-      tier_2_enabled: true,
-      tier_3_enabled: false,
-      tier_4_enabled: false,
-      show_price_tiers: true,
-      show_savings_indicators: true,
-      show_next_tier_hint: true,
-    },
-  });
+  const { register, setValue, watch } = useFormContext<any>();
 
   useEffect(() => {
     if (priceModel) {
-      form.reset(priceModel);
+      // Atualizar valores do formulário com base no modelo de preço
+      setValue("simple_wholesale_enabled", priceModel.simple_wholesale_enabled);
+      setValue("simple_wholesale_name", priceModel.simple_wholesale_name);
+      setValue("simple_wholesale_min_qty", priceModel.simple_wholesale_min_qty);
+      setValue("gradual_wholesale_enabled", priceModel.gradual_wholesale_enabled);
+      setValue("gradual_tiers_count", priceModel.gradual_tiers_count);
+      setValue("tier_1_name", priceModel.tier_1_name);
+      setValue("tier_2_name", priceModel.tier_2_name);
+      setValue("tier_3_name", priceModel.tier_3_name);
+      setValue("tier_4_name", priceModel.tier_4_name);
+      setValue("tier_1_enabled", priceModel.tier_1_enabled);
+      setValue("tier_2_enabled", priceModel.tier_2_enabled);
+      setValue("tier_3_enabled", priceModel.tier_3_enabled);
+      setValue("tier_4_enabled", priceModel.tier_4_enabled);
+      setValue("show_price_tiers", priceModel.show_price_tiers);
+      setValue("show_savings_indicators", priceModel.show_savings_indicators);
+      setValue("show_next_tier_hint", priceModel.show_next_tier_hint);
     }
-  }, [priceModel, form]);
+  }, [priceModel, setValue]);
 
-  const isRetailOnly = useMemo(() => {
-    return priceModel?.price_model === "retail_only";
-  }, [priceModel]);
-
-  const isSimpleWholesale = useMemo(() => {
-    return priceModel?.price_model === "simple_wholesale";
-  }, [priceModel]);
-
-  const isGradualWholesale = useMemo(() => {
-    return priceModel?.price_model === "gradual_wholesale";
-  }, [priceModel]);
-
-  const isWholesaleOnly = useMemo(() => {
-    return priceModel?.price_model === "wholesale_only" as PriceModelType;
-  }, [priceModel]);
-
-  const handlePriceModelChange = (model: PriceModelType) => {
-    if (model === "wholesale_only" as PriceModelType) {
-      // Lógica para wholesale_only
-    }
-    form.setValue("price_model", model);
+  // Handlers para atualizar o formulário
+  const handleSimpleWholesaleToggle = (checked: boolean) => {
+    setValue("simple_wholesale_enabled", checked);
+    onFormDataChange({ ...formData, simple_wholesale_enabled: checked });
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      console.log("💾 Salvando modelo de preços:", values);
-
-      if (!profile?.store_id) {
-        toast({
-          title: "Erro",
-          description: "ID da loja não encontrado.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      await updatePriceModel(profile.store_id, values);
-
-      toast({
-        title: "Sucesso",
-        description: "Modelo de preços atualizado com sucesso.",
-      });
-
-      onSettingsChange(values as StorePriceModel);
-    } catch (error) {
-      console.error("❌ Erro ao salvar modelo de preços:", error);
-      toast({
-        title: "Erro",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar modelo de preços.",
-        variant: "destructive",
-      });
-    }
+  const handleSimpleWholesaleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    setValue("simple_wholesale_name", name);
+    onFormDataChange({ ...formData, simple_wholesale_name: name });
   };
 
-  if (loading) {
-    return <div>Carregando configurações de preço...</div>;
-  }
+  const handleSimpleWholesaleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const qty = parseInt(e.target.value);
+    setValue("simple_wholesale_min_qty", qty);
+    onFormDataChange({ ...formData, simple_wholesale_min_qty: qty });
+  };
 
-  if (error) {
-    return <div>Erro ao carregar configurações de preço: {error}</div>;
-  }
+  const handleGradualWholesaleToggle = (checked: boolean) => {
+    setValue("gradual_wholesale_enabled", checked);
+    onFormDataChange({ ...formData, gradual_wholesale_enabled: checked });
+  };
+
+  const handleTiersCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const count = parseInt(e.target.value);
+    setValue("gradual_tiers_count", count);
+    onFormDataChange({ ...formData, gradual_tiers_count: count });
+  };
+
+  const handleTierNameChange = (tier: number, name: string) => {
+    setValue(`tier_${tier}_name`, name);
+    onFormDataChange({ ...formData, [`tier_${tier}_name`]: name });
+  };
+
+  const handleTierEnabledToggle = (tier: number, enabled: boolean) => {
+    setValue(`tier_${tier}_enabled`, enabled);
+    onFormDataChange({ ...formData, [`tier_${tier}_enabled`]: enabled });
+  };
+
+  const handleShowPriceTiersToggle = (checked: boolean) => {
+    setValue("show_price_tiers", checked);
+    onFormDataChange({ ...formData, show_price_tiers: checked });
+  };
+
+  const handleShowSavingsIndicatorsToggle = (checked: boolean) => {
+    setValue("show_savings_indicators", checked);
+    onFormDataChange({ ...formData, show_savings_indicators: checked });
+  };
+
+  const handleShowNextTierHintToggle = (checked: boolean) => {
+    setValue("show_next_tier_hint", checked);
+    onFormDataChange({ ...formData, show_next_tier_hint: checked });
+  };
+
+  // Função para renderizar campos de tier
+  const renderTierFields = () => {
+    if (!priceModel || priceModel.price_model !== "gradual_wholesale") return null;
+
+    const tiersCount = priceModel.gradual_tiers_count || 2;
+    const tiers = [];
+
+    for (let i = 1; i <= Math.min(tiersCount, 4); i++) {
+      const tierName = `tier_${i}_name` as keyof StorePriceModel;
+      const tierEnabled = `tier_${i}_enabled` as keyof StorePriceModel;
+      
+      tiers.push(
+        <div key={i} className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={!!watch(tierEnabled)}
+              onCheckedChange={(checked) => setValue(tierEnabled, checked)}
+            />
+            <Label>Nível {i} Ativo</Label>
+          </div>
+          
+          {watch(tierEnabled) && (
+            <Input
+              {...register(tierName)}
+              placeholder={`Nome do Nível ${i}`}
+              value={String(watch(tierName) || "")}
+            />
+          )}
+        </div>
+      );
+    }
+
+    return tiers;
+  };
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 max-w-3xl mx-auto"
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle>Modelo de Preços</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="price_model"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Modelo de Preços</Label>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um modelo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(PRICE_MODEL_CONFIGS).map(
-                        ([key, model]) => (
-                          <SelectItem key={key} value={key}>
-                            {model.displayName}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+    <Card>
+      <CardHeader>
+        <CardTitle>Configurações de Preços Inteligentes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {modelLoading ? (
+          <p>Carregando modelo de preços...</p>
+        ) : (
+          <>
+            {/* Atacado Simples */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="simple_wholesale_enabled"
+                  checked={watch("simple_wholesale_enabled")}
+                  onCheckedChange={handleSimpleWholesaleToggle}
+                />
+                <Label htmlFor="simple_wholesale_enabled">Atacado Simples</Label>
+              </div>
+
+              {watch("simple_wholesale_enabled") && (
+                <div className="space-y-2 pl-4">
+                  <div>
+                    <Label htmlFor="simple_wholesale_name">Nome do Nível</Label>
+                    <Input
+                      id="simple_wholesale_name"
+                      type="text"
+                      value={watch("simple_wholesale_name") || ""}
+                      onChange={handleSimpleWholesaleNameChange}
+                      placeholder="Atacado"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="simple_wholesale_min_qty">Quantidade Mínima</Label>
+                    <Input
+                      id="simple_wholesale_min_qty"
+                      type="number"
+                      value={watch("simple_wholesale_min_qty") || ""}
+                      onChange={handleSimpleWholesaleQtyChange}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
               )}
-            />
-          </CardContent>
-        </Card>
+            </div>
 
-        {/* Configurações de Atacado Simples */}
-        {form.watch("price_model") === "simple_wholesale" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Atacado Simples</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="simple_wholesale_enabled"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="simple_wholesale_enabled">
-                        Ativar Atacado Simples
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Ofereça um preço especial para compras em quantidade.
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            {/* Atacado Gradual */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="gradual_wholesale_enabled"
+                  checked={watch("gradual_wholesale_enabled")}
+                  onCheckedChange={handleGradualWholesaleToggle}
+                />
+                <Label htmlFor="gradual_wholesale_enabled">Atacado Gradual</Label>
+              </div>
 
-              <FormField
-                control={form.control}
-                name="simple_wholesale_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="simple_wholesale_name">
-                      Nome do Nível de Atacado
-                    </Label>
-                    <FormControl>
-                      <Input
-                        id="simple_wholesale_name"
-                        placeholder="Ex: Atacado"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {watch("gradual_wholesale_enabled") && (
+                <div className="space-y-2 pl-4">
+                  <div>
+                    <Label htmlFor="gradual_tiers_count">Número de Níveis</Label>
+                    <Input
+                      id="gradual_tiers_count"
+                      type="number"
+                      value={watch("gradual_tiers_count") || ""}
+                      onChange={handleTiersCountChange}
+                      placeholder="2"
+                    />
+                  </div>
 
-              <FormField
-                control={form.control}
-                name="simple_wholesale_min_qty"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="simple_wholesale_min_qty">
-                      Quantidade Mínima para Atacado
-                    </Label>
-                    <FormControl>
-                      <Input
-                        id="simple_wholesale_min_qty"
-                        type="number"
-                        placeholder="Ex: 10"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+                  {renderTierFields()}
+                </div>
+              )}
+            </div>
+
+            {/* Configurações de Exibição */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show_price_tiers"
+                  checked={watch("show_price_tiers")}
+                  onCheckedChange={handleShowPriceTiersToggle}
+                />
+                <Label htmlFor="show_price_tiers">Mostrar Níveis de Preço</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show_savings_indicators"
+                  checked={watch("show_savings_indicators")}
+                  onCheckedChange={handleShowSavingsIndicatorsToggle}
+                />
+                <Label htmlFor="show_savings_indicators">Mostrar Indicadores de Economia</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show_next_tier_hint"
+                  checked={watch("show_next_tier_hint")}
+                  onCheckedChange={handleShowNextTierHintToggle}
+                />
+                <Label htmlFor="show_next_tier_hint">Mostrar Dica do Próximo Nível</Label>
+              </div>
+            </div>
+          </>
         )}
-
-        {/* Configurações de Atacado Gradual */}
-        {form.watch("price_model") === "gradual_wholesale" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Atacado Gradual</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="gradual_wholesale_enabled"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="gradual_wholesale_enabled">
-                        Ativar Atacado Gradual
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Ofereça descontos progressivos por quantidade.
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gradual_tiers_count"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label>Número de Níveis de Atacado</Label>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a quantidade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {[2, 3, 4].map((count) => (
-                          <SelectItem key={count} value={count.toString()}>
-                            {count} níveis
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Separator />
-
-              {[...Array(form.watch("gradual_tiers_count"))].map((_, i) => {
-                const tierNumber = i + 1;
-                return (
-                  <div key={tierNumber} className="space-y-2">
-                    <h4 className="text-sm font-medium">
-                      Nível {tierNumber}
-                    </h4>
-                    <FormField
-                      control={form.control}
-                      name={`tier_${tierNumber}_name`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <Label htmlFor={`tier_${tierNumber}_name`}>
-                            Nome do Nível {tierNumber}
-                          </Label>
-                          <FormControl>
-                            <Input
-                              id={`tier_${tierNumber}_name`}
-                              placeholder={`Ex: Atacado ${tierNumber}`}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`tier_${tierNumber}_enabled`}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <Label htmlFor={`tier_${tierNumber}_enabled`}>
-                              Ativar Nível {tierNumber}
-                            </Label>
-                            <p className="text-sm text-muted-foreground">
-                              Permitir descontos neste nível.
-                            </p>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Configurações de Exibição */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Exibição</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="show_price_tiers"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show_price_tiers">
-                      Mostrar Níveis de Preço
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Exibir os níveis de preço na página do produto.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="show_savings_indicators"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show_savings_indicators">
-                      Mostrar Indicadores de Economia
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Destacar a economia ao comprar em maior quantidade.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="show_next_tier_hint"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show_next_tier_hint">
-                      Mostrar Dica do Próximo Nível
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Incentivar o cliente a adicionar mais itens para obter um
-                      desconto maior.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        {priceModel?.price_model === ("wholesale_only" as PriceModelType) && (
-          <div>
-            <Badge variant="destructive">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-alert-triangle mr-2 h-4 w-4"
-              >
-                <path d="M8.76 3.5c1.58-2.28 4.42-2.28 6 0" />
-                <line x1="12" x2="12" y1="9" y2="17" />
-                <line x1="12" y1="21" x2="12.01" y2="21" />
-                <path d="M21.73 20.49c-1.58 2.28-4.42 2.28-6 0l-5.46-7.84c-1.58-2.28-4.42-2.28-6 0L2.27 20.49c-1.58 2.28-4.42 2.28-6 0" />
-              </svg>
-              Atenção: Este produto está configurado para ser vendido apenas no
-              atacado.
-            </Badge>
-          </div>
-        )}
-
-        <Button type="submit">Salvar Configurações</Button>
-      </form>
-    </Form>
+      </CardContent>
+    </Card>
   );
 };
 

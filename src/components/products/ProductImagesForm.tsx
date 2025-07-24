@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
@@ -103,25 +104,34 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ productId }) => {
     refetchImages,
   } = useProductImages(productId);
   const {
-    isUploading,
-    uploadProductImage,
-    deleteProductImage,
+    images,
+    loading,
+    error,
+    addImage,
     updateImageOrder,
+    deleteImage,
   } = useProductImageManager(productId);
-  const [images, setImages] = useState<ProductImage[]>([]);
-
-  useEffect(() => {
-    setImages(initialImages);
-  }, [initialImages]);
+  
+  const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      for (const file of acceptedFiles) {
-        await uploadProductImage(file, images.length);
+      setIsUploading(true);
+      try {
+        for (const file of acceptedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          // Simular upload - na implementação real, use seu serviço de upload
+          const imageUrl = URL.createObjectURL(file);
+          await addImage(imageUrl, file.name, images.length === 0);
+        }
+        refetchImages();
+      } finally {
+        setIsUploading(false);
       }
-      refetchImages();
     },
-    [images, uploadProductImage, refetchImages]
+    [images, addImage, refetchImages]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -131,18 +141,23 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ productId }) => {
   });
 
   const handleRemoveImage = async (imageId: string, imageUrl: string) => {
-    await deleteProductImage(imageId, imageUrl);
+    await deleteImage(imageId);
     refetchImages();
   };
 
   const handleSetPrimary = async (newPrimaryId: string) => {
-    const updates = images.map((img) => ({
-      id: img.id,
-      image_order: img.id === newPrimaryId ? 1 : img.image_order, // Nova imagem principal fica na posição 1
-      is_primary: img.id === newPrimaryId,
-    }));
-    await updateImageOrder(updates);
-    refetchImages();
+    const imageToUpdate = images.find(img => img.id === newPrimaryId);
+    if (imageToUpdate) {
+      const updates = images.map((img) => ({
+        id: img.id,
+        image_order: img.id === newPrimaryId ? 1 : img.image_order,
+        is_primary: img.id === newPrimaryId,
+        image_url: img.image_url,
+        product_id: productId
+      }));
+      await updateImageOrder(updates);
+      refetchImages();
+    }
   };
 
   const moveImage = useCallback(
@@ -152,18 +167,18 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ productId }) => {
       newImages.splice(dragIndex, 1);
       newImages.splice(hoverIndex, 0, draggedImage);
 
-      setImages(newImages);
-
       const updates = newImages.map((img, index) => ({
         id: img.id,
-        image_order: index + 1, // image_order deve começar em 1, não 0
+        image_order: index + 1,
         is_primary: img.is_primary,
+        image_url: img.image_url,
+        product_id: productId
       }));
 
       await updateImageOrder(updates);
       refetchImages();
     },
-    [images, updateImageOrder, refetchImages]
+    [images, updateImageOrder, refetchImages, productId]
   );
 
   return (

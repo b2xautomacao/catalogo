@@ -1,478 +1,599 @@
-
-import React, { useState, useCallback } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Grid, 
-  Package, 
-  Plus, 
-  Trash2, 
-  ArrowLeft, 
-  Save,
-  AlertCircle 
-} from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/product";
-
-type GradeMode = "single" | "variations" | "grade";
+import {
+  Palette,
+  Ruler,
+  Package,
+  Plus,
+  Trash2,
+  Save,
+  X,
+  Grid3X3,
+  Layers,
+  ShoppingBag,
+} from "lucide-react";
 
 export interface SimpleGradeWizardProps {
+  productId: string;
+  storeId: string;
+  category: string;
+  productName: string;
+  onVariationsChange: (variations: ProductVariation[]) => void;
   onClose: () => void;
   onSave: (variations: ProductVariation[]) => void;
-  initialVariations?: ProductVariation[];
-  variations?: ProductVariation[];
-  onVariationsChange?: (variations: ProductVariation[]) => void;
-  productId?: string;
-  storeId?: string;
-  category?: string;
-  productName?: string;
 }
 
 const SimpleGradeWizard: React.FC<SimpleGradeWizardProps> = ({
-  onClose,
-  onSave,
-  initialVariations = [],
-  variations: propVariations,
+  productId,
+  storeId,
+  category,
+  productName,
   onVariationsChange,
+  onClose,
+  onSave
 }) => {
-  const [mode, setMode] = useState<GradeMode>("single");
-  const [variations, setVariations] = useState<ProductVariation[]>(
-    propVariations || initialVariations
-  );
-  const [gradeConfig, setGradeConfig] = useState({
-    name: "",
-    colors: [""],
-    sizes: [""],
-    quantities: [0],
+  const [wizardType, setWizardType] = useState<"variations" | "grade" | "single">("single");
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
+  const [gradeData, setGradeData] = useState({
+    gradeName: "",
+    gradeColor: "",
+    gradeQuantity: 1,
+    gradeSizes: ["35", "36", "37", "38", "39", "40"],
+    gradePairs: [2, 2, 2, 2, 2, 2],
   });
+  const { toast } = useToast();
 
-  const handleModeSelect = useCallback((selectedMode: GradeMode) => {
-    setMode(selectedMode);
-  }, []);
+  useEffect(() => {
+    // Inicializar com uma variação simples se não houver nenhuma
+    if (variations.length === 0) {
+      const defaultVariation: ProductVariation = {
+        id: `temp-${Date.now()}`,
+        product_id: productId,
+        color: "",
+        size: "",
+        sku: "",
+        stock: 0,
+        price_adjustment: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setVariations([defaultVariation]);
+    }
+  }, [productId]);
 
-  const addGradeColor = () => {
-    setGradeConfig(prev => ({
-      ...prev,
-      colors: [...prev.colors, ""],
-    }));
+  const handleWizardTypeChange = (type: "variations" | "grade" | "single") => {
+    setWizardType(type);
+    
+    if (type === "single") {
+      // Resetar para uma única variação simples
+      const singleVariation: ProductVariation = {
+        id: `temp-${Date.now()}`,
+        product_id: productId,
+        color: "",
+        size: "",
+        sku: "",
+        stock: 0,
+        price_adjustment: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setVariations([singleVariation]);
+    } else if (type === "variations") {
+      // Manter variações existentes ou criar algumas básicas
+      if (variations.length <= 1) {
+        const basicVariations: ProductVariation[] = [
+          {
+            id: `temp-${Date.now()}-1`,
+            product_id: productId,
+            color: "Azul",
+            size: "M",
+            sku: "",
+            stock: 0,
+            price_adjustment: 0,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: `temp-${Date.now()}-2`,
+            product_id: productId,
+            color: "Vermelho",
+            size: "G",
+            sku: "",
+            stock: 0,
+            price_adjustment: 0,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+        setVariations(basicVariations);
+      }
+    }
   };
 
-  const addGradeSize = () => {
-    setGradeConfig(prev => ({
-      ...prev,
-      sizes: [...prev.sizes, ""],
-      quantities: [...prev.quantities, 0],
-    }));
+  const addVariation = () => {
+    const newVariation: ProductVariation = {
+      id: `temp-${Date.now()}`,
+      product_id: productId,
+      color: "",
+      size: "",
+      sku: "",
+      stock: 0,
+      price_adjustment: 0,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    const updatedVariations = [...variations, newVariation];
+    setVariations(updatedVariations);
+    onVariationsChange(updatedVariations);
   };
 
-  const updateGradeColor = (index: number, value: string) => {
-    setGradeConfig(prev => ({
-      ...prev,
-      colors: prev.colors.map((color, i) => i === index ? value : color),
-    }));
+  const removeVariation = (index: number) => {
+    const updatedVariations = variations.filter((_, i) => i !== index);
+    setVariations(updatedVariations);
+    onVariationsChange(updatedVariations);
   };
 
-  const updateGradeSize = (index: number, value: string) => {
-    setGradeConfig(prev => ({
-      ...prev,
-      sizes: prev.sizes.map((size, i) => i === index ? value : size),
-    }));
-  };
-
-  const updateGradeQuantity = (index: number, value: number) => {
-    setGradeConfig(prev => ({
-      ...prev,
-      quantities: prev.quantities.map((qty, i) => i === index ? value : qty),
-    }));
-  };
-
-  const removeGradeColor = (index: number) => {
-    setGradeConfig(prev => ({
-      ...prev,
-      colors: prev.colors.filter((_, i) => i !== index),
-    }));
-  };
-
-  const removeGradeSize = (index: number) => {
-    setGradeConfig(prev => ({
-      ...prev,
-      sizes: prev.sizes.filter((_, i) => i !== index),
-      quantities: prev.quantities.filter((_, i) => i !== index),
-    }));
+  const updateVariation = (index: number, field: keyof ProductVariation, value: any) => {
+    const updatedVariations = variations.map((variation, i) => {
+      if (i === index) {
+        return { ...variation, [field]: value };
+      }
+      return variation;
+    });
+    setVariations(updatedVariations);
+    onVariationsChange(updatedVariations);
   };
 
   const generateGradeVariations = () => {
-    const newVariations: ProductVariation[] = [];
+    const gradeVariations: ProductVariation[] = [];
     
-    gradeConfig.colors.forEach((color, colorIndex) => {
-      if (!color.trim()) return;
-      
-      gradeConfig.sizes.forEach((size, sizeIndex) => {
-        if (!size.trim()) return;
-        
+    gradeData.gradeSizes.forEach((size, index) => {
+      const pairs = gradeData.gradePairs[index] || 0;
+      if (pairs > 0) {
         const variation: ProductVariation = {
-          id: `grade-${colorIndex}-${sizeIndex}-${Date.now()}`,
-          product_id: "",
-          color: color.trim(),
-          size: size.trim(),
-          stock: gradeConfig.quantities[sizeIndex] || 0,
+          id: `grade-${Date.now()}-${index}`,
+          product_id: productId,
+          color: gradeData.gradeColor,
+          size: size,
+          sku: `${gradeData.gradeName}-${gradeData.gradeColor}-${size}`,
+          stock: pairs,
           price_adjustment: 0,
           is_active: true,
+          grade_name: gradeData.gradeName,
+          grade_color: gradeData.gradeColor,
+          grade_quantity: gradeData.gradeQuantity,
+          grade_sizes: gradeData.gradeSizes,
+          grade_pairs: gradeData.gradePairs,
+          is_grade: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          is_grade: true,
-          grade_name: gradeConfig.name,
-          grade_color: color.trim(),
-          grade_quantity: gradeConfig.quantities[sizeIndex] || 0,
         };
-        
-        newVariations.push(variation);
-      });
+        gradeVariations.push(variation);
+      }
     });
+
+    setVariations(gradeVariations);
+    onVariationsChange(gradeVariations);
     
-    setVariations(newVariations);
+    toast({
+      title: "Grade criada!",
+      description: `${gradeVariations.length} variações geradas para a grade ${gradeData.gradeName}`,
+    });
   };
 
   const handleSave = () => {
-    if (mode === "grade") {
-      generateGradeVariations();
+    if (variations.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Adicione pelo menos uma variação",
+        variant: "destructive",
+      });
+      return;
     }
-    if (onVariationsChange) {
-      onVariationsChange(variations);
+
+    // Validar variações
+    const invalidVariations = variations.filter(v => 
+      wizardType !== "single" && (!v.color?.trim() || !v.size?.trim())
+    );
+
+    if (invalidVariations.length > 0) {
+      toast({
+        title: "Erro de validação",
+        description: "Preencha cor e tamanho para todas as variações",
+        variant: "destructive",
+      });
+      return;
     }
+
     onSave(variations);
+    toast({
+      title: "Variações salvas!",
+      description: `${variations.length} variação(ões) configurada(s)`,
+    });
   };
 
-  // Mode Selection Screen
-  if (mode === "single") {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Grid className="h-5 w-5" />
-            Configurar Variações do Produto
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleModeSelect("variations")}
-              className="p-6 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg transition-colors text-center group"
-            >
-              <Package className="h-8 w-8 mx-auto mb-3 text-gray-400 group-hover:text-blue-500" />
-              <h3 className="font-semibold text-gray-900 mb-2">Variações Livres</h3>
-              <p className="text-sm text-gray-600">
-                Criar variações individuais com cores, tamanhos e preços personalizados
-              </p>
-            </button>
-
-            <button
-              onClick={() => handleModeSelect("grade")}
-              className="p-6 border-2 border-dashed border-gray-300 hover:border-green-500 rounded-lg transition-colors text-center group"
-            >
-              <Grid className="h-8 w-8 mx-auto mb-3 text-gray-400 group-hover:text-green-500" />
-              <h3 className="font-semibold text-gray-900 mb-2">Grade de Produtos</h3>
-              <p className="text-sm text-gray-600">
-                Configurar uma grade com cores e tamanhos em matriz
-              </p>
-            </button>
-
-            <button
-              onClick={() => onClose()}
-              className="p-6 border-2 border-dashed border-gray-300 hover:border-gray-500 rounded-lg transition-colors text-center group"
-            >
-              <ArrowLeft className="h-8 w-8 mx-auto mb-3 text-gray-400 group-hover:text-gray-500" />
-              <h3 className="font-semibold text-gray-900 mb-2">Produto Simples</h3>
-              <p className="text-sm text-gray-600">
-                Manter produto sem variações
-              </p>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Free Variations Mode
-  if (mode === "variations") {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Variações Livres
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMode("single")}
-              className="ml-auto"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center">
-            <Badge variant="outline">
-              {variations.length} variações criadas
-            </Badge>
-            <Button onClick={() => {
-              const newVariation: ProductVariation = {
-                id: `variation-${Date.now()}`,
-                product_id: "",
-                color: "",
-                size: "",
-                stock: 0,
-                price_adjustment: 0,
-                is_active: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              };
-              setVariations([...variations, newVariation]);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Variação
-            </Button>
-          </div>
-
-          {variations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-              <p>Nenhuma variação criada ainda</p>
+  const renderWizardTypeSelector = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Grid3X3 className="h-5 w-5" />
+          Tipo de Produto
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Button
+            variant={wizardType === "single" ? "default" : "outline"}
+            onClick={() => handleWizardTypeChange("single")}
+            className="h-auto p-4 flex flex-col items-center gap-2"
+          >
+            <Package className="h-8 w-8" />
+            <div className="text-center">
+              <div className="font-semibold">Produto Simples</div>
+              <div className="text-xs text-muted-foreground">
+                Sem variações
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {variations.map((variation, index) => (
-                <div key={variation.id} className="flex gap-3 items-center p-3 border rounded-lg">
-                  <div className="flex-1 grid grid-cols-4 gap-3">
-                    <div>
-                      <Label className="text-xs">Cor</Label>
-                      <Input
-                        value={variation.color || ""}
-                        onChange={(e) => {
-                          const updated = [...variations];
-                          updated[index] = { ...variation, color: e.target.value };
-                          setVariations(updated);
-                        }}
-                        placeholder="Ex: Azul"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Tamanho</Label>
-                      <Input
-                        value={variation.size || ""}
-                        onChange={(e) => {
-                          const updated = [...variations];
-                          updated[index] = { ...variation, size: e.target.value };
-                          setVariations(updated);
-                        }}
-                        placeholder="Ex: M"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Estoque</Label>
-                      <Input
-                        type="number"
-                        value={variation.stock}
-                        onChange={(e) => {
-                          const updated = [...variations];
-                          updated[index] = { ...variation, stock: parseInt(e.target.value) || 0 };
-                          setVariations(updated);
-                        }}
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Ajuste Preço</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={variation.price_adjustment}
-                        onChange={(e) => {
-                          const updated = [...variations];
-                          updated[index] = { ...variation, price_adjustment: parseFloat(e.target.value) || 0 };
-                          setVariations(updated);
-                        }}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setVariations(variations.filter((_, i) => i !== index));
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+          </Button>
+
+          <Button
+            variant={wizardType === "variations" ? "default" : "outline"}
+            onClick={() => handleWizardTypeChange("variations")}
+            className="h-auto p-4 flex flex-col items-center gap-2"
+          >
+            <Layers className="h-8 w-8" />
+            <div className="text-center">
+              <div className="font-semibold">Com Variações</div>
+              <div className="text-xs text-muted-foreground">
+                Cores, tamanhos, etc.
+              </div>
             </div>
-          )}
+          </Button>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Variações
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+          <Button
+            variant={wizardType === "grade" ? "default" : "outline"}
+            onClick={() => handleWizardTypeChange("grade")}
+            className="h-auto p-4 flex flex-col items-center gap-2"
+          >
+            <ShoppingBag className="h-8 w-8" />
+            <div className="text-center">
+              <div className="font-semibold">Grade Calçados</div>
+              <div className="text-xs text-muted-foreground">
+                Sistema de grades
+              </div>
+            </div>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-  // Grade Mode
-  if (mode === "grade") {
-    return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Grid className="h-5 w-5" />
-            Grade de Produtos
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMode("single")}
-              className="ml-auto"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Grade Name */}
+  const renderSingleProduct = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Produto Simples</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
           <div>
-            <Label>Nome da Grade</Label>
+            <Label>SKU (opcional)</Label>
             <Input
-              value={gradeConfig.name}
-              onChange={(e) => setGradeConfig(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Ex: Camiseta Básica"
+              value={variations[0]?.sku || ""}
+              onChange={(e) => updateVariation(0, "sku", e.target.value)}
+              placeholder="Código do produto"
+            />
+          </div>
+          
+          <div>
+            <Label>Estoque</Label>
+            <Input
+              type="number"
+              value={variations[0]?.stock || 0}
+              onChange={(e) => updateVariation(0, "stock", parseInt(e.target.value) || 0)}
+              placeholder="Quantidade em estoque"
             />
           </div>
 
-          {/* Colors */}
           <div>
-            <div className="flex justify-between items-center mb-3">
-              <Label>Cores Disponíveis</Label>
-              <Button variant="outline" size="sm" onClick={addGradeColor}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Cor
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {gradeConfig.colors.map((color, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    value={color}
-                    onChange={(e) => updateGradeColor(index, e.target.value)}
-                    placeholder="Nome da cor"
-                    className="flex-1"
-                  />
-                  {gradeConfig.colors.length > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeGradeColor(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <Label>Ajuste de Preço (R$)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={variations[0]?.price_adjustment || 0}
+              onChange={(e) => updateVariation(0, "price_adjustment", parseFloat(e.target.value) || 0)}
+              placeholder="0.00"
+            />
           </div>
 
-          {/* Sizes and Quantities */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <Label>Tamanhos e Quantidades</Label>
-              <Button variant="outline" size="sm" onClick={addGradeSize}>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Tamanho
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {gradeConfig.sizes.map((size, index) => (
-                <div key={index} className="flex gap-2">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={variations[0]?.is_active || false}
+              onCheckedChange={(checked) => updateVariation(0, "is_active", checked)}
+            />
+            <Label>Produto ativo</Label>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderVariationsEditor = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Variações do Produto
+          </span>
+          <Button onClick={addVariation} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {variations.map((variation, index) => (
+            <div key={variation.id} className="border rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline">Variação {index + 1}</Badge>
+                {variations.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeVariation(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Cor</Label>
                   <Input
-                    value={size}
-                    onChange={(e) => updateGradeSize(index, e.target.value)}
-                    placeholder="Tamanho"
-                    className="flex-1"
+                    value={variation.color || ""}
+                    onChange={(e) => updateVariation(index, "color", e.target.value)}
+                    placeholder="Ex: Azul, Vermelho"
                   />
+                </div>
+
+                <div>
+                  <Label>Tamanho</Label>
+                  <Input
+                    value={variation.size || ""}
+                    onChange={(e) => updateVariation(index, "size", e.target.value)}
+                    placeholder="Ex: P, M, G, 38, 40"
+                  />
+                </div>
+
+                <div>
+                  <Label>SKU</Label>
+                  <Input
+                    value={variation.sku || ""}
+                    onChange={(e) => updateVariation(index, "sku", e.target.value)}
+                    placeholder="Código único"
+                  />
+                </div>
+
+                <div>
+                  <Label>Estoque</Label>
                   <Input
                     type="number"
-                    value={gradeConfig.quantities[index] || 0}
-                    onChange={(e) => updateGradeQuantity(index, parseInt(e.target.value) || 0)}
-                    placeholder="Qtd"
-                    className="w-20"
-                    min="0"
+                    value={variation.stock || 0}
+                    onChange={(e) => updateVariation(index, "stock", parseInt(e.target.value) || 0)}
+                    placeholder="Quantidade"
                   />
-                  {gradeConfig.sizes.length > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeGradeSize(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                </div>
+
+                <div>
+                  <Label>Ajuste de Preço (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={variation.price_adjustment || 0}
+                    onChange={(e) => updateVariation(index, "price_adjustment", parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={variation.is_active || false}
+                    onCheckedChange={(checked) => updateVariation(index, "is_active", checked)}
+                  />
+                  <Label>Ativo</Label>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderGradeEditor = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShoppingBag className="h-5 w-5" />
+          Configurar Grade
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Informações da Grade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Nome da Grade</Label>
+              <Input
+                value={gradeData.gradeName}
+                onChange={(e) => setGradeData(prev => ({ ...prev, gradeName: e.target.value }))}
+                placeholder="Ex: Tênis Esportivo"
+              />
+            </div>
+
+            <div>
+              <Label>Cor da Grade</Label>
+              <Input
+                value={gradeData.gradeColor}
+                onChange={(e) => setGradeData(prev => ({ ...prev, gradeColor: e.target.value }))}
+                placeholder="Ex: Preto, Branco"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Configuração de Tamanhos e Pares */}
+          <div>
+            <Label className="text-base font-semibold">Distribuição por Tamanho</Label>
+            <div className="mt-4 space-y-3">
+              {gradeData.gradeSizes.map((size, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="w-16">
+                    <Label className="text-sm">Tam.</Label>
+                    <Input
+                      value={size}
+                      onChange={(e) => {
+                        const newSizes = [...gradeData.gradeSizes];
+                        newSizes[index] = e.target.value;
+                        setGradeData(prev => ({ ...prev, gradeSizes: newSizes }));
+                      }}
+                      className="text-center"
+                    />
+                  </div>
+                  
+                  <div className="w-20">
+                    <Label className="text-sm">Pares</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={gradeData.gradePairs[index] || 0}
+                      onChange={(e) => {
+                        const newPairs = [...gradeData.gradePairs];
+                        newPairs[index] = parseInt(e.target.value) || 0;
+                        setGradeData(prev => ({ ...prev, gradePairs: newPairs }));
+                      }}
+                      className="text-center"
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-sm text-muted-foreground">
+                      Total: {gradeData.gradePairs[index] || 0} pares
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Preview */}
-          <div>
-            <Label>Prévia da Grade</Label>
-            <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 mb-2">
-                Total de variações: {gradeConfig.colors.filter(c => c.trim()).length * gradeConfig.sizes.filter(s => s.trim()).length}
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div>
+              <div className="font-semibold">Total da Grade</div>
+              <div className="text-sm text-muted-foreground">
+                {gradeData.gradePairs.reduce((sum, pairs) => sum + (pairs || 0), 0)} pares
               </div>
-              {gradeConfig.colors.filter(c => c.trim()).length > 0 && 
-               gradeConfig.sizes.filter(s => s.trim()).length > 0 && (
-                <div className="grid gap-1 text-xs">
-                  {gradeConfig.colors.filter(c => c.trim()).map((color, colorIndex) => (
-                    <div key={colorIndex} className="flex items-center gap-2">
-                      <Badge variant="outline">{color}</Badge>
-                      <span>×</span> 
-                      <div className="flex gap-1">
-                        {gradeConfig.sizes.filter(s => s.trim()).map((size, sizeIndex) => (
-                          <Badge key={sizeIndex} variant="secondary">
-                            {size} ({gradeConfig.quantities[sizeIndex] || 0})
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+            
+            <Button onClick={generateGradeVariations}>
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Gerar Grade
+            </Button>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Criar Grade
-            </Button>
+          {/* Preview das Variações Geradas */}
+          {variations.length > 0 && variations[0]?.is_grade && (
+            <div className="mt-6">
+              <Label className="text-base font-semibold">Variações Geradas</Label>
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {variations.map((variation, index) => (
+                  <div key={variation.id} className="border rounded p-2 text-center">
+                    <div className="font-medium">{variation.size}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {variation.stock} pares
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Configurar Variações</h2>
+          <p className="text-muted-foreground">
+            {productName} - {category}
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose}>
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 mr-2" />
+            Salvar
+          </Button>
+        </div>
+      </div>
+
+      {/* Seletor de Tipo */}
+      {renderWizardTypeSelector()}
+
+      {/* Conteúdo baseado no tipo selecionado */}
+      {wizardType === "single" && renderSingleProduct()}
+      {wizardType === "variations" && renderVariationsEditor()}
+      {wizardType === "grade" && renderGradeEditor()}
+
+      {/* Resumo */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-semibold">
+                {variations.length} variação(ões) configurada(s)
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Estoque total: {variations.reduce((sum, v) => sum + (v.stock || 0), 0)} unidades
+              </div>
+            </div>
+            
+            <Badge variant={variations.length > 0 ? "default" : "secondary"}>
+              {wizardType === "single" ? "Produto Simples" : 
+               wizardType === "variations" ? "Com Variações" : "Grade"}
+            </Badge>
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  return null;
+    </div>
+  );
 };
 
 export default SimpleGradeWizard;
