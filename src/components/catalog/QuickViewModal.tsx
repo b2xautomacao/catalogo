@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Product } from '@/types/product';
 import { CatalogType } from './CatalogExample';
-import { Heart, ShoppingCart, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, Heart, X } from 'lucide-react';
+import ProductPriceDisplay from './ProductPriceDisplay';
+import { useProductPriceTiers } from '@/hooks/useProductPriceTiers';
 
 interface QuickViewModalProps {
   product: Product;
@@ -14,6 +16,7 @@ interface QuickViewModalProps {
   onAddToCart: (product: Product) => void;
   onAddToWishlist: (product: Product) => void;
   isInWishlist: boolean;
+  storeId?: string;
 }
 
 const QuickViewModal: React.FC<QuickViewModalProps> = ({
@@ -23,16 +26,21 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onClose,
   onAddToCart,
   onAddToWishlist,
-  isInWishlist
+  isInWishlist,
+  storeId
 }) => {
-  const price = catalogType === 'wholesale' ? product.wholesale_price : product.retail_price;
+  const { tiers } = useProductPriceTiers(product.id, {
+    wholesale_price: product.wholesale_price,
+    min_wholesale_qty: product.min_wholesale_qty,
+    retail_price: product.retail_price,
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            {product.name}
+            <span>Visualização Rápida</span>
             <Button
               variant="ghost"
               size="sm"
@@ -43,7 +51,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
             </Button>
           </DialogTitle>
         </DialogHeader>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
             {product.image_url ? (
@@ -58,32 +66,33 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
             )}
           </div>
-
+          
           <div className="space-y-4">
-            <div>
-              <h3 className="text-xl font-semibold">{product.name}</h3>
-              {product.description && (
-                <p className="text-gray-600 mt-2">{product.description}</p>
-              )}
+            <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
+            
+            {product.description && (
+              <p className="text-gray-600">{product.description}</p>
+            )}
+            
+            <ProductPriceDisplay
+              storeId={storeId || product.store_id || ''}
+              productId={product.id}
+              retailPrice={product.retail_price}
+              wholesalePrice={product.wholesale_price}
+              minWholesaleQty={product.min_wholesale_qty}
+              quantity={1}
+              priceTiers={tiers}
+              catalogType={catalogType}
+              showSavings={true}
+              showNextTierHint={true}
+              showTierName={true}
+              size="lg"
+            />
+            
+            <div className="text-sm text-gray-500">
+              {product.stock > 0 ? `${product.stock} disponíveis` : 'Indisponível'}
             </div>
-
-            <div>
-              <span className="text-2xl font-bold text-primary">
-                R$ {price?.toFixed(2)}
-              </span>
-              {catalogType === 'wholesale' && product.min_wholesale_qty && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Mínimo: {product.min_wholesale_qty} unidades
-                </p>
-              )}
-            </div>
-
-            <div>
-              <span className="text-sm text-gray-500">
-                {product.stock > 0 ? `${product.stock} disponíveis` : 'Indisponível'}
-              </span>
-            </div>
-
+            
             <div className="flex gap-3">
               <Button
                 onClick={() => onAddToCart(product)}
@@ -93,7 +102,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Adicionar ao Carrinho
               </Button>
-
+              
               <Button
                 variant="outline"
                 onClick={() => onAddToWishlist(product)}

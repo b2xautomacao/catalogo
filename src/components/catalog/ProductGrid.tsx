@@ -3,7 +3,7 @@ import React from 'react';
 import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useMobileLayout } from '@/hooks/useMobileLayout';
-import ProductCard from './ProductCard';
+import TemplateSelector from './TemplateSelector';
 
 interface ProductGridProps {
   products: Product[];
@@ -63,21 +63,23 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   }
 
   return (
-    <div className={getMobileGridClasses()}>
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          catalogType={catalogType}
-          onAddToCart={() => handleAddToCart(product)}
-          onAddToWishlist={() => onAddToWishlist(product)}
-          onQuickView={() => onQuickView(product)}
-          isInWishlist={wishlist.some(item => item.id === product.id)}
-          showPrices={showPrices}
-          showStock={showStock}
-        />
-      ))}
-    </div>
+    <TemplateSelector
+      products={products}
+      catalogType={catalogType}
+      templateName={templateName}
+      onAddToCart={handleAddToCart}
+      onAddToWishlist={onAddToWishlist}
+      onQuickView={onQuickView}
+      isInWishlist={(productId: string) => wishlist.some(item => item.id === productId)}
+      showPrices={showPrices}
+      showStock={showStock}
+      storeIdentifier={storeIdentifier}
+      loading={loading}
+      editorSettings={{
+        showPrices,
+        showStock
+      }}
+    />
   );
 };
 

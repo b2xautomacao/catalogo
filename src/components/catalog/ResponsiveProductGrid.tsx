@@ -6,6 +6,9 @@ import { Product } from "@/types/product";
 import { CatalogType } from "./CatalogExample";
 import ProductCard from "./ProductCard";
 import QuickViewModal from "./QuickViewModal";
+import MinimalTemplate from "./templates/MinimalTemplate";
+import ModernTemplate from "./templates/ModernTemplate";
+import IndustrialTemplate from "./templates/IndustrialTemplate";
 import { Loader2 } from "lucide-react";
 
 export interface ResponsiveProductGridProps {
@@ -15,6 +18,7 @@ export interface ResponsiveProductGridProps {
   className?: string;
   template?: 'minimal' | 'modern' | 'elegant' | 'industrial';
   editorSettings?: any;
+  storeId?: string;
 }
 
 const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
@@ -23,7 +27,8 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   loading = false,
   className = "",
   template = 'minimal',
-  editorSettings = {}
+  editorSettings = {},
+  storeId
 }) => {
   const { addItem } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -72,23 +77,35 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     );
   }
 
+  const renderTemplate = () => {
+    const templateProps = {
+      products: filteredProducts,
+      catalogType,
+      onAddToCart: handleAddToCart,
+      onAddToWishlist: handleAddToWishlist,
+      onQuickView: handleQuickView,
+      isInWishlist,
+      loading,
+      showPrices: editorSettings.showPrices !== false,
+      showStock: editorSettings.showStock !== false,
+      editorSettings,
+      storeId
+    };
+
+    switch (template) {
+      case 'modern':
+        return <ModernTemplate {...templateProps} />;
+      case 'industrial':
+        return <IndustrialTemplate {...templateProps} />;
+      case 'minimal':
+      default:
+        return <MinimalTemplate {...templateProps} />;
+    }
+  };
+
   return (
     <div className={className}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            catalogType={catalogType}
-            onAddToCart={() => handleAddToCart(product)}
-            onAddToWishlist={() => handleAddToWishlist(product)}
-            onQuickView={() => handleQuickView(product)}
-            isInWishlist={isInWishlist(product.id)}
-            showPrices={editorSettings.showPrices !== false}
-            showStock={editorSettings.showStock !== false}
-          />
-        ))}
-      </div>
+      {renderTemplate()}
       
       {quickViewProduct && (
         <QuickViewModal
@@ -99,6 +116,7 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
           onAddToCart={handleAddToCart}
           onAddToWishlist={handleAddToWishlist}
           isInWishlist={isInWishlist(quickViewProduct.id)}
+          storeId={storeId}
         />
       )}
     </div>

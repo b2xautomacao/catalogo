@@ -3,7 +3,6 @@ import React from "react";
 import { Product } from "@/types/product";
 import { CatalogType } from "../CatalogExample";
 import ProductCard from "../ProductCard";
-import { useCart } from "@/hooks/useCart";
 
 export interface MinimalTemplateProps {
   products: Product[];
@@ -16,6 +15,7 @@ export interface MinimalTemplateProps {
   showPrices: boolean;
   showStock: boolean;
   editorSettings: any;
+  storeId?: string;
 }
 
 const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
@@ -28,7 +28,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
   loading,
   showPrices,
   showStock,
-  editorSettings
+  editorSettings,
+  storeId
 }) => {
   if (loading) {
     return (
@@ -59,6 +60,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           isInWishlist={isInWishlist(product.id)}
           showPrices={showPrices}
           showStock={showStock}
+          storeId={storeId}
         />
       ))}
     </div>

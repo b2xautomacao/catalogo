@@ -4,6 +4,8 @@ import { Product } from '@/types/product';
 import { CatalogType } from './CatalogExample';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
+import ProductPriceDisplay from './ProductPriceDisplay';
+import { useProductPriceTiers } from '@/hooks/useProductPriceTiers';
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +16,7 @@ interface ProductCardProps {
   isInWishlist: boolean;
   showPrices?: boolean;
   showStock?: boolean;
+  storeId?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -24,9 +27,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onQuickView,
   isInWishlist,
   showPrices = true,
-  showStock = true
+  showStock = true,
+  storeId
 }) => {
-  const price = catalogType === 'wholesale' ? product.wholesale_price : product.retail_price;
+  const { tiers } = useProductPriceTiers(product.id, {
+    wholesale_price: product.wholesale_price,
+    min_wholesale_qty: product.min_wholesale_qty,
+    retail_price: product.retail_price,
+  });
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -62,14 +70,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {showPrices && (
           <div className="mb-3">
-            <span className="text-lg font-bold text-primary">
-              R$ {price?.toFixed(2)}
-            </span>
-            {catalogType === 'wholesale' && product.min_wholesale_qty && (
-              <p className="text-xs text-gray-500 mt-1">
-                Mín. {product.min_wholesale_qty} unidades
-              </p>
-            )}
+            <ProductPriceDisplay
+              storeId={storeId || product.store_id || ''}
+              productId={product.id}
+              retailPrice={product.retail_price}
+              wholesalePrice={product.wholesale_price}
+              minWholesaleQty={product.min_wholesale_qty}
+              quantity={1}
+              priceTiers={tiers}
+              catalogType={catalogType}
+              showSavings={true}
+              showNextTierHint={true}
+              showTierName={true}
+              size="sm"
+            />
           </div>
         )}
 
