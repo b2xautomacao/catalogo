@@ -1,3 +1,4 @@
+
 import React from "react";
 import ProductBasicInfoForm from "./ProductBasicInfoForm";
 import ImprovedProductPricingForm from "./ImprovedProductPricingForm";
@@ -6,15 +7,13 @@ import FluidVariationsManager from "./FluidVariationsManager";
 import CompleteSEOGenerator from "./CompleteSEOGenerator";
 import ProductAdvancedForm from "./ProductAdvancedForm";
 import { ProductFormData } from "@/hooks/useImprovedProductFormWizard";
+import { useDraftImagesContext } from "@/contexts/DraftImagesContext";
 
 interface WizardStepContentProps {
   currentStep: number;
   formData: ProductFormData;
   updateFormData: (data: Partial<ProductFormData>) => void;
   productId?: string;
-  onImageUploadReady?: (
-    uploadFn: (productId: string) => Promise<string[]>
-  ) => void;
 }
 
 const WizardStepContent: React.FC<WizardStepContentProps> = ({
@@ -22,7 +21,6 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
   formData,
   updateFormData,
   productId,
-  onImageUploadReady,
 }) => {
   console.log(
     "📋 WIZARD STEP CONTENT - Step:",
@@ -30,6 +28,8 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
     "ProductId:",
     productId
   );
+
+  const { uploadAllImages } = useDraftImagesContext();
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -97,7 +97,10 @@ const WizardStepContent: React.FC<WizardStepContentProps> = ({
         return (
           <ProductImagesForm
             productId={productId}
-            onImageUploadReady={onImageUploadReady}
+            onImageUploadReady={(uploadFn) => {
+              console.log("📷 WIZARD - Image upload function ready");
+              // A função já está disponível via context
+            }}
           />
         );
 

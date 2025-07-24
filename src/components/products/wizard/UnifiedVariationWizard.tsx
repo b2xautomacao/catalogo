@@ -1,25 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Sparkles,
-  Settings,
-  Wand2,
-  HelpCircle,
-  Package,
-  Info,
-  CheckCircle,
-  ArrowRight,
-  User,
-  Users,
-  Lightbulb,
-} from "lucide-react";
-import { ProductVariation } from "@/types/product";
-import VariationWizardSelector from "./VariationWizardSelector";
-import ProductTypeDetector from "./ProductTypeDetector";
+import { Plus, Wand2, Package, Save, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ProductVariation } from "@/types/product";
+import { generateUniqueSKU, generateBatchSKUs, validateSKUUniqueness } from "@/utils/skuGenerator";
 
 interface UnifiedVariationWizardProps {
   variations: ProductVariation[];
@@ -31,332 +20,342 @@ interface UnifiedVariationWizardProps {
   onComplete?: () => void;
 }
 
-type WizardStep = "welcome" | "detection" | "wizard" | "complete";
-
 const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
   variations,
   onVariationsChange,
   productId,
   storeId,
   category,
-  productName,
+  productName = "Produto",
   onComplete,
 }) => {
+  const [currentView, setCurrentView] = useState<'selector' | 'simple' | 'colors' | 'sizes' | 'complete'>('selector');
+  const [localVariations, setLocalVariations] = useState<ProductVariation[]>(variations);
+  const [bulkStock, setBulkStock] = useState<number>(0);
+  const [isGeneratingSKU, setIsGeneratingSKU] = useState(false);
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<WizardStep>("welcome");
-  const [initialVariationCount, setInitialVariationCount] = useState(0);
 
+  // Sincronizar com props apenas quando necessário
   useEffect(() => {
-    setInitialVariationCount(variations.length);
-
-    // Se já há variações, pular para o wizard
-    if (variations.length > 0) {
-      setCurrentStep("wizard");
+    if (variations.length > 0 && localVariations.length === 0) {
+      setLocalVariations(variations);
+      if (variations.length > 0) {
+        setCurrentView('complete');
+      }
     }
-  }, []);
+  }, [variations.length, localVariations.length]);
 
-  useEffect(() => {
-    // Detectar quando variações são criadas/modificadas
-    if (variations.length > initialVariationCount) {
-      toast({
-        title: "✅ Variações atualizadas!",
-        description: `${variations.length} variações configuradas com sucesso.`,
-      });
-    }
-  }, [variations.length, initialVariationCount, toast]);
-
-  const handleVariationsChange = (newVariations: ProductVariation[]) => {
-    onVariationsChange(newVariations);
-
-    // Se variações foram criadas, ir para tela de conclusão
-    if (newVariations.length > 0 && currentStep === "wizard") {
-      setCurrentStep("complete");
-    }
-  };
-
-  const renderWelcome = () => (
-    <div className="max-w-4xl mx-auto text-center space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-center gap-2">
-          <Sparkles className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">
-            Criador de Variações
-          </h1>
-        </div>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Vamos configurar as variações do seu produto de forma inteligente e
-          personalizada. Nosso sistema detecta automaticamente o melhor tipo de
-          variação para seu produto.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="pt-6 text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Wand2 className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold mb-2">Assistente Inteligente</h3>
-            <p className="text-sm text-gray-600">
-              Detectamos automaticamente o tipo de produto e sugerimos as
-              melhores configurações
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="pt-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-6 h-6 text-green-600" />
-            </div>
-            <h3 className="font-semibold mb-2">Fácil de Usar</h3>
-            <p className="text-sm text-gray-600">
-              Interface simples para iniciantes ou avançada para usuários
-              experientes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-purple-200 bg-purple-50">
-          <CardContent className="pt-6 text-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-6 h-6 text-purple-600" />
-            </div>
-            <h3 className="font-semibold mb-2">Preview em Tempo Real</h3>
-            <p className="text-sm text-gray-600">
-              Veja como suas variações aparecerão no catálogo antes de finalizar
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        {(category || productName) && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Detectamos que você está configurando:{" "}
-              <strong>{productName}</strong>
-              {category && ` na categoria "${category}"`}. Vamos usar essas
-              informações para sugerir as melhores configurações.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex justify-center gap-4">
-          <Button
-            onClick={() => setCurrentStep("detection")}
-            className="flex items-center gap-2"
-            size="lg"
-          >
-            <Sparkles className="w-5 h-5" />
-            Começar Configuração
-          </Button>
-
-          {variations.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep("wizard")}
-              className="flex items-center gap-2"
-              size="lg"
-            >
-              <Settings className="w-5 h-5" />
-              Editar Variações Existentes
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+  // Debounce para evitar muitas atualizações
+  const debouncedUpdate = useCallback(
+    debounce((newVariations: ProductVariation[]) => {
+      onVariationsChange(newVariations);
+    }, 500),
+    [onVariationsChange]
   );
 
-  const renderDetection = () => (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">Análise do Produto</h2>
-        <p className="text-gray-600">
-          Analisando seu produto para sugerir a melhor configuração de variações
-        </p>
-      </div>
+  const updateLocalVariations = useCallback((newVariations: ProductVariation[]) => {
+    setLocalVariations(newVariations);
+    debouncedUpdate(newVariations);
+  }, [debouncedUpdate]);
 
-      {(category || productName) && (
-        <ProductTypeDetector category={category} productName={productName} />
-      )}
+  const generateAllSKUs = useCallback(async () => {
+    if (localVariations.length === 0) return;
 
+    setIsGeneratingSKU(true);
+    
+    try {
+      const variationData = localVariations.map(v => ({
+        color: v.color,
+        size: v.size,
+        name: v.name,
+      }));
+
+      const newSKUs = generateBatchSKUs(productName, variationData);
+      
+      if (!validateSKUUniqueness(newSKUs)) {
+        throw new Error("Erro na geração de SKUs únicos");
+      }
+
+      const updatedVariations = localVariations.map((variation, index) => ({
+        ...variation,
+        sku: newSKUs[index] || generateUniqueSKU(productName, { 
+          color: variation.color,
+          size: variation.size,
+          name: variation.name,
+          index 
+        }),
+      }));
+
+      updateLocalVariations(updatedVariations);
+      
+      toast({
+        title: "SKUs gerados!",
+        description: `${newSKUs.length} SKUs únicos foram gerados com sucesso.`,
+      });
+    } catch (error) {
+      console.error("Erro ao gerar SKUs:", error);
+      toast({
+        title: "Erro ao gerar SKUs",
+        description: "Não foi possível gerar SKUs únicos. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSKU(false);
+    }
+  }, [localVariations, productName, updateLocalVariations, toast]);
+
+  const applyBulkStock = useCallback(() => {
+    if (bulkStock <= 0) {
+      toast({
+        title: "Estoque inválido",
+        description: "Insira um valor de estoque válido (maior que 0)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedVariations = localVariations.map(variation => ({
+      ...variation,
+      stock: bulkStock,
+    }));
+
+    updateLocalVariations(updatedVariations);
+    setBulkStock(0);
+    
+    toast({
+      title: "Estoque aplicado!",
+      description: `Estoque de ${bulkStock} unidades aplicado a todas as variações.`,
+    });
+  }, [bulkStock, localVariations, updateLocalVariations, toast]);
+
+  const addSimpleVariation = useCallback(() => {
+    const newVariation: ProductVariation = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      product_id: productId || "",
+      name: `Variação ${localVariations.length + 1}`,
+      color: "",
+      size: "",
+      sku: "",
+      stock: 0,
+      price_adjustment: 0,
+      is_active: true,
+      image_url: "",
+      variation_type: "simple",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    updateLocalVariations([...localVariations, newVariation]);
+  }, [localVariations, productId, updateLocalVariations]);
+
+  const updateVariation = useCallback((index: number, updates: Partial<ProductVariation>) => {
+    const updated = localVariations.map((variation, i) => 
+      i === index ? { ...variation, ...updates } : variation
+    );
+    updateLocalVariations(updated);
+  }, [localVariations, updateLocalVariations]);
+
+  const removeVariation = useCallback((index: number) => {
+    const updated = localVariations.filter((_, i) => i !== index);
+    updateLocalVariations(updated);
+  }, [localVariations, updateLocalVariations]);
+
+  // Render do seletor inicial
+  if (currentView === 'selector' && localVariations.length === 0) {
+    return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-blue-600" />
-            Tipos de Variação Disponíveis
+            <Package className="h-5 w-5" />
+            Configurar Variações do Produto
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium">Produto Único</h4>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              onClick={() => setCurrentView('simple')}
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+            >
+              <Package className="h-6 w-6" />
+              <span>Variações Simples</span>
+              <span className="text-xs text-muted-foreground">
+                Criar variações básicas manualmente
+              </span>
+            </Button>
+            
+            <Button
+              onClick={() => setCurrentView('colors')}
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+            >
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
               </div>
-              <p className="text-sm text-gray-600 mb-2">
-                Sem variações, um produto específico
-              </p>
-              <p className="text-xs text-gray-500">
-                Ex: Caneca personalizada, poster específico
-              </p>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Settings className="w-5 h-5 text-purple-600" />
-                <h4 className="font-medium">Variações Tradicionais</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">
-                Cores e tamanhos individuais
-              </p>
-              <p className="text-xs text-gray-500">
-                Ex: Camiseta P/M/G, vestido em várias cores
-              </p>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                <h4 className="font-medium">Sistema de Grades</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">
-                Kits de tamanhos vendidos juntos
-              </p>
-              <p className="text-xs text-gray-500">
-                Ex: Sapatos do 33 ao 38, chinelos em grade
-              </p>
-            </div>
+              <span>Por Cores</span>
+              <span className="text-xs text-muted-foreground">
+                Criar variações baseadas em cores
+              </span>
+            </Button>
+          </div>
+          
+          <div className="text-center text-sm text-muted-foreground">
+            Escolha como deseja configurar as variações do seu produto.
           </div>
         </CardContent>
       </Card>
+    );
+  }
 
-      <div className="flex justify-center gap-4">
-        <Button variant="outline" onClick={() => setCurrentStep("welcome")}>
-          Voltar
-        </Button>
-        <Button
-          onClick={() => setCurrentStep("wizard")}
-          className="flex items-center gap-2"
-        >
-          Continuar para Configuração
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderWizard = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Configuração de Variações
-          </h2>
-          <p className="text-gray-600">
-            Escolha o método que melhor se adapta ao seu produto
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep("detection")}
-          size="sm"
-        >
-          ← Voltar
-        </Button>
-      </div>
-
-      <VariationWizardSelector
-        variations={variations}
-        onVariationsChange={handleVariationsChange}
-        productId={productId}
-        storeId={storeId}
-        category={category}
-        productName={productName}
-      />
-    </div>
-  );
-
-  const renderComplete = () => (
-    <div className="max-w-2xl mx-auto text-center space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-center gap-2">
-          <CheckCircle className="w-8 h-8 text-green-600" />
-          <h2 className="text-2xl font-bold text-gray-900">
-            Variações Configuradas!
-          </h2>
-        </div>
-        <p className="text-lg text-gray-600">
-          Suas {variations.length} variações foram criadas com sucesso e estão
-          prontas para uso.
-        </p>
-      </div>
-
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Próximos Passos:</h3>
-          <div className="space-y-3 text-left">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-sm font-medium text-green-600">1</span>
-              </div>
-              <div>
-                <h4 className="font-medium">Configure imagens</h4>
-                <p className="text-sm text-gray-600">
-                  Adicione imagens específicas para cada variação
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-sm font-medium text-green-600">2</span>
-              </div>
-              <div>
-                <h4 className="font-medium">Ajuste preços</h4>
-                <p className="text-sm text-gray-600">
-                  Configure preços específicos se necessário
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-sm font-medium text-green-600">3</span>
-              </div>
-              <div>
-                <h4 className="font-medium">Teste no catálogo</h4>
-                <p className="text-sm text-gray-600">
-                  Visualize como aparece para os clientes
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-center gap-4">
-        <Button variant="outline" onClick={() => setCurrentStep("wizard")}>
-          Editar Variações
-        </Button>
-        <Button onClick={onComplete} className="flex items-center gap-2">
-          <CheckCircle className="w-4 h-4" />
-          Finalizar
-        </Button>
-      </div>
-    </div>
-  );
-
+  // Render das variações existentes ou configuração
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="container mx-auto px-4">
-        {currentStep === "welcome" && renderWelcome()}
-        {currentStep === "detection" && renderDetection()}
-        {currentStep === "wizard" && renderWizard()}
-        {currentStep === "complete" && renderComplete()}
-      </div>
+    <div className="space-y-6">
+      {/* Header com ações */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Variações do Produto
+              {localVariations.length > 0 && (
+                <Badge variant="secondary">{localVariations.length}</Badge>
+              )}
+            </CardTitle>
+            
+            <div className="flex gap-2">
+              {currentView !== 'selector' && localVariations.length === 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentView('selector')}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addSimpleVariation}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Variação
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        
+        {localVariations.length > 0 && (
+          <CardContent className="space-y-4">
+            {/* Ações em lote */}
+            <div className="flex flex-wrap gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="bulk-stock">Estoque em lote:</Label>
+                <Input
+                  id="bulk-stock"
+                  type="number"
+                  value={bulkStock}
+                  onChange={(e) => setBulkStock(Number(e.target.value))}
+                  className="w-24"
+                  min="0"
+                />
+                <Button
+                  size="sm"
+                  onClick={applyBulkStock}
+                  disabled={bulkStock <= 0}
+                >
+                  Aplicar a Todas
+                </Button>
+              </div>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={generateAllSKUs}
+                disabled={isGeneratingSKU || localVariations.length === 0}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                {isGeneratingSKU ? "Gerando..." : "Gerar SKUs"}
+              </Button>
+            </div>
+            
+            {/* Lista de variações */}
+            <div className="space-y-4">
+              {localVariations.map((variation, index) => (
+                <Card key={variation.id || index} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome da Variação</Label>
+                      <Input
+                        value={variation.name || ""}
+                        onChange={(e) => updateVariation(index, { name: e.target.value })}
+                        placeholder="Ex: Azul Claro P"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>SKU</Label>
+                      <Input
+                        value={variation.sku || ""}
+                        onChange={(e) => updateVariation(index, { sku: e.target.value })}
+                        placeholder="Código único"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Estoque</Label>
+                      <Input
+                        type="number"
+                        value={variation.stock || 0}
+                        onChange={(e) => updateVariation(index, { stock: Number(e.target.value) })}
+                        min="0"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Ajuste de Preço (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={variation.price_adjustment || 0}
+                        onChange={(e) => updateVariation(index, { price_adjustment: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeVariation(index)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 };
+
+// Utility function for debouncing
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 export default UnifiedVariationWizard;
