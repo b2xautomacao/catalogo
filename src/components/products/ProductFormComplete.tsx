@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -56,13 +55,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
     }
   });
 
-  // Carregar produto existente se editando
-  useEffect(() => {
-    if (productId) {
-      loadProduct(productId);
-    }
-  }, [productId]);
-
   const loadProduct = async (id: string) => {
     try {
       const { data, error } = await supabase
@@ -75,7 +67,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
 
       if (data) {
         setExistingProduct(data);
-        // Preencher formulário
         setValue('name', data.name);
         setValue('description', data.description || '');
         setValue('retail_price', data.retail_price);
@@ -102,6 +93,12 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (productId) {
+      loadProduct(productId);
+    }
+  }, [productId]);
+
   const onSubmit = async (data: ProductValidationData) => {
     if (!profile?.store_id) {
       toast({
@@ -119,7 +116,21 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
       const validatedData = validateProduct(data);
 
       const productData = {
-        ...validatedData,
+        name: validatedData.name,
+        description: validatedData.description,
+        retail_price: validatedData.retail_price,
+        wholesale_price: validatedData.wholesale_price,
+        category: validatedData.category,
+        stock: validatedData.stock,
+        min_wholesale_qty: validatedData.min_wholesale_qty,
+        is_featured: validatedData.is_featured,
+        is_active: validatedData.is_active,
+        allow_negative_stock: validatedData.allow_negative_stock,
+        stock_alert_threshold: validatedData.stock_alert_threshold,
+        meta_title: validatedData.meta_title,
+        meta_description: validatedData.meta_description,
+        keywords: validatedData.keywords,
+        seo_slug: validatedData.seo_slug,
         store_id: profile.store_id,
         updated_at: new Date().toISOString()
       };
@@ -188,7 +199,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Nome */}
             <div>
               <Label htmlFor="name">Nome do Produto *</Label>
               <Input
@@ -201,7 +211,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               )}
             </div>
 
-            {/* Descrição */}
             <div>
               <Label htmlFor="description">Descrição</Label>
               <Textarea
@@ -212,7 +221,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               />
             </div>
 
-            {/* Preços */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="retail_price">Preço de Varejo *</Label>
@@ -245,7 +253,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               </div>
             </div>
 
-            {/* Estoque e Categoria */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="stock">Estoque *</Label>
@@ -273,7 +280,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               </div>
             </div>
 
-            {/* Quantidade mínima atacado */}
             <div>
               <Label htmlFor="min_wholesale_qty">Quantidade Mínima Atacado</Label>
               <Input
@@ -286,7 +292,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               />
             </div>
 
-            {/* SEO */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="meta_title">Título SEO</Label>
@@ -326,7 +331,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               </div>
             </div>
 
-            {/* Configurações */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -368,7 +372,6 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
               </div>
             </div>
 
-            {/* Botões */}
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
@@ -392,11 +395,9 @@ const ProductFormComplete: React.FC<ProductFormCompleteProps> = ({
         </CardContent>
       </Card>
 
-      {/* Gerenciador de Imagens */}
       {productId && (
         <ProductImageManager 
-          productId={productId} 
-          className="mt-6"
+          productId={productId}
         />
       )}
     </div>
