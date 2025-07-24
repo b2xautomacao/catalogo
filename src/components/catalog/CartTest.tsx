@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useCart } from "@/hooks/useCart";
 import { Button } from "@/components/ui/button";
@@ -8,20 +7,28 @@ const CartTest: React.FC = () => {
   const cart = useCart();
 
   const addTestItem = () => {
-    const testProduct = {
-      id: "prod-test-" + Math.random(),
-      name: "Produto Teste " + Math.floor(Math.random() * 100),
-      retail_price: 19.99,
-      wholesale_price: 15.99,
-      min_wholesale_qty: 5,
-      image_url: "/placeholder.svg",
-      store_id: "store-1",
-      stock: 100,
-      allow_negative_stock: false,
+    const testItem = {
+      id: "test-" + Date.now(),
+      product: {
+        id: "prod-test-" + Math.random(),
+        name: "Produto Teste " + Math.floor(Math.random() * 100),
+        retail_price: 19.99,
+        wholesale_price: 15.99,
+        min_wholesale_qty: 5,
+        image_url: "/placeholder.svg",
+        store_id: "store-1",
+        stock: 100,
+        allow_negative_stock: false,
+      },
+      quantity: 1,
+      price: 19.99,
+      originalPrice: 19.99,
+      catalogType: "retail" as const,
+      isWholesalePrice: false,
     };
 
-    console.log("➕ Adicionando item teste:", testProduct);
-    cart.addItem(testProduct, 1);
+    console.log("➕ Adicionando item teste:", testItem);
+    cart.addItem(testItem);
   };
 
   const addBulkItems = () => {
@@ -71,7 +78,7 @@ const CartTest: React.FC = () => {
             console.group("🛒 Debug Carrinho");
             console.log("Estado completo:", cart);
             console.log("Items array:", cart.items);
-            console.log("LocalStorage:", localStorage.getItem("cart_items"));
+            console.log("LocalStorage:", localStorage.getItem("cart-items"));
             console.groupEnd();
           }}
           variant="ghost"

@@ -1,28 +1,30 @@
 
 import React from 'react';
-import { Product } from '@/types/product';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
-import MinimalTemplate from './templates/MinimalTemplate';
+import { useEditorSync } from '@/hooks/useEditorSync';
 import ModernTemplate from './templates/ModernTemplate';
+import MinimalTemplate from './templates/MinimalTemplate';
+import ElegantTemplate, { CatalogSettingsData } from './templates/ElegantTemplate';
 import IndustrialTemplate from './templates/IndustrialTemplate';
 
-export interface TemplateSelectorProps {
-  products: Product[];
+interface TemplateSelectorProps {
+  product: Product;
   catalogType: CatalogType;
   templateName: string;
   onAddToCart: (product: Product) => void;
   onAddToWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
-  isInWishlist: (productId: string) => boolean;
+  isInWishlist: boolean;
   showPrices: boolean;
   showStock: boolean;
   storeIdentifier: string;
-  loading: boolean;
-  editorSettings: any;
 }
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
-  products,
+  product,
   catalogType,
   templateName,
   onAddToCart,
@@ -31,35 +33,64 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   isInWishlist,
   showPrices,
   showStock,
-  storeIdentifier,
-  loading,
-  editorSettings
+  storeIdentifier
 }) => {
-  // Inferir storeId do primeiro produto se disponível
-  const storeId = products.length > 0 ? products[0].store_id : storeIdentifier;
+  const { settings } = useEditorSync(storeIdentifier);
+
+  // Converter settings para o formato esperado pelo ElegantTemplate
+  const editorSettings: CatalogSettingsData = {
+    colors: settings?.colors || {
+      primary: '#0057FF',
+      secondary: '#FF6F00',
+      surface: '#FFFFFF',
+      text: '#1E293B'
+    },
+    global: settings?.global || {
+      borderRadius: 8,
+      fontSize: {
+        small: '14px',
+        medium: '16px',
+        large: '20px'
+      }
+    },
+    productCard: settings?.productCard || {
+      showQuickView: true,
+      showAddToCart: true,
+      productCardStyle: 'default'
+    }
+  };
 
   const templateProps = {
-    products,
+    product,
     catalogType,
     onAddToCart,
     onAddToWishlist,
     onQuickView,
     isInWishlist,
-    loading,
     showPrices,
     showStock,
-    editorSettings,
-    storeId
+    editorSettings
   };
+
+  // Verificar se o produto tem variações
+  console.log('🎯 TemplateSelector - Produto:', {
+    id: product.id,
+    name: product.name,
+    variations: product.variations?.length || 0,
+    template: templateName
+  });
 
   switch (templateName) {
     case 'modern':
       return <ModernTemplate {...templateProps} />;
+    case 'minimal':
+      return <MinimalTemplate {...templateProps} />;
+    case 'elegant':
+      return <ElegantTemplate {...templateProps} />;
     case 'industrial':
       return <IndustrialTemplate {...templateProps} />;
-    case 'minimal':
     default:
-      return <MinimalTemplate {...templateProps} />;
+      return <ModernTemplate {...templateProps} />;
   }
 };
 

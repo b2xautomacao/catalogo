@@ -10,7 +10,6 @@ import CartItemThumbnail from "./checkout/CartItemThumbnail";
 import CartItemPriceDisplay from "./CartItemPriceDisplay";
 import TierProgressIndicator from "./TierProgressIndicator";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
-import CartIncentivesBanner from "./CartIncentivesBanner";
 
 const formatCurrency = (value: number | undefined | null): string => {
   if (typeof value !== "number" || isNaN(value)) return "R$ 0,00";
@@ -242,7 +241,6 @@ const CartItem: React.FC<{
 
 const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
   onCheckout,
-  storeId,
 }) => {
   const {
     items,
@@ -253,8 +251,9 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
     isOpen,
     toggleCart,
     closeCart,
-    cartAnalysis,
-    totalSavings,
+    potentialSavings,
+    canGetWholesalePrice,
+    itemsToWholesale,
   } = useCart();
 
   // Debug dos valores do carrinho
@@ -369,11 +368,6 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                   🛒 Carrinho de Compras ({totalItems}{" "}
                   {totalItems === 1 ? "item" : "itens"})
                 </h2>
-                {totalSavings > 0 && (
-                  <p className="text-center text-white/90 text-sm mt-1">
-                    Economia total: R$ {totalSavings.toFixed(2).replace(".", ",")}
-                  </p>
-                )}
               </div>
 
               {/* Mensagem quando carrinho está vazio */}
@@ -398,14 +392,6 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
               ) : (
                 <>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {/* Banner de incentivos contextuais */}
-                    <CartIncentivesBanner
-                      items={items}
-                      totalAmount={totalAmount}
-                      storeId={storeId}
-                      onAddMoreItems={closeCart}
-                    />
-                    
                     {items.map((item) => (
                       <CartItem
                         key={item.id}
@@ -417,34 +403,13 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                   </div>
 
                   <div className="border-t bg-gray-50 p-6 space-y-4">
-                    {/* Resumo melhorado */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">
-                          {cartAnalysis.totalUniqueProducts} produto(s) diferentes
-                        </span>
-                        <span className="text-gray-600">
-                          {totalItems} {totalItems === 1 ? "item" : "itens"}
-                        </span>
-                      </div>
-                      
-                      {cartAnalysis.totalPotentialSavings > 0 && (
-                        <div className="flex justify-between items-center text-sm text-blue-600">
-                          <span>Economia potencial disponível:</span>
-                          <span className="font-semibold">
-                            R$ {cartAnalysis.totalPotentialSavings.toFixed(2).replace(".", ",")}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <span className="text-lg font-semibold">Total:</span>
-                        <span className="text-2xl font-bold text-blue-600">
-                          {formatCurrency(totalAmount)}
-                        </span>
-                      </div>
+                    {/* Removido: <TierProgressIndicator /> e economia potencial geral */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold">Total:</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {formatCurrency(totalAmount)}
+                      </span>
                     </div>
-                    
                     <Button
                       onClick={() => {
                         closeCart();

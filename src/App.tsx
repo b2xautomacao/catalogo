@@ -1,10 +1,10 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  BrowserRouter,
   Routes,
   Route,
   Outlet,
@@ -73,110 +73,112 @@ function App() {
   return (
     <TooltipProvider>
       <QueryClientProvider client={queryClient}>
-        <Toaster />
-        <Sonner />
+        <BrowserRouter>
+          <Toaster />
+          <Sonner />
 
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/payment/success" element={<PaymentSuccess />} />
-          <Route path="/payment/failure" element={<PaymentFailure />} />
-          <Route path="/payment/pending" element={<PaymentPending />} />
-          <Route path="/test-store" element={<TestStore />} />
-          <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
-          <Route
-            path="/catalog/:storeSlug"
-            element={<PublicCatalogWrapper />}
-          />
-
-          <Route
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<Index />} />
-          </Route>
-
-          <Route
-            element={
-              <ProtectedRoute>
-                <ResponsiveAppLayout
-                  title="Produtos"
-                  subtitle="Gerencie seu catálogo de produtos"
-                >
-                  <Outlet />
-                </ResponsiveAppLayout>
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/products" element={<Products />} />
-            <Route path="/variation-groups" element={<VariationGroups />} />
-            <Route path="/categories" element={<Categories />} />
-          </Route>
-
-          <Route
-            element={
-              <ProtectedRoute>
-                <ResponsiveAppLayout
-                  title="Vendas"
-                  subtitle="Gerencie pedidos e relatórios"
-                >
-                  <Outlet />
-                </ResponsiveAppLayout>
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/orders" element={<OrdersImproved />} />
-            <Route path="/protected-coupons" element={<ProtectedCoupons />} />
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/failure" element={<PaymentFailure />} />
+            <Route path="/payment/pending" element={<PaymentPending />} />
+            <Route path="/test-store" element={<TestStore />} />
+            <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
             <Route
-              path="/protected-deliveries"
-              element={<ProtectedDeliveries />}
+              path="/catalog/:storeSlug"
+              element={<PublicCatalogWrapper />}
             />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/protected-reports" element={<ProtectedReports />} />
-          </Route>
 
-          <Route
-            element={
-              <ProtectedRoute>
-                <ResponsiveAppLayout
-                  title="Configurações"
-                  subtitle="Configure sua loja e integrações"
-                >
-                  <Outlet />
-                </ResponsiveAppLayout>
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/shipping" element={<Shipping />} />
-          </Route>
-
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
-                <ResponsiveAppLayout
-                  title="Administração"
-                  subtitle="Gerencie o sistema"
-                >
-                  <Outlet />
-                </ResponsiveAppLayout>
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/stores" element={<Stores />} />
-            <Route path="/user-management" element={<UserManagement />} />
-            <Route path="/plan-management" element={<PlanManagement />} />
             <Route
-              path="/global-integrations"
-              element={<GlobalIntegrations />}
-            />
-          </Route>
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<Index />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route
+              element={
+                <ProtectedRoute>
+                  <ResponsiveAppLayout
+                    title="Produtos"
+                    subtitle="Gerencie seu catálogo de produtos"
+                  >
+                    <Outlet />
+                  </ResponsiveAppLayout>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/products" element={<Products />} />
+              <Route path="/variation-groups" element={<VariationGroups />} />
+              <Route path="/categories" element={<Categories />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <ResponsiveAppLayout
+                    title="Vendas"
+                    subtitle="Gerencie pedidos e relatórios"
+                  >
+                    <Outlet />
+                  </ResponsiveAppLayout>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/orders" element={<OrdersImproved />} />
+              <Route path="/protected-coupons" element={<ProtectedCoupons />} />
+              <Route
+                path="/protected-deliveries"
+                element={<ProtectedDeliveries />}
+              />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/protected-reports" element={<ProtectedReports />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <ResponsiveAppLayout
+                    title="Configurações"
+                    subtitle="Configure sua loja e integrações"
+                  >
+                    <Outlet />
+                  </ResponsiveAppLayout>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/shipping" element={<Shipping />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={["superadmin"]}>
+                  <ResponsiveAppLayout
+                    title="Administração"
+                    subtitle="Gerencie o sistema"
+                  >
+                    <Outlet />
+                  </ResponsiveAppLayout>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/stores" element={<Stores />} />
+              <Route path="/user-management" element={<UserManagement />} />
+              <Route path="/plan-management" element={<PlanManagement />} />
+              <Route
+                path="/global-integrations"
+                element={<GlobalIntegrations />}
+              />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </QueryClientProvider>
     </TooltipProvider>
   );

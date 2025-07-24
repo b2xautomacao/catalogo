@@ -72,9 +72,9 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({ storeSlug }) => {
         <ResponsiveProductGrid
           products={products}
           catalogType={catalogType}
+          storeIdentifier={storeSlug}
           loading={productsLoading}
           className="container mx-auto px-4"
-          storeId={store.id}
         />
       </main>
 

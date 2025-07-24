@@ -63,23 +63,23 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   }
 
   return (
-    <TemplateSelector
-      products={products}
-      catalogType={catalogType}
-      templateName={templateName}
-      onAddToCart={handleAddToCart}
-      onAddToWishlist={onAddToWishlist}
-      onQuickView={onQuickView}
-      isInWishlist={(productId: string) => wishlist.some(item => item.id === productId)}
-      showPrices={showPrices}
-      showStock={showStock}
-      storeIdentifier={storeIdentifier}
-      loading={loading}
-      editorSettings={{
-        showPrices,
-        showStock
-      }}
-    />
+    <div className={getMobileGridClasses()}>
+      {products.map((product) => (
+        <TemplateSelector
+          key={product.id}
+          product={product}
+          catalogType={catalogType}
+          templateName={templateName}
+          onAddToCart={handleAddToCart}
+          onAddToWishlist={onAddToWishlist}
+          onQuickView={onQuickView}
+          isInWishlist={wishlist.some(item => item.id === product.id)}
+          showPrices={showPrices}
+          showStock={showStock}
+          storeIdentifier={storeIdentifier}
+        />
+      ))}
+    </div>
   );
 };
 

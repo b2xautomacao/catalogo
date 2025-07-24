@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,19 +9,20 @@ import { formatCurrency } from "@/lib/utils";
 const TierProgressIndicator: React.FC = () => {
   const {
     items,
-    totalSavings,
-    potentialSavings,
-    canGetWholesalePrice,
-    itemsToWholesale,
+    currentTierLevel,
+    nextTierLevel,
+    nextTierSavings,
+    itemsToNextTier,
+    tierProgress,
   } = useCart();
 
-  // Se não há itens, não mostrar
-  if (items.length === 0) {
+  // Se não há itens ou não há progresso de níveis, não mostrar
+  if (items.length === 0 || Object.keys(tierProgress).length === 0) {
     return null;
   }
 
-  // Se já tem economia máxima, mostrar mensagem de sucesso
-  if (totalSavings > 0 && !canGetWholesalePrice) {
+  // Se já está no nível máximo, mostrar mensagem de sucesso
+  if (!nextTierLevel) {
     return (
       <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
         <CardHeader className="pb-3">
@@ -41,16 +41,11 @@ const TierProgressIndicator: React.FC = () => {
     );
   }
 
-  // Se não há progresso disponível, não mostrar
-  if (!canGetWholesalePrice && potentialSavings === 0) {
-    return null;
-  }
-
   // Calcular progresso geral
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const progressPercentage = Math.min(
     100,
-    (totalItems / (totalItems + itemsToWholesale)) * 100
+    (totalItems / (totalItems + itemsToNextTier)) * 100
   );
 
   return (
@@ -58,27 +53,25 @@ const TierProgressIndicator: React.FC = () => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-blue-800">
           <TrendingUp className="h-5 w-5" />
-          Progresso de Preços
+          Nível de Preço Atual: {currentTierLevel}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progresso para próximo nível */}
-        {canGetWholesalePrice && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-700">
-                Progresso para preços de atacado
-              </span>
-              <span className="text-blue-600 font-medium">
-                {totalItems} / {totalItems + itemsToWholesale} itens
-              </span>
-            </div>
-            <Progress value={progressPercentage} className="h-2" />
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-blue-700">
+              Progresso para nível {nextTierLevel}
+            </span>
+            <span className="text-blue-600 font-medium">
+              {totalItems} / {totalItems + itemsToNextTier} itens
+            </span>
           </div>
-        )}
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
 
         {/* Economia potencial */}
-        {potentialSavings > 0 && (
+        {nextTierSavings > 0 && (
           <div className="flex items-center justify-between p-3 bg-blue-100 rounded-lg">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-blue-600" />
@@ -87,46 +80,51 @@ const TierProgressIndicator: React.FC = () => {
               </span>
             </div>
             <Badge className="bg-green-500 text-white">
-              {formatCurrency(potentialSavings)}
+              {formatCurrency(nextTierSavings)}
             </Badge>
           </div>
         )}
 
         {/* Itens necessários */}
-        {itemsToWholesale > 0 && (
+        {itemsToNextTier > 0 && (
           <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
             <p className="text-sm text-yellow-800">
-              Adicione mais <strong>{itemsToWholesale} item(ns)</strong> para
-              atingir preços de atacado
+              Adicione mais <strong>{itemsToNextTier} item(ns)</strong> para
+              atingir o próximo nível
             </p>
           </div>
         )}
 
-        {/* Resumo por produto */}
+        {/* Detalhes por produto */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-blue-800">
-            Itens no carrinho:
+            Progresso por produto:
           </h4>
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between text-xs"
-            >
-              <span className="text-blue-700 truncate max-w-32">
-                {item.product.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-blue-600">
-                  {item.quantity} unidades
+          {items.map((item) => {
+            const progress = tierProgress[item.product.id];
+            if (!progress || !progress.next) return null;
+
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between text-xs"
+              >
+                <span className="text-blue-700 truncate max-w-32">
+                  {item.product.name}
                 </span>
-                {item.totalSavings && item.totalSavings > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    -{formatCurrency(item.totalSavings)}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-600">
+                    {item.quantity} / {progress.next} itens
+                  </span>
+                  {progress.savings > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{formatCurrency(progress.savings)}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>

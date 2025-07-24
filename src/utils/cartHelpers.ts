@@ -1,5 +1,5 @@
 
-import { Product } from '@/types/product';
+import { Product } from '@/hooks/useProducts';
 import { CatalogType } from '@/hooks/useCatalog';
 import { CartItem } from '@/hooks/useCart';
 import { ProductVariation } from '@/types/variation';
@@ -48,7 +48,14 @@ export const createCartItem = (
   const cartItem: CartItem = {
     id: itemId,
     product: {
-      ...product,
+      id: product.id,
+      name: product.name,
+      retail_price: product.retail_price,
+      wholesale_price: product.wholesale_price,
+      min_wholesale_qty: product.min_wholesale_qty,
+      image_url: product.image_url,
+      store_id: product.store_id,
+      stock: product.stock || 0,
       allow_negative_stock: product.allow_negative_stock || false
     },
     quantity: Math.max(1, Math.floor(quantity)),

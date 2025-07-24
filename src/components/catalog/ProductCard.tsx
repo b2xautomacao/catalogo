@@ -1,170 +1,277 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product } from '@/types/product';
-import { CatalogType } from './CatalogExample';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Heart, Eye, Package, TrendingDown } from 'lucide-react';
-import ProductPriceDisplay from './ProductPriceDisplay';
+import { Package, Eye, ShoppingCart, TrendingDown, Palette, Layers, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { ProductVariation } from '@/types/product';
+import { useCatalogMode } from '@/hooks/useCatalogMode';
+import { useStorePriceModel } from '@/hooks/useStorePriceModel';
+import { usePriceCalculation } from '@/hooks/usePriceCalculation';
 import { useProductPriceTiers } from '@/hooks/useProductPriceTiers';
+import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
 
-interface ProductCardProps {
+type CatalogType = 'retail' | 'wholesale';
+
+export interface ProductCardProps {
   product: Product;
   catalogType: CatalogType;
-  onAddToCart: () => void;
-  onAddToWishlist: () => void;
-  onQuickView: () => void;
-  isInWishlist: boolean;
-  showPrices?: boolean;
-  showStock?: boolean;
-  storeId?: string;
-  className?: string;
-  imageClassName?: string;
-  contentClassName?: string;
+  onAddToCart: (product: Product, quantity?: number, variation?: any) => void;
+  onViewDetails?: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({
-  product,
-  catalogType,
-  onAddToCart,
-  onAddToWishlist,
-  onQuickView,
-  isInWishlist,
-  showPrices = true,
-  showStock = true,
-  storeId,
-  className = "",
-  imageClassName = "",
-  contentClassName = ""
+const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  catalogType, 
+  onAddToCart, 
+  onViewDetails 
 }) => {
+  const { addItem } = useShoppingCart();
+  const { profile } = useAuth();
+  const { calculatePrice } = useCatalogMode(profile?.store_id);
+  const { priceModel } = useStorePriceModel(product.store_id);
   const { tiers } = useProductPriceTiers(product.id, {
     wholesale_price: product.wholesale_price,
     min_wholesale_qty: product.min_wholesale_qty,
     retail_price: product.retail_price,
   });
+  
+  const [quantity] = useState(1);
 
-  // Calcular economia se houver preço de atacado
-  const hasWholesalePrice = product.wholesale_price && product.wholesale_price < product.retail_price;
-  const savingsPercentage = hasWholesalePrice 
-    ? Math.round(((product.retail_price - product.wholesale_price) / product.retail_price) * 100)
-    : 0;
+  const modelKey = priceModel?.price_model || "retail_only";
+
+  // Verificar se o produto tem variações ativas
+  const hasVariations = useMemo(() => {
+    return product.variations && product.variations.length > 0;
+  }, [product.variations]);
+
+  // Usar o hook de cálculo de preços para obter informações precisas
+  const priceCalculation = usePriceCalculation(product.store_id, {
+    product_id: product.id,
+    retail_price: product.retail_price,
+    wholesale_price: product.wholesale_price,
+    min_wholesale_qty: product.min_wholesale_qty,
+    quantity: modelKey === "wholesale_only" ? (product.min_wholesale_qty || 1) : quantity,
+    price_tiers: product.enable_gradual_wholesale ? tiers : [],
+    enable_gradual_wholesale: product.enable_gradual_wholesale,
+  });
+
+  // Calcular informações sobre variações
+  const variationInfo = useMemo(() => {
+    if (!product.variations || product.variations.length === 0) {
+      return null;
+    }
+
+    const colors = [...new Set(product.variations.filter(v => v.color).map(v => v.color))];
+    const sizes = [...new Set(product.variations.filter(v => v.size).map(v => v.size))];
+    const grades = product.variations.filter(v => v.is_grade || v.variation_type === 'grade');
+    
+    return {
+      total: product.variations.length,
+      colors: colors.length,
+      sizes: sizes.length,
+      grades: grades.length,
+      hasVariations: true,
+      colorList: colors.slice(0, 3), // Mostrar apenas as primeiras 3 cores
+      sizeList: sizes.slice(0, 3),   // Mostrar apenas os primeiros 3 tamanhos
+    };
+  }, [product.variations]);
+
+  const handleAction = () => {
+    if (hasVariations) {
+      // Se tem variações, sempre abrir detalhes
+      if (onViewDetails) {
+        onViewDetails(product);
+      }
+    } else {
+      // Se não tem variações, adicionar diretamente ao carrinho
+      const minQty = modelKey === "wholesale_only" ? (product.min_wholesale_qty || 1) : quantity;
+      onAddToCart(product, minQty);
+    }
+  };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onViewDetails) onViewDetails(product);
+  };
 
   return (
-    <div className={`group relative bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${className}`}>
-      {/* Container da imagem */}
-      <div className={`relative aspect-square bg-gray-50 overflow-hidden ${imageClassName}`}>
+    <div className="relative flex flex-col rounded-lg border bg-white text-card-foreground shadow-sm hover:shadow-lg transition-shadow">
+      <div className="relative aspect-video overflow-hidden rounded-t-lg">
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="h-full w-full object-cover transition-all hover:scale-105"
+            loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <Package className="h-12 w-12" />
+          <div className="relative flex h-full w-full items-center justify-center bg-muted">
+            <Package className="h-6 w-6 text-muted-foreground" />
           </div>
         )}
-
-        {/* Badges promocionais no topo esquerdo */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1">
-          {product.is_featured && (
-            <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium px-2 py-1">
-              Destaque
-            </Badge>
-          )}
-          {catalogType === 'wholesale' && (
-            <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium px-2 py-1">
+        
+        {/* Price Model Badge */}
+        {modelKey === "wholesale_only" && (
+          <div className="absolute top-2 left-2">
+            <Badge className="bg-orange-500 text-white text-xs">
               Atacado
             </Badge>
-          )}
-          {savingsPercentage > 0 && (
-            <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-2 py-1 flex items-center gap-1">
+          </div>
+        )}
+        
+        {/* Discount Badge */}
+        {priceCalculation.percentage > 0 && (
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-green-500 text-white text-xs flex items-center gap-1">
               <TrendingDown className="h-3 w-3" />
-              -{savingsPercentage}%
-            </Badge>
-          )}
-        </div>
-
-        {/* Badge de estoque no canto inferior esquerdo */}
-        {product.stock === 0 && (
-          <div className="absolute bottom-3 left-3">
-            <Badge variant="destructive" className="text-xs font-medium">
-              Sem estoque
+              -{priceCalculation.percentage.toFixed(0)}%
             </Badge>
           </div>
         )}
 
-        {/* Botão de favorito no topo direito */}
-        <div className="absolute top-3 right-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAddToWishlist}
-            className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm"
-          >
-            <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-current text-red-500' : 'text-gray-600'}`} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Conteúdo do card */}
-      <div className={`p-5 ${contentClassName}`}>
-        <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 text-lg leading-snug">
-          {product.name}
-        </h3>
-
-        {product.description && (
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-            {product.description}
-          </p>
-        )}
-
-        {showPrices && (
-          <div className="mb-4">
-            <ProductPriceDisplay
-              storeId={storeId || product.store_id || ''}
-              productId={product.id}
-              retailPrice={product.retail_price}
-              wholesalePrice={product.wholesale_price}
-              minWholesaleQty={product.min_wholesale_qty}
-              quantity={1}
-              priceTiers={tiers}
-              catalogType={catalogType}
-              showSavings={true}
-              showNextTierHint={true}
-              showTierName={true}
-              size="md"
-            />
-          </div>
-        )}
-
-        {showStock && (
-          <div className="text-sm text-gray-500 mb-4">
-            {product.stock > 0 ? (
-              <span className="text-green-600 font-medium">{product.stock} em estoque</span>
-            ) : (
-              <span className="text-red-600 font-medium">Indisponível</span>
+        {/* Variation Indicators */}
+        {variationInfo && (
+          <div className="absolute bottom-2 left-2 flex gap-1">
+            {variationInfo.colors > 0 && (
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <Palette className="h-3 w-3" />
+                {variationInfo.colors} cores
+              </Badge>
+            )}
+            {variationInfo.grades > 0 && (
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <Layers className="h-3 w-3" />
+                {variationInfo.grades} grades
+              </Badge>
             )}
           </div>
         )}
 
-        {/* Botões de ação */}
-        <div className="flex gap-2">
-          <Button
-            onClick={onAddToCart}
-            disabled={product.stock <= 0}
-            className="flex-1 bg-primary hover:bg-primary/90 text-white font-medium py-2.5"
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {catalogType === 'wholesale' ? 'Atacado' : 'Adicionar'}
-          </Button>
+        {/* Variation Required Indicator */}
+        {hasVariations && (
+          <div className="absolute bottom-2 right-2">
+            <Badge className="bg-blue-500 text-white text-xs flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Variações
+            </Badge>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold line-clamp-1">{product.name}</h3>
+          <p className="text-sm text-muted-foreground line-clamp-1">
+            {product.description || "Sem descrição"}
+          </p>
+        </div>
 
-          <Button
-            variant="outline"
-            onClick={onQuickView}
-            className="px-4 py-2.5 border-gray-300 hover:bg-gray-50"
+        {/* Variation Preview */}
+        {variationInfo && (
+          <div className="space-y-2">
+            {variationInfo.colorList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Cores:</span>
+                <div className="flex gap-1">
+                  {variationInfo.colorList.map((color, index) => (
+                    <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {color}
+                    </span>
+                  ))}
+                  {variationInfo.colors > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{variationInfo.colors - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {variationInfo.sizeList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Tamanhos:</span>
+                <div className="flex gap-1">
+                  {variationInfo.sizeList.map((size, index) => (
+                    <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {size}
+                    </span>
+                  ))}
+                  {variationInfo.sizes > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{variationInfo.sizes - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {variationInfo.total > 0 && (
+              <div className="text-xs text-blue-600">
+                {variationInfo.total} variação{variationInfo.total > 1 ? 'ões' : ''} disponível{variationInfo.total > 1 ? 'is' : ''}
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-bold text-primary">
+                  {formatCurrency(priceCalculation.price)}
+                </p>
+                {priceCalculation.percentage > 0 && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {formatCurrency(product.retail_price)}
+                  </span>
+                )}
+              </div>
+              
+              {priceCalculation.currentTier.tier_name !== "Varejo" && (
+                <p className="text-xs text-gray-600">
+                  {priceCalculation.currentTier.tier_name}
+                  {modelKey === "wholesale_only" && product.min_wholesale_qty && (
+                    <span className="text-orange-600 ml-1">
+                      (mín: {product.min_wholesale_qty})
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="text-xs text-gray-500">
+            {product.stock > 0 ? `${product.stock} em estoque` : 'Sem estoque'}
+          </div>
+        </div>
+        
+        <div className="flex gap-2 pt-2">
+          {onViewDetails && (
+            <Button variant="outline" size="sm" onClick={handleViewDetails} className="flex-1">
+              <Eye className="mr-2 h-4 w-4" />
+              Ver
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            onClick={handleAction}
+            disabled={product.stock === 0 && !product.allow_negative_stock}
+            className="flex-1"
           >
-            <Eye className="h-4 w-4" />
+            {hasVariations ? (
+              <>
+                <Package className="mr-2 h-4 w-4" />
+                Ver Opções
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {modelKey === "wholesale_only" ? 'Atacado' : 'Comprar'}
+              </>
+            )}
           </Button>
         </div>
       </div>
