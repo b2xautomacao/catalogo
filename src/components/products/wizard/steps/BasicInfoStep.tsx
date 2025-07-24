@@ -10,7 +10,8 @@ import { useCategories } from '@/hooks/useCategories';
 import CategoryFormDialog from '@/components/products/CategoryFormDialog';
 import { WizardFormData } from '@/hooks/useImprovedProductFormWizard';
 import { useState } from 'react';
-import ImprovedAIToolsModal from '@/components/products/ImprovedAIToolsModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface BasicInfoStepProps {
   formData: WizardFormData;
@@ -20,39 +21,60 @@ interface BasicInfoStepProps {
 const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData }) => {
   const { categories, loading: categoriesLoading } = useCategories();
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
-  const [showAIModal, setShowAIModal] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+  const { toast } = useToast();
 
   const handleCategoryCreated = (newCategory: any) => {
     updateFormData({ category: newCategory.name });
     setShowCategoryDialog(false);
   };
 
-  const handleAIDescriptionGenerated = (description: string) => {
-    updateFormData({ description });
-  };
+  const generateDescription = async () => {
+    if (!formData.name?.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Digite o nome do produto antes de gerar a descrição",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleAITitleGenerated = (title: string) => {
-    updateFormData({ name: title });
-  };
+    setGeneratingDescription(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
+        body: {
+          productName: formData.name,
+          category: formData.category || 'Produto',
+          contentType: 'description'
+        }
+      });
 
-  const handleAIKeywordsGenerated = (keywords: string) => {
-    updateFormData({ keywords });
+      if (error) throw error;
+
+      if (data?.content) {
+        updateFormData({ description: data.content });
+        toast({
+          title: "Descrição gerada!",
+          description: "A IA gerou uma descrição para o produto",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao gerar descrição:', error);
+      toast({
+        title: "Erro na geração",
+        description: "Não foi possível gerar a descrição. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingDescription(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Informações Básicas</h3>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAIModal(true)}
-          className="flex items-center gap-2"
-        >
-          <Sparkles className="h-4 w-4" />
-          Agente de IA
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -63,12 +85,12 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
           <Input
             id="productName"
             type="text"
-            value={formData.name}
+            value={formData.name || ''}
             onChange={(e) => updateFormData({ name: e.target.value })}
             placeholder="Digite o nome do produto"
-            className={`${!formData.name ? 'border-red-300' : ''}`}
+            className={`${!formData.name?.trim() ? 'border-red-300' : ''}`}
           />
-          {!formData.name && (
+          {!formData.name?.trim() && (
             <p className="text-xs text-red-500">Nome do produto é obrigatório</p>
           )}
         </div>
@@ -82,7 +104,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
               value={formData.category || ''}
               onValueChange={(value) => updateFormData({ category: value })}
             >
-              <SelectTrigger className={`flex-1 ${!formData.category ? 'border-red-300' : ''}`}>
+              <SelectTrigger className={`flex-1 ${!formData.category?.trim() ? 'border-red-300' : ''}`}>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -118,20 +140,42 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
               Nova
             </Button>
           </div>
-          {!formData.category && (
+          {!formData.category?.trim() && (
             <p className="text-xs text-red-500">Categoria é obrigatória</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description" className="text-sm font-medium">
-            Descrição
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="description" className="text-sm font-medium">
+              Descrição
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={generateDescription}
+              disabled={!formData.name?.trim() || generatingDescription}
+              className="flex items-center gap-2"
+            >
+              {generatingDescription ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Gerar Descrição
+                </>
+              )}
+            </Button>
+          </div>
           <Textarea
             id="description"
             value={formData.description || ''}
             onChange={(e) => updateFormData({ description: e.target.value })}
-            placeholder="Descreva o produto"
+            placeholder="Descreva o produto ou use o botão para gerar automaticamente"
             rows={4}
             className="resize-none"
           />
@@ -145,16 +189,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
         onCategoryCreated={handleCategoryCreated}
-      />
-
-      <ImprovedAIToolsModal
-        open={showAIModal}
-        onOpenChange={setShowAIModal}
-        productName={formData.name}
-        category={formData.category}
-        onDescriptionGenerated={handleAIDescriptionGenerated}
-        onTitleGenerated={handleAITitleGenerated}
-        onKeywordsGenerated={handleAIKeywordsGenerated}
       />
     </div>
   );

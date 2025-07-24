@@ -160,13 +160,23 @@ export const useImprovedProductFormWizard = () => {
       case 0: // Basic info
         const hasName = Boolean(formData.name?.trim());
         const hasCategory = Boolean(formData.category?.trim());
-        const hasValidPrice = formData.retail_price > 0;
         
-        console.log('🔍 WIZARD - Step 0 validation:', { hasName, hasCategory, hasValidPrice });
-        return hasName && hasCategory && hasValidPrice;
+        console.log('🔍 WIZARD - Step 0 validation:', { 
+          hasName, 
+          hasCategory,
+          name: formData.name,
+          category: formData.category
+        });
+        
+        return hasName && hasCategory;
         
       case 1: // Pricing
-        return formData.retail_price > 0;
+        const hasValidRetailPrice = formData.retail_price > 0;
+        console.log('🔍 WIZARD - Step 1 validation:', { 
+          hasValidRetailPrice, 
+          retail_price: formData.retail_price 
+        });
+        return hasValidRetailPrice;
         
       case 2: // Images
         return true;
@@ -178,7 +188,16 @@ export const useImprovedProductFormWizard = () => {
         return true;
         
       case 5: // Review
-        return formData.name?.trim() && formData.category?.trim() && formData.retail_price > 0;
+        const finalValidation = formData.name?.trim() && 
+                               formData.category?.trim() && 
+                               formData.retail_price > 0;
+        console.log('🔍 WIZARD - Final validation:', { 
+          finalValidation,
+          name: formData.name,
+          category: formData.category,
+          retail_price: formData.retail_price
+        });
+        return finalValidation;
         
       default:
         return true;
