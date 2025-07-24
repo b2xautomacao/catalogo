@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Badge } from "../ui/badge";
 import { TrendingDown, ArrowUp, Info } from "lucide-react";
@@ -17,12 +18,14 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
   const product = item.product;
   const quantity = item.quantity;
   const originalPrice = item.originalPrice || product.retail_price;
+
   // Buscar tiers do produto
   const { tiers: priceTiers } = useProductPriceTiers(product.id, {
     wholesale_price: product.wholesale_price,
     min_wholesale_qty: product.min_wholesale_qty,
     retail_price: product.retail_price,
   });
+
   // Usar hook padronizado
   const calculation = usePriceCalculation(product.store_id, {
     product_id: product.id,
@@ -30,28 +33,65 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
     wholesale_price: product.wholesale_price,
     min_wholesale_qty: product.min_wholesale_qty,
     quantity,
-    price_tiers: product.enable_gradual_wholesale ? priceTiers : [], // Só usar tiers se atacado gradativo estiver ativo
-    enable_gradual_wholesale: product.enable_gradual_wholesale, // Passar o toggle
+    price_tiers: product.enable_gradual_wholesale ? priceTiers : [],
+    enable_gradual_wholesale: product.enable_gradual_wholesale,
   });
 
   const { priceModel, loading } = useStorePriceModel(product.store_id);
-  const modelKey: import("@/types/price-models").PriceModelType =
-    product.price_model || priceModel?.price_model || "retail_only";
+  const modelKey = product.price_model || priceModel?.price_model || "retail_only";
 
   if (loading) {
     return <div className={className}>Carregando preço...</div>;
   }
 
-  // Para wholesale_only, usar sempre item.price
-  const totalPrice =
-    modelKey === "wholesale_only"
-      ? item.price * quantity
-      : calculation.price * quantity;
-  const totalRetailPrice = originalPrice * quantity;
-  const totalSavings =
-    modelKey === "wholesale_only"
-      ? (originalPrice - item.price) * quantity
-      : totalRetailPrice - totalPrice;
+  // Calcular preços baseado no modelo
+  const getDisplayInfo = () => {
+    switch (modelKey) {
+      case "wholesale_only":
+        return {
+          currentPrice: item.price || product.wholesale_price,
+          totalPrice: (item.price || product.wholesale_price) * quantity,
+          showOriginalPrice: false,
+          tierName: "Atacado",
+          showIncentive: false,
+        };
+
+      case "simple_wholesale":
+        const isWholesale = quantity >= (product.min_wholesale_qty || 1);
+        return {
+          currentPrice: isWholesale ? product.wholesale_price : product.retail_price,
+          totalPrice: (isWholesale ? product.wholesale_price : product.retail_price) * quantity,
+          showOriginalPrice: isWholesale && product.wholesale_price < product.retail_price,
+          tierName: isWholesale ? "Atacado" : "Varejo",
+          showIncentive: !isWholesale && product.wholesale_price,
+          incentiveText: !isWholesale ? `Adicione mais ${(product.min_wholesale_qty || 1) - quantity} para atacado` : null,
+        };
+
+      case "gradual_wholesale":
+        return {
+          currentPrice: calculation.price,
+          totalPrice: calculation.price * quantity,
+          showOriginalPrice: calculation.percentage > 0,
+          tierName: calculation.currentTier.tier_name,
+          showIncentive: !!calculation.nextTierHint,
+          incentiveText: calculation.nextTierHint ? 
+            `Adicione mais ${calculation.nextTierHint.quantityNeeded} para próximo nível` : null,
+        };
+
+      default: // retail_only
+        return {
+          currentPrice: product.retail_price,
+          totalPrice: product.retail_price * quantity,
+          showOriginalPrice: false,
+          tierName: "Varejo",
+          showIncentive: false,
+        };
+    }
+  };
+
+  const displayInfo = getDisplayInfo();
+  const totalSavings = displayInfo.showOriginalPrice ? 
+    (originalPrice - displayInfo.currentPrice) * quantity : 0;
 
   return (
     <div className={`space-y-1 ${className}`}>
@@ -61,22 +101,14 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
           <span className="text-gray-600">Preço:</span>
         </div>
         <div className="flex items-center gap-1">
-          {modelKey === "wholesale_only" ? (
-            <span className="font-semibold text-orange-700">
-              R$ {item.price?.toFixed(2).replace(".", ",")}
+          {displayInfo.showOriginalPrice && (
+            <span className="text-xs text-gray-400 line-through">
+              R$ {originalPrice.toFixed(2).replace(".", ",")}
             </span>
-          ) : (
-            <>
-              {calculation.percentage > 0 && (
-                <span className="text-xs text-gray-400 line-through">
-                  R$ {originalPrice.toFixed(2).replace(".", ",")}
-                </span>
-              )}
-              <span className="font-semibold text-green-700">
-                R$ {calculation.price.toFixed(2).replace(".", ",")}
-              </span>
-            </>
           )}
+          <span className="font-semibold text-green-700">
+            R$ {displayInfo.currentPrice.toFixed(2).replace(".", ",")}
+          </span>
         </div>
       </div>
 
@@ -84,50 +116,38 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-600">Total ({quantity} un):</span>
         <div className="flex items-center gap-1">
-          {modelKey !== "wholesale_only" && totalSavings > 0 && (
+          {displayInfo.showOriginalPrice && totalSavings > 0 && (
             <span className="text-xs text-gray-400 line-through">
-              R$ {totalRetailPrice.toFixed(2).replace(".", ",")}
+              R$ {(originalPrice * quantity).toFixed(2).replace(".", ",")}
             </span>
           )}
           <span className="font-bold text-green-700">
-            R$ {totalPrice.toFixed(2).replace(".", ",")}
+            R$ {displayInfo.totalPrice.toFixed(2).replace(".", ",")}
           </span>
         </div>
       </div>
 
-      {/* Economia total - só para outros modelos */}
-      {modelKey !== "wholesale_only" && totalSavings > 0 && (
+      {/* Economia total */}
+      {totalSavings > 0 && (
         <div className="flex items-center justify-between text-xs bg-green-50 p-1 rounded">
-          <span className="text-green-700 font-medium">
-            {modelKey} Economia total:
-          </span>
+          <span className="text-green-700 font-medium">Economia total:</span>
           <span className="text-green-700 font-bold">
             R$ {totalSavings.toFixed(2).replace(".", ",")}
           </span>
         </div>
       )}
 
-      {/* Dica para próximo nível - INCENTIVO PRINCIPAL */}
-      {modelKey !== "wholesale_only" && calculation.nextTierHint && (
+      {/* Incentivo para próximo nível */}
+      {displayInfo.showIncentive && displayInfo.incentiveText && (
         <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
           <ArrowUp className="h-3 w-3 flex-shrink-0" />
           <span className="flex-1">
-            <strong>💡 Incentivo:</strong> Adicione{" "}
-            <strong className="text-blue-800">
-              +{calculation.nextTierHint.quantityNeeded}
-            </strong>{" "}
-            unidades para ativar o{" "}
-            <strong>
-              {calculation.nextTierHint ? "próximo nível" : "próximo nível"}
-            </strong>{" "}
-            e economizar{" "}
-            <strong className="text-green-600">
-              R${" "}
-              {calculation.nextTierHint.potentialSavings
-                .toFixed(2)
-                .replace(".", ",")}
-            </strong>{" "}
-            por unidade!
+            <strong>💡 Dica:</strong> {displayInfo.incentiveText}
+            {modelKey === "simple_wholesale" && product.wholesale_price && (
+              <span className="ml-1 text-green-600 font-bold">
+                Economize R$ {((product.retail_price - product.wholesale_price) * (product.min_wholesale_qty || 1)).toFixed(2)} no total!
+              </span>
+            )}
           </span>
         </div>
       )}
@@ -136,12 +156,7 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       <div className="flex items-center gap-1 text-xs text-gray-500">
         <Info className="h-3 w-3" />
         <span>
-          Nível atual:{" "}
-          <strong>
-            {modelKey === "wholesale_only"
-              ? "Atacado"
-              : calculation.currentTier.tier_name}
-          </strong>
+          Nível atual: <strong>{displayInfo.tierName}</strong>
         </span>
       </div>
     </div>

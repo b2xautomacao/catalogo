@@ -27,27 +27,15 @@ const CartItem: React.FC<{
   ) => void;
   onRemoveItem: (id: string) => void;
 }> = ({ item, onUpdateQuantity, onRemoveItem }) => {
-  // LOG: Estado do item recebido
-  console.log("🟨 [CartItem] Renderizando", item.product?.name, {
-    price: item.price,
-    quantity: item.quantity,
-    currentTier: item.currentTier,
-    nextTier: item.nextTier,
-    nextTierQuantityNeeded: item.nextTierQuantityNeeded,
-    nextTierPotentialSavings: item.nextTierPotentialSavings,
-  });
   const quantity = item.quantity || 1;
-  const stock =
-    item.variation && typeof item.variation.stock === "number"
-      ? item.variation.stock
-      : item.product?.stock ?? 0;
+  const stock = item.variation && typeof item.variation.stock === "number"
+    ? item.variation.stock
+    : item.product?.stock ?? 0;
   const allowNegative = item.product?.allow_negative_stock ?? false;
 
   const { priceModel } = useStorePriceModel(item.product?.store_id);
-  const modelKey =
-    item.product?.price_model || priceModel?.price_model || "retail_only";
-  const minQty =
-    modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
+  const modelKey = item.product?.price_model || priceModel?.price_model || "retail_only";
+  const minQty = modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
 
   // Validação de estoque
   const estoqueDisponivel = allowNegative ? Infinity : stock;
@@ -55,36 +43,79 @@ const CartItem: React.FC<{
   const podeRemover = quantity > minQty;
   const erroEstoque = !allowNegative && quantity >= stock;
 
-  // Badge baseado no cálculo centralizado
-  const getBadgeStyle = (tierName: string) => {
-    switch (tierName) {
-      case "Varejo":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "Atacarejo":
-        return "bg-orange-100 text-orange-800 border-orange-300";
-      case "Atacado Pequeno":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "Atacado Grande":
-        return "bg-yellow-100 text-yellow-800 border-yellow-400";
+  // Badge baseado no modelo de preço
+  const getBadgeInfo = () => {
+    switch (modelKey) {
+      case "wholesale_only":
+        return {
+          text: "Atacado",
+          className: "bg-orange-100 text-orange-800 border-orange-300"
+        };
+      case "simple_wholesale":
+        const isWholesale = quantity >= (item.product?.min_wholesale_qty || 1);
+        return {
+          text: isWholesale ? "Atacado" : "Varejo",
+          className: isWholesale 
+            ? "bg-green-100 text-green-800 border-green-300"
+            : "bg-blue-100 text-blue-800 border-blue-300"
+        };
+      case "gradual_wholesale":
+        return {
+          text: item.currentTier?.tier_name || "Varejo",
+          className: item.currentTier?.tier_name === "Atacado Grande"
+            ? "bg-yellow-100 text-yellow-800 border-yellow-400"
+            : "bg-green-100 text-green-800 border-green-300"
+        };
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return {
+          text: "Varejo",
+          className: "bg-blue-100 text-blue-800 border-blue-300"
+        };
     }
   };
 
+  const badgeInfo = getBadgeInfo();
+
   const handleCompleteTier = () => {
-    if (item.nextTier && item.nextTierQuantityNeeded > 0) {
+    if (modelKey === "simple_wholesale" && item.product?.min_wholesale_qty) {
+      const needed = item.product.min_wholesale_qty - quantity;
+      if (needed > 0) {
+        onUpdateQuantity(item.id, quantity + needed);
+      }
+    } else if (item.nextTier && item.nextTierQuantityNeeded > 0) {
       onUpdateQuantity(item.id, quantity + item.nextTierQuantityNeeded);
     }
   };
 
+  const getIncentiveMessage = () => {
+    if (modelKey === "simple_wholesale" && item.product?.min_wholesale_qty) {
+      const needed = item.product.min_wholesale_qty - quantity;
+      if (needed > 0) {
+        return {
+          text: `Adicione mais ${needed} unidade(s) para ativar preço de atacado!`,
+          buttonText: "Ativar Atacado",
+          showSavings: true,
+          savings: item.product.wholesale_price ? 
+            (item.product.retail_price - item.product.wholesale_price) * item.product.min_wholesale_qty : 0
+        };
+      }
+    } else if (modelKey === "gradual_wholesale" && item.nextTierQuantityNeeded > 0) {
+      return {
+        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade(s) para próximo nível!`,
+        buttonText: `Ativar ${item.nextTier?.tier_name || "Próximo Nível"}`,
+        showSavings: true,
+        savings: item.nextTierPotentialSavings || 0
+      };
+    }
+    return null;
+  };
+
+  const incentive = getIncentiveMessage();
+
   return (
-    <div
-      className={`cart-item-card rounded-xl p-4 border-2 ${
-        item.currentTier?.tier_name === "Atacado Grande"
-          ? "border-yellow-400"
-          : "border-gray-200"
-      } bg-white flex flex-col gap-2`}
-    >
+    <div className={`cart-item-card rounded-xl p-4 border-2 ${
+      badgeInfo.text === "Atacado Grande" ? "border-yellow-400" : "border-gray-200"
+    } bg-white flex flex-col gap-2`}>
       <div className="flex flex-row gap-4 items-start">
         {/* Imagem */}
         <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
@@ -94,6 +125,7 @@ const CartItem: React.FC<{
             size="lg"
           />
         </div>
+        
         {/* Infos principais */}
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex flex-row gap-4 items-start flex-wrap">
@@ -101,24 +133,21 @@ const CartItem: React.FC<{
               <h4 className="text-base font-semibold text-gray-900 truncate">
                 {item.product?.name || "Produto sem nome"}
               </h4>
+              
               {/* Badges de Grade e Atacado Gradativo */}
               <div className="flex flex-wrap items-center gap-1 mt-1">
-                {/* Badge de Grade */}
                 {item.gradeInfo && (
                   <Badge className="bg-blue-600 text-white text-xs px-1.5 py-0.5">
                     Grade: {item.gradeInfo.name}
                   </Badge>
                 )}
-                {/* Badge de Atacado Gradativo */}
-                {item.product?.enable_gradual_wholesale && (
-                  <Badge
-                    className="bg-yellow-500 text-white text-xs px-1.5 py-0.5"
-                    title="Descontos progressivos por quantidade"
-                  >
-                    Atacado Gradativo
+                {modelKey === "gradual_wholesale" && (
+                  <Badge className="bg-yellow-500 text-white text-xs px-1.5 py-0.5" title="Descontos progressivos por quantidade">
+                    Atacado Progressivo
                   </Badge>
                 )}
               </div>
+              
               {/* Tamanhos e pares por tamanho */}
               {item.gradeInfo && (
                 <div className="flex flex-wrap items-center gap-1 mt-0.5">
@@ -134,12 +163,14 @@ const CartItem: React.FC<{
                   )}
                 </div>
               )}
+              
               {item.variation && (
                 <p className="text-xs text-gray-500 truncate">
                   {item.variation.size} {item.variation.color}
                 </p>
               )}
             </div>
+            
             {/* Bloco de preço/desconto/economia */}
             <div className="flex flex-col gap-1 min-w-[120px] items-end text-right">
               <CartItemPriceDisplay item={item} />
@@ -147,15 +178,14 @@ const CartItem: React.FC<{
           </div>
         </div>
       </div>
+      
       {/* Rodapé: botões, badge e incentivo individual */}
       <div className="flex flex-row items-center justify-between mt-3 gap-2 flex-wrap border-t pt-2">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              onUpdateQuantity(item.id, quantity - 1, modelKey, minQty)
-            }
+            onClick={() => onUpdateQuantity(item.id, quantity - 1, modelKey, minQty)}
             className="h-8 w-8 p-0 rounded-full"
             disabled={!podeRemover}
           >
@@ -177,9 +207,7 @@ const CartItem: React.FC<{
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              onUpdateQuantity(item.id, quantity + 1, modelKey, minQty)
-            }
+            onClick={() => onUpdateQuantity(item.id, quantity + 1, modelKey, minQty)}
             className="h-8 w-8 p-0 rounded-full"
             disabled={!podeAdicionar}
           >
@@ -195,27 +223,22 @@ const CartItem: React.FC<{
             <Trash2 size={14} />
           </Button>
         </div>
-        {/* Badge no rodapé usando o cálculo centralizado */}
-        {modelKey !== "wholesale_only" && (
-          <span
-            className={`px-3 py-1 rounded-lg text-xs font-bold border ${getBadgeStyle(
-              item.currentTier?.tier_name || "Varejo"
-            )}`}
-          >
-            {item.currentTier?.tier_name || "Varejo"}
-          </span>
-        )}
+        
+        {/* Badge no rodapé */}
+        <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${badgeInfo.className}`}>
+          {badgeInfo.text}
+        </span>
       </div>
+      
       {/* Incentivo individual para próximo nível */}
-      {item.nextTier && item.nextTierQuantityNeeded > 0 && (
+      {incentive && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 bg-blue-50 border border-blue-200 rounded-lg px-2 py-2 sm:px-3 text-[11px] sm:text-xs text-blue-800 overflow-x-auto">
           <div className="flex items-center gap-1 flex-wrap">
             <TrendingUp size={13} className="flex-shrink-0" />
-            Adicione mais <b>{item.nextTierQuantityNeeded}</b> unidade(s) para
-            ativar o próximo desconto!
-            {item.nextTierPotentialSavings > 0 && (
+            {incentive.text}
+            {incentive.showSavings && incentive.savings > 0 && (
               <span className="ml-1 text-green-700 font-bold">
-                Economize R$ {item.nextTierPotentialSavings.toFixed(2)} por un.
+                Economize R$ {incentive.savings.toFixed(2)} no total!
               </span>
             )}
           </div>
@@ -225,10 +248,11 @@ const CartItem: React.FC<{
             className="w-full sm:w-auto px-2 py-1 h-6 text-[11px] sm:text-xs border-blue-400 text-blue-700 hover:bg-blue-100 mt-1 sm:mt-0"
             onClick={handleCompleteTier}
           >
-            Completar para {item.nextTier.tier_name}
+            {incentive.buttonText}
           </Button>
         </div>
       )}
+      
       {/* Mensagem de erro de estoque */}
       {erroEstoque && (
         <div className="text-xs text-red-600 mt-1">
