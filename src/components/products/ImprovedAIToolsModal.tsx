@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sparkles, FileText, Hash, Megaphone, Copy, CheckCircle, AlertCircle } from 'lucide-react';
 import { usePlanPermissions } from '@/hooks/usePlanPermissions';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImprovedAIToolsModalProps {
   open: boolean;
@@ -59,11 +60,29 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
   const { toast } = useToast();
   const aiAccess = checkAIUsage();
 
+  // Update product info when props change
+  React.useEffect(() => {
+    setProductInfo(prev => ({
+      ...prev,
+      name: productName,
+      category: category
+    }));
+  }, [productName, category]);
+
   const generateContent = async (type: string) => {
     if (!aiAccess.hasAccess) {
       toast({
         title: "Acesso negado",
         description: aiAccess.message || "IA não disponível no seu plano",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!productInfo.name?.trim() || !productInfo.category?.trim()) {
+      toast({
+        title: "Informações obrigatórias",
+        description: "Nome do produto e categoria são obrigatórios",
         variant: "destructive",
       });
       return;
@@ -75,40 +94,55 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
     }));
 
     try {
-      // Simular chamada de IA (substituir pela implementação real)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      let generatedContent = '';
-      
-      switch (type) {
-        case 'description':
-          generatedContent = `${productInfo.name} é um produto de alta qualidade da categoria ${productInfo.category}. ${productInfo.features ? `Características principais: ${productInfo.features}.` : ''} Ideal para ${productInfo.targetAudience || 'diversos usos'}.`;
-          break;
-        case 'title':
-          generatedContent = `${productInfo.name} - ${productInfo.category} Premium | Qualidade Superior`;
-          break;
-        case 'keywords':
-          generatedContent = `${productInfo.name.toLowerCase()}, ${productInfo.category.toLowerCase()}, qualidade, premium, comprar`;
-          break;
-        case 'adCopy':
-          generatedContent = `🌟 Descubra o ${productInfo.name}!\n\n✅ Qualidade superior\n✅ Categoria ${productInfo.category}\n✅ Entrega rápida\n\n💰 Preço especial por tempo limitado!\n\n🛒 Compre agora e aproveite!`;
-          break;
+      console.log('🤖 AI - Gerando conteúdo:', { type, productInfo });
+
+      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
+        body: {
+          productName: productInfo.name,
+          category: productInfo.category,
+          features: productInfo.features,
+          targetAudience: productInfo.targetAudience,
+          contentType: type
+        }
+      });
+
+      if (error) {
+        console.error('🤖 AI - Erro na função:', error);
+        throw new Error(error.message || 'Erro ao gerar conteúdo');
       }
+
+      if (!data?.content) {
+        throw new Error('Nenhum conteúdo foi gerado');
+      }
+
+      console.log('✅ AI - Conteúdo gerado:', data.content);
 
       setResults(prev => ({
         ...prev,
-        [type]: { content: generatedContent, loading: false }
+        [type]: { content: data.content, loading: false }
       }));
 
-    } catch (error) {
+      toast({
+        title: "Conteúdo gerado!",
+        description: "IA gerou o conteúdo com sucesso",
+      });
+
+    } catch (error: any) {
+      console.error('❌ AI - Erro:', error);
       setResults(prev => ({
         ...prev,
         [type]: { 
           content: '', 
           loading: false, 
-          error: 'Erro ao gerar conteúdo. Tente novamente.' 
+          error: error.message || 'Erro ao gerar conteúdo. Tente novamente.' 
         }
       }));
+
+      toast({
+        variant: "destructive",
+        title: "Erro na IA",
+        description: error.message || "Não foi possível gerar o conteúdo",
+      });
     }
   };
 
@@ -295,7 +329,7 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                     <CardContent className="space-y-4">
                       <Button
                         onClick={() => generateContent(tool.id)}
-                        disabled={result.loading || !productInfo.name || !productInfo.category}
+                        disabled={result.loading || !productInfo.name?.trim() || !productInfo.category?.trim()}
                         className="w-full"
                       >
                         {result.loading ? (

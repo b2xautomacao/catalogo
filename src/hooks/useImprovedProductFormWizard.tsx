@@ -41,7 +41,7 @@ export interface WizardFormData {
 }
 
 export interface WizardStep {
-  id: number;
+  id: string;
   label: string;
   title: string;
   description: string;
@@ -73,37 +73,37 @@ export const useImprovedProductFormWizard = () => {
 
   const steps: WizardStep[] = [
     {
-      id: 0,
+      id: "0",
       label: "Básico",
       title: "Informações Básicas",
       description: "Nome, descrição e categoria do produto"
     },
     {
-      id: 1,
+      id: "1",
       label: "Preços",
       title: "Preços e Estoque",
       description: "Preços de varejo/atacado e controle de estoque"
     },
     {
-      id: 2,
+      id: "2",
       label: "Imagens",
       title: "Imagens do Produto",
       description: "Upload e organização das imagens"
     },
     {
-      id: 3,
+      id: "3",
       label: "Variações",
       title: "Variações do Produto",
       description: "Cores, tamanhos e outras variações"
     },
     {
-      id: 4,
+      id: "4",
       label: "SEO",
       title: "Otimização para Busca",
       description: "Meta tags e palavras-chave"
     },
     {
-      id: 5,
+      id: "5",
       label: "Revisão",
       title: "Revisar e Salvar",
       description: "Confirme os dados antes de salvar"
@@ -133,11 +133,14 @@ export const useImprovedProductFormWizard = () => {
   }, [priceModel]);
 
   const updateFormData = (updates: Partial<WizardFormData>) => {
+    console.log('🔄 WIZARD - Atualizando formData:', updates);
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
+    if (canProceed()) {
+      setCurrentStep(prev => Math.min(steps.length - 1, prev + 1));
+    }
   };
 
   const prevStep = () => {
@@ -145,39 +148,72 @@ export const useImprovedProductFormWizard = () => {
   };
 
   const goToStep = (step: number) => {
-    setCurrentStep(step);
+    if (step >= 0 && step < steps.length) {
+      setCurrentStep(step);
+    }
   };
 
   const canProceed = (): boolean => {
+    console.log('🔍 WIZARD - Verificando canProceed para step:', currentStep, formData);
+    
     switch (currentStep) {
       case 0: // Basic info
-        return !!(formData.name && formData.retail_price > 0);
+        const hasName = Boolean(formData.name?.trim());
+        const hasCategory = Boolean(formData.category?.trim());
+        const hasValidPrice = formData.retail_price > 0;
+        
+        console.log('🔍 WIZARD - Step 0 validation:', { hasName, hasCategory, hasValidPrice });
+        return hasName && hasCategory && hasValidPrice;
+        
       case 1: // Pricing
-        return true;
+        return formData.retail_price > 0;
+        
       case 2: // Images
         return true;
+        
       case 3: // Variations
         return true;
+        
       case 4: // SEO
         return true;
+        
       case 5: // Review
-        return true;
+        return formData.name?.trim() && formData.category?.trim() && formData.retail_price > 0;
+        
       default:
         return true;
     }
   };
 
   const saveProduct = async (editingProductId?: string): Promise<string | null> => {
+    console.log('💾 WIZARD - Iniciando salvamento:', { editingProductId, formData });
     setLoading(true);
     
     try {
+      // Validações básicas
+      if (!formData.name?.trim()) {
+        throw new Error('Nome do produto é obrigatório');
+      }
+      
+      if (!formData.category?.trim()) {
+        throw new Error('Categoria é obrigatória');
+      }
+      
+      if (!formData.retail_price || formData.retail_price <= 0) {
+        throw new Error('Preço de varejo deve ser maior que zero');
+      }
+      
+      if (!profile?.store_id) {
+        throw new Error('Store ID não encontrado');
+      }
+
       const productData = {
         name: formData.name.trim(),
         description: formData.description || '',
-        category: formData.category || '',
+        category: formData.category.trim(),
         retail_price: formData.retail_price,
         wholesale_price: formData.wholesale_price,
-        stock: formData.stock,
+        stock: formData.stock || 0,
         min_wholesale_qty: formData.min_wholesale_qty || 1,
         is_featured: formData.is_featured || false,
         is_active: formData.is_active !== false,
@@ -187,8 +223,10 @@ export const useImprovedProductFormWizard = () => {
         meta_description: formData.meta_description || '',
         keywords: formData.keywords || '',
         seo_slug: formData.seo_slug || '',
-        store_id: profile?.store_id || ''
+        store_id: profile.store_id
       };
+
+      console.log('💾 WIZARD - Dados do produto:', productData);
 
       let result;
       
@@ -204,7 +242,10 @@ export const useImprovedProductFormWizard = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('💾 WIZARD - Erro ao atualizar:', error);
+          throw error;
+        }
         result = data;
       } else {
         // Create new product
@@ -218,9 +259,14 @@ export const useImprovedProductFormWizard = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('💾 WIZARD - Erro ao criar:', error);
+          throw error;
+        }
         result = data;
       }
+
+      console.log('✅ WIZARD - Produto salvo:', result);
 
       toast({
         title: "Produto salvo!",
@@ -228,12 +274,12 @@ export const useImprovedProductFormWizard = () => {
       });
 
       return result?.id || null;
-    } catch (error) {
-      console.error('Erro ao salvar produto:', error);
+    } catch (error: any) {
+      console.error('❌ WIZARD - Erro ao salvar produto:', error);
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: "Ocorreu um erro ao salvar o produto.",
+        description: error.message || "Ocorreu um erro ao salvar o produto.",
       });
       return null;
     } finally {
@@ -242,6 +288,7 @@ export const useImprovedProductFormWizard = () => {
   };
 
   const resetForm = () => {
+    console.log('🧹 WIZARD - Resetando formulário');
     setCurrentStep(0);
     setFormData({
       name: '',
