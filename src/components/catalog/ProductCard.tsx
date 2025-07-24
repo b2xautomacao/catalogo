@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
-import { Package, Eye, ShoppingCart, TrendingDown } from 'lucide-react';
+import { Package, Eye, ShoppingCart, TrendingDown, Palette, Layers } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { ProductVariation } from '@/types/product';
@@ -54,6 +54,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
     enable_gradual_wholesale: product.enable_gradual_wholesale,
   });
 
+  // Calcular informações sobre variações
+  const variationInfo = useMemo(() => {
+    if (!product.variations || product.variations.length === 0) {
+      return null;
+    }
+
+    const colors = [...new Set(product.variations.filter(v => v.color).map(v => v.color))];
+    const sizes = [...new Set(product.variations.filter(v => v.size).map(v => v.size))];
+    const grades = product.variations.filter(v => v.is_grade || v.variation_type === 'grade');
+    
+    return {
+      total: product.variations.length,
+      colors: colors.length,
+      sizes: sizes.length,
+      grades: grades.length,
+      hasVariations: true,
+      colorList: colors.slice(0, 3), // Mostrar apenas as primeiras 3 cores
+      sizeList: sizes.slice(0, 3),   // Mostrar apenas os primeiros 3 tamanhos
+    };
+  }, [product.variations]);
+
   const handleAddToCart = () => {
     const minQty = modelKey === "wholesale_only" ? (product.min_wholesale_qty || 1) : quantity;
     onAddToCart(product, minQty, selectedVariation);
@@ -98,6 +119,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </Badge>
           </div>
         )}
+
+        {/* Variation Indicators */}
+        {variationInfo && (
+          <div className="absolute bottom-2 left-2 flex gap-1">
+            {variationInfo.colors > 0 && (
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <Palette className="h-3 w-3" />
+                {variationInfo.colors} cores
+              </Badge>
+            )}
+            {variationInfo.grades > 0 && (
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <Layers className="h-3 w-3" />
+                {variationInfo.grades} grades
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="p-4 space-y-3">
@@ -107,6 +146,53 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {product.description || "Sem descrição"}
           </p>
         </div>
+
+        {/* Variation Preview */}
+        {variationInfo && (
+          <div className="space-y-2">
+            {variationInfo.colorList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Cores:</span>
+                <div className="flex gap-1">
+                  {variationInfo.colorList.map((color, index) => (
+                    <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {color}
+                    </span>
+                  ))}
+                  {variationInfo.colors > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{variationInfo.colors - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {variationInfo.sizeList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Tamanhos:</span>
+                <div className="flex gap-1">
+                  {variationInfo.sizeList.map((size, index) => (
+                    <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {size}
+                    </span>
+                  ))}
+                  {variationInfo.sizes > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{variationInfo.sizes - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {variationInfo.total > 0 && (
+              <div className="text-xs text-blue-600">
+                {variationInfo.total} variação{variationInfo.total > 1 ? 'ões' : ''} disponível{variationInfo.total > 1 ? 'is' : ''}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="space-y-2">
           <div className="flex items-center justify-between">

@@ -19,6 +19,9 @@ import {
   Share2,
   TrendingDown,
   AlertCircle,
+  Palette,
+  Package,
+  Layers,
 } from "lucide-react";
 import { Product } from "@/types/product";
 import { CatalogType } from "@/hooks/useCatalog";
@@ -59,6 +62,28 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const { toast } = useToast();
   
   const modelKey = priceModel?.price_model || ("retail_only" as PriceModelType);
+
+  // Calcular informações sobre variações
+  const variationInfo = useMemo(() => {
+    if (variations.length === 0) return null;
+
+    const colors = [...new Set(variations.filter(v => v.color).map(v => v.color))];
+    const sizes = [...new Set(variations.filter(v => v.size).map(v => v.size))];
+    const grades = variations.filter(v => v.is_grade || v.variation_type === 'grade');
+
+    return {
+      hasColors: colors.length > 0,
+      hasSizes: sizes.length > 0,
+      hasGrades: grades.length > 0,
+      colorCount: colors.length,
+      sizeCount: sizes.length,
+      gradeCount: grades.length,
+      totalVariations: variations.length,
+      colors,
+      sizes,
+      grades,
+    };
+  }, [variations]);
 
   // Calcular preço usando o hook de cálculo de preços
   const priceCalculation = usePriceCalculation(product?.store_id || '', {
@@ -194,7 +219,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             {/* Category and SKU */}
             <div className="flex items-center gap-2 flex-wrap">
               {product.category && (
-                <Badge variant="secondary">{product.category}</Badge>
+                <Badge variant="outline">{product.category}</Badge>
               )}
               {selectedVariation?.sku && (
                 <Badge variant="outline" className="text-xs">
@@ -207,6 +232,76 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </Badge>
               )}
             </div>
+
+            {/* Variation Summary */}
+            {variationInfo && (
+              <div className="p-3 bg-blue-50 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">
+                    {variationInfo.totalVariations} Variações Disponíveis
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {variationInfo.hasColors && (
+                    <div className="flex items-center gap-1">
+                      <Palette className="h-3 w-3 text-blue-500" />
+                      <span>{variationInfo.colorCount} cores</span>
+                    </div>
+                  )}
+                  {variationInfo.hasSizes && (
+                    <div className="flex items-center gap-1">
+                      <Package className="h-3 w-3 text-green-500" />
+                      <span>{variationInfo.sizeCount} tamanhos</span>
+                    </div>
+                  )}
+                  {variationInfo.hasGrades && (
+                    <div className="flex items-center gap-1">
+                      <Layers className="h-3 w-3 text-purple-500" />
+                      <span>{variationInfo.gradeCount} grades</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview das primeiras variações */}
+                {variationInfo.colors.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Cores disponíveis:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {variationInfo.colors.slice(0, 5).map((color, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {color}
+                        </Badge>
+                      ))}
+                      {variationInfo.colors.length > 5 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{variationInfo.colors.length - 5} mais
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {variationInfo.sizes.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Tamanhos disponíveis:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {variationInfo.sizes.slice(0, 5).map((size, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {size}
+                        </Badge>
+                      ))}
+                      {variationInfo.sizes.length > 5 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{variationInfo.sizes.length - 5} mais
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Description */}
             {product.description && (
