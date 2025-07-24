@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "../ui/badge";
 import { TrendingDown, ArrowUp, Info } from "lucide-react";
-import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { useCartPriceCalculation } from "@/hooks/useCartPriceCalculation";
 
 interface CartItemPriceDisplayProps {
   item: any;
@@ -13,91 +13,22 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
   item,
   className = "",
 }) => {
+  const priceCalculation = useCartPriceCalculation(item);
   const product = item.product;
   const quantity = item.quantity;
 
-  const { priceModel, loading } = useStorePriceModel(product.store_id);
+  const {
+    total,
+    savings,
+    formattedTotal,
+    formattedSavings,
+    currentTier,
+    nextTierHint
+  } = priceCalculation;
 
-  if (loading) {
-    return <div className={className}>Carregando...</div>;
-  }
-
-  const modelType = priceModel?.price_model || "retail_only";
-
-  // Função para obter informações de exibição baseada no modelo
-  const getDisplayInfo = () => {
-    switch (modelType) {
-      case "retail_only":
-        return {
-          currentPrice: product.retail_price,
-          totalPrice: product.retail_price * quantity,
-          tierLabel: "Varejo",
-          showIncentive: false,
-          showOriginalPrice: false,
-          showTierBadge: false,
-        };
-
-      case "wholesale_only":
-        const wholesalePrice = product.wholesale_price || product.retail_price;
-        return {
-          currentPrice: wholesalePrice,
-          totalPrice: wholesalePrice * quantity,
-          tierLabel: "Atacado",
-          showIncentive: false,
-          showOriginalPrice: wholesalePrice < product.retail_price,
-          showTierBadge: true,
-        };
-
-      case "simple_wholesale":
-        const minQty = product.min_wholesale_qty || 1;
-        const isWholesale = quantity >= minQty && product.wholesale_price;
-        const currentPrice = isWholesale ? product.wholesale_price : product.retail_price;
-        
-        return {
-          currentPrice,
-          totalPrice: currentPrice * quantity,
-          tierLabel: isWholesale ? "Atacado" : "Varejo",
-          showIncentive: !isWholesale && product.wholesale_price && product.wholesale_price < product.retail_price,
-          showOriginalPrice: isWholesale && product.wholesale_price && product.wholesale_price < product.retail_price,
-          showTierBadge: true,
-          incentiveData: !isWholesale && product.wholesale_price ? {
-            needed: minQty - quantity,
-            savings: (product.retail_price - product.wholesale_price) * minQty
-          } : null
-        };
-
-      case "gradual_wholesale":
-        // Para gradativo, usar dados do item ou preço padrão
-        const currentTierPrice = item.price || product.retail_price;
-        const hasNextTier = item.nextTierQuantityNeeded && item.nextTierQuantityNeeded > 0;
-        const tierName = item.currentTier?.tier_name || "Varejo";
-        
-        return {
-          currentPrice: currentTierPrice,
-          totalPrice: currentTierPrice * quantity,
-          tierLabel: tierName,
-          showIncentive: hasNextTier,
-          showOriginalPrice: currentTierPrice < product.retail_price,
-          showTierBadge: true,
-          incentiveData: hasNextTier ? {
-            needed: item.nextTierQuantityNeeded,
-            savings: (item.nextTierPotentialSavings || 0) * (quantity + item.nextTierQuantityNeeded)
-          } : null
-        };
-
-      default:
-        return {
-          currentPrice: product.retail_price,
-          totalPrice: product.retail_price * quantity,
-          tierLabel: "Varejo",
-          showIncentive: false,
-          showOriginalPrice: false,
-          showTierBadge: false,
-        };
-    }
-  };
-
-  const displayInfo = getDisplayInfo();
+  const showSavings = savings > 0;
+  const showIncentive = nextTierHint && nextTierHint.quantityNeeded > 0;
+  const showTierBadge = currentTier.tier_name !== 'Varejo' || (currentTier.tier_name === 'Varejo' && item.catalogType === 'wholesale');
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -105,13 +36,13 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       <div className="flex items-center justify-between text-sm">
         <span className="text-gray-600">Preço unitário:</span>
         <div className="flex items-center gap-2">
-          {displayInfo.showOriginalPrice && (
+          {showSavings && (
             <span className="text-xs text-gray-400 line-through">
               R$ {product.retail_price.toFixed(2).replace(".", ",")}
             </span>
           )}
           <span className="font-semibold text-green-700">
-            R$ {displayInfo.currentPrice.toFixed(2).replace(".", ",")}
+            R$ {currentTier.price.toFixed(2).replace(".", ",")}
           </span>
         </div>
       </div>
@@ -120,57 +51,56 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-600">Total ({quantity} un):</span>
         <span className="font-bold text-green-700 text-lg">
-          R$ {displayInfo.totalPrice.toFixed(2).replace(".", ",")}
+          {formattedTotal}
         </span>
       </div>
 
       {/* Economia */}
-      {displayInfo.showOriginalPrice && (
+      {showSavings && (
         <div className="flex items-center justify-between text-xs bg-green-50 p-2 rounded">
           <span className="text-green-700 font-medium flex items-center gap-1">
             <TrendingDown className="h-3 w-3" />
             Economia:
           </span>
           <span className="text-green-700 font-bold">
-            R$ {((product.retail_price - displayInfo.currentPrice) * quantity).toFixed(2).replace(".", ",")}
+            {formattedSavings}
           </span>
         </div>
       )}
 
       {/* Incentivo para próximo nível */}
-      {displayInfo.showIncentive && displayInfo.incentiveData && (
+      {showIncentive && (
         <div className="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 p-3 rounded border border-blue-200">
           <ArrowUp className="h-3 w-3 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <div className="font-medium mb-1">
-              💡 Adicione mais {displayInfo.incentiveData.needed} unidade{displayInfo.incentiveData.needed > 1 ? 's' : ''} 
-              {modelType === 'simple_wholesale' ? ' para preço de atacado!' : ' para próximo nível!'}
+              💡 Adicione mais {nextTierHint.quantityNeeded} unidade{nextTierHint.quantityNeeded > 1 ? 's' : ''} para preço de atacado!
             </div>
-            {displayInfo.incentiveData.savings > 0 && (
+            {nextTierHint.potentialSavings > 0 && (
               <div className="text-green-600 font-bold">
-                Economize R$ {displayInfo.incentiveData.savings.toFixed(2).replace(".", ",")} no total!
+                Economize R$ {nextTierHint.potentialSavings.toFixed(2).replace(".", ",")} no total!
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Identificador do nível atual - só mostrar quando necessário */}
-      {displayInfo.showTierBadge && (
+      {/* Identificador do nível atual */}
+      {showTierBadge && (
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1 text-gray-500">
             <Info className="h-3 w-3" />
             <span>Nível:</span>
           </div>
           <Badge 
-            variant={displayInfo.tierLabel === "Atacado" ? "default" : "outline"} 
+            variant={currentTier.tier_name === "Atacado" ? "default" : "outline"} 
             className={`text-xs font-medium ${
-              displayInfo.tierLabel === "Atacado" 
+              currentTier.tier_name === "Atacado" 
                 ? "bg-green-600 hover:bg-green-700" 
                 : ""
             }`}
           >
-            {displayInfo.tierLabel}
+            {currentTier.tier_name}
           </Badge>
         </div>
       )}

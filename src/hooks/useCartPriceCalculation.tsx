@@ -92,19 +92,26 @@ export const useCartPriceCalculation = (item: CartItem): PriceCalculationResult 
         break;
 
       case 'gradual_wholesale':
-        // Atacado gradativo - usar preço calculado pelo carrinho
+        // Para gradativo, usar preço do item ou calcular baseado na quantidade
         finalPrice = item.price || retailPrice;
-        currentTierName = item.currentTier?.tier_name || 'Varejo';
         
-        if (finalPrice < retailPrice) {
-          savings = (retailPrice - finalPrice) * quantity;
+        // Determinar nível baseado na quantidade e preço
+        if (wholesalePrice && quantity >= minWholesaleQty && finalPrice <= wholesalePrice) {
+          currentTierName = 'Atacado';
+          if (finalPrice < retailPrice) {
+            savings = (retailPrice - finalPrice) * quantity;
+          }
+        } else {
+          currentTierName = 'Varejo';
         }
 
-        // Dica para próximo nível
-        if (item.nextTierQuantityNeeded && item.nextTierPotentialSavings) {
+        // Dica para próximo nível no gradativo
+        if (wholesalePrice && quantity < minWholesaleQty) {
+          const neededQty = minWholesaleQty - quantity;
+          const potentialSavings = (retailPrice - wholesalePrice) * minWholesaleQty;
           nextTierHint = {
-            quantityNeeded: item.nextTierQuantityNeeded,
-            potentialSavings: item.nextTierPotentialSavings * quantity
+            quantityNeeded: neededQty,
+            potentialSavings
           };
         }
         break;
