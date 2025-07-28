@@ -42,14 +42,9 @@ const ImprovedProductFormWizardContent: React.FC<ImprovedProductFormWizardProps>
     
     if (editingProduct && isOpen) {
       console.log("🧙 WIZARD - Carregando dados do produto para edição:", editingProduct.id);
-      // Carregar dados do produto
-      loadProductForEditing(editingProduct);
       
-      // Carregar imagens existentes
-      if (editingProduct.id) {
-        console.log("📷 WIZARD - Carregando imagens existentes para produto:", editingProduct.id);
-        loadExistingImages(editingProduct.id);
-      }
+      // **NOVA ABORDAGEM**: Carregar produto com callback para imagens
+      loadProductForEditing(editingProduct, loadExistingImages);
     }
   }, [editingProduct, isOpen, loadProductForEditing, loadExistingImages]);
 

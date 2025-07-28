@@ -174,10 +174,12 @@ export const useImprovedProductFormWizard = () => {
   }, [currentStep, formData, priceModel]);
 
   const loadProductForEditing = useCallback(
-    async (product: any) => {
+    async (product: any, loadImagesCallback?: (productId: string) => Promise<void>) => {
       console.log("📂 WIZARD - Carregando produto para edição:", product);
 
       try {
+        setLoading(true);
+        
         // Carregar variações do produto
         let variations: ProductVariation[] = [];
         if (product.id) {
@@ -236,7 +238,7 @@ export const useImprovedProductFormWizard = () => {
 
         console.log("📂 WIZARD - Modelo de preços da loja:", currentPriceModel);
 
-        // Atualizar formData com dados do produto
+        // Atualizar formData com dados do produto PRIMEIRO
         setFormData({
           name: product.name || "",
           description: product.description || "",
@@ -259,6 +261,24 @@ export const useImprovedProductFormWizard = () => {
           keywords: product.keywords || "",
           seo_slug: product.seo_slug || "",
         });
+
+        // **CARREGAR IMAGENS DEPOIS** de atualizar o formData
+        if (product.id && loadImagesCallback) {
+          console.log("📂 WIZARD - Carregando imagens do produto:", product.id);
+          try {
+            await loadImagesCallback(product.id);
+            console.log("✅ WIZARD - Imagens carregadas com sucesso");
+          } catch (imageError) {
+            console.error("❌ WIZARD - Erro ao carregar imagens:", imageError);
+            // Não bloquear o carregamento do produto por erro nas imagens
+            toast({
+              title: "Aviso",
+              description: "Produto carregado, mas houve erro ao carregar as imagens.",
+              variant: "destructive",
+            });
+          }
+        }
+
       } catch (error) {
         console.error("Erro ao carregar produto para edição:", error);
         toast({
@@ -266,6 +286,8 @@ export const useImprovedProductFormWizard = () => {
           description: "Não foi possível carregar os dados do produto.",
           variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
     },
     [profile?.store_id, toast]

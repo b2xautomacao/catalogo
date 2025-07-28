@@ -23,22 +23,20 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
     uploadAllImages,
     setPrimaryImage,
     reorderImages,
-    loadExistingImages
+    loadExistingImages,
+    isLoading,
+    isUploading
   } = useDraftImagesContext();
 
   React.useEffect(() => {
     console.log("📷 IMPROVED FORM - useEffect triggered:", { productId, hasUploadReady: !!onImageUploadReady });
     
-    if (productId) {
-      console.log("📷 IMPROVED FORM - Carregando imagens existentes para:", productId);
-      loadExistingImages(productId);
-    }
-    
+    // Registrar função de upload sempre que disponível
     if (onImageUploadReady) {
       console.log("📷 IMPROVED FORM - Registrando função de upload");
       onImageUploadReady(uploadAllImages);
     }
-  }, [productId, onImageUploadReady, uploadAllImages, loadExistingImages]);
+  }, [onImageUploadReady, uploadAllImages]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -130,6 +128,16 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
           <span className="text-sm font-normal text-muted-foreground">
             ({draftImages.length}/10)
           </span>
+          {isLoading && (
+            <span className="text-xs text-blue-600 animate-pulse">
+              Carregando...
+            </span>
+          )}
+          {isUploading && (
+            <span className="text-xs text-green-600 animate-pulse">
+              Salvando...
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -167,8 +175,26 @@ const ImprovedProductImagesForm: React.FC<ImprovedProductImagesFormProps> = ({
           className="hidden"
         />
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">Carregando imagens existentes...</p>
+          </div>
+        )}
+
+        {/* No Images State */}
+        {!isLoading && draftImages.length === 0 && productId && (
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">
+              {productId ? "Nenhuma imagem encontrada para este produto" : "Adicione imagens para o produto"}
+            </p>
+          </div>
+        )}
+
         {/* Images Grid */}
-        {draftImages.length > 0 && (
+        {!isLoading && draftImages.length > 0 && (
           <div className="space-y-4">
             <h4 className="font-medium">Imagens Carregadas</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
