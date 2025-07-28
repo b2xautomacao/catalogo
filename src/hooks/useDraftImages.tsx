@@ -249,14 +249,16 @@ export const useDraftImages = () => {
           .delete()
           .eq("product_id", productId);
 
-        // Obter o estado atualizado das imagens
-        const finalImages = draftImages.map(img => {
-          // Se era uma nova imagem que acabamos de fazer upload
-          if (!img.isExisting && uploadedUrls.includes(img.url || '')) {
-            return { ...img, uploaded: true, isExisting: false };
-          }
-          return img;
-        });
+        // Obter o estado atualizado das imagens e filtrar apenas as que têm URL
+        const finalImages = draftImages
+          .map(img => {
+            // Se era uma nova imagem que acabamos de fazer upload
+            if (!img.isExisting && uploadedUrls.includes(img.url || '')) {
+              return { ...img, uploaded: true, isExisting: false };
+            }
+            return img;
+          })
+          .filter(img => img.url); // Filtrar apenas imagens com URL
 
         const allImagesOrdered = finalImages.sort((a, b) => a.displayOrder - b.displayOrder);
 
@@ -265,12 +267,7 @@ export const useDraftImages = () => {
         for (let i = 0; i < allImagesOrdered.length; i++) {
           const image = allImagesOrdered[i];
           
-          if (!image.url) {
-            console.warn("⚠️ REORGANIZANDO - Imagem sem URL:", image.id);
-            continue;
-          }
-
-          console.log("💾 REORGANIZANDO - Salvando imagem", i + 1, "Primary:", image.isPrimary);
+          console.log("💾 REORGANIZANDO - Salvando imagem", i + 1, "Primary:", image.isPrimary, "URL:", image.url);
 
           const { error: dbError } = await supabase
             .from("product_images")
