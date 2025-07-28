@@ -28,9 +28,9 @@ const ProductAdminDetailsModal: React.FC<ProductAdminDetailsModalProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { images } = useProductImages(product?.id);
-
   if (!product) return null;
+  
+  const { images } = useProductImages(product.id);
 
   // Calcular informações sobre variações
   const variationInfo = React.useMemo(() => {
