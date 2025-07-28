@@ -1,9 +1,11 @@
 
 import React, { useState } from "react";
 import { Product } from "@/types/product";
-import ProductInfoCard from "./ProductInfoCard";
+import ProductGridCard from "./ProductGridCard";
+import ProductListCard from "./ProductListCard";
+import ProductAdminDetailsModal from "./ProductAdminDetailsModal";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List, Search, Filter } from "lucide-react";
+import { LayoutGrid, List, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface ProductListProps {
@@ -22,6 +24,8 @@ const ProductList: React.FC<ProductListProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // Filtrar produtos
   const filteredProducts = React.useMemo(() => {
@@ -44,8 +48,13 @@ const ProductList: React.FC<ProductListProps> = ({
   }, [products]);
 
   const handleView = (product: Product) => {
-    // Implementar visualização do produto se necessário
-    console.log('Visualizando produto:', product.name);
+    setSelectedProduct(product);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedProduct(null);
   };
 
   if (products.length === 0) {
@@ -129,23 +138,41 @@ const ProductList: React.FC<ProductListProps> = ({
           </div>
         </div>
       ) : (
-        <div className={`grid gap-6 ${
+        <div className={`${
           viewMode === 'grid' 
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
-            : 'grid-cols-1 max-w-none'
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
+            : 'space-y-3'
         }`}>
           {filteredProducts.map((product) => (
-            <div key={product.id} className={`${viewMode === 'list' ? 'max-w-full' : ''}`}>
-              <ProductInfoCard
+            viewMode === 'grid' ? (
+              <ProductGridCard
+                key={product.id}
                 product={product}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onView={handleView}
               />
-            </div>
+            ) : (
+              <ProductListCard
+                key={product.id}
+                product={product}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onView={handleView}
+              />
+            )
           ))}
         </div>
       )}
+
+      {/* Product Details Modal */}
+      <ProductAdminDetailsModal
+        product={selectedProduct}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseModal}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </div>
   );
 };
