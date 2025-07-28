@@ -93,13 +93,18 @@ export const useDraftImages = () => {
   const loadExistingImages = useCallback(
     async (productId: string) => {
       if (!productId) {
-        console.log("📂 LOAD IMAGES - ProductId não fornecido, pulando carregamento");
+        console.log(
+          "📂 LOAD IMAGES - ProductId não fornecido, pulando carregamento"
+        );
         return;
       }
 
       setIsLoading(true);
       try {
-        console.log("📂 LOAD IMAGES - Carregando imagens existentes para produto:", productId);
+        console.log(
+          "📂 LOAD IMAGES - Carregando imagens existentes para produto:",
+          productId
+        );
 
         const { data, error } = await supabase
           .from("product_images")
@@ -112,7 +117,11 @@ export const useDraftImages = () => {
           throw error;
         }
 
-        console.log("📂 LOAD IMAGES - Dados recebidos:", data?.length || 0, "imagens");
+        console.log(
+          "📂 LOAD IMAGES - Dados recebidos:",
+          data?.length || 0,
+          "imagens"
+        );
 
         const existingImages: DraftImage[] =
           data?.map((img, index) => ({
@@ -124,16 +133,22 @@ export const useDraftImages = () => {
             displayOrder: img.image_order || index,
           })) || [];
 
-        console.log("✅ LOAD IMAGES - Imagens processadas:", existingImages.length);
-        console.log("✅ LOAD IMAGES - Detalhes:", existingImages.map(img => ({ 
-          id: img.id, 
-          isPrimary: img.isPrimary, 
-          isExisting: img.isExisting,
-          hasUrl: !!img.url 
-        })));
+        console.log(
+          "✅ LOAD IMAGES - Imagens processadas:",
+          existingImages.length
+        );
+        console.log(
+          "✅ LOAD IMAGES - Detalhes:",
+          existingImages.map((img) => ({
+            id: img.id,
+            isPrimary: img.isPrimary,
+            isExisting: img.isExisting,
+            hasUrl: !!img.url,
+          }))
+        );
 
         setDraftImages(existingImages);
-        
+
         if (existingImages.length > 0) {
           toast({
             title: "Imagens carregadas",
@@ -141,10 +156,14 @@ export const useDraftImages = () => {
           });
         }
       } catch (error) {
-        console.error("❌ LOAD IMAGES - Erro ao carregar imagens existentes:", error);
+        console.error(
+          "❌ LOAD IMAGES - Erro ao carregar imagens existentes:",
+          error
+        );
         toast({
           title: "Erro ao carregar imagens",
-          description: "Não foi possível carregar as imagens existentes. Tente novamente.",
+          description:
+            "Não foi possível carregar as imagens existentes. Tente novamente.",
           variant: "destructive",
         });
       } finally {
@@ -194,20 +213,29 @@ export const useDraftImages = () => {
       try {
         // **ESTRATÉGIA SEGURA**: Backup antes de modificar
         let backupImages: any[] = [];
-        
+
         // Fazer backup das imagens existentes apenas se houver novas para upload
-        if (imagesToUpload.length > 0 || draftImages.length !== existingImages.length) {
+        if (
+          imagesToUpload.length > 0 ||
+          draftImages.length !== existingImages.length
+        ) {
           console.log("💾 BACKUP - Fazendo backup das imagens existentes...");
           const { data: existingBackup } = await supabase
             .from("product_images")
             .select("*")
             .eq("product_id", productId);
-          
+
           backupImages = existingBackup || [];
-          console.log("💾 BACKUP - Backup criado com", backupImages.length, "imagens");
+          console.log(
+            "💾 BACKUP - Backup criado com",
+            backupImages.length,
+            "imagens"
+          );
         }
 
         // **UPLOAD INCREMENTAL**: Fazer upload apenas das novas imagens primeiro
+        const uploadedImagesMap = new Map<string, string>(); // Mapa imageId -> URL
+
         for (const image of imagesToUpload) {
           console.log("📤 UPLOAD - Fazendo upload da nova imagem:", image.id);
 
@@ -227,17 +255,12 @@ export const useDraftImages = () => {
             throw uploadError;
           }
 
-          const { data: { publicUrl } } = supabase.storage
-            .from("product-images")
-            .getPublicUrl(fileName);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("product-images").getPublicUrl(fileName);
 
-          // Atualizar o draft image com a URL
-          setDraftImages(prev => prev.map(img => 
-            img.id === image.id 
-              ? { ...img, url: publicUrl, uploaded: true }
-              : img
-          ));
-
+          // Mapear o ID da imagem com a URL carregada
+          uploadedImagesMap.set(image.id, publicUrl);
           uploadedUrls.push(publicUrl);
           console.log("✅ UPLOAD - Upload concluído:", publicUrl);
         }
@@ -249,30 +272,59 @@ export const useDraftImages = () => {
           .delete()
           .eq("product_id", productId);
 
-        // Obter o estado mais atual das imagens e filtrar apenas as que têm URL
-        const currentDraftImages = draftImages.map(img => {
-          // Se era uma nova imagem que acabamos de fazer upload, usar a URL do upload
-          const uploadedUrl = uploadedUrls.find(url => 
-            !img.isExisting && img.file && url.includes(img.file.name.split('.')[0])
-          );
-          
+        // Obter o estado mais atual das imagens com as URLs atualizadas
+        const updatedImages = draftImages.map((img) => {
+          const uploadedUrl = uploadedImagesMap.get(img.id);
           if (uploadedUrl) {
-            return { ...img, url: uploadedUrl, uploaded: true };
+            return {
+              ...img,
+              url: uploadedUrl,
+              uploaded: true,
+              isExisting: true,
+            };
           }
-          
-          return img;
+          // Marcar imagens existentes também como uploaded e existing
+          return { ...img, uploaded: true, isExisting: true };
         });
 
-        const finalImages = currentDraftImages.filter(img => img.url); // Filtrar apenas imagens com URL
+        // Filtrar apenas imagens com URL
+        const finalImages = updatedImages.filter((img) => img.url);
 
-        const allImagesOrdered = finalImages.sort((a, b) => a.displayOrder - b.displayOrder);
+        console.log(
+          "🔄 REORGANIZANDO - Estado atual das imagens:",
+          finalImages.map((img) => ({
+            id: img.id,
+            hasUrl: !!img.url,
+            isPrimary: img.isPrimary,
+            isExisting: img.isExisting,
+            uploaded: img.uploaded,
+          }))
+        );
 
-        console.log("💾 REORGANIZANDO - Salvando", allImagesOrdered.length, "imagens no banco");
+        // Atualizar o estado das imagens draft
+        setDraftImages(updatedImages);
+
+        const allImagesOrdered = finalImages.sort(
+          (a, b) => a.displayOrder - b.displayOrder
+        );
+
+        console.log(
+          "💾 REORGANIZANDO - Salvando",
+          allImagesOrdered.length,
+          "imagens no banco"
+        );
 
         for (let i = 0; i < allImagesOrdered.length; i++) {
           const image = allImagesOrdered[i];
-          
-          console.log("💾 REORGANIZANDO - Salvando imagem", i + 1, "Primary:", image.isPrimary, "URL:", image.url);
+
+          console.log(
+            "💾 REORGANIZANDO - Salvando imagem",
+            i + 1,
+            "Primary:",
+            image.isPrimary,
+            "URL:",
+            image.url
+          );
 
           const { error: dbError } = await supabase
             .from("product_images")
@@ -285,21 +337,22 @@ export const useDraftImages = () => {
             });
 
           if (dbError) {
-            console.error("❌ REORGANIZANDO - Erro ao salvar no banco:", dbError);
-            
+            console.error(
+              "❌ REORGANIZANDO - Erro ao salvar no banco:",
+              dbError
+            );
+
             // **ROLLBACK EM CASO DE ERRO**
             console.log("🔙 ROLLBACK - Tentando restaurar backup...");
             if (backupImages.length > 0) {
               for (const backupImg of backupImages) {
-                await supabase
-                  .from("product_images")
-                  .insert({
-                    product_id: backupImg.product_id,
-                    image_url: backupImg.image_url,
-                    image_order: backupImg.image_order,
-                    is_primary: backupImg.is_primary,
-                    alt_text: backupImg.alt_text,
-                  });
+                await supabase.from("product_images").insert({
+                  product_id: backupImg.product_id,
+                  image_url: backupImg.image_url,
+                  image_order: backupImg.image_order,
+                  is_primary: backupImg.is_primary,
+                  alt_text: backupImg.alt_text,
+                });
               }
               console.log("🔙 ROLLBACK - Backup restaurado");
             }
@@ -310,7 +363,10 @@ export const useDraftImages = () => {
         // Atualizar a imagem principal do produto
         const primaryImage = allImagesOrdered.find((img) => img.isPrimary);
         if (primaryImage?.url) {
-          console.log("🖼️ ATUALIZANDO - Imagem principal do produto:", primaryImage.url);
+          console.log(
+            "🖼️ ATUALIZANDO - Imagem principal do produto:",
+            primaryImage.url
+          );
 
           await supabase
             .from("products")
@@ -318,8 +374,7 @@ export const useDraftImages = () => {
             .eq("id", productId);
         }
 
-        // Marcar todas as imagens como uploaded
-        setDraftImages(prev => prev.map(img => ({ ...img, uploaded: true, isExisting: true })));
+        // As imagens já foram marcadas como uploaded durante o processo acima
 
         const totalProcessed = allImagesOrdered.length;
         toast({
@@ -327,14 +382,17 @@ export const useDraftImages = () => {
           description: `${totalProcessed} imagem(s) processada(s) com sucesso.`,
         });
 
-        console.log("✅ UPLOAD ALL IMAGES - Concluído com sucesso. URLs:", uploadedUrls);
+        console.log(
+          "✅ UPLOAD ALL IMAGES - Concluído com sucesso. URLs:",
+          uploadedUrls
+        );
         return uploadedUrls;
-        
       } catch (error) {
         console.error("💥 UPLOAD ALL IMAGES - Erro no processamento:", error);
         toast({
           title: "Erro no processamento",
-          description: "Ocorreu um erro ao processar as imagens. Tente novamente.",
+          description:
+            "Ocorreu um erro ao processar as imagens. Tente novamente.",
           variant: "destructive",
         });
         return [];

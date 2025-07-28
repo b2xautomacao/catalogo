@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Upload, Settings, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,13 @@ import { useProducts } from "@/hooks/useProducts";
 import { useStores } from "@/hooks/useStores";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@/types/product";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Products = () => {
   const [showProductForm, setShowProductForm] = useState(false);
@@ -23,12 +28,7 @@ const Products = () => {
   const [showBulkStockModal, setShowBulkStockModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editingProduct, setEditingProduct] = useState(null);
-  const {
-    products,
-    loading,
-    deleteProduct,
-    fetchProducts,
-  } = useProducts();
+  const { products, loading, deleteProduct, fetchProducts } = useProducts();
   const { currentStore } = useStores();
   const { toast } = useToast();
 
@@ -36,7 +36,7 @@ const Products = () => {
     const interval = setInterval(() => {
       if (!showProductForm && !loading) {
         console.log("🔄 AUTO-REFRESH - Atualizando lista de produtos");
-        fetchProducts();
+        fetchProducts(false); // Auto-refresh normal sem forçar
       }
     }, 30000);
 
@@ -63,7 +63,7 @@ const Products = () => {
         toast({
           title: "Produto excluído com sucesso",
         });
-        await fetchProducts();
+        await fetchProducts(true);
         console.log("✅ PRODUCTS - Lista atualizada após exclusão");
       }
     }
@@ -82,18 +82,47 @@ const Products = () => {
       title: "Conteúdo aplicado com sucesso",
       description: "O conteúdo gerado pela IA foi aplicado ao produto.",
     });
-    await fetchProducts();
+    await fetchProducts(true);
   };
 
-  const handleProductSuccess = async () => {
-    console.log("✅ PRODUCTS - Produto salvo com sucesso, atualizando lista");
-    setShowProductForm(false);
-    setEditingProduct(null);
-    
-    setTimeout(async () => {
-      await fetchProducts();
+  const handleProductSuccess = async (productId?: string) => {
+    console.log("✅ PRODUCTS - Produto salvo com sucesso, atualizando lista", {
+      productId,
+    });
+
+    try {
+      // Aguardar um pouco para garantir que as mudanças foram commitadas no banco
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Forçar atualização da lista (bypass cache)
+      await fetchProducts(true);
       console.log("🔄 PRODUCTS - Lista recarregada com sucesso");
-    }, 500);
+
+      // Fechar modal e limpar estado apenas após confirmar que a lista foi atualizada
+      setShowProductForm(false);
+      setEditingProduct(null);
+
+      // Toast de confirmação
+      toast({
+        title: editingProduct ? "Produto atualizado!" : "Produto criado!",
+        description: "A lista de produtos foi atualizada automaticamente.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("❌ PRODUCTS - Erro ao atualizar lista:", error);
+
+      // Mesmo com erro, fechar o modal
+      setShowProductForm(false);
+      setEditingProduct(null);
+
+      toast({
+        title: "Produto salvo",
+        description:
+          "O produto foi salvo, mas houve um problema ao atualizar a lista. Recarregue a página se necessário.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
   };
 
   const handleCloseModal = () => {
@@ -128,7 +157,7 @@ const Products = () => {
   console.log("📊 PRODUCTS - Renderizando:", {
     totalProducts: mappedProducts.length,
     showingModal: showProductForm,
-    editingProduct: editingProduct?.name
+    editingProduct: editingProduct?.name,
   });
 
   return (
@@ -154,7 +183,7 @@ const Products = () => {
             <Package className="mr-2 h-4 w-4" />
             Estoque em Massa
           </Button>
-          
+
           <Dialog open={showPricingConfig} onOpenChange={setShowPricingConfig}>
             <DialogTrigger asChild>
               <Button variant="outline" className="shrink-0">
@@ -170,7 +199,7 @@ const Products = () => {
                 <SimplePricingConfig
                   storeId={currentStore.id}
                   onConfigChange={(config) => {
-                    console.log('Configuração atualizada:', config);
+                    console.log("Configuração atualizada:", config);
                     setShowPricingConfig(false);
                     toast({
                       title: "Configuração salva!",
@@ -181,7 +210,7 @@ const Products = () => {
               )}
             </DialogContent>
           </Dialog>
-          
+
           <Button
             variant="outline"
             onClick={() => setShowImportModal(true)}
@@ -239,7 +268,7 @@ const Products = () => {
         isOpen={showBulkStockModal}
         onClose={() => setShowBulkStockModal(false)}
         products={mappedProducts}
-        onStockUpdated={fetchProducts}
+        onStockUpdated={() => fetchProducts(true)}
       />
     </div>
   );
