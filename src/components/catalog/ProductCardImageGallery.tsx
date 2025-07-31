@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { useProductImages } from '@/hooks/useProductImages';
-import { Package } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 
 interface ProductCardImageGalleryProps {
   productId: string;
@@ -12,75 +11,129 @@ interface ProductCardImageGalleryProps {
 const ProductCardImageGallery: React.FC<ProductCardImageGalleryProps> = ({
   productId,
   productName,
-  maxImages = 3,
+  maxImages = 5,
   className = "",
 }) => {
-  const { images, loading } = useProductImages(productId);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [images, setImages] = useState<any[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const displayImages = images.slice(0, maxImages);
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: productImages } = await supabase
+          .from("product_images")
+          .select("*")
+          .eq("product_id", productId)
+          .order("image_order", { ascending: true })
+          .limit(maxImages);
+
+        if (productImages && productImages.length > 0) {
+          setImages(productImages);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar imagens:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (productId) {
+      fetchImages();
+    }
+  }, [productId, maxImages]);
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   if (loading) {
     return (
-      <div className={`aspect-video bg-gray-100 rounded-lg flex items-center justify-center ${className}`}>
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      <div
+        className={`relative bg-gradient-to-br from-muted to-muted/60 aspect-square flex items-center justify-center ${className}`}
+      >
+        <Package className="h-8 w-8 text-muted-foreground animate-pulse" />
       </div>
     );
   }
 
-  if (displayImages.length === 0) {
+  if (!images.length) {
     return (
-      <div className={`aspect-video bg-gray-100 rounded-lg flex items-center justify-center ${className}`}>
-        <Package className="h-6 w-6 text-gray-400" />
-      </div>
-    );
-  }
-
-  if (displayImages.length === 1) {
-    return (
-      <div className={`aspect-video overflow-hidden rounded-lg ${className}`}>
-        <img
-          src={displayImages[0].image_url}
-          alt={`${productName} - Imagem 1`}
-          className="w-full h-full object-cover transition-all hover:scale-105"
-          loading="lazy"
-        />
+      <div
+        className={`relative bg-gradient-to-br from-muted to-muted/60 aspect-square flex items-center justify-center ${className}`}
+      >
+        <Package className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className={`relative aspect-video overflow-hidden rounded-lg group ${className}`}>
-      {/* Imagem atual */}
+    <div
+      className={`relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/60 ${className}`}
+    >
+      {/* Main Image */}
       <img
-        src={displayImages[currentIndex].image_url}
-        alt={`${productName} - Imagem ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-all hover:scale-105"
+        src={images[currentImageIndex]?.image_url}
+        alt={`${productName} - Imagem ${currentImageIndex + 1}`}
+        className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
         loading="lazy"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
       />
 
-      {/* Indicadores de navegação */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-        {displayImages.map((_, index) => (
+      {/* Navigation Arrows - Only show if multiple images */}
+      {images.length > 1 && (
+        <>
+          {/* Previous Button */}
           <button
-            key={index}
             onClick={(e) => {
               e.stopPropagation();
-              setCurrentIndex(index);
+              prevImage();
             }}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentIndex
-                ? 'bg-white'
-                : 'bg-white/50 hover:bg-white/75'
-            }`}
-          />
-        ))}
-      </div>
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+            title="Imagem anterior"
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
 
-      {/* Contador de imagens */}
-      <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-        {currentIndex + 1}/{displayImages.length}
-      </div>
+          {/* Next Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              nextImage();
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+            title="Próxima imagem"
+          >
+            <ChevronRight className="h-3 w-3" />
+          </button>
+
+          {/* Image Indicators */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.slice(0, Math.min(5, images.length)).map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex(index);
+                }}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  index === currentImageIndex
+                    ? "bg-white"
+                    : "bg-white/50 hover:bg-white/75"
+                }`}
+                title={`Ver imagem ${index + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

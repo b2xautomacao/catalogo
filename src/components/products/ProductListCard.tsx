@@ -1,17 +1,18 @@
-import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Package, Eye, Edit, Trash2, Image, AlertCircle } from 'lucide-react';
-import { Product } from '@/types/product';
-import { formatCurrency } from '@/lib/utils';
-import { useProductImages } from '@/hooks/useProductImages';
+import React from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Package, Eye, Edit, Trash2, Image, AlertCircle } from "lucide-react";
+import { Product } from "@/types/product";
+import { formatCurrency } from "@/lib/utils";
+import { useProductImages } from "@/hooks/useProductImages";
 
 interface ProductListCardProps {
   product: Product;
   onEdit?: (product: Product) => void;
   onDelete?: (id: string) => void;
   onView?: (product: Product) => void;
+  onListUpdate?: () => void; // 🎯 NOVO: Callback para atualizar lista
 }
 
 const ProductListCard: React.FC<ProductListCardProps> = ({
@@ -19,19 +20,23 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   onEdit,
   onDelete,
   onView,
+  onListUpdate, // 🎯 NOVO: Receber callback (implementar depois)
 }) => {
   const { images } = useProductImages(product.id);
-  
+
   const totalStock = React.useMemo(() => {
     if (product.variations && product.variations.length > 0) {
-      return product.variations.reduce((sum, variation) => sum + variation.stock, 0);
+      return product.variations.reduce(
+        (sum, variation) => sum + variation.stock,
+        0
+      );
     }
     return product.stock;
   }, [product.variations, product.stock]);
 
   const handleEdit = () => onEdit?.(product);
   const handleDelete = () => {
-    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
       onDelete?.(product.id);
     }
   };
@@ -61,11 +66,13 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
               <Package className="h-6 w-6 text-muted-foreground" />
             </div>
           )}
-          
+
           {/* Status Indicator */}
-          <div className={`absolute -bottom-1 -left-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
-            product.is_active ? 'bg-green-500' : 'bg-red-500'
-          }`} />
+          <div
+            className={`absolute -bottom-1 -left-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
+              product.is_active ? "bg-green-500" : "bg-red-500"
+            }`}
+          />
         </div>
 
         {/* Product Info - 40% */}
@@ -75,7 +82,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
               {product.name}
             </h3>
           </div>
-          
+
           <div className="flex items-center gap-1.5 flex-wrap">
             {product.category && (
               <Badge variant="outline" className="text-xs bg-background/60">
@@ -88,21 +95,29 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
               </Badge>
             )}
             {!product.is_active && (
-              <Badge variant="secondary" className="text-xs bg-destructive/10 text-destructive">
+              <Badge
+                variant="secondary"
+                className="text-xs bg-destructive/10 text-destructive"
+              >
                 Inativo
               </Badge>
             )}
           </div>
-          
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Package className="h-3 w-3" />
-              Estoque: 
-              <span className={`font-semibold ${totalStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              Estoque:
+              <span
+                className={`font-semibold ${
+                  totalStock > 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {totalStock}
-                {totalStock <= (product.stock_alert_threshold || 5) && totalStock > 0 && (
-                  <AlertCircle className="inline h-3 w-3 text-amber-500 ml-1" />
-                )}
+                {totalStock <= (product.stock_alert_threshold || 5) &&
+                  totalStock > 0 && (
+                    <AlertCircle className="inline h-3 w-3 text-amber-500 ml-1" />
+                  )}
               </span>
             </span>
           </div>
@@ -127,25 +142,25 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
 
         {/* Actions - 20% */}
         <div className="flex-shrink-0 flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleView}
             className="h-8 w-8 p-0"
           >
             <Eye className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleEdit}
             className="h-8 w-8 p-0"
           >
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDelete}
             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
           >

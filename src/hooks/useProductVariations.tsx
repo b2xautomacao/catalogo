@@ -132,11 +132,25 @@ export const useProductVariations = (productId?: string) => {
 
       // 2. Processar upload de imagens e inserir novas variações
       if (variations.length > 0) {
-        const variationsToInsert = [];
+        console.log(
+          `🎯 PROCESSANDO ${variations.length} variações para salvamento...`
+        );
+
+        const variationsToInsert: any[] = []; // 🎯 DEFINIR ARRAY PARA INSERÇÃO
 
         for (let i = 0; i < variations.length; i++) {
           const variation = variations[i];
           let imageUrl = variation.image_url;
+
+          console.log(
+            `🔄 [${i + 1}/${variations.length}] Processando variação:`,
+            {
+              id: variation.id,
+              color: variation.color,
+              is_grade: variation.is_grade,
+              variation_type: variation.variation_type,
+            }
+          );
 
           // Upload da imagem se houver arquivo
           if (variation.image_file) {
@@ -157,7 +171,15 @@ export const useProductVariations = (productId?: string) => {
               : variation.variation_type || "simple";
 
           // Verificar se é uma variação de grade
-          const isGradeVariation = !!variation.is_grade || variationType === "grade";
+          const isGradeVariation =
+            !!variation.is_grade || variationType === "grade";
+
+          console.log(`📋 [${i + 1}] Tipo de variação determinado:`, {
+            variationType,
+            isGradeVariation,
+            original_is_grade: variation.is_grade,
+            original_variation_type: variation.variation_type,
+          });
 
           // Preparar dados da variação
           const variationData: any = {
@@ -183,7 +205,7 @@ export const useProductVariations = (productId?: string) => {
             image_url: imageUrl || null,
             display_order: i,
             name: variation.name || null,
-            is_grade: isGradeVariation,
+            is_grade: isGradeVariation, // 🎯 IMPORTANTE: Definir explicitamente is_grade
           };
 
           // Incluir campos de grade sempre que for uma variação de grade
@@ -195,7 +217,7 @@ export const useProductVariations = (productId?: string) => {
             variationData.grade_color =
               variation.grade_color && variation.grade_color !== ""
                 ? variation.grade_color
-                : null;
+                : variation.color || null; // 🎯 FALLBACK: Usar color se grade_color estiver vazio
             variationData.grade_quantity =
               typeof variation.grade_quantity === "number"
                 ? variation.grade_quantity
@@ -211,16 +233,13 @@ export const useProductVariations = (productId?: string) => {
                 ? variation.grade_pairs
                 : null;
 
-            console.log(
-              "🎯 GRADE - Salvando campos de grade:",
-              {
-                grade_name: variationData.grade_name,
-                grade_color: variationData.grade_color,
-                grade_quantity: variationData.grade_quantity,
-                grade_sizes: variationData.grade_sizes,
-                grade_pairs: variationData.grade_pairs,
-              }
-            );
+            console.log(`🎯 GRADE [${i + 1}] - Salvando campos de grade:`, {
+              grade_name: variationData.grade_name,
+              grade_color: variationData.grade_color,
+              grade_quantity: variationData.grade_quantity,
+              grade_sizes: variationData.grade_sizes,
+              grade_pairs: variationData.grade_pairs,
+            });
           } else {
             // Se não for grade, garantir que campos de grade sejam null
             variationData.grade_name = null;
@@ -231,11 +250,15 @@ export const useProductVariations = (productId?: string) => {
           }
 
           console.log(
-            "🔍 DEBUG - Dados da variação a serem salvos:",
+            `🔍 DEBUG [${i + 1}] - Dados da variação a serem salvos:`,
             JSON.stringify(variationData, null, 2)
           );
           variationsToInsert.push(variationData);
         }
+
+        console.log(
+          `💾 INSERINDO ${variationsToInsert.length} variações no banco de dados...`
+        );
 
         const { data, error: insertError } = await supabase
           .from("product_variations")
@@ -244,10 +267,25 @@ export const useProductVariations = (productId?: string) => {
 
         if (insertError) {
           console.error("❌ Erro ao inserir variações:", insertError);
+          console.error("❌ Detalhes do erro:", {
+            message: insertError.message,
+            code: insertError.code,
+            hint: insertError.hint,
+            details: insertError.details,
+          });
+          console.error("❌ Dados que causaram erro:", variationsToInsert);
           throw insertError;
         }
 
         console.log("✅ VARIAÇÕES - Salvas com sucesso:", data?.length || 0);
+        console.log(
+          "✅ Variações inseridas:",
+          data?.map((v) => ({
+            id: v.id,
+            color: v.color,
+            variation_type: v.variation_type,
+          }))
+        );
 
         // Atualizar estado local com todos os campos
         const processedVariations = (data as any[]) || [];

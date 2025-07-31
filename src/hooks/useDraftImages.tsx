@@ -67,15 +67,84 @@ export const useDraftImages = () => {
     });
   }, []);
 
-  const setPrimaryImage = useCallback((imageId: string) => {
-    console.log("🌟 SETTING PRIMARY IMAGE:", imageId);
-    setDraftImages((prev) =>
-      prev.map((img) => ({
-        ...img,
-        isPrimary: img.id === imageId,
-      }))
-    );
-  }, []);
+  const setPrimaryImage = useCallback(
+    (imageId: string) => {
+      console.log("🌟 SETTING PRIMARY IMAGE - Início:", imageId);
+
+      setDraftImages((prev) => {
+        // Verificar se a imagem existe
+        const targetImage = prev.find((img) => img.id === imageId);
+        if (!targetImage) {
+          console.warn(
+            "⚠️ AVISO - Imagem não encontrada para definir como principal:",
+            imageId
+          );
+          return prev;
+        }
+
+        // Log do estado anterior
+        console.log(
+          "🌟 ANTES - Estado das imagens:",
+          prev.map((img) => ({
+            id: img.id.substring(0, 8),
+            isPrimary: img.isPrimary,
+            hasUrl: !!img.url,
+            hasFile: !!img.file,
+          }))
+        );
+
+        // Atualizar todas as imagens - FORÇA a desmarcação de todas as outras
+        const updated = prev.map((img) => {
+          const newIsPrimary = img.id === imageId;
+          return {
+            ...img,
+            isPrimary: newIsPrimary,
+          };
+        });
+
+        // Log para debug
+        console.log(
+          "🌟 DEPOIS - Estado após setPrimary:",
+          updated.map((img) => ({
+            id: img.id.substring(0, 8),
+            isPrimary: img.isPrimary,
+            hasUrl: !!img.url,
+            hasFile: !!img.file,
+          }))
+        );
+
+        // Verificação de segurança
+        const primaryCount = updated.filter((img) => img.isPrimary).length;
+        console.log(
+          "🌟 VERIFICAÇÃO - Quantidade de imagens principais:",
+          primaryCount
+        );
+
+        if (primaryCount !== 1) {
+          console.error(
+            "❌ ERRO - Deveria haver exatamente 1 imagem principal, mas há:",
+            primaryCount
+          );
+          console.error(
+            "❌ ERRO - IDs das imagens principais:",
+            updated.filter((img) => img.isPrimary).map((img) => img.id)
+          );
+        } else {
+          console.log("✅ SUCESSO - Exatamente 1 imagem principal definida");
+        }
+
+        return updated;
+      });
+
+      // Toast para feedback visual
+      toast({
+        title: "✅ Imagem principal definida",
+        description: "Esta imagem será a capa do produto",
+        duration: 2000,
+      });
+    },
+    [toast]
+  );
 
   const reorderImages = useCallback((imageId: string, newIndex: number) => {
     setDraftImages((prev) => {
@@ -175,7 +244,6 @@ export const useDraftImages = () => {
 
   const uploadAllImages = useCallback(
     async (productId: string): Promise<string[]> => {
-      console.log("📤 UPLOAD ALL IMAGES - Iniciado para produto:", productId);
       console.log("📤 UPLOAD ALL IMAGES - Draft images:", draftImages.length);
       console.log(
         "📤 UPLOAD ALL IMAGES - Draft images detalhes:",
@@ -290,6 +358,23 @@ export const useDraftImages = () => {
         // Filtrar apenas imagens com URL
         const finalImages = updatedImages.filter((img) => img.url);
 
+        // 🎯 GARANTIR IMAGEM PRINCIPAL: Se não houver nenhuma principal ou múltiplas principais, corrigir
+        const primaryImages = finalImages.filter((img) => img.isPrimary);
+
+        if (primaryImages.length === 0 && finalImages.length > 0) {
+          console.log(
+            "🌟 CORRIGINDO - Nenhuma imagem principal definida, definindo a primeira como principal"
+          );
+          finalImages[0].isPrimary = true;
+        } else if (primaryImages.length > 1) {
+          console.log(
+            "🌟 CORRIGINDO - Múltiplas imagens principais encontradas, mantendo apenas a primeira"
+          );
+          finalImages.forEach((img, index) => {
+            img.isPrimary = index === 0 && primaryImages.includes(img);
+          });
+        }
+
         console.log(
           "🔄 REORGANIZANDO - Estado atual das imagens:",
           finalImages.map((img) => ({
@@ -301,27 +386,33 @@ export const useDraftImages = () => {
           }))
         );
 
-        // Atualizar o estado das imagens draft
+        // Atualizar o estado das imagens draft com as correções
         setDraftImages(updatedImages);
 
-        const allImagesOrdered = finalImages.sort(
-          (a, b) => a.displayOrder - b.displayOrder
-        );
+        const allImagesOrdered = finalImages.sort((a, b) => {
+          // 🎯 NOVA LÓGICA: Principal sempre primeiro, depois por displayOrder
+          if (a.isPrimary && !b.isPrimary) return -1;
+          if (!a.isPrimary && b.isPrimary) return 1;
+          return a.displayOrder - b.displayOrder;
+        });
 
         console.log(
           "💾 REORGANIZANDO - Salvando",
           allImagesOrdered.length,
-          "imagens no banco"
+          "imagens no banco (principal sempre na ordem 1)"
         );
 
         for (let i = 0; i < allImagesOrdered.length; i++) {
           const image = allImagesOrdered[i];
+          const newImageOrder = i + 1; // Ordem sequencial a partir de 1
 
           console.log(
             "💾 REORGANIZANDO - Salvando imagem",
-            i + 1,
+            newImageOrder,
             "Primary:",
             image.isPrimary,
+            "Order:",
+            newImageOrder,
             "URL:",
             image.url
           );
@@ -331,9 +422,9 @@ export const useDraftImages = () => {
             .insert({
               product_id: productId,
               image_url: image.url,
-              image_order: i + 1,
+              image_order: newImageOrder, // 🎯 ORDEM SINCRONIZADA: Principal = 1, outras sequenciais
               is_primary: image.isPrimary,
-              alt_text: `Produto ${i + 1}`,
+              alt_text: `Produto ${newImageOrder}`,
             });
 
           if (dbError) {
@@ -360,7 +451,7 @@ export const useDraftImages = () => {
           }
         }
 
-        // Atualizar a imagem principal do produto
+        // 🎯 ATUALIZAR IMAGEM PRINCIPAL NO PRODUTO: Buscar a imagem principal e atualizar o registro do produto
         const primaryImage = allImagesOrdered.find((img) => img.isPrimary);
         if (primaryImage?.url) {
           console.log(
@@ -368,10 +459,23 @@ export const useDraftImages = () => {
             primaryImage.url
           );
 
-          await supabase
+          const { error: updateError } = await supabase
             .from("products")
             .update({ image_url: primaryImage.url })
             .eq("id", productId);
+
+          if (updateError) {
+            console.error(
+              "❌ ERRO - Falha ao atualizar imagem principal do produto:",
+              updateError
+            );
+          } else {
+            console.log("✅ SUCESSO - Imagem principal do produto atualizada!");
+          }
+        } else {
+          console.warn(
+            "⚠️ AVISO - Nenhuma imagem principal encontrada para atualizar o produto"
+          );
         }
 
         // As imagens já foram marcadas como uploaded durante o processo acima
@@ -388,19 +492,19 @@ export const useDraftImages = () => {
         );
         return uploadedUrls;
       } catch (error) {
-        console.error("💥 UPLOAD ALL IMAGES - Erro no processamento:", error);
+        console.error("❌ UPLOAD ALL IMAGES - Erro:", error);
+        setUploading(false);
         toast({
-          title: "Erro no processamento",
-          description:
-            "Ocorreu um erro ao processar as imagens. Tente novamente.",
+          title: "❌ Erro ao processar imagens",
+          description: "Houve um problema ao salvar as imagens.",
           variant: "destructive",
         });
-        return [];
+        throw error;
       } finally {
         setUploading(false);
       }
     },
-    [draftImages, toast, setDraftImages]
+    [draftImages, toast]
   );
 
   const uploadDraftImages = uploadAllImages;

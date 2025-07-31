@@ -29,16 +29,20 @@ interface PricingMode {
 interface SimplePricingConfigProps {
   storeId: string;
   onConfigChange?: (config: any) => void;
+  onUnsavedChanges?: (hasChanges: boolean) => void; // 🎯 NOVO: Notificar mudanças pendentes
 }
 
 const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
   storeId,
   onConfigChange,
+  onUnsavedChanges, // 🎯 NOVO: Callback para mudanças pendentes
 }) => {
   const [selectedMode, setSelectedMode] = useState<string>("retail_only");
+  const [originalMode, setOriginalMode] = useState<string>("retail_only"); // 🎯 NOVO: Valor original
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // 🎯 NOVO: Estado de mudanças
   const { toast } = useToast();
 
   const pricingModes: PricingMode[] = [
@@ -136,8 +140,10 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
 
       if (data) {
         setSelectedMode(data.price_model || "retail_only");
+        setOriginalMode(data.price_model || "retail_only"); // 🎯 NOVO: Salva o valor original
       } else {
         setSelectedMode("retail_only");
+        setOriginalMode("retail_only"); // 🎯 NOVO: Salva o valor original
       }
     } catch (error) {
       console.error("Erro ao carregar configuração:", error);
@@ -183,6 +189,9 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
         onConfigChange(configToSave);
       }
 
+      setOriginalMode(selectedMode); // 🎯 NOVO: Atualiza o valor original após salvar
+      setHasUnsavedChanges(false); // �� NOVO: Limpa as mudanças pendentes
+
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -195,6 +204,20 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedMode !== originalMode) {
+      setHasUnsavedChanges(true);
+      if (onUnsavedChanges) {
+        onUnsavedChanges(true);
+      }
+    } else {
+      setHasUnsavedChanges(false);
+      if (onUnsavedChanges) {
+        onUnsavedChanges(false);
+      }
+    }
+  }, [selectedMode, originalMode, onUnsavedChanges]);
 
   if (loading) {
     return (
@@ -225,34 +248,47 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Seleção do Modo */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium">
-              Escolha o modelo ideal para sua loja:
-            </Label>
+          {/* 🎯 NOVO: Indicador de mudanças não salvas */}
+          {hasUnsavedChanges && (
+            <Alert className="border-orange-200 bg-orange-50">
+              <Info className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>Atenção:</strong> Você tem alterações não salvas. Clique
+                em "Salvar Configuração" para aplicar as mudanças.
+              </AlertDescription>
+            </Alert>
+          )}
 
-            <div className="grid gap-4">
+          {/* Status de salvamento */}
+          {saved && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Configuração salva com sucesso!
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Modos de Preço */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">
+              Selecione o Modelo de Preços
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pricingModes.map((mode) => (
                 <div
                   key={mode.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
                     selectedMode === mode.id
-                      ? "border-primary bg-primary/5 shadow-md"
-                      : "border-border hover:border-primary/50"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                   onClick={() => setSelectedMode(mode.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        selectedMode === mode.id
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
+                    <div className="flex-shrink-0 text-blue-600 mt-1">
                       {mode.icon}
                     </div>
-
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold text-lg">{mode.name}</h3>
@@ -288,12 +324,28 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
             </AlertDescription>
           </Alert>
 
-          {/* Botão de Salvar */}
-          <div className="flex justify-end pt-4 border-t">
+          {/* 🎯 MELHORADO: Botão de Salvar com indicador de mudanças */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-gray-600">
+              {hasUnsavedChanges ? (
+                <span className="text-orange-600 font-medium">
+                  ● Alterações não salvas
+                </span>
+              ) : (
+                <span className="text-green-600">
+                  ✓ Todas as alterações salvas
+                </span>
+              )}
+            </div>
+
             <Button
               onClick={saveConfiguration}
-              disabled={saving}
-              className="min-w-32"
+              disabled={saving || !hasUnsavedChanges}
+              className={`min-w-32 ${
+                hasUnsavedChanges
+                  ? "bg-orange-600 hover:bg-orange-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
             >
               {saving ? (
                 <>

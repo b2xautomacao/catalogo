@@ -37,7 +37,7 @@ const ImprovedProductFormWizardContent: React.FC<
     steps,
     saveProduct,
     loadProductForEditing,
-  } = useImprovedProductFormWizard();
+  } = useImprovedProductFormWizard(editingProduct, onSuccess); // 🎯 PASSAR PARÂMETROS
 
   const { uploadAllImages, clearDraftImages, loadExistingImages } =
     useDraftImagesContext();

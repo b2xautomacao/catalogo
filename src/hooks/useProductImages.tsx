@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ProductImage {
   id: string;
@@ -23,19 +22,39 @@ export const useProductImages = (productId?: string) => {
 
     try {
       const { data, error: fetchError } = await supabase
-        .from('product_images')
-        .select('*')
-        .eq('product_id', id)
-        .order('image_order', { ascending: true });
+        .from("product_images")
+        .select("*")
+        .eq("product_id", id)
+        .order("image_order", { ascending: true });
 
       if (fetchError) {
         setError(fetchError.message);
         return;
       }
 
-      setImages(data || []);
+      // 🎯 NOVA LÓGICA: Ordenar com is_primary tendo prioridade
+      const sortedImages = (data || []).sort((a, b) => {
+        // 1. Imagem principal sempre primeiro
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+
+        // 2. Se ambas são principais ou nenhuma é, usar image_order
+        return a.image_order - b.image_order;
+      });
+
+      console.log(
+        "🖼️ IMAGES - Imagens ordenadas:",
+        sortedImages.map((img) => ({
+          id: img.id.substring(0, 8),
+          is_primary: img.is_primary,
+          image_order: img.image_order,
+          url: img.image_url.split("/").pop(),
+        }))
+      );
+
+      setImages(sortedImages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar imagens');
+      setError(err instanceof Error ? err.message : "Erro ao buscar imagens");
     } finally {
       setLoading(false);
     }
@@ -57,6 +76,6 @@ export const useProductImages = (productId?: string) => {
     images,
     loading,
     error,
-    refetchImages
+    refetchImages,
   };
 };

@@ -28,6 +28,7 @@ const Products = () => {
   const [showBulkStockModal, setShowBulkStockModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [hasUnsavedPriceChanges, setHasUnsavedPriceChanges] = useState(false); // 🎯 NOVO: Controle de mudanças
   const { products, loading, deleteProduct, fetchProducts } = useProducts();
   const { currentStore } = useStores();
   const { toast } = useToast();
@@ -137,6 +138,26 @@ const Products = () => {
     setShowProductForm(true);
   };
 
+  // 🎯 NOVO: Controle de fechamento do modal de preços
+  const handleClosePricingModal = (open: boolean) => {
+    if (!open && hasUnsavedPriceChanges) {
+      const confirmClose = window.confirm(
+        "Você tem alterações não salvas. Deseja realmente fechar sem salvar?"
+      );
+      if (!confirmClose) {
+        return; // Não fecha o modal
+      }
+      // Reset do estado se confirmar fechamento
+      setHasUnsavedPriceChanges(false);
+    }
+    setShowPricingConfig(open);
+  };
+
+  // 🎯 NOVO: Callback para mudanças não salvas no modal de preços
+  const handleUnsavedPriceChanges = (hasChanges: boolean) => {
+    setHasUnsavedPriceChanges(hasChanges);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -184,7 +205,10 @@ const Products = () => {
             Estoque em Massa
           </Button>
 
-          <Dialog open={showPricingConfig} onOpenChange={setShowPricingConfig}>
+          <Dialog
+            open={showPricingConfig}
+            onOpenChange={handleClosePricingModal}
+          >
             <DialogTrigger asChild>
               <Button variant="outline" className="shrink-0">
                 <Settings className="mr-2 h-4 w-4" />
@@ -200,12 +224,9 @@ const Products = () => {
                   storeId={currentStore.id}
                   onConfigChange={(config) => {
                     console.log("Configuração atualizada:", config);
-                    setShowPricingConfig(false);
-                    toast({
-                      title: "Configuração salva!",
-                      description: "Modelo de preços configurado com sucesso.",
-                    });
+                    handleUnsavedPriceChanges(true); // Indica que houve mudança
                   }}
+                  onUnsavedChanges={handleUnsavedPriceChanges} // Passa a função de controle
                 />
               )}
             </DialogContent>
@@ -232,6 +253,7 @@ const Products = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onGenerateDescription={handleGenerateDescription}
+        onListUpdate={() => fetchProducts(true)} // 🎯 NOVO: Callback para atualizar lista
       />
 
       {/* Modal do formulário de produto */}

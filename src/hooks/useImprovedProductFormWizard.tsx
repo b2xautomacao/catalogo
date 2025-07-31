@@ -35,7 +35,10 @@ export interface WizardStep {
   description: string;
 }
 
-export const useImprovedProductFormWizard = () => {
+export const useImprovedProductFormWizard = (
+  editingProduct?: any,
+  onSuccess?: (productId: string) => Promise<void> | void // 🎯 NOVO: Callback de sucesso
+) => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const { saveVariations } = useProductVariations();
@@ -174,12 +177,15 @@ export const useImprovedProductFormWizard = () => {
   }, [currentStep, formData, priceModel]);
 
   const loadProductForEditing = useCallback(
-    async (product: any, loadImagesCallback?: (productId: string) => Promise<void>) => {
+    async (
+      product: any,
+      loadImagesCallback?: (productId: string) => Promise<void>
+    ) => {
       console.log("📂 WIZARD - Carregando produto para edição:", product);
 
       try {
         setLoading(true);
-        
+
         // Carregar variações do produto
         let variations: ProductVariation[] = [];
         if (product.id) {
@@ -273,12 +279,12 @@ export const useImprovedProductFormWizard = () => {
             // Não bloquear o carregamento do produto por erro nas imagens
             toast({
               title: "Aviso",
-              description: "Produto carregado, mas houve erro ao carregar as imagens.",
+              description:
+                "Produto carregado, mas houve erro ao carregar as imagens.",
               variant: "destructive",
             });
           }
         }
-
       } catch (error) {
         console.error("Erro ao carregar produto para edição:", error);
         toast({
@@ -578,6 +584,13 @@ export const useImprovedProductFormWizard = () => {
           title: "Produto salvo!",
           description: "O produto foi salvo com sucesso.",
         });
+
+        console.log("✅ WIZARD - Finalizando salvamento e chamando onSuccess");
+
+        // 🎯 IMPORTANTE: Chamar onSuccess para atualizar a lista
+        if (onSuccess) {
+          await onSuccess(productId);
+        }
 
         return productId;
       } catch (error) {
