@@ -42,7 +42,13 @@ interface VariationWizardSelectorProps {
 }
 
 type WizardMode = "selector" | "simple" | "advanced" | "intelligent";
-type IntelligentViewMode = "wizard" | "matrix" | "list" | "grade" | "unified";
+type IntelligentViewMode =
+  | "wizard"
+  | "matrix"
+  | "list"
+  | "grade"
+  | "unified"
+  | "debug";
 
 const VariationWizardSelector: React.FC<VariationWizardSelectorProps> = ({
   variations,

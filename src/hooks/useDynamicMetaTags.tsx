@@ -47,10 +47,7 @@ export const useDynamicMetaTags = ({
       updateMetaTag("og:title", title);
 
       // Imagem da empresa (logo)
-      const imageUrl =
-        customImage ||
-        store.logo_url ||
-        "https://lovable.dev/opengraph-image-p98pqg.png"; // Fallback
+      const imageUrl = customImage || store.logo_url || "/b2x-logo.png"; // Fallback
 
       updateMetaTag("og:image", imageUrl);
       updateMetaTag("twitter:image", imageUrl);
@@ -110,7 +107,7 @@ export const useDynamicMetaTags = ({
 
     // Atualizar meta tags quando os dados da loja estiverem disponíveis
     updateMetaTags();
-  }, [store, settings]);
+  }, [store, settings, customTitle, customDescription, customImage]);
 
   return {
     store,

@@ -20,6 +20,8 @@ import {
   Package2,
   RefreshCw,
   Edit,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { ProductVariation } from "@/types/product";
 import UnifiedVariationWizard from "./UnifiedVariationWizard";
@@ -540,9 +542,6 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
 
   return (
     <>
-      {/* Renderizar o conteúdo baseado no viewMode */}
-      {renderContent()}
-
       {/* Diálogo de edição */}
       <VariationEditDialog
         variation={editingVariation}
