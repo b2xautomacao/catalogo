@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -9,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import {
   ShoppingCart,
   Heart,
@@ -53,16 +53,22 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  const [selectionMode, setSelectionMode] = useState<'single' | 'multiple'>('single');
-  const { variations, loading: variationsLoading } = useProductVariations(product?.id);
-  const { priceModel, loading: priceModelLoading } = useStorePriceModel(product?.store_id);
+  const [selectionMode, setSelectionMode] = useState<"single" | "multiple">(
+    "single"
+  );
+  const { variations, loading: variationsLoading } = useProductVariations(
+    product?.id
+  );
+  const { priceModel, loading: priceModelLoading } = useStorePriceModel(
+    product?.store_id
+  );
   const { tiers } = useProductPriceTiers(product?.id, {
     wholesale_price: product?.wholesale_price,
     min_wholesale_qty: product?.min_wholesale_qty,
     retail_price: product?.retail_price,
   });
   const { toast } = useToast();
-  
+
   const modelKey = priceModel?.price_model || ("retail_only" as PriceModelType);
 
   // Verificar se produto tem variações
@@ -74,9 +80,15 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const variationInfo = useMemo(() => {
     if (variations.length === 0) return null;
 
-    const colors = [...new Set(variations.filter(v => v.color).map(v => v.color))];
-    const sizes = [...new Set(variations.filter(v => v.size).map(v => v.size))];
-    const grades = variations.filter(v => v.is_grade || v.variation_type === 'grade');
+    const colors = [
+      ...new Set(variations.filter((v) => v.color).map((v) => v.color)),
+    ];
+    const sizes = [
+      ...new Set(variations.filter((v) => v.size).map((v) => v.size)),
+    ];
+    const grades = variations.filter(
+      (v) => v.is_grade || v.variation_type === "grade"
+    );
 
     return {
       hasColors: colors.length > 0,
@@ -93,8 +105,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   }, [variations]);
 
   // Calcular preço usando o hook de cálculo de preços
-  const priceCalculation = usePriceCalculation(product?.store_id || '', {
-    product_id: product?.id || '',
+  const priceCalculation = usePriceCalculation(product?.store_id || "", {
+    product_id: product?.id || "",
     retail_price: product?.retail_price || 0,
     wholesale_price: product?.wholesale_price,
     min_wholesale_qty: product?.min_wholesale_qty,
@@ -106,7 +118,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   // Determinar quantidade mínima baseada no modelo de preço
   const minQuantity = useMemo(() => {
     if (!product) return 1;
-    
+
     if (modelKey === "wholesale_only") {
       return product.min_wholesale_qty || 1;
     }
@@ -121,24 +133,27 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       setQuantity(1);
     }
     setSelectedVariation(null);
-    setSelectionMode('single');
+    setSelectionMode("single");
   }, [product?.id, modelKey, minQuantity]);
 
   const handleSingleVariationAdd = useCallback(() => {
     if (!product) return;
-    
+
     // Verificar se precisa de variação
     if (hasVariations && !selectedVariation) {
       toast({
         title: "Selecione uma variação",
-        description: "Este produto possui variações. Selecione uma opção antes de adicionar ao carrinho.",
+        description:
+          "Este produto possui variações. Selecione uma opção antes de adicionar ao carrinho.",
         variant: "destructive",
       });
       return;
     }
 
     // Verificar estoque da variação ou produto
-    const availableStock = selectedVariation ? selectedVariation.stock : product.stock;
+    const availableStock = selectedVariation
+      ? selectedVariation.stock
+      : product.stock;
     if (!product.allow_negative_stock && availableStock < quantity) {
       toast({
         title: "Estoque insuficiente",
@@ -169,38 +184,68 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       title: "Produto adicionado!",
       description: `${finalQuantity} unidade(s) adicionada(s) ao carrinho.`,
     });
-  }, [product, quantity, selectedVariation, hasVariations, modelKey, minQuantity, onAddToCart, onClose, toast]);
+  }, [
+    product,
+    quantity,
+    selectedVariation,
+    hasVariations,
+    modelKey,
+    minQuantity,
+    onAddToCart,
+    onClose,
+    toast,
+  ]);
 
-  const handleMultipleVariationAdd = useCallback((selections: any[]) => {
-    if (!product) return;
-    
-    // Adicionar cada seleção ao carrinho
-    selections.forEach(selection => {
-      const productWithModel = {
-        ...product,
-        allow_negative_stock: product.allow_negative_stock || false,
-        price_model: modelKey,
-        enable_gradual_wholesale: product.enable_gradual_wholesale || false,
-      };
-      
-      onAddToCart(productWithModel, selection.quantity, selection.variation);
-    });
+  const handleMultipleVariationAdd = useCallback(
+    (selections: any[]) => {
+      if (!product) return;
 
-    onClose();
+      // Adicionar cada seleção ao carrinho
+      selections.forEach((selection) => {
+        const productWithModel = {
+          ...product,
+          allow_negative_stock: product.allow_negative_stock || false,
+          price_model: modelKey,
+          enable_gradual_wholesale: product.enable_gradual_wholesale || false,
+        };
 
-    const totalItems = selections.reduce((total, sel) => total + sel.quantity, 0);
-    toast({
-      title: "Produtos adicionados!",
-      description: `${totalItems} itens de ${selections.length} variações adicionados ao carrinho.`,
-    });
-  }, [product, modelKey, onAddToCart, onClose, toast]);
+        onAddToCart(productWithModel, selection.quantity, selection.variation);
+      });
 
-  const handleQuantityChange = useCallback((newQuantity: number) => {
-    if (!product) return;
-    
-    const finalQuantity = Math.max(newQuantity, minQuantity);
-    setQuantity(finalQuantity);
-  }, [minQuantity]);
+      onClose();
+
+      const totalItems = selections.reduce(
+        (total, sel) => total + sel.quantity,
+        0
+      );
+      toast({
+        title: "Produtos adicionados!",
+        description: `${totalItems} itens de ${selections.length} variações adicionados ao carrinho.`,
+      });
+    },
+    [product, modelKey, onAddToCart, onClose, toast]
+  );
+
+  const handleQuantityChange = useCallback(
+    (newQuantity: number) => {
+      if (!product) return;
+
+      // 🎯 MELHORADO: Permitir quantidade maior que estoque se allow_negative_stock
+      const availableStock = selectedVariation
+        ? selectedVariation.stock
+        : product.stock;
+      const maxQuantity = product.allow_negative_stock ? 999 : availableStock;
+
+      const finalQuantity = Math.max(newQuantity, minQuantity);
+      const clampedQuantity = Math.min(finalQuantity, maxQuantity);
+
+      console.log(
+        `🔄 Quantidade alterada: ${newQuantity} → ${clampedQuantity} (estoque: ${availableStock}, min: ${minQuantity})`
+      );
+      setQuantity(clampedQuantity);
+    },
+    [minQuantity, product?.allow_negative_stock, selectedVariation]
+  );
 
   // Se não há produto, não renderizar o modal
   if (!product) {
@@ -208,16 +253,20 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   }
 
   const loading = priceModelLoading || variationsLoading;
-  const canAddMore = selectedVariation ? 
-    (selectedVariation.stock > quantity || product.allow_negative_stock) :
-    (product.stock > quantity || product.allow_negative_stock);
+
+  // 🎯 CORRIGIDO: Permitir adicionar mais itens mesmo com estoque limitado
+  const availableStock = selectedVariation
+    ? selectedVariation.stock
+    : product.stock;
+  const canAddMore = product.allow_negative_stock || availableStock > quantity;
   const canDecrease = quantity > minQuantity;
 
   // Verificar se pode adicionar ao carrinho (só para modo single)
-  const canAddToCart = !hasVariations || (selectionMode === 'single' && selectedVariation);
-  const isOutOfStock = selectedVariation ? 
-    (selectedVariation.stock === 0 && !product.allow_negative_stock) :
-    (product.stock === 0 && !product.allow_negative_stock);
+  const canAddToCart =
+    !hasVariations || (selectionMode === "single" && selectedVariation);
+  const isOutOfStock = selectedVariation
+    ? selectedVariation.stock === 0 && !product.allow_negative_stock
+    : product.stock === 0 && !product.allow_negative_stock;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -273,10 +322,18 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 hasColors={variationInfo.hasColors}
                 hasSizes={variationInfo.hasSizes}
                 title="Produto com múltiplas opções"
-                description={`${variationInfo.totalVariations} variações disponíveis. ${
-                  variationInfo.hasGrades ? 'Inclui grades completas. ' : ''
-                }${variationInfo.hasColors ? `${variationInfo.colorCount} cores diferentes. ` : ''}${
-                  variationInfo.hasSizes ? `${variationInfo.sizeCount} tamanhos variados.` : ''
+                description={`${
+                  variationInfo.totalVariations
+                } variações disponíveis. ${
+                  variationInfo.hasGrades ? "Inclui grades completas. " : ""
+                }${
+                  variationInfo.hasColors
+                    ? `${variationInfo.colorCount} cores diferentes. `
+                    : ""
+                }${
+                  variationInfo.hasSizes
+                    ? `${variationInfo.sizeCount} tamanhos variados.`
+                    : ""
                 }`}
               />
             )}
@@ -310,25 +367,34 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             <div className="text-sm">
               {selectedVariation ? (
                 <div className="flex items-center gap-2">
-                  <span className={selectedVariation.stock > 0 ? "text-green-600" : "text-red-600"}>
-                    {selectedVariation.stock > 0 ? 
-                      `${selectedVariation.stock} em estoque` : 
-                      "Produto esgotado"
+                  <span
+                    className={
+                      selectedVariation.stock > 0
+                        ? "text-green-600"
+                        : "text-red-600"
                     }
+                  >
+                    {selectedVariation.stock > 0
+                      ? `${selectedVariation.stock} em estoque`
+                      : "Produto esgotado"}
                   </span>
-                  {product.allow_negative_stock && selectedVariation.stock === 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      Aceita pedido sem estoque
-                    </Badge>
-                  )}
+                  {product.allow_negative_stock &&
+                    selectedVariation.stock === 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        Aceita pedido sem estoque
+                      </Badge>
+                    )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className={product.stock > 0 ? "text-green-600" : "text-red-600"}>
-                    {product.stock > 0 ? 
-                      `${product.stock} em estoque` : 
-                      "Produto esgotado"
+                  <span
+                    className={
+                      product.stock > 0 ? "text-green-600" : "text-red-600"
                     }
+                  >
+                    {product.stock > 0
+                      ? `${product.stock} em estoque`
+                      : "Produto esgotado"}
                   </span>
                   {product.allow_negative_stock && product.stock === 0 && (
                     <Badge variant="outline" className="text-xs">
@@ -354,16 +420,17 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <Separator />
 
                 {/* Variation Selectors */}
-                {selectionMode === 'single' ? (
+                {selectionMode === "single" ? (
                   <div className="space-y-4">
                     <ProductVariationSelector
                       variations={variations}
                       selectedVariation={selectedVariation}
                       onVariationChange={setSelectedVariation}
                       loading={variationsLoading}
-                      basePrice={modelKey === "wholesale_only" ? 
-                        (product.wholesale_price || product.retail_price) : 
-                        product.retail_price
+                      basePrice={
+                        modelKey === "wholesale_only"
+                          ? product.wholesale_price || product.retail_price
+                          : product.retail_price
                       }
                       showPriceInCards={true}
                     />
@@ -371,13 +438,16 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     {/* Quantity Selector for Single Mode */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Quantidade</label>
-                        {modelKey === "wholesale_only" && product.min_wholesale_qty && (
-                          <div className="text-xs text-orange-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            <span>Mín: {product.min_wholesale_qty} un.</span>
-                          </div>
-                        )}
+                        <label className="text-sm font-medium">
+                          Quantidade
+                        </label>
+                        {modelKey === "wholesale_only" &&
+                          product.min_wholesale_qty && (
+                            <div className="text-xs text-orange-600 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              <span>Mín: {product.min_wholesale_qty} un.</span>
+                            </div>
+                          )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -390,7 +460,24 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           <Minus className="h-4 w-4" />
                         </Button>
                         <div className="flex-1 text-center">
-                          <span className="text-lg font-medium">{quantity}</span>
+                          <Input
+                            type="number"
+                            value={quantity}
+                            onChange={(e) => {
+                              const newQty =
+                                parseInt(e.target.value) || minQuantity;
+                              handleQuantityChange(newQty);
+                            }}
+                            className="w-20 h-10 text-center text-lg font-medium"
+                            min={minQuantity}
+                            max={
+                              product.allow_negative_stock
+                                ? 999
+                                : selectedVariation
+                                ? selectedVariation.stock
+                                : product.stock
+                            }
+                          />
                         </div>
                         <Button
                           variant="outline"
@@ -409,7 +496,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       onClick={handleSingleVariationAdd}
                       disabled={!canAddToCart || isOutOfStock}
                       className={`w-full transition-all duration-200 ${
-                        canAddToCart && !isOutOfStock ? 'hover:scale-[1.02]' : ''
+                        canAddToCart && !isOutOfStock
+                          ? "hover:scale-[1.02]"
+                          : ""
                       }`}
                       size="lg"
                     >
@@ -426,7 +515,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       ) : (
                         <>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Adicionar ao Carrinho - {formatCurrency(priceCalculation.price * quantity)}
+                          Adicionar ao Carrinho -{" "}
+                          {formatCurrency(priceCalculation.price * quantity)}
                         </>
                       )}
                     </Button>
@@ -450,12 +540,13 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">Quantidade</label>
-                    {modelKey === "wholesale_only" && product.min_wholesale_qty && (
-                      <div className="text-xs text-orange-600 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>Mín: {product.min_wholesale_qty} un.</span>
-                      </div>
-                    )}
+                    {modelKey === "wholesale_only" &&
+                      product.min_wholesale_qty && (
+                        <div className="text-xs text-orange-600 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Mín: {product.min_wholesale_qty} un.</span>
+                        </div>
+                      )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -468,7 +559,18 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       <Minus className="h-4 w-4" />
                     </Button>
                     <div className="flex-1 text-center">
-                      <span className="text-lg font-medium">{quantity}</span>
+                      <Input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => {
+                          const newQty =
+                            parseInt(e.target.value) || minQuantity;
+                          handleQuantityChange(newQty);
+                        }}
+                        className="w-20 h-10 text-center text-lg font-medium"
+                        min={minQuantity}
+                        max={product.allow_negative_stock ? 999 : product.stock}
+                      />
                     </div>
                     <Button
                       variant="outline"
@@ -487,7 +589,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   onClick={handleSingleVariationAdd}
                   disabled={isOutOfStock}
                   className={`w-full transition-all duration-200 ${
-                    !isOutOfStock ? 'hover:scale-[1.02]' : ''
+                    !isOutOfStock ? "hover:scale-[1.02]" : ""
                   }`}
                   size="lg"
                 >
@@ -499,7 +601,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      Adicionar ao Carrinho - {formatCurrency(priceCalculation.price * quantity)}
+                      Adicionar ao Carrinho -{" "}
+                      {formatCurrency(priceCalculation.price * quantity)}
                     </>
                   )}
                 </Button>
