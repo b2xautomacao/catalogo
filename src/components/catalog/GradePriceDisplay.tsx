@@ -13,6 +13,7 @@ interface GradePriceDisplayProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   showGradeBreakdown?: boolean;
+  selectedQuantity?: number;
 }
 
 const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
@@ -25,6 +26,7 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
   size = "md",
   className = "",
   showGradeBreakdown = true,
+  selectedQuantity,
 }) => {
   const sizeClasses = {
     sm: {
@@ -55,13 +57,36 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
   // Calcular preços
   const pricePerPair = wholesalePrice || retailPrice;
   const totalGradePrice = pricePerPair * gradeQuantity;
+  const selectedTotalPrice = selectedQuantity ? totalGradePrice * selectedQuantity : totalGradePrice; // selectedQuantity = número de grades
 
   // Calcular preço por tamanho
-  const priceBySize = gradeSizes.map((size, index) => ({
-    size,
-    pairs: gradePairs[index] || 0,
-    totalPrice: pricePerPair * (gradePairs[index] || 0),
-  }));
+  const priceBySize = gradeSizes.map((size, index) => {
+    const pairs = gradePairs[index] || 0;
+    const totalPrice = pricePerPair * pairs;
+
+    // Se há quantidade selecionada, mostrar proporcionalmente
+    if (selectedQuantity && selectedQuantity < gradeQuantity) {
+      const proportion = selectedQuantity / gradeQuantity;
+      const proportionalPairs = Math.round(pairs * proportion);
+      const proportionalPrice = pricePerPair * proportionalPairs;
+
+      return {
+        size,
+        pairs: proportionalPairs,
+        totalPrice: proportionalPrice,
+        originalPairs: pairs,
+        originalPrice: totalPrice,
+      };
+    }
+
+    return {
+      size,
+      pairs,
+      totalPrice,
+      originalPairs: pairs,
+      originalPrice: totalPrice,
+    };
+  });
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -70,13 +95,17 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5 text-blue-600" />
-            <span className="font-semibold text-blue-900">Preço da Grade</span>
+            <span className="font-semibold text-blue-900">
+              {selectedQuantity
+                ? `Preço (${selectedQuantity} grades)`
+                : "Preço da Grade"}
+            </span>
           </div>
           <Badge
             variant="outline"
             className="bg-blue-100 text-blue-700 border-blue-300"
           >
-            {gradeQuantity} pares
+            {selectedQuantity ? `${selectedQuantity} grades` : `${gradeQuantity} pares`}
           </Badge>
         </div>
 
@@ -98,18 +127,21 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
             <span
               className={`text-blue-900 font-semibold ${classes.mainPrice}`}
             >
-              Total da Grade:
+              {selectedQuantity
+                ? `Total (${selectedQuantity} grades):`
+                : "Total da Grade:"}
             </span>
             <span className={`text-blue-900 font-bold ${classes.mainPrice}`}>
-              {formatCurrency(totalGradePrice)}
+              {formatCurrency(selectedTotalPrice)}
             </span>
           </div>
 
           {/* Cálculo */}
           <div className="text-center pt-1">
             <span className={`text-blue-600 ${classes.hint}`}>
-              {formatCurrency(pricePerPair)} × {gradeQuantity} pares ={" "}
-              {formatCurrency(totalGradePrice)}
+              {selectedQuantity
+                ? `${formatCurrency(totalGradePrice)} × ${selectedQuantity} grades = ${formatCurrency(selectedTotalPrice)}`
+                : `${formatCurrency(pricePerPair)} × ${gradeQuantity} pares = ${formatCurrency(totalGradePrice)}`}
             </span>
           </div>
         </div>
@@ -123,7 +155,9 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
             <span
               className={`font-semibold text-gray-700 ${classes.secondaryPrice}`}
             >
-              Composição da Grade
+              {selectedQuantity
+                ? `Composição (${selectedQuantity} grades)`
+                : "Composição da Grade"}
             </span>
           </div>
 
@@ -138,9 +172,20 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
                 </div>
                 <div className="text-sm text-gray-600">
                   {item.pairs} par{item.pairs !== 1 ? "es" : ""}
+                  {item.originalPairs && item.originalPairs !== item.pairs && (
+                    <span className="text-xs text-gray-500 block">
+                      de {item.originalPairs} total
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm font-semibold text-green-600 mt-1">
                   {formatCurrency(item.totalPrice)}
+                  {item.originalPrice &&
+                    item.originalPrice !== item.totalPrice && (
+                      <span className="text-xs text-gray-500 block">
+                        de {formatCurrency(item.originalPrice)}
+                      </span>
+                    )}
                 </div>
               </div>
             ))}
@@ -149,15 +194,27 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
           {/* Resumo */}
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Total de pares:</span>
+              <span className="text-gray-600">
+                {selectedQuantity ? "Grades selecionadas:" : "Total de pares:"}
+              </span>
               <span className="font-semibold text-gray-900">
-                {gradeQuantity}
+                {selectedQuantity || gradeQuantity}
+                {selectedQuantity && selectedQuantity < gradeQuantity && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    de {gradeQuantity}
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Preço total:</span>
               <span className="font-bold text-green-600">
-                {formatCurrency(totalGradePrice)}
+                {formatCurrency(selectedTotalPrice)}
+                {selectedQuantity && selectedQuantity > 1 && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({formatCurrency(totalGradePrice)} × {selectedQuantity})
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -191,6 +248,28 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
                   className="bg-orange-100 text-orange-700"
                 >
                   {minWholesaleQty} pares
+                </Badge>
+              </div>
+            )}
+            {selectedQuantity && selectedQuantity > 1 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-orange-700">Grades selecionadas:</span>
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-700"
+                >
+                  {selectedQuantity} grades
+                </Badge>
+              </div>
+            )}
+            {selectedQuantity && selectedQuantity < gradeQuantity && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-orange-700">Estoque disponível:</span>
+                <Badge
+                  variant="secondary"
+                  className="bg-green-100 text-green-700"
+                >
+                  {gradeQuantity} pares por grade
                 </Badge>
               </div>
             )}
