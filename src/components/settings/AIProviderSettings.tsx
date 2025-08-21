@@ -44,7 +44,9 @@ const AIProviderSettings = () => {
   });
 
   // Estados para teste de IA
-  const [testPrompt, setTestPrompt] = useState("Escreva uma descrição curta para um produto de tecnologia.");
+  const [testPrompt, setTestPrompt] = useState(
+    "Escreva uma descrição curta para um produto de tecnologia."
+  );
   const [testResponse, setTestResponse] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -196,7 +198,8 @@ const AIProviderSettings = () => {
         prompt: testPrompt,
         max_tokens: 200,
         temperature: 0.7,
-        system_message: "Você é um assistente especializado em marketing e vendas. Seja conciso e persuasivo.",
+        system_message:
+          "Você é um assistente especializado em marketing e vendas. Seja conciso e persuasivo.",
       });
 
       if (response.success && response.content) {
@@ -225,7 +228,24 @@ const AIProviderSettings = () => {
     }
   };
 
-
+  // Copiar resposta para clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(testResponse);
+      setCopied(true);
+      toast({
+        title: "Copiado!",
+        description: "Resposta copiada para a área de transferência",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar para a área de transferência",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Alterar provedor padrão
   const changeDefaultProvider = async (provider: AIProviderType) => {
