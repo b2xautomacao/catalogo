@@ -1,18 +1,31 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Sparkles, FileText, Hash, Megaphone, Copy, CheckCircle, AlertCircle } from 'lucide-react';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Loader2,
+  Sparkles,
+  FileText,
+  Hash,
+  Megaphone,
+  Copy,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import { usePlanPermissions } from "@/hooks/usePlanPermissions";
+import { useToast } from "@/hooks/use-toast";
+import { useAIProviders } from "@/hooks/useAIProviders";
 
 interface ImprovedAIToolsModalProps {
   open: boolean;
@@ -34,38 +47,39 @@ interface AIResult {
 const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
   open,
   onOpenChange,
-  productName = '',
-  category = '',
+  productName = "",
+  category = "",
   onDescriptionGenerated,
   onTitleGenerated,
   onKeywordsGenerated,
-  onAdCopyGenerated
+  onAdCopyGenerated,
 }) => {
-  const [activeTab, setActiveTab] = useState('description');
+  const [activeTab, setActiveTab] = useState("description");
   const [productInfo, setProductInfo] = useState({
     name: productName,
     category: category,
-    features: '',
-    targetAudience: ''
+    features: "",
+    targetAudience: "",
   });
 
   const [results, setResults] = useState<Record<string, AIResult>>({
-    description: { content: '', loading: false },
-    title: { content: '', loading: false },
-    keywords: { content: '', loading: false },
-    adCopy: { content: '', loading: false }
+    description: { content: "", loading: false },
+    title: { content: "", loading: false },
+    keywords: { content: "", loading: false },
+    adCopy: { content: "", loading: false },
   });
 
   const { checkAIUsage } = usePlanPermissions();
   const { toast } = useToast();
   const aiAccess = checkAIUsage();
+  const { generateAIContent } = useAIProviders("global");
 
   // Update product info when props change
   React.useEffect(() => {
-    setProductInfo(prev => ({
+    setProductInfo((prev) => ({
       ...prev,
       name: productName,
-      category: category
+      category: category,
     }));
   }, [productName, category]);
 
@@ -88,54 +102,98 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
       return;
     }
 
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
-      [type]: { ...prev[type], loading: true, error: undefined }
+      [type]: { ...prev[type], loading: true, error: undefined },
     }));
 
     try {
-      console.log('🤖 AI - Gerando conteúdo:', { type, productInfo });
+      console.log("🤖 AI - Gerando conteúdo:", { type, productInfo });
 
-      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
-        body: {
-          productName: productInfo.name,
-          category: productInfo.category,
-          features: productInfo.features,
-          targetAudience: productInfo.targetAudience,
-          contentType: type
-        }
+      let prompt = "";
+      let systemMessage = "";
+
+      switch (type) {
+        case "description":
+          systemMessage =
+            "Você é um especialista em copywriting para e-commerce. Crie descrições de produtos atrativas, informativas e que convertam vendas.";
+          prompt = `Crie uma descrição detalhada e atrativa para o produto "${
+            productInfo.name
+          }" da categoria "${productInfo.category}". ${
+            productInfo.features
+              ? `Características: ${productInfo.features}.`
+              : ""
+          } ${
+            productInfo.targetAudience
+              ? `Público-alvo: ${productInfo.targetAudience}.`
+              : ""
+          } A descrição deve ser persuasiva, destacar os benefícios do produto e ter entre 100-200 palavras.`;
+          break;
+        case "title":
+          systemMessage =
+            "Você é um especialista em SEO e títulos otimizados para e-commerce.";
+          prompt = `Crie um título SEO otimizado para o produto "${productInfo.name}" da categoria "${productInfo.category}". O título deve ser atrativo, incluir palavras-chave relevantes e ter até 60 caracteres.`;
+          break;
+        case "keywords":
+          systemMessage =
+            "Você é um especialista em SEO e palavras-chave para e-commerce.";
+          prompt = `Gere palavras-chave relevantes para SEO do produto "${
+            productInfo.name
+          }" da categoria "${productInfo.category}". ${
+            productInfo.features
+              ? `Características: ${productInfo.features}.`
+              : ""
+          } Retorne uma lista separada por vírgulas com 8-12 palavras-chave relevantes.`;
+          break;
+        case "adCopy":
+          systemMessage =
+            "Você é um especialista em copywriting para anúncios e marketing digital.";
+          prompt = `Crie um texto de anúncio persuasivo para o produto "${
+            productInfo.name
+          }" da categoria "${productInfo.category}". ${
+            productInfo.features
+              ? `Características: ${productInfo.features}.`
+              : ""
+          } ${
+            productInfo.targetAudience
+              ? `Público-alvo: ${productInfo.targetAudience}.`
+              : ""
+          } O texto deve ser chamativo, incluir emojis e incentivar a compra. Máximo 150 caracteres.`;
+          break;
+      }
+
+      const response = await generateAIContent({
+        provider: "gemini", // Usar Gemini como padrão
+        prompt,
+        max_tokens: 300,
+        temperature: 0.7,
+        system_message: systemMessage,
       });
 
-      if (error) {
-        console.error('🤖 AI - Erro na função:', error);
-        throw new Error(error.message || 'Erro ao gerar conteúdo');
+      if (!response.success || !response.content) {
+        throw new Error(response.error || "Nenhum conteúdo foi gerado");
       }
 
-      if (!data?.content) {
-        throw new Error('Nenhum conteúdo foi gerado');
-      }
+      console.log("✅ AI - Conteúdo gerado:", response.content);
 
-      console.log('✅ AI - Conteúdo gerado:', data.content);
-
-      setResults(prev => ({
+      setResults((prev) => ({
         ...prev,
-        [type]: { content: data.content, loading: false }
+        [type]: { content: response.content, loading: false },
       }));
 
       toast({
         title: "Conteúdo gerado!",
         description: "IA gerou o conteúdo com sucesso",
       });
-
     } catch (error: any) {
-      console.error('❌ AI - Erro:', error);
-      setResults(prev => ({
+      console.error("❌ AI - Erro:", error);
+      setResults((prev) => ({
         ...prev,
-        [type]: { 
-          content: '', 
-          loading: false, 
-          error: error.message || 'Erro ao gerar conteúdo. Tente novamente.' 
-        }
+        [type]: {
+          content: "",
+          loading: false,
+          error: error.message || "Erro ao gerar conteúdo. Tente novamente.",
+        },
       }));
 
       toast({
@@ -164,20 +222,20 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
 
   const useGenerated = (type: string, content: string) => {
     switch (type) {
-      case 'description':
+      case "description":
         onDescriptionGenerated?.(content);
         break;
-      case 'title':
+      case "title":
         onTitleGenerated?.(content);
         break;
-      case 'keywords':
+      case "keywords":
         onKeywordsGenerated?.(content);
         break;
-      case 'adCopy':
+      case "adCopy":
         onAdCopyGenerated?.(content);
         break;
     }
-    
+
     toast({
       title: "Conteúdo aplicado!",
       description: "O conteúdo gerado foi aplicado ao formulário",
@@ -186,33 +244,33 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
 
   const tools = [
     {
-      id: 'description',
-      title: 'Descrição do Produto',
+      id: "description",
+      title: "Descrição do Produto",
       icon: FileText,
-      description: 'Gere uma descrição detalhada e atrativa para o produto',
-      color: 'bg-blue-500'
+      description: "Gere uma descrição detalhada e atrativa para o produto",
+      color: "bg-blue-500",
     },
     {
-      id: 'title',
-      title: 'Título SEO',
+      id: "title",
+      title: "Título SEO",
       icon: Hash,
-      description: 'Crie um título otimizado para mecanismos de busca',
-      color: 'bg-green-500'
+      description: "Crie um título otimizado para mecanismos de busca",
+      color: "bg-green-500",
     },
     {
-      id: 'keywords',
-      title: 'Palavras-chave',
+      id: "keywords",
+      title: "Palavras-chave",
       icon: Hash,
-      description: 'Gere palavras-chave relevantes para SEO',
-      color: 'bg-purple-500'
+      description: "Gere palavras-chave relevantes para SEO",
+      color: "bg-purple-500",
     },
     {
-      id: 'adCopy',
-      title: 'Texto de Anúncio',
+      id: "adCopy",
+      title: "Texto de Anúncio",
       icon: Megaphone,
-      description: 'Crie um texto persuasivo para anúncios e marketing',
-      color: 'bg-orange-500'
-    }
+      description: "Crie um texto persuasivo para anúncios e marketing",
+      color: "bg-orange-500",
+    },
   ];
 
   if (!aiAccess.hasAccess && !aiAccess.loading) {
@@ -228,7 +286,8 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {aiAccess.message || 'Ferramentas de IA não disponíveis no seu plano'}
+              {aiAccess.message ||
+                "Ferramentas de IA não disponíveis no seu plano"}
             </AlertDescription>
           </Alert>
         </DialogContent>
@@ -247,7 +306,8 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
             Ferramentas de IA para Produtos
           </DialogTitle>
           <p className="text-gray-600">
-            Use inteligência artificial para criar conteúdo profissional para seus produtos
+            Use inteligência artificial para criar conteúdo profissional para
+            seus produtos
           </p>
         </DialogHeader>
 
@@ -263,7 +323,12 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                   <Label>Nome do Produto *</Label>
                   <Input
                     value={productInfo.name}
-                    onChange={(e) => setProductInfo(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setProductInfo((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                     placeholder="Ex: Camiseta Premium"
                   />
                 </div>
@@ -271,7 +336,12 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                   <Label>Categoria *</Label>
                   <Input
                     value={productInfo.category}
-                    onChange={(e) => setProductInfo(prev => ({ ...prev, category: e.target.value }))}
+                    onChange={(e) =>
+                      setProductInfo((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                      }))
+                    }
                     placeholder="Ex: Roupas"
                   />
                 </div>
@@ -280,7 +350,12 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                 <Label>Características Principais</Label>
                 <Input
                   value={productInfo.features}
-                  onChange={(e) => setProductInfo(prev => ({ ...prev, features: e.target.value }))}
+                  onChange={(e) =>
+                    setProductInfo((prev) => ({
+                      ...prev,
+                      features: e.target.value,
+                    }))
+                  }
                   placeholder="Ex: 100% algodão, manga longa, várias cores"
                 />
               </div>
@@ -288,7 +363,12 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                 <Label>Público-alvo</Label>
                 <Input
                   value={productInfo.targetAudience}
-                  onChange={(e) => setProductInfo(prev => ({ ...prev, targetAudience: e.target.value }))}
+                  onChange={(e) =>
+                    setProductInfo((prev) => ({
+                      ...prev,
+                      targetAudience: e.target.value,
+                    }))
+                  }
                   placeholder="Ex: jovens, profissionais, esportistas"
                 />
               </div>
@@ -301,7 +381,11 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
               {tools.map((tool) => {
                 const Icon = tool.icon;
                 return (
-                  <TabsTrigger key={tool.id} value={tool.id} className="flex items-center gap-2">
+                  <TabsTrigger
+                    key={tool.id}
+                    value={tool.id}
+                    className="flex items-center gap-2"
+                  >
                     <Icon size={16} />
                     <span className="hidden sm:inline">{tool.title}</span>
                   </TabsTrigger>
@@ -312,7 +396,7 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
             {tools.map((tool) => {
               const Icon = tool.icon;
               const result = results[tool.id];
-              
+
               return (
                 <TabsContent key={tool.id} value={tool.id}>
                   <Card>
@@ -329,7 +413,11 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                     <CardContent className="space-y-4">
                       <Button
                         onClick={() => generateContent(tool.id)}
-                        disabled={result.loading || !productInfo.name?.trim() || !productInfo.category?.trim()}
+                        disabled={
+                          result.loading ||
+                          !productInfo.name?.trim() ||
+                          !productInfo.category?.trim()
+                        }
                         className="w-full"
                       >
                         {result.loading ? (
@@ -358,10 +446,15 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                           <div className="border rounded-lg p-4 bg-gray-50">
                             <Textarea
                               value={result.content}
-                              onChange={(e) => setResults(prev => ({
-                                ...prev,
-                                [tool.id]: { ...prev[tool.id], content: e.target.value }
-                              }))}
+                              onChange={(e) =>
+                                setResults((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    content: e.target.value,
+                                  },
+                                }))
+                              }
                               rows={6}
                               className="border-0 bg-transparent resize-none"
                             />
@@ -376,7 +469,9 @@ const ImprovedAIToolsModal: React.FC<ImprovedAIToolsModalProps> = ({
                               Copiar
                             </Button>
                             <Button
-                              onClick={() => useGenerated(tool.id, result.content)}
+                              onClick={() =>
+                                useGenerated(tool.id, result.content)
+                              }
                               className="flex-1"
                             >
                               <CheckCircle className="mr-2 h-4 w-4" />

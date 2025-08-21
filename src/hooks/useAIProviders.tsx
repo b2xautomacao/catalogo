@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   AIProviderType,
@@ -25,40 +26,67 @@ export const useAIProviders = (storeId: string) => {
     setError(null);
 
     try {
-      // Por enquanto, usar configurações mockadas até a tabela ser criada
-      const defaultSettings: AIProviderSettings = {
-        store_id: storeId,
-        default_provider: "openai",
-        openai_config: {
-          api_key: "",
-          model: "gpt-3.5-turbo",
-          max_tokens: 1000,
-          temperature: 0.7,
-        },
-        gemini_config: {
-          api_key: "",
-          model: "gemini-pro",
-          max_tokens: 1000,
-          temperature: 0.7,
-        },
-        anthropic_config: {
-          api_key: "",
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 1000,
-          temperature: 0.7,
-        },
-        custom_ai_config: {
-          api_key: "",
-          api_endpoint: "",
-          model: "custom",
-          max_tokens: 1000,
-          temperature: 0.7,
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Buscar configurações existentes no banco
+      const { data, error: fetchError } = await (supabase as any)
+        .from("ai_provider_settings")
+        .select("*")
+        .eq("store_id", storeId)
+        .maybeSingle();
 
-      setSettings(defaultSettings);
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        // Configurações encontradas no banco
+        setSettings(data as AIProviderSettings);
+      } else {
+        // Criar configurações padrão se não existirem
+        const defaultSettings: AIProviderSettings = {
+          store_id: storeId,
+          default_provider: "openai",
+          openai_config: {
+            api_key: "",
+            model: "gpt-3.5-turbo",
+            max_tokens: 1000,
+            temperature: 0.7,
+          },
+          gemini_config: {
+            api_key: "",
+            model: "gemini-1.5-pro",
+            max_tokens: 1000,
+            temperature: 0.7,
+          },
+          anthropic_config: {
+            api_key: "",
+            model: "claude-3-sonnet-20240229",
+            max_tokens: 1000,
+            temperature: 0.7,
+          },
+          custom_ai_config: {
+            api_key: "",
+            api_endpoint: "",
+            model: "custom",
+            max_tokens: 1000,
+            temperature: 0.7,
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        // Salvar configurações padrão no banco
+        const { data: newData, error: createError } = await (supabase as any)
+          .from("ai_provider_settings")
+          .insert(defaultSettings)
+          .select()
+          .single();
+
+        if (createError) {
+          throw createError;
+        }
+
+        setSettings(newData as AIProviderSettings);
+      }
     } catch (err: any) {
       console.error("❌ Erro ao buscar configurações de IA:", err);
       setError(err.message);
@@ -70,14 +98,25 @@ export const useAIProviders = (storeId: string) => {
   // Criar configurações de IA
   const createAISettings = async (aiSettings: AIProviderSettings) => {
     try {
-      // Por enquanto, apenas atualizar o estado local
-      setSettings(aiSettings);
+      // Salvar no banco de dados
+      const { data, error: insertError } = await (supabase as any)
+        .from("ai_provider_settings")
+        .insert(aiSettings)
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Atualizar estado local
+      setSettings(data as AIProviderSettings);
       toast({
         title: "Configurações de IA criadas",
         description: "Configurações padrão foram configuradas com sucesso.",
       });
 
-      return aiSettings;
+      return data;
     } catch (err: any) {
       console.error("❌ Erro ao criar configurações de IA:", err);
       toast({
@@ -100,7 +139,17 @@ export const useAIProviders = (storeId: string) => {
         updated_at: new Date().toISOString(),
       };
 
-      // Por enquanto, apenas atualizar o estado local
+      // Salvar no banco de dados
+      const { error: updateError } = await (supabase as any)
+        .from("ai_provider_settings")
+        .update(updatedSettings)
+        .eq("store_id", storeId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Atualizar estado local
       setSettings(updatedSettings);
       toast({
         title: "Configurações atualizadas",
@@ -254,8 +303,10 @@ export const useAIProviders = (storeId: string) => {
     }
 
     const config = settings.gemini_config;
+
+    // Usar o endpoint correto do Gemini
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.api_key}`,
+      `https://generativelanguage.googleapis.com/v1/models/${config.model}:generateContent?key=${config.api_key}`,
       {
         method: "POST",
         headers: {

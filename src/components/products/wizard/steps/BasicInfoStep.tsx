@@ -1,28 +1,37 @@
-
-import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Loader2, Plus, Sparkles } from 'lucide-react';
-import { useCategories } from '@/hooks/useCategories';
-import CategoryFormDialog from '@/components/products/CategoryFormDialog';
-import { WizardFormData } from '@/hooks/useImprovedProductFormWizard';
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Loader2, Plus, Sparkles } from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
+import CategoryFormDialog from "@/components/products/CategoryFormDialog";
+import { WizardFormData } from "@/hooks/useImprovedProductFormWizard";
+import { useState } from "react";
+import { useAIProviders } from "@/hooks/useAIProviders";
+import { useToast } from "@/hooks/use-toast";
 
 interface BasicInfoStepProps {
   formData: WizardFormData;
   updateFormData: (updates: Partial<WizardFormData>) => void;
 }
 
-const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData }) => {
+const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
+  formData,
+  updateFormData,
+}) => {
   const { categories, loading: categoriesLoading } = useCategories();
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const { toast } = useToast();
+  const { generateAIContent } = useAIProviders("global");
 
   const handleCategoryCreated = (newCategory: any) => {
     updateFormData({ category: newCategory.name });
@@ -40,58 +49,45 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
     }
 
     setGeneratingDescription(true);
-    
+
     try {
-      console.log('🤖 Gerando descrição para:', formData.name);
-      
-      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
-        body: {
-          productName: formData.name,
-          category: formData.category || 'Produto',
-          contentType: 'description'
-        }
+      console.log("🤖 Gerando descrição para:", formData.name);
+
+      const response = await generateAIContent({
+        provider: "gemini", // Usar Gemini como padrão, mas pode ser alterado
+        prompt: `Crie uma descrição detalhada e atrativa para o produto "${
+          formData.name
+        }" da categoria "${
+          formData.category || "Produto"
+        }". A descrição deve ser persuasiva, destacar os benefícios do produto e ter entre 100-200 palavras.`,
+        max_tokens: 300,
+        temperature: 0.7,
+        system_message:
+          "Você é um especialista em copywriting para e-commerce. Crie descrições de produtos atrativas, informativas e que convertam vendas. Use um tom profissional mas acessível.",
       });
 
-      console.log('🤖 Resposta da IA:', { data, error });
+      console.log("🤖 Resposta da IA:", response);
 
-      if (error) {
-        console.error('Erro na função:', error);
-        
-        // Verificar se é erro de configuração da OpenAI
-        if (error.message?.includes('OpenAI API key not configured')) {
-          toast({
-            title: "Configuração necessária",
-            description: "A chave da API OpenAI não está configurada. Entre em contato com o administrador.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro na geração",
-            description: error.message || "Não foi possível gerar a descrição. Tente novamente.",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      if (data?.content) {
-        updateFormData({ description: data.content });
+      if (response.success && response.content) {
+        updateFormData({ description: response.content });
         toast({
           title: "Descrição gerada!",
-          description: "A IA gerou uma descrição para o produto",
+          description: `A IA gerou uma descrição usando ${response.provider?.toUpperCase()}`,
         });
       } else {
         toast({
           title: "Erro na geração",
-          description: "Nenhum conteúdo foi gerado pela IA",
+          description: response.error || "Nenhum conteúdo foi gerado pela IA",
           variant: "destructive",
         });
       }
     } catch (error: any) {
-      console.error('Erro ao gerar descrição:', error);
+      console.error("Erro ao gerar descrição:", error);
       toast({
         title: "Erro na geração",
-        description: error.message || "Não foi possível gerar a descrição. Tente novamente.",
+        description:
+          error.message ||
+          "Não foi possível gerar a descrição. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -113,13 +109,15 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
           <Input
             id="productName"
             type="text"
-            value={formData.name || ''}
+            value={formData.name || ""}
             onChange={(e) => updateFormData({ name: e.target.value })}
             placeholder="Digite o nome do produto"
-            className={`${!formData.name?.trim() ? 'border-red-300' : ''}`}
+            className={`${!formData.name?.trim() ? "border-red-300" : ""}`}
           />
           {!formData.name?.trim() && (
-            <p className="text-xs text-red-500">Nome do produto é obrigatório</p>
+            <p className="text-xs text-red-500">
+              Nome do produto é obrigatório
+            </p>
           )}
         </div>
 
@@ -129,10 +127,14 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
           </Label>
           <div className="flex gap-2">
             <Select
-              value={formData.category || ''}
+              value={formData.category || ""}
               onValueChange={(value) => updateFormData({ category: value })}
             >
-              <SelectTrigger className={`flex-1 ${!formData.category?.trim() ? 'border-red-300' : ''}`}>
+              <SelectTrigger
+                className={`flex-1 ${
+                  !formData.category?.trim() ? "border-red-300" : ""
+                }`}
+              >
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -156,7 +158,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
                 )}
               </SelectContent>
             </Select>
-            
+
             <Button
               type="button"
               variant="outline"
@@ -201,7 +203,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
           </div>
           <Textarea
             id="description"
-            value={formData.description || ''}
+            value={formData.description || ""}
             onChange={(e) => updateFormData({ description: e.target.value })}
             placeholder="Descreva o produto ou use o botão para gerar automaticamente"
             rows={4}

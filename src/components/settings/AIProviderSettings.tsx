@@ -72,7 +72,7 @@ const AIProviderSettings = () => {
 
   const [geminiConfig, setGeminiConfig] = useState({
     api_key: "",
-    model: "gemini-pro",
+    model: "gemini-1.5-pro",
     max_tokens: 1000,
     temperature: 0.7,
   });
@@ -556,9 +556,14 @@ const AIProviderSettings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-                      <SelectItem value="gemini-pro-vision">
-                        Gemini Pro Vision
+                      <SelectItem value="gemini-1.5-pro">
+                        Gemini 1.5 Pro
+                      </SelectItem>
+                      <SelectItem value="gemini-1.5-flash">
+                        Gemini 1.5 Flash
+                      </SelectItem>
+                      <SelectItem value="gemini-1.0-pro">
+                        Gemini 1.0 Pro
                       </SelectItem>
                     </SelectContent>
                   </Select>
