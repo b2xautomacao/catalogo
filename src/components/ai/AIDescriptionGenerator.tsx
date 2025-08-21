@@ -1,13 +1,14 @@
-
-import React, { useState } from 'react';
-import { Sparkles, Loader2, Copy, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
-import PlanUpgradeModal from '@/components/billing/PlanUpgradeModal';
+import React, { useState } from "react";
+import { Sparkles, Loader2, Copy, RefreshCw, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { usePlanPermissions } from "@/hooks/usePlanPermissions";
+import { useAIProviders } from "@/hooks/useAIProviders";
+import { useStoreData } from "@/hooks/useStoreData";
+import PlanUpgradeModal from "@/components/billing/PlanUpgradeModal";
 
 interface AIDescriptionGeneratorProps {
   productName: string;
@@ -15,15 +16,23 @@ interface AIDescriptionGeneratorProps {
   onDescriptionGenerated: (description: string, seo: string) => void;
 }
 
-const AIDescriptionGenerator = ({ productName, category, onDescriptionGenerated }: AIDescriptionGeneratorProps) => {
+const AIDescriptionGenerator = ({
+  productName,
+  category,
+  onDescriptionGenerated,
+}: AIDescriptionGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [keywords, setKeywords] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [generatedDescription, setGeneratedDescription] = useState('');
-  const [generatedSEO, setGeneratedSEO] = useState('');
+  const [keywords, setKeywords] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [generatedDescription, setGeneratedDescription] = useState("");
+  const [generatedSEO, setGeneratedSEO] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
   const { checkAIUsage } = usePlanPermissions();
+
+  // Hook para provedores de IA
+  const { store } = useStoreData();
+  const { generateAIContent, settings } = useAIProviders(store?.id || "");
 
   const generateContent = async () => {
     if (!productName.trim()) {
@@ -42,41 +51,90 @@ const AIDescriptionGenerator = ({ productName, category, onDescriptionGenerated 
       return;
     }
 
-    setIsGenerating(true);
-    
-    // Simulação da API de IA - Em produção, substituir por chamada real à API
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simula delay da API
-      
-      const mockDescription = `${productName} é um produto excepcional da categoria ${category}. 
-      
-Desenvolvido com alta qualidade e atenção aos detalhes, este produto oferece excelente custo-benefício para ${targetAudience || 'nossos clientes'}. 
-
-Características principais:
-• Design moderno e funcional
-• Material de alta durabilidade  
-• Fácil utilização
-• Garantia de qualidade
-
-${keywords && `Palavras-chave relacionadas: ${keywords}`}
-
-Ideal para quem busca qualidade, confiabilidade e bom atendimento. Adquira já o seu!`;
-
-      const mockSEO = `${productName} - ${category} de Qualidade | Loja Online
-      
-Meta Description: Compre ${productName} com o melhor preço e qualidade. ${category} premium com entrega rápida e garantia. ${keywords}`;
-
-      setGeneratedDescription(mockDescription);
-      setGeneratedSEO(mockSEO);
-      
+    // Verificar se há configurações de IA
+    if (!settings || !settings.default_provider) {
       toast({
-        title: "Conteúdo gerado com sucesso!",
-        description: "Descrição e SEO foram criados pela IA",
+        title: "Configuração necessária",
+        description: "Configure um provedor de IA nas configurações da loja",
+        variant: "destructive",
       });
-    } catch (error) {
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      // Prompt para geração de descrição
+      const descriptionPrompt = `Crie uma descrição atrativa e persuasiva para o produto "${productName}" da categoria "${category}".
+
+${keywords && `Palavras-chave importantes: ${keywords}`}
+${targetAudience && `Público-alvo: ${targetAudience}`}
+
+A descrição deve:
+- Ser envolvente e persuasiva
+- Destacar benefícios e características
+- Incluir as palavras-chave naturalmente
+- Ter entre 150-300 palavras
+- Ser adequada para e-commerce
+- Usar linguagem acessível mas profissional
+
+Formato: Texto corrido com parágrafos bem estruturados.`;
+
+      // Prompt para SEO
+      const seoPrompt = `Crie um título SEO otimizado e meta description para o produto "${productName}" da categoria "${category}".
+
+${keywords && `Palavras-chave: ${keywords}`}
+
+Requisitos:
+- Título: máximo 60 caracteres, incluir nome do produto e categoria
+- Meta Description: máximo 160 caracteres, persuasivo e com call-to-action
+- Incluir palavras-chave naturalmente
+- Otimizado para busca orgânica
+
+Formato:
+Título: [título aqui]
+Meta Description: [meta description aqui]`;
+
+      // Gerar descrição
+      const descriptionResponse = await generateAIContent({
+        provider: settings.default_provider,
+        prompt: descriptionPrompt,
+        max_tokens: 500,
+        temperature: 0.7,
+        system_message:
+          "Você é um especialista em marketing digital e copywriting para e-commerce. Crie descrições persuasivas e envolventes.",
+      });
+
+      // Gerar SEO
+      const seoResponse = await generateAIContent({
+        provider: settings.default_provider,
+        prompt: seoPrompt,
+        max_tokens: 300,
+        temperature: 0.5,
+        system_message:
+          "Você é um especialista em SEO e otimização para motores de busca. Crie títulos e meta descriptions otimizados.",
+      });
+
+      if (descriptionResponse.success && seoResponse.success) {
+        setGeneratedDescription(descriptionResponse.content || "");
+        setGeneratedSEO(seoResponse.content || "");
+
+        toast({
+          title: "Conteúdo gerado com sucesso!",
+          description: `Descrição e SEO foram criados usando ${settings.default_provider.toUpperCase()}`,
+        });
+      } else {
+        throw new Error(
+          descriptionResponse.error ||
+            seoResponse.error ||
+            "Erro na geração de conteúdo"
+        );
+      }
+    } catch (error: any) {
+      console.error("Erro ao gerar conteúdo com IA:", error);
       toast({
         title: "Erro ao gerar conteúdo",
-        description: "Tente novamente em alguns instantes",
+        description: error.message || "Tente novamente em alguns instantes",
         variant: "destructive",
       });
     } finally {
@@ -101,119 +159,120 @@ Meta Description: Compre ${productName} com o melhor preço e qualidade. ${categ
   };
 
   return (
-    <>
-      <div className="space-y-6 p-6 card-modern">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="text-accent" size={24} />
-          <h3 className="text-lg font-semibold">Gerador de Descrição com IA</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="keywords">Palavras-chave (opcional)</Label>
-            <Input
-              id="keywords"
-              placeholder="Ex: durável, moderno, econômico"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              className="input-modern"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="audience">Público-alvo (opcional)</Label>
-            <Input
-              id="audience"
-              placeholder="Ex: jovens, profissionais, famílias"
-              value={targetAudience}
-              onChange={(e) => setTargetAudience(e.target.value)}
-              className="input-modern"
-            />
-          </div>
-        </div>
-
-        <Button 
-          onClick={generateContent} 
-          disabled={isGenerating}
-          className="btn-accent w-full"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Gerando conteúdo...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Gerar Descrição e SEO
-            </>
-          )}
-        </Button>
-
-        {generatedDescription && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Descrição Gerada</Label>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(generatedDescription, 'Descrição')}
-                  >
-                    <Copy className="mr-1 h-3 w-3" />
-                    Copiar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={generateContent}
-                  >
-                    <RefreshCw className="mr-1 h-3 w-3" />
-                    Regenerar
-                  </Button>
-                </div>
-              </div>
-              <Textarea
-                value={generatedDescription}
-                onChange={(e) => setGeneratedDescription(e.target.value)}
-                rows={8}
-                className="input-modern"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>SEO Gerado</Label>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(generatedSEO, 'SEO')}
-                >
-                  <Copy className="mr-1 h-3 w-3" />
-                  Copiar
-                </Button>
-              </div>
-              <Textarea
-                value={generatedSEO}
-                onChange={(e) => setGeneratedSEO(e.target.value)}
-                rows={4}
-                className="input-modern"
-              />
-            </div>
-
-            <Button onClick={applyGenerated} className="btn-primary w-full">
-              Aplicar ao Produto
-            </Button>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-semibold">Gerador de Descrição com IA</h3>
+        {settings?.default_provider && (
+          <div className="flex items-center gap-2 ml-auto">
+            <Bot className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Usando: {settings.default_provider.toUpperCase()}
+            </span>
           </div>
         )}
       </div>
 
-      <PlanUpgradeModal 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="keywords">Palavras-chave importantes</Label>
+          <Input
+            id="keywords"
+            placeholder="Ex: qualidade, durabilidade, design"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="targetAudience">Público-alvo</Label>
+          <Input
+            id="targetAudience"
+            placeholder="Ex: profissionais, estudantes, famílias"
+            value={targetAudience}
+            onChange={(e) => setTargetAudience(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <Button
+        onClick={generateContent}
+        disabled={isGenerating || !productName.trim()}
+        className="w-full"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Gerando com {settings?.default_provider?.toUpperCase() || "IA"}...
+          </>
+        ) : (
+          <>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Gerar Descrição e SEO
+          </>
+        )}
+      </Button>
+
+      {generatedDescription && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Descrição Gerada</Label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    copyToClipboard(generatedDescription, "Descrição")
+                  }
+                >
+                  <Copy className="mr-1 h-3 w-3" />
+                  Copiar
+                </Button>
+                <Button size="sm" variant="outline" onClick={generateContent}>
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  Regenerar
+                </Button>
+              </div>
+            </div>
+            <Textarea
+              value={generatedDescription}
+              onChange={(e) => setGeneratedDescription(e.target.value)}
+              rows={8}
+              className="input-modern"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>SEO Gerado</Label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copyToClipboard(generatedSEO, "SEO")}
+              >
+                <Copy className="mr-1 h-3 w-3" />
+                Copiar
+              </Button>
+            </div>
+            <Textarea
+              value={generatedSEO}
+              onChange={(e) => setGeneratedSEO(e.target.value)}
+              rows={4}
+              className="input-modern"
+            />
+          </div>
+
+          <Button onClick={applyGenerated} className="btn-primary w-full">
+            Aplicar ao Produto
+          </Button>
+        </div>
+      )}
+
+      <PlanUpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
       />
-    </>
+    </div>
   );
 };
 

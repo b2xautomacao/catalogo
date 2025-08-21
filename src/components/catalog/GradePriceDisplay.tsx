@@ -57,7 +57,9 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
   // Calcular preços
   const pricePerPair = wholesalePrice || retailPrice;
   const totalGradePrice = pricePerPair * gradeQuantity;
-  const selectedTotalPrice = selectedQuantity ? totalGradePrice * selectedQuantity : totalGradePrice; // selectedQuantity = número de grades
+  const selectedTotalPrice = selectedQuantity
+    ? totalGradePrice * selectedQuantity
+    : totalGradePrice; // selectedQuantity = número de grades
 
   // Calcular preço por tamanho
   const priceBySize = gradeSizes.map((size, index) => {
@@ -105,7 +107,9 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
             variant="outline"
             className="bg-blue-100 text-blue-700 border-blue-300"
           >
-            {selectedQuantity ? `${selectedQuantity} grades` : `${gradeQuantity} pares`}
+            {selectedQuantity
+              ? `${selectedQuantity} grades`
+              : `${gradeQuantity} pares`}
           </Badge>
         </div>
 
@@ -140,8 +144,16 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
           <div className="text-center pt-1">
             <span className={`text-blue-600 ${classes.hint}`}>
               {selectedQuantity
-                ? `${formatCurrency(totalGradePrice)} × ${selectedQuantity} grades = ${formatCurrency(selectedTotalPrice)}`
-                : `${formatCurrency(pricePerPair)} × ${gradeQuantity} pares = ${formatCurrency(totalGradePrice)}`}
+                ? `${formatCurrency(
+                    totalGradePrice
+                  )} × ${selectedQuantity} grades = ${formatCurrency(
+                    selectedTotalPrice
+                  )}`
+                : `${formatCurrency(
+                    pricePerPair
+                  )} × ${gradeQuantity} pares = ${formatCurrency(
+                    totalGradePrice
+                  )}`}
             </span>
           </div>
         </div>

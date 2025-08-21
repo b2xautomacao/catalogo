@@ -57,27 +57,21 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const { addItem } = useCart();
 
   // 🎯 CORRIGIDO: Hooks para cálculo de preços
-  const priceCalculation = usePriceCalculation(
-    product?.store_id || "",
-    {
-      product_id: product?.id || "",
-      retail_price: product?.retail_price || 0,
-      wholesale_price: product?.wholesale_price || 0,
-      min_wholesale_qty: product?.min_wholesale_qty || 0,
-      quantity,
-      price_tiers: [],
-      enable_gradual_wholesale: product?.enable_gradual_wholesale || false,
-    }
-  );
+  const priceCalculation = usePriceCalculation(product?.store_id || "", {
+    product_id: product?.id || "",
+    retail_price: product?.retail_price || 0,
+    wholesale_price: product?.wholesale_price || 0,
+    min_wholesale_qty: product?.min_wholesale_qty || 0,
+    quantity,
+    price_tiers: [],
+    enable_gradual_wholesale: product?.enable_gradual_wholesale || false,
+  });
 
-  const { tiers } = useProductPriceTiers(
-    product?.id || "",
-    {
-      wholesale_price: product?.wholesale_price,
-      min_wholesale_qty: product?.min_wholesale_qty,
-      retail_price: product?.retail_price,
-    }
-  );
+  const { tiers } = useProductPriceTiers(product?.id || "", {
+    wholesale_price: product?.wholesale_price,
+    min_wholesale_qty: product?.min_wholesale_qty,
+    retail_price: product?.retail_price,
+  });
 
   const { priceModel } = useStorePriceModel(product?.store_id || "");
   const { variations, loading: variationsLoading } = useProductVariations(
@@ -86,7 +80,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   // 🎯 CORRIGIDO: Calcular quantidade mínima baseada no modelo de preço
   const minQuantity = useMemo(() => {
-    if (priceModel?.price_model === "wholesale_only" && product?.min_wholesale_qty) {
+    if (
+      priceModel?.price_model === "wholesale_only" &&
+      product?.min_wholesale_qty
+    ) {
       return product.min_wholesale_qty;
     }
     return 1;
@@ -174,8 +171,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
     // Se for produto com grade, calcular o preço total da grade
     if (hasVariations && variationInfo?.hasGrades && selectedVariation) {
-      const pricePerPair = product?.wholesale_price || product?.retail_price || 0;
-      const totalGradePrice = pricePerPair * (selectedVariation.grade_quantity || 0);
+      const pricePerPair =
+        product?.wholesale_price || product?.retail_price || 0;
+      const totalGradePrice =
+        pricePerPair * (selectedVariation.grade_quantity || 0);
       const finalGradeTotalPrice = totalGradePrice * finalQuantity; // finalQuantity = número de grades
 
       productWithModel = {
@@ -202,9 +201,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       title: "Produto adicionado!",
       description:
         hasVariations && variationInfo?.hasGrades
-          ? `${finalQuantity} grade${finalQuantity > 1 ? 's' : ''} de ${
+          ? `${finalQuantity} grade${finalQuantity > 1 ? "s" : ""} de ${
               selectedVariation?.grade_quantity || 0
-            } pares adicionada${finalQuantity > 1 ? 's' : ''} ao carrinho.`
+            } pares adicionada${finalQuantity > 1 ? "s" : ""} ao carrinho.`
           : `${finalQuantity} unidade(s) adicionada(s) ao carrinho.`,
     });
   }, [
@@ -236,8 +235,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
         // 🎯 CORRIGIDO: Para produtos com grade, ajustar o preço
         if (hasVariations && variationInfo?.hasGrades && selection.variation) {
-          const pricePerPair = product?.wholesale_price || product?.retail_price || 0;
-          const totalGradePrice = pricePerPair * (selection.variation.grade_quantity || 0);
+          const pricePerPair =
+            product?.wholesale_price || product?.retail_price || 0;
+          const totalGradePrice =
+            pricePerPair * (selection.variation.grade_quantity || 0);
           const finalGradeTotalPrice = totalGradePrice * selection.quantity; // selection.quantity = número de grades
 
           productWithModel = {
@@ -308,10 +309,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
     if (hasVariations && variationInfo?.hasGrades && selectedVariation) {
       // Para produtos com grade, multiplicar o preço total da grade pela quantidade de grades
-      const pricePerPair = product?.wholesale_price || product?.retail_price || 0;
-      const totalGradePrice = pricePerPair * (selectedVariation.grade_quantity || 0);
+      const pricePerPair =
+        product?.wholesale_price || product?.retail_price || 0;
+      const totalGradePrice =
+        pricePerPair * (selectedVariation.grade_quantity || 0);
       const totalPrice = totalGradePrice * quantity; // quantity = número de grades
-      
+
       console.log("🎯 GRADE - Cálculo do preço total:", {
         pricePerPair,
         gradeQuantity: selectedVariation.grade_quantity,
@@ -322,19 +325,19 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
         hasGrades: variationInfo?.hasGrades,
         selectedVariation: selectedVariation?.id,
       });
-      
+
       return totalPrice;
     } else {
       // Para produtos normais, multiplicar pela quantidade
       const basePrice = priceCalculation?.price || product?.retail_price || 0;
       const totalPrice = basePrice * quantity;
-      
+
       console.log("🎯 NORMAL - Cálculo do preço total:", {
         basePrice,
         quantity,
         totalPrice,
       });
-      
+
       return totalPrice;
     }
   }, [
@@ -659,7 +662,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">
-                        {hasVariations && variationInfo?.hasGrades ? "Quantidade de Grades:" : "Quantidade"}
+                        {hasVariations && variationInfo?.hasGrades
+                          ? "Quantidade de Grades:"
+                          : "Quantidade"}
                       </label>
                       {priceModel?.price_model === "wholesale_only" &&
                         product.min_wholesale_qty && (

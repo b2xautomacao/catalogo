@@ -28,6 +28,8 @@ import DomainSettings from "@/components/settings/DomainSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
 
+import { useStoreData } from "@/hooks/useStoreData";
+
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("store");
 
