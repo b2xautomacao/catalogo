@@ -71,12 +71,29 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     return product.retail_price;
   };
 
+  // Função para verificar se produto tem variações
+  const hasVariations = (product: Product) => {
+    return product.variations && product.variations.length > 0;
+  };
+
+  // Função para lidar com clique no botão de adicionar
+  const handleAddToCartClick = (product: Product) => {
+    if (hasVariations(product)) {
+      // Se tem variações, abrir modal de detalhes
+      onQuickView(product);
+    } else {
+      // Se não tem variações, adicionar direto ao carrinho
+      onAddToCart(product, 1);
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {products.map((product) => {
         const isInWishlist = wishlist.some(item => item.id === product.id);
         const price = getPrice(product);
         const isAvailable = product.stock > 0;
+        const productHasVariations = hasVariations(product);
 
         return (
           <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-shadow">
@@ -104,6 +121,11 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
                 {!isAvailable && (
                   <Badge variant="destructive" className="text-xs">
                     Esgotado
+                  </Badge>
+                )}
+                {productHasVariations && (
+                  <Badge variant="secondary" className="text-xs">
+                    Variações
                   </Badge>
                 )}
               </div>
@@ -169,10 +191,15 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
                 size="sm"
                 className="w-full"
                 disabled={!isAvailable}
-                onClick={() => onAddToCart(product, 1)}
+                onClick={() => handleAddToCartClick(product)}
               >
                 <ShoppingCart className="h-4 w-4 mr-1" />
-                {isAvailable ? 'Adicionar' : 'Esgotado'}
+                {productHasVariations 
+                  ? 'Ver Opções' 
+                  : isAvailable 
+                    ? 'Adicionar' 
+                    : 'Esgotado'
+                }
               </Button>
             </CardContent>
           </Card>

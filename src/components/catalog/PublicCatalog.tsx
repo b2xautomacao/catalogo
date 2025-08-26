@@ -1,155 +1,120 @@
+
 import React, { useState, useEffect } from "react";
-import { useCatalog, CatalogType } from "@/hooks/useCatalog";
-import { useCatalogSettings } from "@/hooks/useCatalogSettings";
-import { useGlobalTemplateStyles } from "@/hooks/useGlobalTemplateStyles";
-import { useDynamicMetaTags } from "@/hooks/useDynamicMetaTags";
+import { useParams, useSearchParams } from "react-router-dom";
+import CatalogHeader from "./CatalogHeader";
+import CatalogFilters from "./CatalogFilters";
 import ResponsiveProductGrid from "./ResponsiveProductGrid";
-import AdvancedFilterSidebar, {
-  AdvancedFilterState,
-} from "./AdvancedFilterSidebar";
-import TemplateWrapper from "./TemplateWrapper";
-import CheckoutModal from "./CheckoutModal";
-import FloatingCart from "./FloatingCart";
 import ProductDetailsModal from "./ProductDetailsModal";
-import CatalogBannerSection from "./banners/CatalogBannerSection";
 import { Product } from "@/types/product";
+import { CatalogType, useCatalog } from "@/hooks/useCatalog";
 import { useCart } from "@/hooks/useCart";
+import { createCartItem } from "@/utils/cartHelpers";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, Heart, Search, Filter } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 
-interface PublicCatalogProps {
-  storeIdentifier: string;
-  catalogType?: CatalogType;
-}
+const PublicCatalog: React.FC = () => {
+  const { storeSlug } = useParams<{ storeSlug: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Estados locais
+  const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [showFilters, setShowFilters] = useState(false);
 
-const PublicCatalog: React.FC<PublicCatalogProps> = ({
-  storeIdentifier,
-  catalogType = "retail",
-}) => {
+  // Determinar tipo de catálogo a partir da URL
+  const catalogType: CatalogType = searchParams.get("type") === "wholesale" ? "wholesale" : "retail";
+
+  // Hook do catálogo
   const {
-    store,
-    products,
-    loading: catalogLoading,
-    searchProducts,
-  } = useCatalog(storeIdentifier, catalogType);
-  const { settings, loading: settingsLoading } =
-    useCatalogSettings(storeIdentifier);
-  const { isReady, templateName } = useGlobalTemplateStyles(storeIdentifier);
-  const { totalItems, toggleCart, addItem } = useCart();
-
-  // Hook para meta tags dinâmicas
-  const { isLoaded: metaTagsLoaded } = useDynamicMetaTags({
-    storeIdentifier,
+    products: allProducts,
+    categories,
+    loading: storeLoading,
+    error,
+    storeConfig,
+  } = useCatalog({
+    storeIdentifier: storeSlug || "",
     catalogType,
   });
 
-  const [wishlist, setWishlist] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+  // Hook do carrinho
+  const { items: cartItems, addItem } = useCart();
 
-  // Atualizar produtos filtrados quando os produtos mudarem
-  useEffect(() => {
-    setFilteredProducts(products);
-  }, [products]);
+  // Filtrar produtos baseado nos filtros aplicados
+  const filteredProducts = React.useMemo(() => {
+    if (!allProducts) return [];
 
-  // Função de filtragem inteligente
-  const handleAdvancedFilter = (filters: AdvancedFilterState) => {
-    let filtered = [...products];
-
-    // Busca por texto inteligente
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase().trim();
-      const searchTerms = query.split(" ").filter((term) => term.length > 0);
-
-      filtered = filtered.filter((product) => {
-        const searchableText = [
-          product.name,
-          product.description,
-          product.category,
-          ...(
-            product.variations?.map((v) => [v.color, v.size].filter(Boolean)) ||
-            []
-          ).flat(),
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return searchTerms.every((term) => searchableText.includes(term));
-      });
-    }
-
-    // Filtro por categoria
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter((product) =>
-        filters.categories.includes(product.category || "")
-      );
-    }
-
-    // Filtro por faixa de preço
-    filtered = filtered.filter((product) => {
-      const price = product.retail_price || 0;
-      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
-    });
-
-    // Filtro por estoque
-    if (filters.inStock) {
-      filtered = filtered.filter((product) => (product.stock || 0) > 0);
-    }
-
-    // Filtro por destaque
-    if (filters.featured) {
-      filtered = filtered.filter((product) => product.is_featured);
-    }
-
-    // Filtro por variações
-    if (
-      filters.variations.colors.length > 0 ||
-      filters.variations.sizes.length > 0
-    ) {
-      filtered = filtered.filter((product) => {
-        if (!product.variations || product.variations.length === 0)
-          return false;
-
-        return product.variations.some((variation) => {
-          const colorMatch =
-            filters.variations.colors.length === 0 ||
-            (variation.color &&
-              filters.variations.colors.includes(variation.color));
-
-          const sizeMatch =
-            filters.variations.sizes.length === 0 ||
-            (variation.size &&
-              filters.variations.sizes.includes(variation.size));
-
-          return colorMatch && sizeMatch;
-        });
-      });
-    }
-
-    // Filtro por avaliação
-    if (filters.rating > 0) {
-      filtered = filtered.filter((product) => {
-        const hash = product.id.split("").reduce((a, b) => {
-          a = (a << 5) - a + b.charCodeAt(0);
-          return a & a;
-        }, 0);
-        const rating = 3.5 + (Math.abs(hash) % 15) / 10;
-        return rating >= filters.rating;
-      });
-    }
-
-    setFilteredProducts(filtered);
-  };
-
-  const handleAddToWishlist = (product: Product) => {
-    setWishlist((prev) => {
-      const isAlreadyInWishlist = prev.some((item) => item.id === product.id);
-      if (isAlreadyInWishlist) {
-        return prev.filter((item) => item.id !== product.id);
-      } else {
-        return [...prev, product];
+    let filtered = allProducts.filter((product) => {
+      // Filtro de categoria
+      if (selectedCategory && product.category !== selectedCategory) {
+        return false;
       }
+
+      // Filtro de preço
+      const price = catalogType === 'wholesale' && product.wholesale_price 
+        ? product.wholesale_price 
+        : product.retail_price;
+      if (price < priceRange[0] || price > priceRange[1]) {
+        return false;
+      }
+
+      // Filtro de busca
+      if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+
+      return true;
     });
+
+    // Ordenação
+    switch (sortBy) {
+      case "price_asc":
+        filtered.sort((a, b) => {
+          const priceA = catalogType === 'wholesale' && a.wholesale_price ? a.wholesale_price : a.retail_price;
+          const priceB = catalogType === 'wholesale' && b.wholesale_price ? b.wholesale_price : b.retail_price;
+          return priceA - priceB;
+        });
+        break;
+      case "price_desc":
+        filtered.sort((a, b) => {
+          const priceA = catalogType === 'wholesale' && a.wholesale_price ? a.wholesale_price : a.retail_price;
+          const priceB = catalogType === 'wholesale' && b.wholesale_price ? b.wholesale_price : b.retail_price;
+          return priceB - priceA;
+        });
+        break;
+      case "name":
+      default:
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+
+    return filtered;
+  }, [allProducts, selectedCategory, priceRange, searchTerm, sortBy, catalogType]);
+
+  // Atualizar URL quando filtros mudarem
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (catalogType === "wholesale") params.set("type", "wholesale");
+    if (selectedCategory) params.set("category", selectedCategory);
+    if (searchTerm) params.set("search", searchTerm);
+    if (sortBy !== "name") params.set("sort", sortBy);
+    
+    setSearchParams(params);
+  }, [catalogType, selectedCategory, searchTerm, sortBy, setSearchParams]);
+
+  // Handlers
+  const handleAddToWishlist = (product: Product) => {
+    const isInWishlist = wishlist.some(item => item.id === product.id);
+    if (isInWishlist) {
+      setWishlist(prev => prev.filter(item => item.id !== product.id));
+    } else {
+      setWishlist(prev => [...prev, product]);
+    }
   };
 
   const handleQuickView = (product: Product) => {
@@ -160,159 +125,211 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     console.log('🛒 PUBLIC CATALOG - Adicionando ao carrinho:', { product, quantity, variation });
     
     // Criar item do carrinho usando a função helper
-    import('@/utils/cartHelpers').then(({ createCartItem }) => {
-      const cartItem = createCartItem(product, catalogType, quantity, variation);
-      addItem(cartItem);
-    });
+    const cartItem = createCartItem(product, catalogType, quantity, variation);
+    addItem(cartItem);
   };
 
   const handleCartClick = () => {
-    console.log("🛒 PUBLIC CATALOG - Abrindo carrinho flutuante");
-    toggleCart();
+    console.log('🛒 PUBLIC CATALOG - Abrindo carrinho');
+    // Aqui você pode implementar a navegação para o carrinho ou abrir um modal
   };
 
-  const handleCheckoutFromCart = () => {
-    console.log(
-      "🛒 PUBLIC CATALOG - Abrindo checkout modal a partir do carrinho"
-    );
-    setIsCheckoutOpen(true);
+  const resetFilters = () => {
+    setSelectedCategory("");
+    setPriceRange([0, 1000]);
+    setSearchTerm("");
+    setSortBy("name");
   };
 
-  const handleCloseCheckout = () => {
-    console.log("🛒 PUBLIC CATALOG - Fechando checkout modal");
-    setIsCheckoutOpen(false);
-  };
-
-  const loading = catalogLoading || settingsLoading;
-
-  if (loading) {
+  // Estados de carregamento e erro
+  if (storeLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-700">
-            Carregando catálogo...
-          </h2>
-          <p className="text-gray-500 mt-2">Aguarde um momento</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Carregando catálogo...</p>
         </div>
       </div>
     );
   }
 
-  if (!store) {
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Loja não encontrada
-          </h1>
-          <p className="text-gray-600 mb-6">
-            A loja que você está procurando não existe ou não está ativa.
-          </p>
-          <a
-            href="/"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Voltar ao início
-          </a>
+          <p className="text-red-600 mb-2">Erro ao carregar catálogo</p>
+          <p className="text-gray-500 text-sm">{error}</p>
         </div>
       </div>
     );
   }
+
+  if (!storeConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Loja não encontrada</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="relative template-container catalog-container enhanced-catalog">
-      <TemplateWrapper
-        templateName={templateName}
-        store={store}
+    <div className="min-h-screen bg-background">
+      {/* Header do Catálogo */}
+      <CatalogHeader
+        storeName={storeConfig.name}
+        storeDescription={storeConfig.description}
         catalogType={catalogType}
-        cartItemsCount={totalItems}
-        wishlistCount={wishlist.length}
-        whatsappNumber={settings?.whatsapp_number || undefined}
-        onSearch={searchProducts}
-        onToggleFilters={() => setIsFilterOpen(!isFilterOpen)}
-        onCartClick={handleCartClick}
-      >
-        {/* Layout Desktop Otimizado - Estilo Mercado Livre */}
-        <div className="min-h-screen bg-gray-50">
-          {/* Banner do Catálogo - Mesma largura do header */}
-          <div className="container mx-auto px-4 py-4">
-            <CatalogBannerSection
-              storeId={store.id}
-              bannerType="promotional"
-              className="mb-6"
-            />
-          </div>
+        templateName={storeConfig.template_name || "modern"}
+      />
 
-          {/* Conteúdo Principal */}
-          <div className="container mx-auto px-4">
-            <div className="flex gap-6">
-              {/* Sidebar de Filtros - Desktop */}
-              {settings?.allow_categories_filter && (
-                <div className="hidden lg:block w-60 flex-shrink-0">
-                  <div className="sticky top-4">
-                    <AdvancedFilterSidebar
-                      onFilter={handleAdvancedFilter}
-                      isOpen={true}
-                      onClose={() => {}}
-                      products={products}
-                      isMobile={false}
-                    />
-                  </div>
-                </div>
-              )}
+      {/* Barra de Ações Mobile */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b lg:hidden">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <CatalogFilters
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    priceRange={priceRange}
+                    onPriceRangeChange={setPriceRange}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    onResetFilters={resetFilters}
+                  />
+                </SheetContent>
+              </Sheet>
+              
+              <Button variant="outline" size="sm">
+                <Search className="h-4 w-4 mr-2" />
+                Buscar
+              </Button>
+            </div>
 
-              {/* Grid de Produtos */}
-              <div className="flex-1 min-w-0">
-                <ResponsiveProductGrid
-                  products={filteredProducts}
-                  catalogType={catalogType}
-                  storeIdentifier={storeIdentifier}
-                  loading={loading}
-                  onAddToWishlist={handleAddToWishlist}
-                  onQuickView={handleQuickView}
-                  onAddToCart={handleAddToCart}
-                  wishlist={wishlist}
-                  templateName={templateName}
-                  showPrices={settings?.show_prices ?? true}
-                  showStock={settings?.show_stock ?? true}
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="relative">
+                <Heart className="h-4 w-4" />
+                {wishlist.length > 0 && (
+                  <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs">
+                    {wishlist.length}
+                  </Badge>
+                )}
+              </Button>
+              
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="relative"
+                onClick={handleCartClick}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Carrinho
+                {totalCartItems > 0 && (
+                  <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-red-500">
+                    {totalCartItems}
+                  </Badge>
+                )}
+              </Button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Filtros Mobile */}
-        {settings?.allow_categories_filter && (
-          <AdvancedFilterSidebar
-            onFilter={handleAdvancedFilter}
-            isOpen={isFilterOpen}
-            onClose={() => setIsFilterOpen(false)}
-            products={products}
-            isMobile={true}
-          />
-        )}
-      </TemplateWrapper>
+      {/* Layout Principal */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+          {/* Sidebar de Filtros - Desktop */}
+          <div className="hidden lg:block">
+            <div className="sticky top-6">
+              <CatalogFilters
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                priceRange={priceRange}
+                onPriceRangeChange={setPriceRange}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onResetFilters={resetFilters}
+              />
+            </div>
+          </div>
 
-      {/* Floating Cart */}
-      <FloatingCart onCheckout={handleCheckoutFromCart} storeId={store?.id} />
+          {/* Grid de Produtos */}
+          <div className="lg:col-span-3">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">
+                  {catalogType === "wholesale" ? "Catálogo Atacado" : "Catálogo Varejo"}
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  {filteredProducts.length} produto(s) encontrado(s)
+                </p>
+              </div>
 
-      {/* Product Details Modal */}
+              {/* Carrinho - Desktop */}
+              <div className="hidden lg:flex items-center gap-4">
+                <Button variant="ghost" className="relative">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Lista de Desejos
+                  {wishlist.length > 0 && (
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs">
+                      {wishlist.length}
+                    </Badge>
+                  )}
+                </Button>
+                
+                <Button className="relative" onClick={handleCartClick}>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Carrinho
+                  {totalCartItems > 0 && (
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-red-500">
+                      {totalCartItems}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <ResponsiveProductGrid
+              products={filteredProducts}
+              catalogType={catalogType}
+              storeIdentifier={storeSlug || ""}
+              loading={false}
+              onAddToWishlist={handleAddToWishlist}
+              onQuickView={handleQuickView}
+              onAddToCart={handleAddToCart}
+              wishlist={wishlist}
+              templateName={storeConfig.template_name || "modern"}
+              showPrices={storeConfig.settings?.show_prices ?? true}
+              showStock={storeConfig.settings?.show_stock ?? true}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Detalhes do Produto */}
       <ProductDetailsModal
         product={selectedProduct}
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
         catalogType={catalogType}
-      />
-
-      {/* Checkout Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={handleCloseCheckout}
-        storeSettings={settings}
-        storeId={store?.id}
-        storeData={store}
       />
     </div>
   );

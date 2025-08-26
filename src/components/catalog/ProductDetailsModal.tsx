@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Product, ProductVariation } from "@/types/product";
 import { useProductVariations } from "@/hooks/useProductVariations";
-import MultipleVariationSelector from "./MultipleVariationSelector";
+import HierarchicalColorSizeSelector from "./HierarchicalColorSizeSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePriceCalculation } from "@/hooks/usePriceCalculation";
 
@@ -86,6 +86,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   };
 
   const shouldShowReadMore = product.description && product.description.length > 150;
+  const hasVariations = variations && variations.length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -108,6 +109,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   <Badge className="bg-yellow-100 text-yellow-800">
                     <Star className="h-3 w-3 mr-1" />
                     Destaque
+                  </Badge>
+                )}
+                {hasVariations && (
+                  <Badge variant="outline" className="text-blue-600 border-blue-300">
+                    {variations.length} Variações
                   </Badge>
                 )}
               </div>
@@ -205,37 +211,39 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             {/* Coluna Direita - Compra */}
             <div className="space-y-4">
               {/* Preço - Integrado com Sistema de Pricing */}
-              <Card>
-                <CardContent className="pt-4 pb-4">
-                  <div className="text-center space-y-2">
-                    <div className="text-2xl font-bold text-primary">
-                      {priceCalculation.formattedUnitPrice}
-                    </div>
-                    {priceCalculation.savings > 0 && (
-                      <div className="text-sm">
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          Economia: {priceCalculation.formattedSavings}
-                        </Badge>
+              {!hasVariations && (
+                <Card>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="text-center space-y-2">
+                      <div className="text-2xl font-bold text-primary">
+                        {priceCalculation.formattedUnitPrice}
                       </div>
-                    )}
-                    <div className="text-sm text-muted-foreground">
-                      Nível: {priceCalculation.currentTier.tier_name}
+                      {priceCalculation.savings > 0 && (
+                        <div className="text-sm">
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            Economia: {priceCalculation.formattedSavings}
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="text-sm text-muted-foreground">
+                        Nível: {priceCalculation.currentTier.tier_name}
+                      </div>
+                      {catalogType === "wholesale" && product.min_wholesale_qty && (
+                        <p className="text-xs text-muted-foreground">
+                          Quantidade mínima: {product.min_wholesale_qty} unidades
+                        </p>
+                      )}
                     </div>
-                    {catalogType === "wholesale" && product.min_wholesale_qty && (
-                      <p className="text-xs text-muted-foreground">
-                        Quantidade mínima: {product.min_wholesale_qty} unidades
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Seleção de Variações - Sistema Múltiplo */}
-              {variations && variations.length > 0 && (
+              {/* Seleção de Variações - Sistema Hierárquico */}
+              {hasVariations && (
                 <Card>
                   <CardContent className="pt-4 pb-4">
                     <h4 className="font-semibold mb-3">Selecionar Variações</h4>
-                    <MultipleVariationSelector
+                    <HierarchicalColorSizeSelector
                       product={product}
                       variations={variations}
                       onAddToCart={handleMultipleAddToCart}
@@ -246,7 +254,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               )}
 
               {/* Botões de Ação - Produtos sem Variações */}
-              {(!variations || variations.length === 0) && (
+              {!hasVariations && (
                 <div className="space-y-3">
                   {product.stock > 0 ? (
                     <>
@@ -284,7 +292,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               )}
 
               {/* Dica para Próximo Nível de Preço */}
-              {priceCalculation.nextTierHint && (
+              {!hasVariations && priceCalculation.nextTierHint && (
                 <Card className="border-blue-200 bg-blue-50">
                   <CardContent className="pt-4 pb-4">
                     <div className="text-center text-sm">
