@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import CatalogHeader from "./CatalogHeader";
 import ResponsiveProductGrid from "./ResponsiveProductGrid";
@@ -42,7 +41,12 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({ storeSlug }) => {
 
   const handleAddToCart = (product: Product, quantity: number = 1, variation?: any) => {
     console.log('Adding to cart:', { product, quantity, variation });
-    addItem(product, quantity, variation);
+    
+    // Criar item do carrinho usando a função helper
+    import('@/utils/cartHelpers').then(({ createCartItem }) => {
+      const cartItem = createCartItem(product, catalogType, quantity, variation);
+      addItem(cartItem);
+    });
   };
 
   if (storeLoading) {

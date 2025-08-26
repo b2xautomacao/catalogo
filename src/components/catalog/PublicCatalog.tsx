@@ -158,7 +158,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
 
   const handleAddToCart = (product: Product, quantity: number = 1, variation?: any) => {
     console.log('🛒 PUBLIC CATALOG - Adicionando ao carrinho:', { product, quantity, variation });
-    addItem(product, quantity, variation);
+    
+    // Criar item do carrinho usando a função helper
+    import('@/utils/cartHelpers').then(({ createCartItem }) => {
+      const cartItem = createCartItem(product, catalogType, quantity, variation);
+      addItem(cartItem);
+    });
   };
 
   const handleCartClick = () => {
