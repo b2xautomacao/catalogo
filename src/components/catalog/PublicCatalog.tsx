@@ -61,7 +61,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = () => {
     }
   }, [storeSlug, catalogType, initializeCatalog]);
 
-  // Simular categorias a partir dos produtos (pode ser melhorado)
+  // Simular categorias a partir dos produtos
   const categories = React.useMemo(() => {
     const uniqueCategories = new Set(
       allProducts
@@ -84,28 +84,48 @@ const PublicCatalog: React.FC<PublicCatalogProps> = () => {
     if (searchQuery.trim()) {
       searchProducts(searchQuery);
     } else {
-      // Reset para todos os produtos quando busca está vazia
       filterProducts();
     }
   }, [searchQuery, searchProducts, filterProducts]);
 
   const handleAddToCart = (product: Product, quantity = 1, variation?: any) => {
     try {
+      // Corrigir o objeto de variação para incluir todas as propriedades obrigatórias
+      const completeVariation = variation ? {
+        id: variation.id || `${product.id}-var-${Date.now()}`,
+        product_id: product.id,
+        color: variation.color || null,
+        size: variation.size || null,
+        sku: variation.sku || null,
+        stock: variation.stock || 0,
+        price_adjustment: variation.price_adjustment || 0,
+        is_active: variation.is_active !== undefined ? variation.is_active : true,
+        created_at: variation.created_at || new Date().toISOString(),
+        updated_at: variation.updated_at || new Date().toISOString(),
+      } : undefined;
+
       addItem({
-        id: variation ? `${product.id}-${variation.id}` : product.id || '',
-        productId: product.id || '',
-        name: product.name,
+        id: completeVariation ? `${product.id}-${completeVariation.id}` : product.id || '',
+        product: {
+          id: product.id || '',
+          name: product.name,
+          retail_price: product.retail_price,
+          wholesale_price: product.wholesale_price,
+          min_wholesale_qty: product.min_wholesale_qty,
+          image_url: product.image_url,
+          store_id: product.store_id,
+          stock: product.stock,
+          allow_negative_stock: product.allow_negative_stock || false,
+          enable_gradual_wholesale: product.enable_gradual_wholesale,
+          price_model: product.price_model,
+        },
+        quantity,
         price: catalogType === 'wholesale' && product.wholesale_price 
           ? product.wholesale_price 
           : product.retail_price,
-        quantity,
-        image: product.image_url,
-        variation: variation ? {
-          id: variation.id,
-          color: variation.color,
-          size: variation.size,
-          sku: variation.sku
-        } : undefined
+        originalPrice: product.retail_price,
+        variation: completeVariation,
+        catalogType,
       });
 
       toast({
@@ -304,7 +324,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = () => {
       {/* Botões Flutuantes */}
       <FloatingCartButton
         onClick={() => {
-          // Implementar abertura do carrinho
           console.log('Abrir carrinho flutuante');
         }}
       />
