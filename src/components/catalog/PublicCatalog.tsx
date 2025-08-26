@@ -31,15 +31,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   const { user } = useAuth();
   const { addItem } = useShoppingCart();
   const { toast } = useToast();
-  
-  // Só inicializa os hooks se houver storeIdentifier
-  const { store, products, filteredProducts, loading, storeError } = useCatalog(
-    storeIdentifier, 
-    catalogType
-  );
-  const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
-  
-  useEditorSync(storeIdentifier || '');
 
   // Verificar se não há identificador da loja
   if (!storeIdentifier) {
@@ -60,6 +51,15 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
       </div>
     );
   }
+  
+  // Inicializar hooks após verificar storeIdentifier
+  const { store, products, filteredProducts, loading, storeError } = useCatalog(
+    storeIdentifier, 
+    catalogType
+  );
+  const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
+  
+  useEditorSync(storeIdentifier);
 
   useEffect(() => {
     if (store?.id && !loading) {
@@ -68,10 +68,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   }, [store, loading]);
 
   const handleAddToCart = (product: any, quantity: number = 1) => {
-    const price = catalogType === "wholesale" && product.wholesale_price 
-      ? product.wholesale_price 
-      : product.retail_price;
-
     addItem(product, quantity);
     
     toast({
