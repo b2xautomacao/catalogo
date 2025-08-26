@@ -23,23 +23,17 @@ const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
       <Button
         size="lg"
         onClick={onClick}
-        className="relative h-16 w-16 rounded-full shadow-2xl border-2 border-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-3xl animate-fade-in"
-        style={{
-          background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 80%)',
-        }}
+        className="relative h-14 w-14 rounded-full shadow-lg hover:shadow-xl bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-110 border-2 border-white/10"
       >
-        <ShoppingCart className="h-8 w-8 text-white" />
+        <ShoppingCart className="h-6 w-6 text-white" />
         
         {/* Counter Badge */}
         <Badge
-          className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-500 text-white text-sm font-bold flex items-center justify-center p-0 border-2 border-white shadow-lg animate-scale-in"
+          className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-destructive text-white text-xs font-bold flex items-center justify-center p-0 border-2 border-white shadow-md min-w-6"
         >
           {totalItems > 99 ? "99+" : totalItems}
         </Badge>
       </Button>
-      
-      {/* Pulse Effect */}
-      <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
     </div>
   );
 };

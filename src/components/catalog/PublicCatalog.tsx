@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useCatalog, CatalogType } from '@/hooks/useCatalog';
@@ -7,7 +6,6 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { useToast } from '@/hooks/use-toast';
 import CatalogHeader from './CatalogHeader';
 import BannerHero from './BannerHero';
-import FloatingCartButton from './FloatingCartButton';
 import ResponsiveProductGrid from './ResponsiveProductGrid';
 import ProductDetailsModal from './ProductDetailsModal';
 import SimpleFloatingCart from './SimpleFloatingCart';
@@ -321,14 +319,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = () => {
         catalogType={catalogType}
       />
 
-      {/* Botões Flutuantes */}
-      <FloatingCartButton
-        onClick={() => {
-          console.log('Abrir carrinho flutuante');
-        }}
-      />
-
-      {/* Carrinho Flutuante Simples */}
+      {/* Carrinho Flutuante */}
       <SimpleFloatingCart
         onCheckout={() => {
           console.log('Ir para checkout');

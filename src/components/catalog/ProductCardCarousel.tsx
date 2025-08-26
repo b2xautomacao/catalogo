@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Camera, Package } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useProductImages } from '@/hooks/useProductImages';
+import React, { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Package, Camera } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ProductCardCarouselProps {
   productId: string;
@@ -20,126 +19,129 @@ const ProductCardCarousel: React.FC<ProductCardCarouselProps> = ({
   onImageClick,
   autoPlay = true,
   autoPlayInterval = 4000,
-  className = ""
+  className = "",
 }) => {
-  const { images, loading } = useProductImages(productId);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [images, setImages] = useState<any[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-play functionality
   useEffect(() => {
-    if (autoPlay && !isHovered && images.length > 1) {
-      intervalRef.current = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
-      }, autoPlayInterval);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
+    const fetchImages = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: productImages } = await supabase
+          .from("product_images")
+          .select("*")
+          .eq("product_id", productId)
+          .order("is_primary", { ascending: false })
+          .order("image_order", { ascending: true });
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        if (productImages && productImages.length > 0) {
+          setImages(productImages);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar imagens:", error);
+      } finally {
+        setLoading(false);
       }
     };
-  }, [autoPlay, isHovered, images.length, autoPlayInterval]);
 
-  const goToPrevious = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const goToNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const handleImageClick = () => {
-    if (onImageClick) {
-      onImageClick();
+    if (productId) {
+      fetchImages();
     }
+  }, [productId]);
+
+  // Auto-play apenas se não estiver com hover e tiver múltiplas imagens
+  useEffect(() => {
+    if (!autoPlay || images.length <= 1 || isHovered) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, autoPlayInterval);
+
+    return () => clearInterval(interval);
+  }, [autoPlay, autoPlayInterval, images.length, isHovered]);
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   if (loading) {
     return (
-      <div className={`relative aspect-square bg-muted rounded-lg overflow-hidden ${className}`}>
-        <div className="w-full h-full flex items-center justify-center">
-          <Package className="h-8 w-8 text-muted-foreground animate-pulse" />
-        </div>
-      </div>
-    );
-  }
-
-  if (images.length === 0) {
-    return (
-      <div 
-        className={`relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:bg-muted/80 transition-colors ${className}`}
-        onClick={handleImageClick}
+      <div
+        className={`relative bg-gradient-to-br from-muted to-muted/60 aspect-square flex items-center justify-center cursor-pointer ${className}`}
+        onClick={onImageClick}
       >
-        <div className="w-full h-full flex items-center justify-center">
-          <Package className="h-8 w-8 text-muted-foreground" />
-        </div>
+        <Package className="h-12 w-12 text-muted-foreground animate-pulse" />
       </div>
     );
   }
 
-  const currentImage = images[currentIndex];
-  const hasMultipleImages = images.length > 1;
+  if (!images.length) {
+    return (
+      <div
+        className={`relative bg-gradient-to-br from-muted to-muted/60 aspect-square flex items-center justify-center cursor-pointer ${className}`}
+        onClick={onImageClick}
+      >
+        <Package className="h-12 w-12 text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group ${className}`}
+      className={`relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/60 cursor-pointer group ${className}`}
+      onClick={onImageClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={handleImageClick}
     >
       {/* Main Image */}
       <img
-        src={currentImage.image_url}
-        alt={`${productName} - Imagem ${currentIndex + 1}`}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        src={images[currentImageIndex]?.image_url}
+        alt={`${productName} - Imagem ${currentImageIndex + 1}`}
+        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
         loading="lazy"
         onError={(e) => {
-          e.currentTarget.style.display = 'none';
-          const parent = e.currentTarget.parentElement;
-          if (parent) {
-            parent.classList.add('bg-muted', 'flex', 'items-center', 'justify-center');
-            parent.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>';
-          }
+          e.currentTarget.style.display = "none";
         }}
       />
 
       {/* Image Count Badge */}
-      {hasMultipleImages && (
+      {images.length > 1 && (
         <Badge
-          className="absolute top-2 right-2 bg-black/70 text-white text-xs font-medium flex items-center gap-1 backdrop-blur-sm border-white/20"
-          style={{ padding: '4px 8px' }}
+          className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 flex items-center gap-1 backdrop-blur-sm"
         >
           <Camera className="h-3 w-3" />
           {images.length}
         </Badge>
       )}
 
-      {/* Navigation Controls - Only show on hover and if multiple images */}
-      {hasMultipleImages && (
+      {/* Navigation Arrows - Only show if multiple images */}
+      {images.length > 1 && (
         <>
+          {/* Previous Button */}
           <Button
-            variant="ghost"
             size="sm"
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 p-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
-            onClick={goToPrevious}
+            variant="secondary"
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-1 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 backdrop-blur-sm"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
+          {/* Next Button */}
           <Button
-            variant="ghost"
             size="sm"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 p-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
-            onClick={goToNext}
+            variant="secondary"
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-1 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 backdrop-blur-sm"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -149,21 +151,20 @@ const ProductCardCarousel: React.FC<ProductCardCarouselProps> = ({
             {images.slice(0, Math.min(5, images.length)).map((_, index) => (
               <button
                 key={index}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  index === currentIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/75'
-                }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentIndex(index);
+                  setCurrentImageIndex(index);
                 }}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  index === currentImageIndex
+                    ? "bg-white"
+                    : "bg-white/50 hover:bg-white/75"
+                }`}
               />
             ))}
           </div>
         </>
       )}
-
-      {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
     </div>
   );
 };

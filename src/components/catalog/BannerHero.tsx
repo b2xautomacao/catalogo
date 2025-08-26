@@ -17,19 +17,16 @@ const BannerHero: React.FC<BannerHeroProps> = ({
   onScrollToCatalog
 }) => {
   return (
-    <div className="relative h-[500px] w-full overflow-hidden">
+    <div className="relative h-[400px] w-full overflow-hidden">
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: store.logo_url 
-            ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${store.logo_url})`
+            ? `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${store.logo_url})`
             : 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)'
         }}
       />
-      
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
       
       {/* Content */}
       <div className="relative z-10 h-full flex items-center justify-center">
@@ -41,19 +38,19 @@ const BannerHero: React.FC<BannerHeroProps> = ({
                 <img
                   src={store.logo_url}
                   alt={`Logo ${store.name}`}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white/20 shadow-2xl"
+                  className="w-20 h-20 rounded-full object-cover border-3 border-white/30 shadow-xl"
                 />
               </div>
             )}
             
             {/* Store Name */}
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
               {store.name}
             </h1>
             
             {/* Store Description */}
             {store.description && (
-              <p className="text-xl md:text-2xl text-white/90 mb-6 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto leading-relaxed">
                 {store.description}
               </p>
             )}
@@ -62,16 +59,16 @@ const BannerHero: React.FC<BannerHeroProps> = ({
             <div className="flex items-center justify-center gap-3 mb-8">
               <Badge 
                 variant="secondary" 
-                className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-lg px-4 py-2"
+                className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-base px-4 py-2"
               >
-                {catalogType === 'wholesale' ? '🏪 Atacado' : '🛍️ Varejo'}
+                {catalogType === 'wholesale' ? 'Atacado' : 'Varejo'}
               </Badge>
               
               <Badge 
                 variant="secondary" 
-                className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-lg px-4 py-2"
+                className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-base px-4 py-2"
               >
-                ✨ Catálogo Online
+                Catálogo Online
               </Badge>
             </div>
             
@@ -80,7 +77,7 @@ const BannerHero: React.FC<BannerHeroProps> = ({
               <Button
                 size="lg"
                 onClick={onScrollToCatalog}
-                className="bg-white text-primary hover:bg-white/90 shadow-2xl text-lg px-8 py-4 h-auto font-semibold transition-all duration-300 hover:scale-105"
+                className="bg-white text-primary hover:bg-white/90 shadow-xl text-lg px-8 py-3 h-auto font-semibold transition-all duration-300 hover:scale-105"
               >
                 Ver Produtos
                 <ChevronDown className="ml-2 h-5 w-5" />
