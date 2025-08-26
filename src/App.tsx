@@ -80,7 +80,7 @@ function App() {
             <Route path="/test-store" element={<TestStore />} />
             <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
             <Route
-              path="/catalog/:storeSlug"
+              path="/catalog/:storeIdentifier"
               element={<PublicCatalog />}
             />
 

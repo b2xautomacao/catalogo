@@ -32,6 +32,29 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   const { addItem } = useShoppingCart();
   const { toast } = useToast();
 
+  console.log('🔍 PublicCatalog: storeIdentifier recebido:', storeIdentifier);
+
+  // Verificar se temos storeIdentifier
+  if (!storeIdentifier) {
+    console.error('❌ PublicCatalog: storeIdentifier não fornecido');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h1 className="text-2xl font-bold text-foreground mb-4">URL Inválida</h1>
+          <p className="text-muted-foreground mb-4">
+            O identificador da loja não foi fornecido na URL.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Use uma URL como: <br />
+            <code className="bg-muted px-2 py-1 rounded text-xs">
+              /catalog/nome-da-loja
+            </code>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Inicializar hooks diretamente
   const { store, products, filteredProducts, loading, storeError } = useCatalog(
     storeIdentifier, 
@@ -39,11 +62,11 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   );
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
   
-  useEditorSync(storeIdentifier || '');
+  useEditorSync(storeIdentifier);
 
   useEffect(() => {
     if (store?.id && !loading) {
-      console.log("Loja carregada:", store.name, "ID:", store.id);
+      console.log("✅ Loja carregada:", store.name, "ID:", store.id);
     }
   }, [store, loading]);
 
@@ -72,7 +95,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando loja...</p>
+          <p className="text-muted-foreground">Carregando loja {storeIdentifier}...</p>
         </div>
       </div>
     );
@@ -86,11 +109,14 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
           <p className="text-muted-foreground mb-4">
             {storeError || "A loja que você está procurando não existe ou foi removida."}
           </p>
-          <p className="text-sm text-muted-foreground">
-            Verifique se o identificador da loja está correto: <br />
+          <p className="text-sm text-muted-foreground mb-4">
+            Identificador buscado: <br />
             <code className="bg-muted px-2 py-1 rounded text-xs">
               {storeIdentifier}
             </code>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Lojas disponíveis: cactus-branco, cheio-de-desejo, viver-melhor, atlanz
           </p>
         </div>
       </div>
