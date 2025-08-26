@@ -47,7 +47,9 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price || product.retail_price,
+      price: catalogType === "wholesale" && product.wholesale_price 
+        ? product.wholesale_price 
+        : product.retail_price,
       image: product.images?.[0] || "/placeholder.svg",
       quantity: quantity,
       storeId: store?.id || "",
