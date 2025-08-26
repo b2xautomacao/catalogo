@@ -4,7 +4,7 @@ import { useShoppingCart } from './useShoppingCart';
 
 export const useFloatingCart = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { items, totalItems, totalPrice } = useShoppingCart();
+  const { items, totalItems, totalValue } = useShoppingCart();
 
   const showCart = useCallback(() => {
     setIsVisible(true);
@@ -25,7 +25,7 @@ export const useFloatingCart = () => {
     toggleCart,
     items,
     totalItems,
-    totalPrice,
+    totalPrice: totalValue,
     hasItems: totalItems > 0
   };
 };
