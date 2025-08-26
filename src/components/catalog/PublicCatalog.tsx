@@ -32,34 +32,14 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   const { addItem } = useShoppingCart();
   const { toast } = useToast();
 
-  // Verificar se não há identificador da loja
-  if (!storeIdentifier) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md mx-auto p-6">
-          <h1 className="text-2xl font-bold text-foreground mb-4">URL Inválida</h1>
-          <p className="text-muted-foreground mb-4">
-            O identificador da loja não foi fornecido na URL. 
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Para acessar um catálogo, use uma URL no formato: <br />
-            <code className="bg-muted px-2 py-1 rounded text-xs">
-              /catalog/[identificador-da-loja]
-            </code>
-          </p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Inicializar hooks após verificar storeIdentifier
+  // Inicializar hooks diretamente
   const { store, products, filteredProducts, loading, storeError } = useCatalog(
     storeIdentifier, 
     catalogType
   );
   const { settings, loading: settingsLoading } = useCatalogSettings(storeIdentifier);
   
-  useEditorSync(storeIdentifier);
+  useEditorSync(storeIdentifier || '');
 
   useEffect(() => {
     if (store?.id && !loading) {
@@ -94,8 +74,8 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando loja...</p>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   if (storeError || !store) {
