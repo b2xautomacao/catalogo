@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +135,12 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     return matchingVariations.reduce((total, v) => total + v.stock, 0);
   };
 
+  // Função para obter cor hex de uma variação
+  const getColorHex = (colorName: string) => {
+    const variation = variations.find(v => v.color === colorName);
+    return variation?.hex_color || null;
+  };
+
   const handleAttributeSelection = (color?: string, size?: string) => {
     const matchingVariations = getVariationsForAttributes(color, size);
 
@@ -149,14 +156,14 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-lg flex items-center gap-2">
-          <Palette className="h-5 w-5 text-primary" />
+        <h4 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+          <Palette className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           Opções Disponíveis
         </h4>
-        <Badge variant="outline" className="text-sm">
+        <Badge variant="outline" className="text-xs sm:text-sm">
           {variations.length} variações
         </Badge>
       </div>
@@ -174,11 +181,11 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       {/* Color Selection */}
       {colors.length > 0 && (
         <div className="space-y-3">
-          <h5 className="font-medium text-base flex items-center gap-2">
+          <h5 className="font-medium text-sm flex items-center gap-2">
             <Palette className="h-4 w-4" />
             Cor
           </h5>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {colors.map((color) => {
               const isSelected = selectedVariation?.color === color;
               const stock = getAvailableStock(
@@ -186,6 +193,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                 selectedVariation?.size || undefined
               );
               const isAvailable = stock > 0;
+              const hexColor = getColorHex(color as string);
 
               return (
                 <Button
@@ -199,19 +207,30 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                     )
                   }
                   disabled={!isAvailable}
-                  className={`relative h-12 ${
-                    !isAvailable ? "opacity-50" : ""
+                  className={`relative h-11 sm:h-12 transition-all duration-200 ${
+                    !isAvailable ? "opacity-50" : "hover:scale-105 hover:shadow-md"
                   } ${
                     isSelected
-                      ? "border-primary shadow-md"
+                      ? "border-primary shadow-md scale-105"
                       : "hover:border-primary/50"
                   }`}
                 >
-                  <div className="flex flex-col items-center">
-                    <span className="font-medium">{color}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {stock} disponível
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {/* Color indicator */}
+                    {hexColor && (
+                      <div
+                        className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border border-gray-300 flex-shrink-0"
+                        style={{ backgroundColor: hexColor }}
+                      />
+                    )}
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="font-medium text-xs sm:text-sm truncate">
+                        {color}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {stock} disponível
+                      </span>
+                    </div>
                   </div>
                   {!isAvailable && (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -228,11 +247,11 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       {/* Size Selection */}
       {sizes.length > 0 && (
         <div className="space-y-3">
-          <h5 className="font-medium text-base flex items-center gap-2">
+          <h5 className="font-medium text-sm flex items-center gap-2">
             <Package className="h-4 w-4" />
             Tamanho
           </h5>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2">
             {sizes.map((size) => {
               const isSelected = selectedVariation?.size === size;
               const stock = getAvailableStock(
@@ -253,16 +272,16 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                     )
                   }
                   disabled={!isAvailable}
-                  className={`relative h-12 ${
-                    !isAvailable ? "opacity-50" : ""
+                  className={`relative h-11 sm:h-12 transition-all duration-200 ${
+                    !isAvailable ? "opacity-50" : "hover:scale-105 hover:shadow-md"
                   } ${
                     isSelected
-                      ? "border-primary shadow-md"
+                      ? "border-primary shadow-md scale-105"
                       : "hover:border-primary/50"
                   }`}
                 >
                   <div className="flex flex-col items-center">
-                    <span className="font-medium">{size}</span>
+                    <span className="font-medium text-sm">{size}</span>
                     <span className="text-xs text-muted-foreground">
                       {stock}
                     </span>

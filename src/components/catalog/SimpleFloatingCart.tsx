@@ -17,7 +17,7 @@ const SimpleFloatingCart: React.FC<SimpleFloatingCartProps> = ({
   storeId
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, totalItems, totalAmount, updateQuantity, removeItem, clearCart } = useCart();
 
   if (totalItems === 0) return null;
 
@@ -146,7 +146,7 @@ const SimpleFloatingCart: React.FC<SimpleFloatingCartProps> = ({
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total:</span>
               <span className="text-primary">
-                R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
 
