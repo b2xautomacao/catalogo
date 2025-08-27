@@ -28,8 +28,11 @@ const PublicCatalog = () => {
   const {
     store,
     products,
+    filteredProducts,
     loading: catalogLoading,
-    storeError
+    storeError,
+    searchProducts,
+    filterProducts
   } = useCatalog(storeIdentifier!, catalogType as CatalogType);
 
   const { categories } = useCategories(store?.id);
@@ -44,7 +47,7 @@ const PublicCatalog = () => {
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  const filteredProducts = useMemo(() => {
+  const handleFilteredProducts = useMemo(() => {
     return products.filter(product => {
       const matchesSearch = searchQuery === '' || 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -149,6 +152,9 @@ const PublicCatalog = () => {
           <p className="text-muted-foreground">
             {storeError || 'Loja não encontrada'}
           </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Identificador: {storeIdentifier}
+          </p>
         </div>
       </div>
     );
@@ -239,7 +245,7 @@ const PublicCatalog = () => {
                   }
                 </h2>
                 <div className="text-sm text-muted-foreground">
-                  {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                  {handleFilteredProducts.length} produto{handleFilteredProducts.length !== 1 ? 's' : ''} encontrado{handleFilteredProducts.length !== 1 ? 's' : ''}
                 </div>
               </div>
 
@@ -279,7 +285,7 @@ const PublicCatalog = () => {
             </div>
 
             <ProductGrid
-              products={filteredProducts}
+              products={handleFilteredProducts}
               catalogType={catalogType as CatalogType}
               loading={false}
               onAddToWishlist={handleAddToWishlist}
