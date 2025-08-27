@@ -15,14 +15,37 @@ interface ColorStepProps {
   selectedColor: string | null;
   onColorSelect: (color: string) => void;
   showStock?: boolean;
+  loading?: boolean;
 }
 
 const ColorStep: React.FC<ColorStepProps> = ({
   colorGroups,
   selectedColor,
   onColorSelect,
-  showStock = true
+  showStock = true,
+  loading = false
 }) => {
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            Escolha a cor
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex flex-col items-center p-4 h-auto border rounded animate-pulse">
+                <div className="w-8 h-8 rounded-full bg-gray-200 mb-2" />
+                <div className="h-4 bg-gray-200 rounded w-16 mb-1" />
+                <div className="h-3 bg-gray-200 rounded w-12" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>
