@@ -1,7 +1,10 @@
 
 import React, { useEffect } from 'react';
 import { useEditorSync } from '@/hooks/useEditorSync';
-import TemplateManager from './templates/TemplateManager';
+import ModernCatalogTemplate from './templates/layouts/ModernCatalogTemplate';
+import IndustrialCatalogTemplate from './templates/layouts/IndustrialCatalogTemplate';
+import MinimalCatalogTemplate from './templates/layouts/MinimalCatalogTemplate';
+import ElegantCatalogTemplate from './templates/layouts/ElegantCatalogTemplate';
 import { Store } from '@/hooks/useCatalog';
 import { CatalogType } from '@/hooks/useCatalog';
 
@@ -63,11 +66,21 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     onSearch,
     onToggleFilters,
     onCartClick,
-    children
+    children,
+    editorSettings: settings
   };
 
-  // Usar o novo TemplateManager que gerencia todos os templates
-  return <TemplateManager {...templateProps} />;
+  switch (templateName) {
+    case 'industrial':
+      return <IndustrialCatalogTemplate {...templateProps} />;
+    case 'minimal':
+      return <MinimalCatalogTemplate {...templateProps} />;
+    case 'elegant':
+      return <ElegantCatalogTemplate {...templateProps} />;
+    case 'modern':
+    default:
+      return <ModernCatalogTemplate {...templateProps} />;
+  }
 };
 
 export default TemplateWrapper;

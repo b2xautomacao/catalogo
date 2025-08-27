@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +9,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { useTemplateColors } from "@/hooks/useTemplateColors";
@@ -21,18 +28,21 @@ import ShareableLinks from "./ShareableLinks";
 import CatalogModeSettings from "./CatalogModeSettings";
 import MobileLayoutSettings from "./MobileLayoutSettings";
 import FooterSettings from "./FooterSettings";
-import TemplateStyleSelector from "./TemplateStyleSelector";
 import {
   Palette,
   Eye,
+  Settings,
   Save,
   RotateCw,
+  Monitor,
   Smartphone,
+  Crown,
+  Zap,
+  Sparkles,
   Share2,
   ArrowLeftRight,
   Search,
   Globe,
-  Sparkles,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -41,7 +51,7 @@ const CatalogSettings = () => {
   const { resetToTemplateDefaults } = useTemplateColors();
 
   const [localSettings, setLocalSettings] = useState({
-    template_name: "minimal-fashion",
+    template_name: "modern",
     show_prices: true,
     show_stock: true,
     show_categories: true,
@@ -50,12 +60,12 @@ const CatalogSettings = () => {
     items_per_page: 12,
     catalog_title: "",
     catalog_description: "",
-    primary_color: "#2c3338",
-    secondary_color: "#6b7280",
-    accent_color: "#8b5cf6",
-    background_color: "#ffffff",
-    text_color: "#2c3338",
-    border_color: "#e2e8f0",
+    primary_color: "#0057FF",
+    secondary_color: "#FF6F00",
+    accent_color: "#8E2DE2",
+    background_color: "#F8FAFC",
+    text_color: "#1E293B",
+    border_color: "#E2E8F0",
     font_family: "Inter",
     custom_css: "",
     seo_keywords: "",
@@ -64,7 +74,7 @@ const CatalogSettings = () => {
   useEffect(() => {
     if (settings) {
       setLocalSettings({
-        template_name: settings.template_name || "minimal-fashion",
+        template_name: settings.template_name || "modern",
         show_prices: settings.show_prices !== false,
         show_stock: settings.show_stock !== false,
         show_categories: settings.allow_categories_filter !== false,
@@ -73,12 +83,12 @@ const CatalogSettings = () => {
         items_per_page: 12,
         catalog_title: settings.seo_title || "",
         catalog_description: settings.seo_description || "",
-        primary_color: settings.primary_color || "#2c3338",
-        secondary_color: settings.secondary_color || "#6b7280",
-        accent_color: settings.accent_color || "#8b5cf6",
-        background_color: settings.background_color || "#ffffff",
-        text_color: settings.text_color || "#2c3338",
-        border_color: settings.border_color || "#e2e8f0",
+        primary_color: settings.primary_color || "#0057FF",
+        secondary_color: settings.secondary_color || "#FF6F00",
+        accent_color: settings.accent_color || "#8E2DE2",
+        background_color: settings.background_color || "#F8FAFC",
+        text_color: settings.text_color || "#1E293B",
+        border_color: settings.border_color || "#E2E8F0",
         font_family: "Inter",
         custom_css: "",
         seo_keywords: settings.seo_keywords || "",
@@ -116,10 +126,7 @@ const CatalogSettings = () => {
   };
 
   const handleTemplateChange = async (templateName: string) => {
-    // Determinar cores padrão baseado no novo template
-    const [style, niche] = templateName.split('-');
-    const templateKey = `${style}-${niche}` as any;
-    const defaultColors = resetToTemplateDefaults(templateKey);
+    const defaultColors = resetToTemplateDefaults(templateName);
 
     setLocalSettings((prev) => ({
       ...prev,
@@ -134,7 +141,7 @@ const CatalogSettings = () => {
 
     const result = await updateSettings(updates);
     if (result.data && !result.error) {
-      toast.success(`Template "${templateName}" aplicado com sucesso!`);
+      toast.success(`Template "${templateName}" aplicado com cores padrão!`);
     }
   };
 
@@ -171,6 +178,41 @@ const CatalogSettings = () => {
     }));
     toast.success("Cores resetadas para o padrão do template!");
   };
+
+  const templates = [
+    {
+      value: "modern",
+      label: "Moderno",
+      description: "Design limpo e contemporâneo",
+      icon: Monitor,
+      colors: ["#0057FF", "#FF6F00", "#8E2DE2"],
+      features: ["Gradientes suaves", "Animações fluidas", "Layout responsivo"],
+    },
+    {
+      value: "minimal",
+      label: "Minimalista",
+      description: "Focado no essencial",
+      icon: Zap,
+      colors: ["#1F2937", "#059669", "#DC2626"],
+      features: ["Design limpo", "Tipografia clara", "Navegação simples"],
+    },
+    {
+      value: "elegant",
+      label: "Elegante",
+      description: "Sofisticado e refinado",
+      icon: Crown,
+      colors: ["#D97706", "#92400E", "#7C2D12"],
+      features: ["Tons dourados", "Elementos premium", "Detalhes refinados"],
+    },
+    {
+      value: "industrial",
+      label: "Industrial",
+      description: "Robusto e profissional",
+      icon: Settings,
+      colors: ["#475569", "#F59E0B", "#DC2626"],
+      features: ["Visual metálico", "Bordas definidas", "Estilo corporativo"],
+    },
+  ];
 
   if (loading) {
     return (
@@ -219,22 +261,99 @@ const CatalogSettings = () => {
         </TabsList>
 
         <TabsContent value="template" className="space-y-6">
+          {/* Template Selection with Preview */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Seleção de Template
+                Template do Catálogo
               </CardTitle>
               <CardDescription>
-                Escolha o estilo visual e nicho que melhor representa sua marca.
-                O sistema aplicará automaticamente cores e layout otimizados.
+                Escolha o template visual que melhor representa sua marca. O
+                template será aplicado a todo o catálogo.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <TemplateStyleSelector
-                currentTemplate={localSettings.template_name}
-                onTemplateChange={handleTemplateChange}
-              />
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {templates.map((template) => {
+                  const IconComponent = template.icon;
+                  return (
+                    <Card
+                      key={template.value}
+                      className={`cursor-pointer transition-all border-2 hover:shadow-lg ${
+                        localSettings.template_name === template.value
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => handleTemplateChange(template.value)}
+                    >
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  localSettings.template_name === template.value
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-100"
+                                }`}
+                              >
+                                <IconComponent size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-lg">
+                                  {template.label}
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                  {template.description}
+                                </p>
+                              </div>
+                            </div>
+                            {localSettings.template_name === template.value && (
+                              <Badge className="bg-blue-500">
+                                <Sparkles size={12} className="mr-1" />
+                                Ativo
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Color Preview */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              Paleta:
+                            </span>
+                            {template.colors.map((color, index) => (
+                              <div
+                                key={index}
+                                className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Features */}
+                          <div className="space-y-2">
+                            <span className="text-xs text-gray-500 font-medium">
+                              Características:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {template.features.map((feature, index) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {feature}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -332,6 +451,29 @@ const CatalogSettings = () => {
                         })
                       }
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="items-per-page">Itens por Página</Label>
+                    <Select
+                      value={localSettings.items_per_page.toString()}
+                      onValueChange={(value) =>
+                        setLocalSettings({
+                          ...localSettings,
+                          items_per_page: parseInt(value),
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="8">8 itens</SelectItem>
+                        <SelectItem value="12">12 itens</SelectItem>
+                        <SelectItem value="16">16 itens</SelectItem>
+                        <SelectItem value="24">24 itens</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

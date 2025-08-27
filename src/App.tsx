@@ -37,7 +37,6 @@ import TestGradeWizard from "./pages/TestGradeWizard";
 import ResponsiveAppLayout from "./components/layout/ResponsiveAppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicCatalog from "./components/catalog/PublicCatalog";
-import CatalogLanding from "./pages/CatalogLanding";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -80,13 +79,8 @@ function App() {
             <Route path="/payment/pending" element={<PaymentPending />} />
             <Route path="/test-store" element={<TestStore />} />
             <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
-            
-            {/* Rota para página inicial de catálogos */}
-            <Route path="/catalog" element={<CatalogLanding />} />
-            
-            {/* Rota para catálogos específicos */}
             <Route
-              path="/catalog/:storeIdentifier"
+              path="/catalog/:storeSlug"
               element={<PublicCatalog />}
             />
 

@@ -1,170 +1,180 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "./styles/floating-cart-fix.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  /* Template Variables - Aplicadas dinamicamente pelo useTemplateColors */
-  --template-primary: #0057FF;
-  --template-secondary: #FF6F00;
-  --template-accent: #8E2DE2;
-  --template-background: #F8FAFC;
-  --template-surface: #FFFFFF;
-  --template-text: #1E293B;
-  --template-text-muted: #64748B;
-  --template-border: #E2E8F0;
-  --template-gradient-from: #0057FF;
-  --template-gradient-to: #8E2DE2;
-  --template-font-family: 'Inter', sans-serif;
-  --template-border-radius: 8px;
-  --template-spacing: 16px;
+@layer base {
+     :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 222.2 84% 4.9%;
+        --radius: 0.5rem;
+    }
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 210 40% 98%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 212.7 26.8% 83.9%;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: "Inter", sans-serif;
+    }
 }
 
-/* Template Container Styles */
-.template-container {
-  font-family: var(--template-font-family, 'Inter', sans-serif);
+
+/* Utilidades personalizadas */
+
+@layer utilities {
+    .line-clamp-1 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+    }
+    .line-clamp-2 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    .line-clamp-3 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+    }
 }
 
-.template-container .bg-primary {
-  background-color: var(--template-primary) !important;
+
+/* Estilos customizados para a página de login */
+
+.bg-grid-white {
+    background-image: url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='grid' width='20' height='20' patternUnits='userSpaceOnUse'%3e%3cpath d='M 20 0 L 0 0 0 20' fill='none' stroke='white' stroke-width='0.5' opacity='0.1'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100%25' height='100%25' fill='url(%23grid)' /%3e%3c/svg%3e");
 }
 
-.template-container .text-primary {
-  color: var(--template-primary) !important;
+
+/* Animações suaves para os elementos de login */
+
+.auth-form-animate {
+    animation: slideUp 0.6s ease-out;
 }
 
-.template-container .border-primary {
-  border-color: var(--template-primary) !important;
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.template-container .bg-secondary {
-  background-color: var(--template-secondary) !important;
+
+/* Hover effects para inputs */
+
+.auth-input:focus {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
 }
 
-.template-container .text-secondary {
-  color: var(--template-secondary) !important;
+
+/* Efeito de gradient para botões */
+
+.auth-button {
+    background: linear-gradient(135deg, #000000 0%, #333333 100%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 
-.template-container .bg-accent {
-  background-color: var(--template-accent) !important;
+.auth-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-.template-container .text-accent {
-  color: var(--template-accent) !important;
+
+/* Responsividade melhorada */
+
+@media (max-width: 640px) {
+    .auth-container {
+        padding: 1rem;
+    }
 }
 
-/* Gradient Backgrounds */
-.template-container .bg-gradient-to-r {
-  background: linear-gradient(to right, var(--template-gradient-from), var(--template-gradient-to)) !important;
+
+/* Estilos do dashboard existentes */
+
+.dashboard-card-isolated {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    padding: 24px;
+    margin-bottom: 16px;
 }
 
-.template-container .bg-gradient-to-br {
-  background: linear-gradient(to bottom right, var(--template-gradient-from), var(--template-gradient-to)) !important;
+.dashboard-header-isolated {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
 }
 
-.template-container .bg-gradient-to-b {
-  background: linear-gradient(to bottom, var(--template-gradient-from), var(--template-gradient-to)) !important;
+.dashboard-stats-grid-isolated {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
-/* Surface and Background */
-.template-container .bg-surface {
-  background-color: var(--template-surface) !important;
+.dashboard-chart-container-isolated {
+    height: 300px;
+    width: 100%;
 }
 
-.template-container .bg-template-background {
-  background-color: var(--template-background) !important;
-}
-
-/* Border Radius */
-.template-container .rounded-template {
-  border-radius: var(--template-border-radius) !important;
-}
-
-/* Spacing */
-.template-container .p-template {
-  padding: var(--template-spacing) !important;
-}
-
-.template-container .m-template {
-  margin: var(--template-spacing) !important;
-}
-
-/* Custom scrollbar for better UX */
-.template-container ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.template-container ::-webkit-scrollbar-track {
-  background: var(--template-background);
-}
-
-.template-container ::-webkit-scrollbar-thumb {
-  background: var(--template-border);
-  border-radius: 3px;
-}
-
-.template-container ::-webkit-scrollbar-thumb:hover {
-  background: var(--template-text-muted);
-}
-
-/* Smooth transitions */
-.template-container * {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Focus states */
-.template-container button:focus,
-.template-container input:focus,
-.template-container textarea:focus {
-  outline: 2px solid var(--template-primary);
-  outline-offset: 2px;
-}
-
-/* Loading animations */
-@keyframes template-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.template-container .animate-template-pulse {
-  animation: template-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .template-container {
-    --template-spacing: 12px;
-    --template-border-radius: 6px;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .template-container {
-    --template-border: #000000;
-    --template-text: #000000;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .template-container * {
-    transition: none !important;
-    animation: none !important;
-  }
+    .dashboard-stats-grid-isolated {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-card-isolated {
+        padding: 16px;
+    }
 }
