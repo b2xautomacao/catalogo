@@ -1,6 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCatalog } from '@/hooks/useCatalog';
+import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/hooks/useAuth';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useGlobalTemplateStyles } from '@/hooks/useGlobalTemplateStyles';
@@ -26,10 +28,11 @@ const PublicCatalog = () => {
   const {
     store,
     products,
-    categories,
     loading: catalogLoading,
-    error: catalogError
+    storeError
   } = useCatalog(storeIdentifier!, catalogType as CatalogType);
+
+  const { categories } = useCategories(store?.id);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -47,7 +50,7 @@ const PublicCatalog = () => {
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesCategory = selectedCategory === '' || product.category_id === selectedCategory;
+      const matchesCategory = selectedCategory === '' || product.category === selectedCategory;
 
       const price = catalogType === 'wholesale' && product.wholesale_price 
         ? product.wholesale_price 
@@ -64,7 +67,7 @@ const PublicCatalog = () => {
           selectedSizes.includes(v.size || '')
         ));
 
-      const matchesStock = !showInStock || product.stock_quantity > 0;
+      const matchesStock = !showInStock || product.stock > 0;
 
       return matchesSearch && matchesCategory && matchesPrice && matchesColors && matchesSizes && matchesStock;
     });
@@ -138,13 +141,13 @@ const PublicCatalog = () => {
     );
   }
 
-  if (catalogError || !store) {
+  if (storeError || !store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-destructive mb-2">Erro ao carregar catálogo</h1>
           <p className="text-muted-foreground">
-            {catalogError || 'Loja não encontrada'}
+            {storeError || 'Loja não encontrada'}
           </p>
         </div>
       </div>
@@ -168,7 +171,6 @@ const PublicCatalog = () => {
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <AdvancedFilterSidebar
-              categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
               priceRange={priceRange}
@@ -208,7 +210,6 @@ const PublicCatalog = () => {
                 </div>
                 <div className="overflow-y-auto">
                   <AdvancedFilterSidebar
-                    categories={categories}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
                     priceRange={priceRange}
@@ -233,7 +234,7 @@ const PublicCatalog = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">
                   {selectedCategory ? 
-                    categories.find(c => c.id === selectedCategory)?.name : 
+                    categories.find(c => c.name === selectedCategory)?.name : 
                     'Todos os Produtos'
                   }
                 </h2>
@@ -252,7 +253,7 @@ const PublicCatalog = () => {
                   )}
                   {selectedCategory && (
                     <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                      {categories.find(c => c.id === selectedCategory)?.name}
+                      {categories.find(c => c.name === selectedCategory)?.name}
                     </div>
                   )}
                   {selectedColors.map(color => (
@@ -280,20 +281,22 @@ const PublicCatalog = () => {
             <ProductGrid
               products={filteredProducts}
               catalogType={catalogType as CatalogType}
-              onAddToCart={handleAddToCart}
+              loading={false}
               onAddToWishlist={handleAddToWishlist}
-              wishlistItems={wishlistItems}
+              onQuickView={() => {}}
+              wishlist={wishlistItems}
+              storeIdentifier={storeIdentifier!}
+              templateName={settings?.template_name || 'modern'}
+              showPrices={settings?.show_prices ?? true}
+              showStock={settings?.show_stock ?? true}
             />
           </main>
         </div>
       </TemplateWrapper>
 
       <FloatingCart
-        items={cartItems}
-        onRemoveItem={handleRemoveFromCart}
-        onUpdateQuantity={handleUpdateQuantity}
-        whatsappNumber={settings?.whatsapp_number}
-        storeName={store.name}
+        onCheckout={() => {}}
+        storeId={store.id}
       />
     </div>
   );
