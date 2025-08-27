@@ -1,300 +1,231 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Filter, 
-  X, 
-  Package, 
-  DollarSign, 
-  Tag, 
-  Palette, 
-  Ruler,
-  RotateCcw 
-} from 'lucide-react';
-
-interface FilterOptions {
-  categories: string[];
-  priceRange: [number, number];
-  inStock: boolean;
-  colors: string[];
-  sizes: string[];
-}
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Product } from '@/types/product';
+import { X } from 'lucide-react';
 
 interface AdvancedFilterSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  availableCategories: string[];
-  availableColors: string[];
-  availableSizes: string[];
+  selectedCategory: string;
+  onCategoryChange: (category: string) => void;
   priceRange: [number, number];
-  onFilterChange: (filters: Partial<FilterOptions>) => void;
-  activeFilters: Partial<FilterOptions>;
+  onPriceRangeChange: (range: [number, number]) => void;
+  selectedColors: string[];
+  onColorsChange: (colors: string[]) => void;
+  selectedSizes: string[];
+  onSizesChange: (sizes: string[]) => void;
+  showInStock: boolean;
+  onShowInStockChange: (show: boolean) => void;
+  products: Product[];
+  onClearFilters: () => void;
 }
 
 const AdvancedFilterSidebar: React.FC<AdvancedFilterSidebarProps> = ({
-  isOpen,
-  onClose,
-  availableCategories,
-  availableColors,
-  availableSizes,
+  selectedCategory,
+  onCategoryChange,
   priceRange,
-  onFilterChange,
-  activeFilters,
+  onPriceRangeChange,
+  selectedColors,
+  onColorsChange,
+  selectedSizes,
+  onSizesChange,
+  showInStock,
+  onShowInStockChange,
+  products,
+  onClearFilters
 }) => {
-  const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(
-    activeFilters.priceRange || priceRange
-  );
+  // Extrair categorias únicas dos produtos
+  const categories = React.useMemo(() => {
+    const categorySet = new Set<string>();
+    products.forEach(product => {
+      if (product.category) {
+        categorySet.add(product.category);
+      }
+    });
+    return Array.from(categorySet).sort();
+  }, [products]);
 
-  const handleCategoryToggle = (category: string) => {
-    const currentCategories = activeFilters.categories || [];
-    const newCategories = currentCategories.includes(category)
-      ? currentCategories.filter(c => c !== category)
-      : [...currentCategories, category];
-    
-    onFilterChange({ categories: newCategories });
-  };
+  // Extrair cores únicas das variações
+  const availableColors = React.useMemo(() => {
+    const colorSet = new Set<string>();
+    products.forEach(product => {
+      if (product.variations) {
+        product.variations.forEach(variation => {
+          if (variation.color) {
+            colorSet.add(variation.color);
+          }
+        });
+      }
+    });
+    return Array.from(colorSet).sort();
+  }, [products]);
+
+  // Extrair tamanhos únicos das variações
+  const availableSizes = React.useMemo(() => {
+    const sizeSet = new Set<string>();
+    products.forEach(product => {
+      if (product.variations) {
+        product.variations.forEach(variation => {
+          if (variation.size) {
+            sizeSet.add(variation.size);
+          }
+        });
+      }
+    });
+    return Array.from(sizeSet).sort();
+  }, [products]);
 
   const handleColorToggle = (color: string) => {
-    const currentColors = activeFilters.colors || [];
-    const newColors = currentColors.includes(color)
-      ? currentColors.filter(c => c !== color)
-      : [...currentColors, color];
-    
-    onFilterChange({ colors: newColors });
+    const newColors = selectedColors.includes(color)
+      ? selectedColors.filter(c => c !== color)
+      : [...selectedColors, color];
+    onColorsChange(newColors);
   };
 
   const handleSizeToggle = (size: string) => {
-    const currentSizes = activeFilters.sizes || [];
-    const newSizes = currentSizes.includes(size)
-      ? currentSizes.filter(s => s !== size)
-      : [...currentSizes, size];
-    
-    onFilterChange({ sizes: newSizes });
+    const newSizes = selectedSizes.includes(size)
+      ? selectedSizes.filter(s => s !== size)
+      : [...selectedSizes, size];
+    onSizesChange(newSizes);
   };
-
-  const handlePriceRangeChange = (values: number[]) => {
-    const newRange: [number, number] = [values[0], values[1]];
-    setLocalPriceRange(newRange);
-    onFilterChange({ priceRange: newRange });
-  };
-
-  const clearAllFilters = () => {
-    setLocalPriceRange(priceRange);
-    onFilterChange({
-      categories: [],
-      colors: [],
-      sizes: [],
-      priceRange: priceRange,
-      inStock: false
-    });
-  };
-
-  const getActiveFilterCount = () => {
-    let count = 0;
-    if (activeFilters.categories?.length) count += activeFilters.categories.length;
-    if (activeFilters.colors?.length) count += activeFilters.colors.length;  
-    if (activeFilters.sizes?.length) count += activeFilters.sizes.length;
-    if (activeFilters.inStock) count += 1;
-    if (activeFilters.priceRange && 
-        (activeFilters.priceRange[0] !== priceRange[0] || activeFilters.priceRange[1] !== priceRange[1])) {
-      count += 1;
-    }
-    return count;
-  };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 lg:relative lg:inset-auto">
-      {/* Overlay para mobile */}
-      <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm lg:hidden"
-        onClick={onClose}
-      />
-      
-      {/* Sidebar */}
-      <div className="fixed right-0 top-0 h-full w-80 bg-background border-l shadow-lg lg:relative lg:w-full lg:h-auto lg:shadow-none">
-        <Card className="h-full rounded-none border-0 lg:rounded-lg lg:border">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Filter className="h-5 w-5" />
-              Filtros
-              {getActiveFilterCount() > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {getActiveFilterCount()}
-                </Badge>
-              )}
-            </CardTitle>
-            <div className="flex gap-2">
-              {getActiveFilterCount() > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="h-8 px-2"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0 lg:hidden"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+    <div className="space-y-6">
+      {/* Header com botão limpar */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Filtros</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClearFilters}
+          className="text-sm"
+        >
+          <X className="w-4 h-4 mr-1" />
+          Limpar
+        </Button>
+      </div>
+
+      {/* Filtro por Categoria */}
+      {categories.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Categorias</CardTitle>
           </CardHeader>
-          
-          <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-120px)] lg:h-[60vh] px-6">
-              <div className="space-y-6 pb-6">
-                
-                {/* Filtro de Estoque */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Package className="h-4 w-4 text-primary" />
-                    Disponibilidade
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="inStock"
-                      checked={activeFilters.inStock || false}
-                      onCheckedChange={(checked) => 
-                        onFilterChange({ inStock: checked as boolean })
-                      }
-                    />
-                    <label htmlFor="inStock" className="text-sm cursor-pointer">
-                      Apenas produtos em estoque
-                    </label>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Filtro de Faixa de Preço */}
-                <div className="space-y-4">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-primary" />
-                    Faixa de Preço
-                  </h4>
-                  <div className="px-2">
-                    <Slider
-                      value={localPriceRange}
-                      onValueChange={handlePriceRangeChange}
-                      max={priceRange[1]}
-                      min={priceRange[0]}
-                      step={1}
-                      className="mb-3"
-                    />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>R$ {localPriceRange[0]}</span>
-                      <span>R$ {localPriceRange[1]}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Filtro de Categorias */}
-                {availableCategories.length > 0 && (
-                  <>
-                    <div className="space-y-3">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-primary" />
-                        Categorias
-                      </h4>
-                      <div className="space-y-2">
-                        {availableCategories.map((category) => (
-                          <div key={category} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`category-${category}`}
-                              checked={activeFilters.categories?.includes(category) || false}
-                              onCheckedChange={() => handleCategoryToggle(category)}
-                            />
-                            <label 
-                              htmlFor={`category-${category}`} 
-                              className="text-sm cursor-pointer flex-1"
-                            >
-                              {category}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                {/* Filtro de Cores */}
-                {availableColors.length > 0 && (
-                  <>
-                    <div className="space-y-3">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Palette className="h-4 w-4 text-primary" />
-                        Cores
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {availableColors.map((color) => (
-                          <div 
-                            key={color} 
-                            className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer transition-colors ${
-                              activeFilters.colors?.includes(color) 
-                                ? 'bg-primary/10 border border-primary' 
-                                : 'hover:bg-muted'
-                            }`}
-                            onClick={() => handleColorToggle(color)}
-                          >
-                            <div 
-                              className="w-4 h-4 rounded-full border border-border shadow-sm"
-                              style={{ backgroundColor: color.toLowerCase() }}
-                            />
-                            <span className="text-sm flex-1">{color}</span>
-                            {activeFilters.colors?.includes(color) && (
-                              <Badge variant="secondary" className="w-2 h-2 p-0 rounded-full" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                {/* Filtro de Tamanhos */}
-                {availableSizes.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-primary" />
-                      Tamanhos
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {availableSizes.map((size) => (
-                        <Button
-                          key={size}
-                          variant={activeFilters.sizes?.includes(size) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSizeToggle(size)}
-                          className="h-10"
-                        >
-                          {size}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+          <CardContent className="space-y-2">
+            <Button
+              variant={selectedCategory === '' ? 'default' : 'ghost'}
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => onCategoryChange('')}
+            >
+              Todas as categorias
+            </Button>
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? 'default' : 'ghost'}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => onCategoryChange(category)}
+              >
+                {category}
+              </Button>
+            ))}
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {/* Filtro de Preço */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Faixa de Preço</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Slider
+              value={priceRange}
+              onValueChange={(value) => onPriceRangeChange(value as [number, number])}
+              max={1000}
+              min={0}
+              step={10}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>R$ {priceRange[0]}</span>
+              <span>R$ {priceRange[1]}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filtro por Cores */}
+      {availableColors.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Cores</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {availableColors.map(color => (
+                <Badge
+                  key={color}
+                  variant={selectedColors.includes(color) ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/10"
+                  onClick={() => handleColorToggle(color)}
+                >
+                  {color}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filtro por Tamanhos */}
+      {availableSizes.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Tamanhos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {availableSizes.map(size => (
+                <Badge
+                  key={size}
+                  variant={selectedSizes.includes(size) ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/10"
+                  onClick={() => handleSizeToggle(size)}
+                >
+                  {size}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filtro de Estoque */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Disponibilidade</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="in-stock"
+              checked={showInStock}
+              onCheckedChange={onShowInStockChange}
+            />
+            <Label htmlFor="in-stock" className="text-sm">
+              Apenas produtos em estoque
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
