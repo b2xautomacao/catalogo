@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -102,15 +101,12 @@ const HierarchicalColorSizeSelector: React.FC<HierarchicalColorSizeSelectorProps
 
   // Preço baseado no catálogo
   const getVariationPrice = (variation: ProductVariation) => {
-    if (catalogType === 'wholesale' && variation.wholesale_price) {
-      return variation.wholesale_price;
-    }
-    if (variation.retail_price) {
-      return variation.retail_price;
-    }
-    return catalogType === 'wholesale' && product.wholesale_price 
+    // As variações usam price_adjustment sobre o preço base do produto
+    const basePrice = catalogType === 'wholesale' && product.wholesale_price 
       ? product.wholesale_price 
       : product.retail_price;
+    
+    return basePrice + (variation.price_adjustment || 0);
   };
 
   // Quantidade mínima
