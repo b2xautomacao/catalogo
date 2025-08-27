@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useCatalogSettings } from './useCatalogSettings';
 
@@ -16,6 +15,56 @@ export interface TemplateColorScheme {
 }
 
 const defaultColorSchemes: Record<string, TemplateColorScheme> = {
+  // NOVOS TEMPLATES MODERNOS E PROFISSIONAIS
+  'fashion-luxe': {
+    primary: '#e11d48',
+    secondary: '#8b5cf6',
+    accent: '#f97316',
+    background: '#fef7f7',
+    surface: '#ffffff',
+    text: '#1f2937',
+    textMuted: '#6b7280',
+    border: '#f9a8d4',
+    gradientFrom: '#e11d48',
+    gradientTo: '#8b5cf6'
+  },
+  'clean-professional': {
+    primary: '#3b82f6',
+    secondary: '#1f2937',
+    accent: '#059669',
+    background: '#f8fafc',
+    surface: '#ffffff',
+    text: '#111827',
+    textMuted: '#6b7280',
+    border: '#e5e7eb',
+    gradientFrom: '#3b82f6',
+    gradientTo: '#1f2937'
+  },
+  'tech-modern': {
+    primary: '#0ea5e9',
+    secondary: '#14b8a6',
+    accent: '#8b5cf6',
+    background: '#0f172a',
+    surface: '#1e293b',
+    text: '#f8fafc',
+    textMuted: '#94a3b8',
+    border: '#334155',
+    gradientFrom: '#0ea5e9',
+    gradientTo: '#14b8a6'
+  },
+  'elegant-store': {
+    primary: '#d97706',
+    secondary: '#f59e0b',
+    accent: '#dc2626',
+    background: '#fef3c7',
+    surface: '#ffffff',
+    text: '#78350f',
+    textMuted: '#a16207',
+    border: '#fde68a',
+    gradientFrom: '#d97706',
+    gradientTo: '#f59e0b'
+  },
+
   // TEMPLATES MODERNOS - ESTILO MINIMALISTA
   'minimal-fashion': {
     primary: '#2c3338',
@@ -343,8 +392,8 @@ export const useTemplateColors = (storeIdentifier?: string) => {
   const { settings } = useCatalogSettings(storeIdentifier);
   
   const colorScheme = useMemo(() => {
-    const templateName = settings?.template_name || 'minimal-fashion';
-    const baseColors = defaultColorSchemes[templateName] || defaultColorSchemes['minimal-fashion'];
+    const templateName = settings?.template_name || 'clean-professional';
+    const baseColors = defaultColorSchemes[templateName] || defaultColorSchemes['clean-professional'];
     
     if (settings) {
       return {
@@ -399,6 +448,6 @@ export const useTemplateColors = (storeIdentifier?: string) => {
     colorScheme,
     applyColorsToDocument,
     resetToTemplateDefaults,
-    templateName: settings?.template_name || 'minimal-fashion'
+    templateName: settings?.template_name || 'clean-professional'
   };
 };

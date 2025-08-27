@@ -4,7 +4,13 @@ import { Store, CatalogType } from '@/hooks/useCatalog';
 import { useTemplateColors } from '@/hooks/useTemplateColors';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 
-// Importar templates de estilo
+// Importar novos templates modernos
+import FashionLuxeTemplate from './styles/FashionLuxeTemplate';
+import CleanProfessionalTemplate from './styles/CleanProfessionalTemplate';
+import TechModernTemplate from './styles/TechModernTemplate';
+import ElegantStoreTemplate from './styles/ElegantStoreTemplate';
+
+// Importar templates de estilo existentes
 import MinimalTemplate from './styles/MinimalTemplate';
 import DarkTemplate from './styles/DarkTemplate';
 import VibrantTemplate from './styles/VibrantTemplate';
@@ -12,14 +18,6 @@ import NeutralTemplate from './styles/NeutralTemplate';
 
 // Importar templates de layout (compatibilidade)
 import ProfessionalCatalogTemplate from './layouts/ProfessionalCatalogTemplate';
-import ModernCatalogTemplate from './layouts/ModernCatalogTemplate';
-import IndustrialCatalogTemplate from './layouts/IndustrialCatalogTemplate';
-import ElegantCatalogTemplate from './layouts/ElegantCatalogTemplate';
-import LuxuryCatalogTemplate from './layouts/LuxuryCatalogTemplate';
-import TechCatalogTemplate from './layouts/TechCatalogTemplate';
-import FashionCatalogTemplate from './layouts/FashionCatalogTemplate';
-import HealthCatalogTemplate from './layouts/HealthCatalogTemplate';
-import SportsCatalogTemplate from './layouts/SportsCatalogTemplate';
 
 interface TemplateManagerProps {
   store: Store;
@@ -33,9 +31,15 @@ interface TemplateManagerProps {
   children: React.ReactNode;
 }
 
-// Mapeamento de templates legados para novos estilos
+// Mapeamento completo de templates
 const TEMPLATE_MAPPING = {
-  // Novos templates baseados em estilo
+  // Novos templates modernos e profissionais
+  'fashion-luxe': { component: 'FashionLuxeTemplate' },
+  'clean-professional': { component: 'CleanProfessionalTemplate' },
+  'tech-modern': { component: 'TechModernTemplate' },
+  'elegant-store': { component: 'ElegantStoreTemplate' },
+  
+  // Templates baseados em estilo e nicho
   'minimal-fashion': { style: 'minimal', niche: 'fashion' },
   'minimal-electronics': { style: 'minimal', niche: 'electronics' },
   'minimal-food': { style: 'minimal', niche: 'food' },
@@ -82,36 +86,60 @@ const TemplateManager: React.FC<TemplateManagerProps> = (props) => {
   }, [applyColorsToDocument, settings]);
 
   // Determinar template e configurações
-  const templateName = settings?.template_name || 'professional';
+  const templateName = settings?.template_name || 'clean-professional';
   const templateConfig = TEMPLATE_MAPPING[templateName as keyof typeof TEMPLATE_MAPPING];
   
   if (!templateConfig) {
-    console.warn(`Template '${templateName}' não encontrado, usando padrão`);
-    return <ProfessionalCatalogTemplate {...props} editorSettings={settings} />;
+    console.warn(`Template '${templateName}' não encontrado, usando padrão clean-professional`);
+    return <CleanProfessionalTemplate {...props} editorSettings={settings} />;
   }
 
-  const { style, niche } = templateConfig;
-
-  // Renderizar template baseado no estilo
+  // Preparar props base para todos os templates
   const templateProps = {
     ...props,
-    editorSettings: settings,
-    niche: niche as 'fashion' | 'electronics' | 'food' | 'cosmetics'
+    editorSettings: settings
   };
 
-  switch (style) {
-    case 'minimal':
-      return <MinimalTemplate {...templateProps} />;
-    case 'dark':
-      return <DarkTemplate {...templateProps} />;
-    case 'vibrant':
-      return <VibrantTemplate {...templateProps} />;
-    case 'neutral':
-      return <NeutralTemplate {...templateProps} />;
-    default:
-      // Fallback para templates legados
-      return <ProfessionalCatalogTemplate {...props} editorSettings={settings} />;
+  // Renderizar template específico ou baseado no estilo
+  if ('component' in templateConfig) {
+    switch (templateConfig.component) {
+      case 'FashionLuxeTemplate':
+        return <FashionLuxeTemplate {...templateProps} />;
+      case 'CleanProfessionalTemplate':
+        return <CleanProfessionalTemplate {...templateProps} />;
+      case 'TechModernTemplate':
+        return <TechModernTemplate {...templateProps} />;
+      case 'ElegantStoreTemplate':
+        return <ElegantStoreTemplate {...templateProps} />;
+      default:
+        return <CleanProfessionalTemplate {...templateProps} />;
+    }
   }
+
+  // Renderizar template baseado no estilo
+  if ('style' in templateConfig && 'niche' in templateConfig) {
+    const { style, niche } = templateConfig;
+    const styleTemplateProps = {
+      ...templateProps,
+      niche: niche as 'fashion' | 'electronics' | 'food' | 'cosmetics'
+    };
+
+    switch (style) {
+      case 'minimal':
+        return <MinimalTemplate {...styleTemplateProps} />;
+      case 'dark':
+        return <DarkTemplate {...styleTemplateProps} />;
+      case 'vibrant':
+        return <VibrantTemplate {...styleTemplateProps} />;
+      case 'neutral':
+        return <NeutralTemplate {...styleTemplateProps} />;
+      default:
+        return <CleanProfessionalTemplate {...templateProps} />;
+    }
+  }
+
+  // Fallback para templates legados
+  return <ProfessionalCatalogTemplate {...props} editorSettings={settings} />;
 };
 
 export default TemplateManager;
