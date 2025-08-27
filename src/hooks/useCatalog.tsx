@@ -36,41 +36,46 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   const loadedCatalogTypeRef = useRef<CatalogType | null>(null);
 
   const loadStore = useCallback(async (identifier: string) => {
-    console.log('🏪 CATÁLOGO - Iniciando carregamento da loja:', identifier);
     setLoading(true);
     setStoreError(null);
-    
     try {
-      // Verificar se é UUID válido
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const isUUID = uuidRegex.test(identifier);
+      console.log('🏪 CATÁLOGO - Carregando loja:', identifier);
 
-      let query = supabase
+      // Buscar primeiro por url_slug, depois por ID se não encontrar
+      let { data: storeData, error: storeError } = await supabase
         .from('stores')
         .select('*')
-        .eq('is_active', true);
+        .eq('url_slug', identifier)
+        .eq('is_active', true)
+        .single();
 
-      if (isUUID) {
-        console.log('🔍 CATÁLOGO - Buscando por UUID:', identifier);
-        query = query.eq('id', identifier);
-      } else {
-        console.log('🔍 CATÁLOGO - Buscando por URL slug:', identifier);
-        query = query.eq('url_slug', identifier);
+      // Se não encontrou por url_slug, tentar por ID
+      if (storeError && storeError.code === 'PGRST116') {
+        console.log('🔄 CATÁLOGO - Tentando buscar por ID:', identifier);
+        const { data: storeByIdData, error: storeByIdError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', identifier)
+          .eq('is_active', true)
+          .single();
+        
+        storeData = storeByIdData;
+        storeError = storeByIdError;
       }
-
-      const { data: storeData, error: storeError } = await query.maybeSingle();
 
       if (storeError) {
         console.error('❌ Erro ao buscar loja:', storeError);
-        setStoreError(`Erro ao buscar loja: ${storeError.message}`);
+        setStoreError(`Loja não encontrada ou inativa`);
         setStore(null);
+        setLoading(false);
         return false;
       }
 
       if (!storeData) {
         console.warn('⚠️ Loja não encontrada:', identifier);
-        setStoreError('Loja não encontrada ou inativa');
+        setStoreError('Loja não encontrada.');
         setStore(null);
+        setLoading(false);
         return false;
       }
 
@@ -82,12 +87,11 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
       });
 
       setStore(storeData);
-      setStoreError(null);
       return storeData;
 
     } catch (error) {
-      console.error('🚨 Erro crítico ao carregar loja:', error);
-      setStoreError('Erro crítico ao carregar loja.');
+      console.error('🚨 Erro ao carregar loja:', error);
+      setStoreError('Erro ao carregar loja.');
       setStore(null);
       return false;
     } finally {
@@ -96,10 +100,14 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   }, []);
 
   const loadProducts = useCallback(async (storeId: string, type: CatalogType) => {
-    console.log('📦 CATÁLOGO - Carregando produtos:', { storeId, type });
     setLoading(true);
-    
     try {
+      console.log('📦 CATÁLOGO - Carregando produtos com variações (LEFT JOIN):', {
+        storeId,
+        type,
+        timestamp: new Date().toISOString()
+      });
+
       // Usar LEFT JOIN para incluir produtos sem variações
       const { data: productsData, error: productsError } = await supabase
         .from('products')
@@ -125,6 +133,7 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
 
       if (productsError) {
         console.error('❌ Erro ao buscar produtos:', productsError);
+        setLoading(false);
         return false;
       }
 
@@ -148,10 +157,15 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
           })) || []
       })) || [];
 
-      console.log('✅ CATÁLOGO - Produtos carregados:', {
+      console.log('✅ CATÁLOGO - Produtos carregados (incluindo sem variações):', {
         total: productsWithVariations.length,
         withVariations: productsWithVariations.filter(p => p.variations?.length > 0).length,
-        withoutVariations: productsWithVariations.filter(p => !p.variations?.length).length
+        withoutVariations: productsWithVariations.filter(p => !p.variations?.length).length,
+        preview: productsWithVariations.slice(0, 3).map(p => ({
+          name: p.name,
+          variations: p.variations?.length || 0,
+          hasStock: p.stock > 0
+        }))
       });
       
       if (type === 'wholesale') {
@@ -176,13 +190,13 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   }, []);
 
   const initializeCatalog = useCallback(async (identifier: string, type: CatalogType) => {
-    console.log('🚀 CATÁLOGO - Inicializando:', { identifier, type });
-
     // Avoid reloading if same store and catalog type
     if (loadedStoreRef.current === identifier && loadedCatalogTypeRef.current === type && store) {
       console.log('ℹ️ CATÁLOGO - Cache hit, não recarregando');
       return true;
     }
+
+    console.log('🚀 CATÁLOGO - Inicializando:', { identifier, type });
 
     setLoading(true);
     setStoreError(null);
@@ -209,7 +223,6 @@ export const useCatalog = (storeIdentifier?: string, catalogType: CatalogType = 
   useEffect(() => {
     if (storeIdentifier && 
         (loadedStoreRef.current !== storeIdentifier || loadedCatalogTypeRef.current !== catalogType)) {
-      console.log('🔄 CATÁLOGO - Mudança detectada, reinicializando:', { storeIdentifier, catalogType });
       initializeCatalog(storeIdentifier, catalogType);
     }
   }, [storeIdentifier, catalogType, initializeCatalog]);
