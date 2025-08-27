@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ShoppingCart,
@@ -23,7 +24,6 @@ import {
 import { Product, ProductVariation } from "@/types/product";
 import { useProductVariations } from "@/hooks/useProductVariations";
 import HierarchicalColorSizeSelector from "./HierarchicalColorSizeSelector";
-import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePriceCalculation } from "@/hooks/usePriceCalculation";
 
@@ -48,7 +48,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   catalogType,
 }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [selectedVariationImage, setSelectedVariationImage] = useState<string | null>(null);
   
   const { 
     variations, 
@@ -78,11 +77,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const handleMultipleAddToCart = (selections: VariationSelection[]) => {
     selections.forEach(({ variation, quantity }) => {
       onAddToCart(product, quantity, variation);
-      
-      // Atualizar imagem selecionada se a variação tem imagem
-      if (variation.image_url) {
-        setSelectedVariationImage(variation.image_url);
-      }
     });
   };
 
@@ -96,12 +90,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold line-clamp-2 pr-8">
+              <DialogTitle className="text-xl font-bold line-clamp-2 pr-8">
                 {product.name}
               </DialogTitle>
               <div className="flex items-center gap-2 mt-2">
@@ -137,24 +131,31 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
         <ScrollArea className="flex-1 px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-6">
-            {/* Coluna Esquerda - Galeria de Imagens */}
+            {/* Coluna Esquerda - Imagem e Informações */}
             <div className="space-y-6">
-              {/* Galeria de Imagens Melhorada */}
-              <ProductImageGallery
-                productId={product.id || ''}
-                productName={product.name}
-                selectedVariationImage={selectedVariationImage}
-                className="w-full"
-              />
+              {/* Imagem Principal */}
+              <div className="aspect-square rounded-lg overflow-hidden border bg-muted">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
 
-              {/* Descrição */}
+              {/* Descrição - Layout Otimizado */}
               {product.description && (
                 <Card>
                   <CardContent className="pt-4 pb-4">
-                    <h4 className="font-semibold mb-3 text-lg">Descrição do Produto</h4>
-                    <div className="text-muted-foreground leading-relaxed">
+                    <h4 className="font-semibold mb-2">Descrição do Produto</h4>
+                    <div className="text-muted-foreground leading-relaxed text-sm">
                       {showFullDescription ? (
-                        <p className="whitespace-pre-wrap">{product.description}</p>
+                        <p>{product.description}</p>
                       ) : (
                         <p>{truncateDescription(product.description)}</p>
                       )}
@@ -162,7 +163,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-0 h-auto mt-3 text-primary font-medium"
+                          className="p-0 h-auto mt-2 text-primary"
                           onClick={() => setShowFullDescription(!showFullDescription)}
                         >
                           {showFullDescription ? (
@@ -181,38 +182,26 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </Card>
               )}
 
-              {/* Informações Adicionais */}
+              {/* Informações Adicionais - Layout Compacto */}
               <Card>
                 <CardContent className="pt-4 pb-4">
-                  <h4 className="font-semibold mb-3 text-lg">Informações do Produto</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3">
-                      <Package className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="font-medium">Estoque</div>
-                        <div className="text-sm text-muted-foreground">{product.stock} unidades</div>
-                      </div>
+                  <h4 className="font-semibold mb-2">Informações</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span>Estoque: {product.stock} un.</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Truck className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="font-medium">Entrega</div>
-                        <div className="text-sm text-muted-foreground">Disponível</div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-muted-foreground" />
+                      <span>Envio disponível</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="font-medium">Garantia</div>
-                        <div className="text-sm text-muted-foreground">Produto garantido</div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <span>Produto garantido</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Star className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="font-medium">Qualidade</div>
-                        <div className="text-sm text-muted-foreground">Premium</div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-muted-foreground" />
+                      <span>Qualidade premium</span>
                     </div>
                   </div>
                 </CardContent>
@@ -220,27 +209,27 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             </div>
 
             {/* Coluna Direita - Compra */}
-            <div className="space-y-6">
-              {/* Preço - Para produtos sem variações */}
+            <div className="space-y-4">
+              {/* Preço - Integrado com Sistema de Pricing */}
               {!hasVariations && (
-                <Card className="border-primary/20">
-                  <CardContent className="pt-6 pb-6">
-                    <div className="text-center space-y-4">
-                      <div className="text-3xl font-bold text-primary">
+                <Card>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="text-center space-y-2">
+                      <div className="text-2xl font-bold text-primary">
                         {priceCalculation.formattedUnitPrice}
                       </div>
                       {priceCalculation.savings > 0 && (
-                        <div>
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-base px-3 py-1">
+                        <div className="text-sm">
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
                             Economia: {priceCalculation.formattedSavings}
                           </Badge>
                         </div>
                       )}
-                      <div className="text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         Nível: {priceCalculation.currentTier.tier_name}
                       </div>
                       {catalogType === "wholesale" && product.min_wholesale_qty && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Quantidade mínima: {product.min_wholesale_qty} unidades
                         </p>
                       )}
@@ -249,11 +238,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </Card>
               )}
 
-              {/* Seleção de Variações */}
+              {/* Seleção de Variações - Sistema Hierárquico */}
               {hasVariations && (
                 <Card>
-                  <CardContent className="pt-6 pb-6">
-                    <h4 className="font-semibold mb-4 text-lg">Selecionar Variações</h4>
+                  <CardContent className="pt-4 pb-4">
+                    <h4 className="font-semibold mb-3">Selecionar Variações</h4>
                     <HierarchicalColorSizeSelector
                       product={product}
                       variations={variations}
@@ -266,12 +255,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
               {/* Botões de Ação - Produtos sem Variações */}
               {!hasVariations && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {product.stock > 0 ? (
                     <>
                       <Button 
                         size="lg" 
-                        className="w-full h-12 text-lg font-semibold"
+                        className="w-full"
                         onClick={() => onAddToCart(product, 1)}
                       >
                         <ShoppingCart className="h-5 w-5 mr-2" />
@@ -280,7 +269,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       <Button
                         variant="outline"
                         size="lg"
-                        className="w-full h-12 text-lg"
+                        className="w-full"
                         onClick={() => window.open(whatsappUrl, "_blank")}
                       >
                         <MessageCircle className="h-5 w-5 mr-2" />
@@ -288,11 +277,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       </Button>
                     </>
                   ) : (
-                    <div className="text-center py-6">
-                      <p className="text-lg text-muted-foreground mb-4">Produto Esgotado</p>
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground mb-3">Produto Esgotado</p>
                       <Button
                         variant="outline"
-                        size="lg"
                         onClick={() => window.open(whatsappUrl, "_blank")}
                       >
                         <MessageCircle className="h-5 w-5 mr-2" />
@@ -307,11 +295,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               {!hasVariations && priceCalculation.nextTierHint && (
                 <Card className="border-blue-200 bg-blue-50">
                   <CardContent className="pt-4 pb-4">
-                    <div className="text-center">
-                      <p className="text-blue-800 font-semibold mb-2">
+                    <div className="text-center text-sm">
+                      <p className="text-blue-800 font-medium">
                         💡 Dica de Economia
                       </p>
-                      <p className="text-blue-700 text-sm">
+                      <p className="text-blue-700 mt-1">
                         Adicione mais {priceCalculation.nextTierHint.quantityNeeded} unidades 
                         e economize até R$ {priceCalculation.nextTierHint.potentialSavings.toFixed(2)} por item!
                       </p>

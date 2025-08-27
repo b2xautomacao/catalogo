@@ -2,6 +2,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import PublicCatalog from '@/components/catalog/PublicCatalog';
+import { CatalogType } from '@/hooks/useCatalog';
 
 const Catalog = () => {
   const { storeIdentifier, catalogType } = useParams<{
@@ -20,7 +21,15 @@ const Catalog = () => {
     );
   }
 
-  return <PublicCatalog />;
+  const validCatalogType: CatalogType = 
+    catalogType === 'wholesale' ? 'wholesale' : 'retail';
+
+  return (
+    <PublicCatalog 
+      storeIdentifier={storeIdentifier}
+      catalogType={validCatalogType}
+    />
+  );
 };
 
 export default Catalog;
