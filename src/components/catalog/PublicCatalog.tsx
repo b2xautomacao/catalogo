@@ -162,7 +162,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeSlug }) => {
         templateName={settings?.template_name || 'modern'}
         store={store}
         catalogType={currentCatalogType}
-        catalogMode={catalogMode}
         cartItemsCount={cartItems.length}
         wishlistCount={wishlistItems.length}
         whatsappNumber={settings?.whatsapp_number}
@@ -285,12 +284,11 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeSlug }) => {
             <ProductGrid
               products={handleFilteredProducts}
               catalogType={currentCatalogType}
-              catalogMode={catalogMode}
               loading={false}
               onAddToWishlist={() => {}}
               onQuickView={() => {}}
               wishlist={wishlistItems}
-              storeSlug={storeSlug}
+              storeIdentifier={storeSlug}
               templateName={settings?.template_name || 'modern'}
               showPrices={settings?.show_prices ?? true}
               showStock={settings?.show_stock ?? true}
