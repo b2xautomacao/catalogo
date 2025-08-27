@@ -11,38 +11,46 @@ interface SizeGroup {
   isAvailable: boolean;
 }
 
-interface SizeStepProps {
-  sizeGroups?: SizeGroup[];
-  selectedSize: string | null;
-  onSizeSelect: (size: string) => void;
-  onBack: () => void;
-  selectedColor: string;
-  showStock?: boolean;
-  loading?: boolean;
-  // Props alternativas para HierarchicalVariationSelector
-  availableVariations?: ProductVariation[];
-  selectedVariation?: ProductVariation | null;
-  onVariationSelect?: (variation: ProductVariation) => void;
-  onBackToColors?: () => void;
-}
+// Tipo condicional para as props
+type SizeStepProps = 
+  | {
+      // Uso com sizeGroups (HierarchicalColorSizeSelector)
+      sizeGroups: SizeGroup[];
+      selectedSize: string | null;
+      onSizeSelect: (size: string) => void;
+      onBack: () => void;
+      selectedColor: string;
+      showStock?: boolean;
+      loading?: boolean;
+      // Props alternativas não usadas neste modo
+      availableVariations?: never;
+      selectedVariation?: never;
+      onVariationSelect?: never;
+      onBackToColors?: never;
+    }
+  | {
+      // Uso com availableVariations (HierarchicalVariationSelector)
+      availableVariations: ProductVariation[];
+      selectedVariation: ProductVariation | null;
+      onVariationSelect: (variation: ProductVariation) => void;
+      selectedColor: string;
+      showStock?: boolean;
+      loading?: boolean;
+      onBackToColors?: () => void;
+      // Props do outro modo não usadas
+      sizeGroups?: never;
+      selectedSize?: never;
+      onSizeSelect?: never;
+      onBack?: never;
+    };
 
-const SizeStep: React.FC<SizeStepProps> = ({
-  sizeGroups,
-  selectedSize,
-  onSizeSelect,
-  onBack,
-  selectedColor,
-  showStock = true,
-  loading = false,
-  // Props alternativas
-  availableVariations,
-  selectedVariation,
-  onVariationSelect,
-  onBackToColors
-}) => {
+const SizeStep: React.FC<SizeStepProps> = (props) => {
+  const { selectedColor, showStock = true, loading = false } = props;
+
   // Se estamos usando availableVariations (HierarchicalVariationSelector)
-  if (availableVariations && onVariationSelect) {
-    const backHandler = onBackToColors || onBack;
+  if ('availableVariations' in props && props.availableVariations) {
+    const { availableVariations, selectedVariation, onVariationSelect, onBackToColors } = props;
+    const backHandler = onBackToColors || (() => {});
     
     if (loading) {
       return (
@@ -108,6 +116,8 @@ const SizeStep: React.FC<SizeStepProps> = ({
   }
 
   // Uso normal com sizeGroups (HierarchicalColorSizeSelector)
+  const { sizeGroups, selectedSize, onSizeSelect, onBack } = props as Extract<SizeStepProps, { sizeGroups: SizeGroup[] }>;
+
   if (loading) {
     return (
       <div className="space-y-4">
