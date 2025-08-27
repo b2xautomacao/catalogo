@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -34,9 +33,9 @@ import PaymentPending from "./pages/PaymentPending";
 import NotFound from "./pages/NotFound";
 import TestStore from "./pages/TestStore";
 import TestGradeWizard from "./pages/TestGradeWizard";
+import Catalog from "./pages/Catalog";
 import ResponsiveAppLayout from "./components/layout/ResponsiveAppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import PublicCatalog from "./components/catalog/PublicCatalog";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -79,9 +78,14 @@ function App() {
             <Route path="/payment/pending" element={<PaymentPending />} />
             <Route path="/test-store" element={<TestStore />} />
             <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
+            
             <Route
-              path="/catalog/:storeSlug"
-              element={<PublicCatalog />}
+              path="/catalog/:storeIdentifier"
+              element={<Catalog />}
+            />
+            <Route
+              path="/catalog/:storeIdentifier/:catalogType"
+              element={<Catalog />}
             />
 
             <Route

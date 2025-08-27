@@ -6,7 +6,19 @@ export const useEditorSync = (storeIdentifier: string) => {
   const { settings, loading } = useCatalogSettings(storeIdentifier);
 
   const applyEditorStyles = () => {
-    if (!settings || loading) return;
+    // Só aplicar estilos se houver configurações carregadas
+    if (!settings || loading) {
+      // Aplicar estilos padrão para catálogo público
+      const root = document.documentElement;
+      root.style.setProperty('--template-primary', '#0057FF');
+      root.style.setProperty('--template-secondary', '#FF6F00');
+      root.style.setProperty('--template-accent', '#8E2DE2');
+      root.style.setProperty('--template-background', '#F8FAFC');
+      root.style.setProperty('--template-text', '#1E293B');
+      root.style.setProperty('--template-border', '#E2E8F0');
+      root.style.setProperty('--template-surface', '#FFFFFF');
+      return;
+    }
 
     // Aplicar cores CSS customizadas
     const root = document.documentElement;

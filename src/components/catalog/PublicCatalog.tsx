@@ -1,9 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCatalog } from '@/hooks/useCatalog';
 import { useCategories } from '@/hooks/useCategories';
-import { useAuth } from '@/hooks/useAuth';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useGlobalTemplateStyles } from '@/hooks/useGlobalTemplateStyles';
 import { CatalogType } from '@/hooks/useCatalog';
@@ -21,7 +19,6 @@ const PublicCatalog = () => {
     catalogType?: string;
   }>();
 
-  const { profile } = useAuth();
   const { settings } = useCatalogSettings(storeIdentifier);
   useGlobalTemplateStyles(storeIdentifier);
 
