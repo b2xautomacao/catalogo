@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Heart, ShoppingCart, Eye, Package } from 'lucide-react';
 import { Product } from '@/types/product';
 import { CatalogType } from '@/hooks/useCatalog';
+import ProductCardCarousel from './ProductCardCarousel';
 
 interface ResponsiveProductGridProps {
   products: Product[];
@@ -96,20 +97,16 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
         const productHasVariations = hasVariations(product);
 
         return (
-          <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-shadow">
-            {/* Imagem do Produto */}
-            <div className="relative aspect-square overflow-hidden bg-gray-100">
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package className="h-12 w-12 text-gray-300" />
-                </div>
-              )}
+          <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20">
+            {/* Product Image Carousel */}
+            <div className="relative">
+              <ProductCardCarousel
+                productId={product.id || ''}
+                productName={product.name}
+                onImageClick={() => onQuickView(product)}
+                autoPlay={true}
+                autoPlayInterval={4000}
+              />
 
               {/* Badges */}
               <div className="absolute top-2 left-2 flex flex-col gap-1">
@@ -130,13 +127,16 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
                 )}
               </div>
 
-              {/* Botões de Ação */}
+              {/* Action Buttons */}
               <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="w-8 h-8 p-0"
-                  onClick={() => onAddToWishlist(product)}
+                  className="w-8 h-8 p-0 bg-white/90 backdrop-blur-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToWishlist(product);
+                  }}
                 >
                   <Heart 
                     className={`h-4 w-4 ${isInWishlist ? 'fill-red-500 text-red-500' : ''}`} 
@@ -145,48 +145,51 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="w-8 h-8 p-0"
-                  onClick={() => onQuickView(product)}
+                  className="w-8 h-8 p-0 bg-white/90 backdrop-blur-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuickView(product);
+                  }}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Conteúdo do Card */}
+            {/* Card Content */}
             <CardContent className="p-3">
-              <h3 className="font-medium text-sm line-clamp-2 mb-1 text-gray-900">
+              <h3 className="font-medium text-sm line-clamp-2 mb-1 text-foreground">
                 {product.name}
               </h3>
 
               {product.category && (
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   {product.category}
                 </p>
               )}
 
-              {/* Preço */}
+              {/* Price */}
               {showPrices && (
                 <div className="mb-2">
                   <div className="font-semibold text-primary">
                     R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                   {catalogType === 'wholesale' && product.min_wholesale_qty && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Mín: {product.min_wholesale_qty} un.
                     </p>
                   )}
                 </div>
               )}
 
-              {/* Estoque */}
+              {/* Stock */}
               {showStock && (
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   Estoque: {product.stock} unidades
                 </p>
               )}
 
-              {/* Botão Adicionar ao Carrinho */}
+              {/* Add to Cart Button */}
               <Button
                 size="sm"
                 className="w-full"
