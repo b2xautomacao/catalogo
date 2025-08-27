@@ -240,7 +240,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200"
+      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200 group"
       style={{
         borderRadius: `${settings.global.borderRadius}px`,
       }}
@@ -291,12 +291,12 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           </div>
         )}
 
-        {/* Badges System */}
+        {/* Badges System com melhor contraste */}
         <div className="absolute inset-2 pointer-events-none">
           {/* Top Left - Badge de Destaque */}
           {product.is_featured && (
             <div className="absolute top-0 left-0">
-              <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm">
+              <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-lg border-2 border-white/20">
                 ✨ Destaque
               </Badge>
             </div>
@@ -305,28 +305,28 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {/* Top Left Column - Outros badges importantes */}
           <div
             className="absolute top-0 left-0 flex flex-col gap-1"
-            style={{ marginTop: product.is_featured ? "28px" : "0" }}
+            style={{ marginTop: product.is_featured ? "32px" : "0" }}
           >
             {modelKey === "wholesale_only" && (
-              <Badge className="bg-orange-500 text-white text-xs font-medium shadow-sm">
+              <Badge className="bg-orange-500 text-white text-xs font-medium shadow-lg border-2 border-white/20">
                 Atacado
               </Badge>
             )}
             {priceCalculation?.percentage > 0 && (
-              <Badge className="bg-green-500 text-white text-xs flex items-center gap-1 shadow-sm">
+              <Badge className="bg-green-500 text-white text-xs flex items-center gap-1 shadow-lg border-2 border-white/20">
                 <TrendingDown className="h-3 w-3" />-
                 {priceCalculation.percentage.toFixed(0)}%
               </Badge>
             )}
           </div>
 
-          {/* Top Right - Variações */}
+          {/* Top Right - Variações com melhor contraste */}
           {variationInfo && (
             <div className="absolute top-0 right-0 flex flex-col gap-1 items-end">
               {variationInfo.hasColors && (
                 <Badge
                   variant="secondary"
-                  className="text-xs flex items-center gap-1 bg-white/90 shadow-sm"
+                  className="text-xs flex items-center gap-1 bg-white/95 text-gray-800 shadow-lg border-2 border-gray-200/80 backdrop-blur-sm"
                 >
                   <Palette className="h-3 w-3" />
                   {variationInfo.colorCount}
@@ -335,7 +335,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
               {variationInfo.hasSizes && (
                 <Badge
                   variant="secondary"
-                  className="text-xs flex items-center gap-1 bg-white/90 shadow-sm"
+                  className="text-xs flex items-center gap-1 bg-white/95 text-gray-800 shadow-lg border-2 border-gray-200/80 backdrop-blur-sm"
                 >
                   <Layers className="h-3 w-3" />
                   {variationInfo.sizeCount}
@@ -344,7 +344,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
               {variationInfo.hasGrades && (
                 <Badge
                   variant="secondary"
-                  className="text-xs flex items-center gap-1 bg-white/90 shadow-sm"
+                  className="text-xs flex items-center gap-1 bg-white/95 text-gray-800 shadow-lg border-2 border-gray-200/80 backdrop-blur-sm"
                 >
                   <Layers className="h-3 w-3" />
                   {variationInfo.gradeCount}G
@@ -356,29 +356,13 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {/* Bottom Left - Badge de Variações */}
           {hasVariations && (
             <div className="absolute bottom-0 left-0">
-              <Badge className="bg-blue-500 text-white text-xs flex items-center gap-1 shadow-sm">
+              <Badge className="bg-blue-500 text-white text-xs flex items-center gap-1 shadow-lg border-2 border-white/20">
                 <AlertCircle className="h-3 w-3" />
                 Variações
               </Badge>
             </div>
           )}
         </div>
-
-        {/* Modern gradient overlay para quick view */}
-        {settings.productCard.showQuickView && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-            <button
-              onClick={handleViewDetails}
-              className="bg-white/90 backdrop-blur-sm text-gray-900 px-4 py-2 rounded-full text-sm font-medium hover:bg-white transition-colors"
-              style={{
-                borderRadius: `${settings.global.borderRadius * 2}px`,
-                fontSize: settings.global.fontSize.small,
-              }}
-            >
-              Visualizar
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Product Info */}
@@ -479,20 +463,20 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           </p>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
+        {/* Action Buttons - Reorganizados */}
+        <div className="flex gap-2">
           {/* Botão Ver Detalhes - SEMPRE PRESENTE */}
           <Button
             variant="outline"
             size="sm"
             onClick={handleViewDetails}
-            className="flex-1 flex items-center gap-2"
+            className="flex-1 flex items-center gap-2 hover:bg-gray-50"
             style={{
               borderRadius: `${settings.global.borderRadius - 2}px`,
               fontSize: settings.global.fontSize.small,
             }}
           >
-            <Eye className="h-3 w-3" />
+            <Eye className="h-4 w-4" />
             Ver Detalhes
           </Button>
 
@@ -501,7 +485,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
             <Button
               onClick={handleAddToCart}
               disabled={product.stock <= 0 || loading}
-              className="flex items-center gap-2 text-white text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+              size="sm"
+              className="flex items-center gap-2 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 background:
                   product.stock > 0 && !loading
@@ -511,7 +496,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
                 fontSize: settings.global.fontSize.small,
               }}
             >
-              <ShoppingCart className="h-3 w-3" />
+              <ShoppingCart className="h-4 w-4" />
               {loading
                 ? "Carregando..."
                 : product.stock > 0
@@ -526,7 +511,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
               e.stopPropagation();
               onAddToWishlist(product);
             }}
-            className="p-3 rounded-lg border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+            className="p-3 rounded-lg border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
             style={{
               borderRadius: `${settings.global.borderRadius - 2}px`,
             }}
