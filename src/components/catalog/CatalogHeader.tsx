@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Store } from '@/hooks/useCatalog';
 import { CatalogType } from '@/hooks/useCatalog';
+import { useTemplateHeaderColors } from '@/hooks/useTemplateHeaderColors';
 
 export interface CatalogHeaderProps {
   store: Store;
@@ -25,8 +26,17 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   onToggleFilters,
   onCartClick
 }) => {
+  const storeId = store.url_slug || store.id;
+  const { isReady } = useTemplateHeaderColors(storeId);
+
   return (
-    <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+    <header 
+      className="text-white"
+      style={{ 
+        backgroundColor: 'var(--template-header-bg, #0057FF)',
+        color: 'var(--template-header-text, #FFFFFF)'
+      }}
+    >
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -40,7 +50,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
             <div>
               <h1 className="text-3xl font-bold">{store.name}</h1>
               {store.description && (
-                <p className="text-primary-foreground/80 mt-1">{store.description}</p>
+                <p className="text-white/80 mt-1">{store.description}</p>
               )}
             </div>
           </div>
@@ -50,12 +60,12 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
             {(cartItemsCount > 0 || wishlistCount > 0) && (
               <div className="flex items-center gap-2">
                 {cartItemsCount > 0 && (
-                  <Badge variant="secondary" className="bg-white/10 text-primary-foreground border-white/20">
+                  <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
                     Carrinho: {cartItemsCount}
                   </Badge>
                 )}
                 {wishlistCount > 0 && (
-                  <Badge variant="secondary" className="bg-white/10 text-primary-foreground border-white/20">
+                  <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
                     Favoritos: {wishlistCount}
                   </Badge>
                 )}
@@ -64,7 +74,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
             
             <Badge 
               variant="secondary" 
-              className="bg-white/10 text-primary-foreground border-white/20"
+              className="bg-white/10 text-white border-white/20"
             >
               {catalogType === 'wholesale' ? 'Atacado' : 'Varejo'}
             </Badge>

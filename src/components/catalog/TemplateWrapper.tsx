@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useEditorSync } from '@/hooks/useEditorSync';
+import { useTemplateHeaderColors } from '@/hooks/useTemplateHeaderColors';
 import ModernCatalogTemplate from './templates/layouts/ModernCatalogTemplate';
 import IndustrialCatalogTemplate from './templates/layouts/IndustrialCatalogTemplate';
 import MinimalCatalogTemplate from './templates/layouts/MinimalCatalogTemplate';
@@ -34,6 +35,10 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
   children
 }) => {
   const { settings } = useEditorSync(store.url_slug || store.id);
+  const storeId = store.url_slug || store.id;
+  
+  // Aplicar cores do header e botões
+  useTemplateHeaderColors(storeId);
 
   // Aplicar configurações globais do editor ao documento
   useEffect(() => {
@@ -56,6 +61,19 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
       }
     }
   }, [settings]);
+
+  // Aplicar classe para estilos de botões
+  useEffect(() => {
+    // Importar estilos de botões
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/src/styles/template-buttons.css';
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   const templateProps = {
     store,

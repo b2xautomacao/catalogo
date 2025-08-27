@@ -1,0 +1,63 @@
+
+/* Estilos específicos para botões do template - Cores dinâmicas */
+.template-button-primary {
+  background-color: var(--template-button-primary, #0057FF);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.template-button-primary:hover {
+  background-color: var(--template-button-primary-hover, #0041CC);
+  transform: translateY(-1px);
+}
+
+.template-button-secondary {
+  background-color: var(--template-button-secondary, #FF6F00);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.template-button-secondary:hover {
+  background-color: var(--template-button-secondary-hover, #E55A00);
+  transform: translateY(-1px);
+}
+
+.template-button-gradient {
+  background: var(--template-button-gradient, linear-gradient(135deg, #0057FF 0%, #FF6F00 100%));
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.template-button-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 87, 255, 0.3);
+}
+
+.template-link {
+  color: var(--template-link-color, #0057FF);
+  transition: color 0.2s ease;
+}
+
+.template-link:hover {
+  color: var(--template-link-hover, #FF6F00);
+}
+
+/* Aplicar aos botões shadcn/ui */
+.btn-primary {
+  background-color: var(--template-button-primary, #0057FF) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--template-button-primary-hover, #0041CC) !important;
+}
+
+.btn-secondary {
+  background-color: var(--template-button-secondary, #FF6F00) !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--template-button-secondary-hover, #E55A00) !important;
+}
