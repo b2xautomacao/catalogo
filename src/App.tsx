@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -40,12 +41,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
 
-// Componente wrapper para o catálogo público que pega o storeSlug da URL
-const PublicCatalogWrapper = () => {
-  const { storeSlug } = useParams<{ storeSlug: string }>();
-  return <PublicCatalog storeIdentifier={storeSlug || ""} />;
-};
-
 // Componente para layout com título dinâmico
 const DashboardLayout = () => {
   const { profile } = useAuth();
@@ -86,7 +81,7 @@ function App() {
             <Route path="/test-grade-wizard" element={<TestGradeWizard />} />
             <Route
               path="/catalog/:storeSlug"
-              element={<PublicCatalogWrapper />}
+              element={<PublicCatalog />}
             />
 
             <Route

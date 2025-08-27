@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CatalogHeader from "./CatalogHeader";
 import ResponsiveProductGrid from "./ResponsiveProductGrid";
 import ProductDetailsModal from "./ProductDetailsModal";
@@ -23,14 +23,20 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const {
+    store,
     products,
     loading: storeLoading,
-    error,
-    storeConfig,
-  } = useCatalog({
-    storeIdentifier,
-    catalogType,
-  });
+    storeError,
+    initializeCatalog,
+  } = useCatalog();
+
+  // Inicializar catálogo quando componente montar
+  useEffect(() => {
+    if (storeIdentifier) {
+      console.log('🚀 CATALOG EXAMPLE - Inicializando catálogo:', { storeIdentifier, catalogType });
+      initializeCatalog(storeIdentifier, catalogType);
+    }
+  }, [storeIdentifier, catalogType, initializeCatalog]);
 
   const { addItem } = useCart();
 
@@ -66,18 +72,18 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({
     );
   }
 
-  if (error) {
+  if (storeError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-2">Erro ao carregar catálogo</p>
-          <p className="text-gray-500 text-sm">{error}</p>
+          <p className="text-gray-500 text-sm">{storeError}</p>
         </div>
       </div>
     );
   }
 
-  if (!storeConfig) {
+  if (!store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -90,8 +96,7 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({
   return (
     <div className="min-h-screen bg-background">
       <CatalogHeader
-        storeName={storeConfig.name}
-        storeDescription={storeConfig.description}
+        store={store}
         catalogType={catalogType}
         templateName={templateName}
       />
@@ -107,8 +112,8 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({
           onAddToCart={handleAddToCart}
           wishlist={wishlist}
           templateName={templateName}
-          showPrices={storeConfig.settings?.show_prices ?? true}
-          showStock={storeConfig.settings?.show_stock ?? true}
+          showPrices={true}
+          showStock={true}
         />
       </main>
 
