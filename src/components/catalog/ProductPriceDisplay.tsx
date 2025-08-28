@@ -22,8 +22,8 @@ interface ProductPriceDisplayProps {
   showTierName?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
-  // Adicionar produto completo para usar o novo hook de preços
-  product?: Pick<Product, 'retail_price' | 'wholesale_price' | 'min_wholesale_qty' | 'store_id'>;
+  // Corrigir o tipo da prop product para incluir propriedades obrigatórias
+  product?: Pick<Product, 'id' | 'name' | 'stock' | 'retail_price' | 'wholesale_price' | 'min_wholesale_qty' | 'store_id'>;
 }
 
 const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
@@ -44,6 +44,9 @@ const ProductPriceDisplay: React.FC<ProductPriceDisplayProps> = ({
 }) => {
   // Criar objeto produto para o hook se não fornecido
   const productForHook = product || {
+    id: productId,
+    name: 'Produto',
+    stock: 0,
     retail_price: retailPrice,
     wholesale_price: wholesalePrice,
     min_wholesale_qty: minWholesaleQty,

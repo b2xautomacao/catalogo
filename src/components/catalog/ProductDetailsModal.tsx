@@ -8,7 +8,7 @@ import { Product, ProductVariation } from '@/types/product';
 import { CatalogType } from '@/hooks/useCatalog';
 import ProductImageGallery from '@/components/products/ProductImageGallery';
 import HierarchicalColorSizeSelector from './HierarchicalColorSizeSelector';
-import ProductVariationSelector from '@/components/products/ProductVariationSelector';
+import ProductVariationSelector from './ProductVariationSelector';
 import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 import { formatCurrency } from '@/lib/utils';
 
