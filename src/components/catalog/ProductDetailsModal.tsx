@@ -8,7 +8,7 @@ import { Product, ProductVariation } from '@/types/product';
 import { CatalogType } from '@/hooks/useCatalog';
 import ProductImageGallery from '@/components/products/ProductImageGallery';
 import HierarchicalColorSizeSelector from './HierarchicalColorSizeSelector';
-import ProductVariationSelector from './ProductVariationSelector';
+import ProductVariationSelector from '@/components/catalog/ProductVariationSelector';
 import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 import { formatCurrency } from '@/lib/utils';
 
@@ -34,16 +34,30 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   catalogType,
   showStock = true
 }) => {
+  // Sempre chamar hooks na mesma ordem, independente das condições
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
 
-  if (!product) return null;
+  // Usar um produto "vazio" para manter consistência dos hooks
+  const safeProduct = product || {
+    id: '',
+    name: '',
+    retail_price: 0,
+    wholesale_price: 0,
+    min_wholesale_qty: 1,
+    store_id: ''
+  } as Product;
 
   const priceInfo = useProductDisplayPrice({
-    product,
+    product: safeProduct,
     catalogType,
     quantity: 1,
   });
+
+  // Early return apenas após todos os hooks
+  if (!product || !isOpen) {
+    return null;
+  }
 
   const price = priceInfo.displayPrice;
   const minQuantity = priceInfo.minQuantity;

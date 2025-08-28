@@ -34,15 +34,16 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
   onCartClick,
   children
 }) => {
-  const storeId = store?.url_slug || store?.id;
+  // Sempre chamar hooks na mesma ordem, independente de condições
+  const storeId = store?.url_slug || store?.id || '';
   const { settings } = useEditorSync(storeId);
   
-  // Aplicar cores do header e botões apenas se storeId existir
+  // Sempre chamar este hook, mesmo se storeId for vazio
   useTemplateHeaderColors(storeId);
 
   // Aplicar configurações globais do editor ao documento
   useEffect(() => {
-    if (settings) {
+    if (settings && storeId) {
       const root = document.documentElement;
       
       // Aplicar configurações de fonte
@@ -60,7 +61,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
         root.style.setProperty('--template-border-radius', `${settings.border_radius}px`);
       }
     }
-  }, [settings]);
+  }, [settings, storeId]);
 
   const templateProps = {
     store,
@@ -75,9 +76,14 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     editorSettings: settings
   };
 
-  // Verificação de segurança para evitar renderização com dados inválidos
+  // Verificação de segurança após os hooks
   if (!store || !storeId) {
-    return <div>Carregando template...</div>;
+    return <div className="flex items-center justify-center h-64">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+        <p className="text-muted-foreground">Carregando template...</p>
+      </div>
+    </div>;
   }
 
   switch (templateName) {
