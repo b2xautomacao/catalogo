@@ -187,7 +187,6 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           onVariationChange={setSelectedVariation}
                           basePrice={price}
                           showPriceInCards={false}
-                          showStock={showStock}
                         />
                         
                         {/* Botões para variação de grade */}
