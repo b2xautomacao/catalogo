@@ -176,7 +176,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   return (
     <div className="min-h-screen bg-gray-50">
       <TemplateWrapper
-        templateName={settings?.template || 'modern'}
+        templateName={settings?.template_name || 'modern'}
         store={store}
         catalogType={catalogType}
         cartItemsCount={totalItems}
@@ -194,9 +194,9 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
               onClick={() => handleProductClick(product)}
             >
               <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                {product.images && product.images.length > 0 ? (
+                {product.image_url ? (
                   <img
-                    src={product.images[0]}
+                    src={product.image_url}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />

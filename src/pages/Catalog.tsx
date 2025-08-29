@@ -19,7 +19,7 @@ const Catalog = () => {
     );
   }
 
-  return <PublicCatalog storeSlug={storeSlug} />;
+  return <PublicCatalog storeIdentifier={storeSlug} catalogType="retail" />;
 };
 
 export default Catalog;
