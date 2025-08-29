@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -210,7 +211,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                   <div className="flex flex-col items-center">
                     <span className="font-medium">{color}</span>
                     <span className="text-xs text-muted-foreground">
-                      {stock} disponível
+                      Disponível
                     </span>
                   </div>
                   {!isAvailable && (
@@ -230,7 +231,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
         <div className="space-y-3">
           <h5 className="font-medium text-base flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Tamanho
+            Pares
           </h5>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {sizes.map((size) => {
@@ -264,7 +265,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                   <div className="flex flex-col items-center">
                     <span className="font-medium">{size}</span>
                     <span className="text-xs text-muted-foreground">
-                      {stock}
+                      Disponível
                     </span>
                   </div>
                   {!isAvailable && (
@@ -284,7 +285,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
         <VariationInfoPanel
           variation={selectedVariation}
           basePrice={basePrice}
-          showAdvancedInfo={true}
+          showAdvancedInfo={false}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ShoppingCart, Eye, Zap } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Zap, Package, Star, AlertTriangle } from 'lucide-react';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
@@ -47,6 +47,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
     : (product.stock || 0);
 
   const isOutOfStock = totalStock === 0 && !product.allow_negative_stock;
+  const isLowStock = totalStock > 0 && totalStock <= 5;
 
   const handleAddToCart = () => {
     console.log('🛒 MINIMAL TEMPLATE - Tentativa de adicionar ao carrinho:', {
@@ -77,28 +78,64 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           onError={() => setImageError(true)}
         />
 
-        {/* Badges Informativos - Top */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-10">
+        {/* Badges Informativos - Top Left */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+          {/* Badge de Status */}
           {isOutOfStock && (
             <Badge variant="destructive" className="text-xs">
               Esgotado
             </Badge>
           )}
+          
+          {/* Badge de Estoque Baixo */}
+          {!isOutOfStock && isLowStock && (
+            <Badge className="text-xs bg-yellow-500 text-white">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Últimas {totalStock}
+            </Badge>
+          )}
+
+          {/* Badge de Categoria */}
+          {product.category && (
+            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+              {product.category}
+            </Badge>
+          )}
+
+          {/* Badge de Tipo de Catálogo */}
           {catalogType === 'wholesale' && (
             <Badge className="text-xs bg-gray-800 text-white">
+              <Package className="h-3 w-3 mr-1" />
               Atacado
             </Badge>
           )}
+
+          {/* Badge de Destaque */}
+          {product.featured && (
+            <Badge className="text-xs bg-purple-500 text-white">
+              <Star className="h-3 w-3 mr-1" />
+              Destaque
+            </Badge>
+          )}
+
+          {/* Badge de Atacado Disponível */}
           {product.wholesale_price && catalogType === 'retail' && (
             <Badge variant="outline" className="text-xs bg-white/90 border-gray-300">
               <Zap className="h-3 w-3 mr-1" />
               Atacado
             </Badge>
           )}
+
+          {/* Badge de Variações */}
+          {hasVariations && product.variations && product.variations.length > 1 && (
+            <Badge variant="outline" className="text-xs bg-white/90 text-gray-700">
+              +{product.variations.length} opções
+            </Badge>
+          )}
         </div>
 
         {/* Badges de Ação - Bottom Right */}
-        <div className={`absolute bottom-3 right-3 flex gap-1 transition-opacity duration-200 ${
+        <div className={`absolute bottom-2 right-2 flex gap-1 transition-opacity duration-200 ${
           isHovered ? 'opacity-100' : 'opacity-0'
         }`}>
           <Button
@@ -130,14 +167,11 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
       </div>
 
       <CardContent className="p-4 space-y-3">
-        {/* Nome e Categoria */}
+        {/* Nome */}
         <div>
           <h3 className="font-medium text-gray-900 line-clamp-1">
             {product.name}
           </h3>
-          {product.category && (
-            <p className="text-sm text-gray-500 mt-1">{product.category}</p>
-          )}
         </div>
 
         {/* Preços */}

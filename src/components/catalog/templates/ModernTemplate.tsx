@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ShoppingCart, Eye, Zap } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Zap, Package, Star, AlertTriangle } from 'lucide-react';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
@@ -68,6 +68,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
     : (product.stock || 0);
 
   const isOutOfStock = totalStock === 0 && !product.allow_negative_stock;
+  const isLowStock = totalStock > 0 && totalStock <= 5;
 
   const handleAddToCart = () => {
     console.log('🛒 MODERN TEMPLATE - Tentativa de adicionar ao carrinho:', {
@@ -98,31 +99,66 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           onError={() => setImageError(true)}
         />
 
-        {/* Badges Informativos - Top */}
-        <div className="absolute top-2 left-2 flex flex-wrap gap-1 z-10">
+        {/* Badges Informativos - Top Left */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+          {/* Badge de Status */}
           {isOutOfStock && (
-            <Badge variant="destructive" className="text-xs font-medium">
+            <Badge variant="destructive" className="text-xs font-medium shadow-sm">
               Esgotado
             </Badge>
           )}
+          
+          {/* Badge de Estoque Baixo */}
+          {!isOutOfStock && isLowStock && (
+            <Badge className="text-xs font-medium bg-yellow-500 text-white shadow-sm">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Últimas {totalStock}
+            </Badge>
+          )}
+
+          {/* Badge de Categoria */}
+          {product.category && (
+            <Badge variant="secondary" className="text-xs font-medium bg-blue-100 text-blue-700 border-blue-300 shadow-sm">
+              {product.category}
+            </Badge>
+          )}
+
+          {/* Badge de Tipo de Catálogo */}
           {catalogType === 'wholesale' && (
-            <Badge variant="secondary" className="text-xs font-medium bg-blue-500 text-white">
+            <Badge className="text-xs font-medium bg-amber-500 text-white shadow-sm">
+              <Package className="h-3 w-3 mr-1" />
               Atacado
             </Badge>
           )}
+
+          {/* Badge de Destaque */}
+          {product.featured && (
+            <Badge className="text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
+              <Star className="h-3 w-3 mr-1" />
+              Destaque
+            </Badge>
+          )}
+
+          {/* Badge de Atacado Disponível */}
           {product.wholesale_price && catalogType === 'retail' && (
-            <Badge variant="outline" className="text-xs font-medium bg-green-100 text-green-700 border-green-300">
+            <Badge variant="outline" className="text-xs font-medium bg-green-100 text-green-700 border-green-300 shadow-sm">
               <Zap className="h-3 w-3 mr-1" />
               Atacado Disponível
             </Badge>
           )}
+
+          {/* Badge de Variações */}
+          {hasVariations && product.variations && product.variations.length > 1 && (
+            <Badge variant="outline" className="text-xs font-medium bg-gray-100 text-gray-700 border-gray-300 shadow-sm">
+              +{product.variations.length} opções
+            </Badge>
+          )}
         </div>
 
-        {/* Badges de Ação - Bottom Right (não sobrepostos) */}
-        <div className={`absolute bottom-2 right-2 flex gap-1 transition-opacity duration-200 ${
+        {/* Badges de Ação - Bottom Right */}
+        <div className={`absolute bottom-3 right-3 flex gap-1 transition-opacity duration-200 ${
           isHovered ? 'opacity-100' : 'opacity-0'
         }`}>
-          {/* Botão Wishlist */}
           <Button
             variant="secondary"
             size="sm"
@@ -137,7 +173,6 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
             />
           </Button>
 
-          {/* Botão Visualizar */}
           <Button
             variant="secondary"
             size="sm"
@@ -163,8 +198,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
             {product.name}
           </h3>
-          {product.category && (
-            <p className="text-sm text-gray-500">{product.category}</p>
+          {product.description && (
+            <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
           )}
         </div>
 
