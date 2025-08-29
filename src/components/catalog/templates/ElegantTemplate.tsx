@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ShoppingCart, Eye, Zap, Star, Package, AlertTriangle } from 'lucide-react';
+import { Heart, ShoppingCart, Eye } from 'lucide-react';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
@@ -68,7 +68,6 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
     : (product.stock || 0);
 
   const isOutOfStock = totalStock === 0 && !product.allow_negative_stock;
-  const isLowStock = totalStock > 0 && totalStock <= 5;
 
   const handleAddToCart = () => {
     console.log('🛒 ELEGANT TEMPLATE - Tentativa de adicionar ao carrinho:', {
@@ -102,64 +101,8 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-        {/* Badges Informativos - Top Left */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-          {/* Badge de Status */}
-          {isOutOfStock && (
-            <Badge variant="destructive" className="text-xs font-medium shadow-lg">
-              Esgotado
-            </Badge>
-          )}
-          
-          {/* Badge de Estoque Baixo */}
-          {!isOutOfStock && isLowStock && (
-            <Badge className="text-xs font-medium bg-yellow-500 text-white shadow-lg">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Últimas {totalStock}
-            </Badge>
-          )}
-
-          {/* Badge de Categoria */}
-          {product.category && (
-            <Badge className="text-xs font-medium bg-white/90 text-gray-800 shadow-lg">
-              {product.category}
-            </Badge>
-          )}
-
-          {/* Badge de Tipo de Catálogo */}
-          {catalogType === 'wholesale' && (
-            <Badge className="text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg">
-              <Star className="h-3 w-3 mr-1" />
-              Atacado
-            </Badge>
-          )}
-
-          {/* Badge de Destaque */}
-          {product.is_featured && (
-            <Badge className="text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg">
-              <Star className="h-3 w-3 mr-1" />
-              Destaque
-            </Badge>
-          )}
-
-          {/* Badge de Atacado Disponível */}
-          {product.wholesale_price && catalogType === 'retail' && (
-            <Badge className="text-xs font-medium bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg">
-              <Zap className="h-3 w-3 mr-1" />
-              Atacado Disponível
-            </Badge>
-          )}
-
-          {/* Badge de Variações */}
-          {hasVariations && product.variations && product.variations.length > 1 && (
-            <Badge className="text-xs font-medium bg-white/90 text-gray-700 shadow-lg">
-              +{product.variations.length} opções
-            </Badge>
-          )}
-        </div>
-
-        {/* Badges de Ação - Bottom Right */}
-        <div className={`absolute bottom-4 right-4 flex gap-2 transition-all duration-300 ${
+        {/* Botões de Ação - Top Right */}
+        <div className={`absolute top-4 right-4 flex gap-2 transition-all duration-300 ${
           isHovered ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'
         }`}>
           <Button
@@ -186,17 +129,23 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
             <Eye className="h-4 w-4 text-gray-700" />
           </Button>
         </div>
+
+        {/* Badge de Variações - Bottom Center */}
+        {hasVariations && product.variations && product.variations.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+            <Badge className="text-xs font-medium bg-white/90 text-gray-700 shadow-lg">
+              +{product.variations.length} opções
+            </Badge>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-6">
-        {/* Nome e Categoria */}
+        {/* Nome */}
         <div className="space-y-2 mb-4">
           <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 group-hover:text-amber-600 transition-colors duration-300">
             {product.name}
           </h3>
-          {product.description && (
-            <p className="text-sm text-gray-500">{product.description}</p>
-          )}
         </div>
 
         {/* Preços */}
@@ -206,11 +155,6 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
               <span className="text-2xl font-bold text-gray-900">
                 {formatPrice(currentPrice)}
               </span>
-              {catalogType === 'wholesale' && product.min_wholesale_qty && (
-                <span className="text-xs text-amber-600 font-medium">
-                  Mín: {product.min_wholesale_qty}
-                </span>
-              )}
             </div>
             
             {catalogType === 'retail' && product.wholesale_price && (
@@ -226,7 +170,7 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           </div>
         )}
 
-        {/* Estoque */}
+        {/* Estoque - apenas se showStock for true */}
         {showStock && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm">
@@ -243,31 +187,6 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
                   {totalStock} unidades
                 </span>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Variações Preview */}
-        {hasVariations && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 font-medium mb-2">Opções disponíveis:</p>
-            <div className="flex flex-wrap gap-2">
-              {product.variations?.slice(0, 4).map((variation, index) => (
-                <div
-                  key={variation.id || index}
-                  className="text-xs px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-200 rounded-full text-gray-700 font-medium"
-                >
-                  {variation.color && variation.size 
-                    ? `${variation.color} • ${variation.size}`
-                    : variation.color || variation.size || 'Variação'
-                  }
-                </div>
-              ))}
-              {product.variations && product.variations.length > 4 && (
-                <div className="text-xs px-3 py-1 bg-amber-100 border border-amber-200 rounded-full text-amber-700 font-medium">
-                  +{product.variations.length - 4} opções
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -16,6 +16,7 @@ interface ProductVariationSelectorProps {
   loading?: boolean;
   basePrice?: number;
   showPriceInCards?: boolean;
+  showStock?: boolean; // Adicionar prop showStock
 }
 
 const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
@@ -25,6 +26,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   loading = false,
   basePrice = 0,
   showPriceInCards = false,
+  showStock = false, // Valor padrão false
 }) => {
   if (loading) {
     return (
@@ -107,6 +109,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
               onSelect={() => onVariationChange(variation)}
               showPrice={showPriceInCards}
               basePrice={basePrice}
+              showStock={showStock} // Passar showStock para o componente
             />
           ))}
         </div>
@@ -117,6 +120,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
             variation={selectedVariation}
             basePrice={basePrice}
             showAdvancedInfo={true}
+            showStock={showStock} // Passar showStock para o componente
           />
         )}
       </div>
@@ -210,9 +214,12 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                 >
                   <div className="flex flex-col items-center">
                     <span className="font-medium">{color}</span>
-                    <span className="text-xs text-muted-foreground">
-                      Disponível
-                    </span>
+                    {/* Mostrar disponibilidade apenas se showStock for true */}
+                    {showStock && (
+                      <span className="text-xs text-muted-foreground">
+                        Disponível
+                      </span>
+                    )}
                   </div>
                   {!isAvailable && (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -264,9 +271,12 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                 >
                   <div className="flex flex-col items-center">
                     <span className="font-medium">{size}</span>
-                    <span className="text-xs text-muted-foreground">
-                      Disponível
-                    </span>
+                    {/* Mostrar disponibilidade apenas se showStock for true */}
+                    {showStock && (
+                      <span className="text-xs text-muted-foreground">
+                        Disponível
+                      </span>
+                    )}
                   </div>
                   {!isAvailable && (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -286,6 +296,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           variation={selectedVariation}
           basePrice={basePrice}
           showAdvancedInfo={false}
+          showStock={showStock} // Passar showStock para o componente
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ShoppingCart, Eye, Zap, Package, Star, AlertTriangle } from 'lucide-react';
+import { Heart, ShoppingCart, Eye } from 'lucide-react';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
@@ -47,7 +47,6 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
     : (product.stock || 0);
 
   const isOutOfStock = totalStock === 0 && !product.allow_negative_stock;
-  const isLowStock = totalStock > 0 && totalStock <= 5;
 
   const handleAddToCart = () => {
     console.log('🛒 INDUSTRIAL TEMPLATE - Tentativa de adicionar ao carrinho:', {
@@ -78,64 +77,8 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           onError={() => setImageError(true)}
         />
 
-        {/* Badges Informativos - Top Left */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
-          {/* Badge de Status */}
-          {isOutOfStock && (
-            <Badge variant="destructive" className="text-xs font-bold uppercase tracking-wide">
-              Esgotado
-            </Badge>
-          )}
-          
-          {/* Badge de Estoque Baixo */}
-          {!isOutOfStock && isLowStock && (
-            <Badge className="text-xs font-bold bg-yellow-500 text-black uppercase tracking-wide">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              ÚLTIMAS {totalStock}
-            </Badge>
-          )}
-
-          {/* Badge de Categoria */}
-          {product.category && (
-            <Badge className="text-xs font-bold bg-white border-2 border-gray-400 text-gray-800 uppercase tracking-wide">
-              {product.category.toUpperCase()}
-            </Badge>
-          )}
-
-          {/* Badge de Tipo de Catálogo */}
-          {catalogType === 'wholesale' && (
-            <Badge className="text-xs font-bold bg-slate-700 text-white uppercase tracking-wide">
-              <Package className="h-3 w-3 mr-1" />
-              ATACADO
-            </Badge>
-          )}
-
-          {/* Badge de Destaque */}
-          {product.is_featured && (
-            <Badge className="text-xs font-bold bg-red-600 text-white uppercase tracking-wide">
-              <Star className="h-3 w-3 mr-1" />
-              DESTAQUE
-            </Badge>
-          )}
-
-          {/* Badge de Atacado Disponível */}
-          {product.wholesale_price && catalogType === 'retail' && (
-            <Badge variant="outline" className="text-xs font-bold bg-yellow-100 border-yellow-400 text-yellow-800 uppercase tracking-wide">
-              <Zap className="h-3 w-3 mr-1" />
-              BULK
-            </Badge>
-          )}
-
-          {/* Badge de Variações */}
-          {hasVariations && product.variations && product.variations.length > 1 && (
-            <Badge className="text-xs font-bold bg-gray-600 text-white uppercase tracking-wide">
-              +{product.variations.length} OPÇÕES
-            </Badge>
-          )}
-        </div>
-
-        {/* Badges de Ação - Bottom Right */}
-        <div className={`absolute bottom-3 right-3 flex gap-1 transition-all duration-200 ${
+        {/* Botões de Ação - Top Right */}
+        <div className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${
           isHovered ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-2'
         }`}>
           <Button
@@ -165,6 +108,15 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           </Button>
         </div>
 
+        {/* Badge de Variações - Bottom Center */}
+        {hasVariations && product.variations && product.variations.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+            <Badge className="text-xs font-bold bg-gray-600 text-white uppercase tracking-wide">
+              +{product.variations.length} OPÇÕES
+            </Badge>
+          </div>
+        )}
+
         {/* Corner Lines - Design Industrial */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-gray-400" />
         <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-gray-400" />
@@ -173,14 +125,11 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
       </div>
 
       <CardContent className="p-4 bg-gray-50 border-t-2 border-gray-200">
-        {/* Nome e Categoria */}
+        {/* Nome */}
         <div className="space-y-1 mb-3">
           <h3 className="font-bold text-gray-900 line-clamp-2 uppercase tracking-wide text-sm group-hover:text-slate-600 transition-colors">
             {product.name}
           </h3>
-          {product.description && (
-            <p className="text-xs text-gray-600 uppercase tracking-wider font-semibold">{product.description}</p>
-          )}
         </div>
 
         {/* Preços */}
@@ -190,11 +139,6 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
               <span className="text-xl font-black text-gray-900 font-mono">
                 {formatPrice(currentPrice)}
               </span>
-              {catalogType === 'wholesale' && product.min_wholesale_qty && (
-                <span className="text-xs text-slate-600 font-bold bg-slate-200 px-2 py-1 rounded">
-                  MÍN: {product.min_wholesale_qty}
-                </span>
-              )}
             </div>
             
             {catalogType === 'retail' && product.wholesale_price && (
@@ -208,7 +152,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           </div>
         )}
 
-        {/* Estoque */}
+        {/* Estoque - apenas se showStock for true */}
         {showStock && (
           <div className="mb-3">
             <div className="flex items-center justify-between text-xs">
@@ -226,30 +170,6 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
                 </span>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Variações Preview */}
-        {hasVariations && (
-          <div className="mb-3">
-            <div className="grid grid-cols-2 gap-1">
-              {product.variations?.slice(0, 4).map((variation, index) => (
-                <div
-                  key={variation.id || index}
-                  className="text-xs px-2 py-1 bg-white border border-gray-300 rounded text-gray-800 font-semibold text-center"
-                >
-                  {variation.color && variation.size 
-                    ? `${variation.color}/${variation.size}`
-                    : variation.color || variation.size || 'VAR'
-                  }
-                </div>
-              ))}
-            </div>
-            {product.variations && product.variations.length > 4 && (
-              <p className="text-xs text-gray-600 font-bold mt-1 text-center">
-                +{product.variations.length - 4} MAIS OPÇÕES
-              </p>
-            )}
           </div>
         )}
 
