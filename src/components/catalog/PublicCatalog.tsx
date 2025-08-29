@@ -1,21 +1,20 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCatalog } from '@/hooks/useCatalog';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useCart } from '@/hooks/useCart';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { createCartItem } from '@/utils/cartHelpers';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useToast } from '@/hooks/use-toast';
-import { useMobileLayout } from '@/hooks/useMobileLayout';
 import ProductDetailsModal from './ProductDetailsModal';
 import FloatingCart from './FloatingCart';
 import TemplateWrapper from './TemplateWrapper';
 import ProductGrid from './ProductGrid';
 import FilterSidebar, { FilterState } from './FilterSidebar';
 import { Button } from '@/components/ui/button';
-import { Filter, Search } from 'lucide-react';
+import { Filter } from 'lucide-react';
 
 interface PublicCatalogProps {
   storeIdentifier: string;
@@ -27,7 +26,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   catalogType 
 }) => {
   const { toast } = useToast();
-  const { isMobile } = useMobileLayout(storeIdentifier);
+  const isMobile = useIsMobile();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [wishlist, setWishlist] = useState<Product[]>([]);
@@ -44,7 +43,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     }
   });
   
-  // Usar hook global do carrinho
   const { 
     items: cartItems, 
     addItem, 
@@ -66,15 +64,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
   
   const { settings } = useCatalogSettings(storeIdentifier);
 
-  // Aplicar filtros quando mudarem
   const applyFilters = useCallback(() => {
     console.log('🎯 PUBLIC CATALOG - Aplicando filtros:', { searchTerm, activeFilters });
 
-    // Primeiro aplicar busca por texto se houver
     if (searchTerm.trim()) {
       searchProducts(searchTerm);
     } else {
-      // Se não há busca, usar todos os produtos
       filterProducts({
         category: activeFilters.categories.length === 1 ? activeFilters.categories[0] : undefined,
         minPrice: activeFilters.priceRange[0],
@@ -89,24 +84,20 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     }
   }, [searchTerm, activeFilters, searchProducts, filterProducts]);
 
-  // Aplicar filtros quando mudarem
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
-  // Handler para mudanças de filtro
   const handleFilterChange = useCallback((filters: FilterState) => {
     console.log('🔧 PUBLIC CATALOG - Filtros alterados:', filters);
     setActiveFilters(filters);
   }, []);
 
-  // Handler para busca
   const handleSearchChange = useCallback((query: string) => {
     console.log('🔍 PUBLIC CATALOG - Busca alterada:', query);
     setSearchTerm(query);
   }, []);
 
-  // Função para adicionar ao carrinho usando o hook global
   const handleAddToCart = (
     product: Product, 
     quantity: number = 1, 
@@ -125,10 +116,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     });
 
     try {
-      // Usar helper para criar item compatível
       const cartItem = createCartItem(product, catalogType, quantity, variation);
-      
-      // Adicionar usando o hook global
       addItem(cartItem);
       
       console.log('✅ PUBLIC CATALOG - Item adicionado com sucesso ao carrinho global');
@@ -183,7 +171,6 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({
     setSelectedProduct(null);
   };
 
-  // Log para debug do estado do carrinho
   useEffect(() => {
     console.log('🔍 PUBLIC CATALOG - Estado do carrinho:', {
       totalItems,
