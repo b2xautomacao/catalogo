@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -160,6 +161,31 @@ const StoreInfoSettings: React.FC = () => {
     },
   };
 
+  // Função para normalizar e validar os dados de horário vindos do banco
+  const normalizeBusinessHours = (savedHours: any): Record<WeekDay, BusinessHourValue> => {
+    if (!savedHours || typeof savedHours !== 'object') {
+      return defaultBusinessHours;
+    }
+
+    const normalizedHours: Record<WeekDay, BusinessHourValue> = { ...defaultBusinessHours };
+    const days: WeekDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    days.forEach((day) => {
+      if (savedHours[day] && typeof savedHours[day] === 'object') {
+        normalizedHours[day] = {
+          open: savedHours[day].open || defaultBusinessHours[day].open,
+          close: savedHours[day].close || defaultBusinessHours[day].close,
+          closed: Boolean(savedHours[day].closed),
+          hasLunchBreak: Boolean(savedHours[day].hasLunchBreak),
+          lunchStart: savedHours[day].lunchStart || defaultBusinessHours[day].lunchStart,
+          lunchEnd: savedHours[day].lunchEnd || defaultBusinessHours[day].lunchEnd,
+        };
+      }
+    });
+
+    return normalizedHours;
+  };
+
   const form = useForm<StoreInfoFormData>({
     resolver: yupResolver(storeInfoSchema) as any,
     defaultValues: {
@@ -176,8 +202,10 @@ const StoreInfoSettings: React.FC = () => {
 
   useEffect(() => {
     if (currentStore && catalogSettings) {
-      // Carregar horários salvos do banco de dados se existirem
-      const savedBusinessHours = catalogSettings.business_hours || defaultBusinessHours;
+      console.log('Carregando dados do banco:', { catalogSettings, currentStore });
+      
+      // Carregar horários salvos do banco de dados se existirem, com validação
+      const savedBusinessHours = normalizeBusinessHours(catalogSettings.business_hours);
       
       form.reset({
         storeName: currentStore.name || "",
@@ -194,6 +222,8 @@ const StoreInfoSettings: React.FC = () => {
   const onSubmit = async (data: StoreInfoFormData) => {
     try {
       setSaving(true);
+      
+      console.log('Enviando dados para salvar:', data);
       
       // Atualização dos dados da loja
       const storeUpdates = {
@@ -217,6 +247,8 @@ const StoreInfoSettings: React.FC = () => {
           instagram_url: catalogSettings.instagram_url || null,
           twitter_url: catalogSettings.twitter_url || null,
         };
+        
+        console.log('Salvando horários no catálogo:', catalogUpdates);
         
         const { error: catalogError } = await updateCatalogSettings(catalogUpdates);
         if (catalogError) {
@@ -492,111 +524,54 @@ const StoreInfoSettings: React.FC = () => {
                   key={day.key}
                   control={form.control}
                   name={`businessHours.${day.key}` as const}
-                  render={({ field }) => (
-                    <div className="p-6 border-2 border-gray-100 rounded-xl bg-gradient-to-r from-gray-50 to-white">
-                      {/* Header do Dia */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-800">
-                          {day.label}
-                        </h4>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={field.value.closed}
-                            onChange={(e) =>
-                              field.onChange({
-                                ...field.value,
-                                closed: e.target.checked,
-                              })
-                            }
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-sm font-medium text-gray-600">
-                            Fechado
-                          </span>
-                        </label>
-                      </div>
+                  render={({ field }) => {
+                    // Garantir que field.value sempre tenha um valor válido
+                    const dayValue = field.value || defaultBusinessHours[day.key];
+                    
+                    return (
+                      <div className="p-6 border-2 border-gray-100 rounded-xl bg-gradient-to-r from-gray-50 to-white">
+                        {/* Header do Dia */}
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-800">
+                            {day.label}
+                          </h4>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={dayValue.closed}
+                              onChange={(e) =>
+                                field.onChange({
+                                  ...dayValue,
+                                  closed: e.target.checked,
+                                })
+                              }
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-600">
+                              Fechado
+                            </span>
+                          </label>
+                        </div>
 
-                      {!field.value.closed && (
-                        <div className="space-y-4">
-                          {/* Horário Principal */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-200">
-                            <h5 className="text-sm font-medium text-gray-700 mb-3">
-                              Horário de Funcionamento
-                            </h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-1">
-                                  Abertura
-                                </label>
-                                <Input
-                                  type="time"
-                                  value={field.value.open}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      open: e.target.value,
-                                    })
-                                  }
-                                  className="w-full"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-1">
-                                  Fechamento
-                                </label>
-                                <Input
-                                  type="time"
-                                  value={field.value.close}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      close: e.target.value,
-                                    })
-                                  }
-                                  className="w-full"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Horário de Almoço */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-3">
-                              <h5 className="text-sm font-medium text-gray-700">
-                                Horário de Almoço
+                        {!dayValue.closed && (
+                          <div className="space-y-4">
+                            {/* Horário Principal */}
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                              <h5 className="text-sm font-medium text-gray-700 mb-3">
+                                Horário de Funcionamento
                               </h5>
-                              <label className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={field.value.hasLunchBreak}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      hasLunchBreak: e.target.checked,
-                                    })
-                                  }
-                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-xs text-gray-600">
-                                  Tem horário de almoço
-                                </span>
-                              </label>
-                            </div>
-
-                            {field.value.hasLunchBreak && (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <label className="block text-xs text-gray-500 mb-1">
-                                    Início do Almoço
+                                    Abertura
                                   </label>
                                   <Input
                                     type="time"
-                                    value={field.value.lunchStart || "12:00"}
+                                    value={dayValue.open}
                                     onChange={(e) =>
                                       field.onChange({
-                                        ...field.value,
-                                        lunchStart: e.target.value,
+                                        ...dayValue,
+                                        open: e.target.value,
                                       })
                                     }
                                     className="w-full"
@@ -604,46 +579,108 @@ const StoreInfoSettings: React.FC = () => {
                                 </div>
                                 <div>
                                   <label className="block text-xs text-gray-500 mb-1">
-                                    Fim do Almoço
+                                    Fechamento
                                   </label>
                                   <Input
                                     type="time"
-                                    value={field.value.lunchEnd || "13:00"}
+                                    value={dayValue.close}
                                     onChange={(e) =>
                                       field.onChange({
-                                        ...field.value,
-                                        lunchEnd: e.target.value,
+                                        ...dayValue,
+                                        close: e.target.value,
                                       })
                                     }
                                     className="w-full"
                                   />
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            </div>
 
-                          {/* Preview do Horário */}
-                          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <p className="text-xs text-blue-800 font-medium mb-1">
-                              Como aparecerá no catálogo:
-                            </p>
-                            <p className="text-sm text-blue-700">
-                              {field.value.open} - {field.value.close}
-                              {field.value.hasLunchBreak &&
-                                field.value.lunchStart &&
-                                field.value.lunchEnd && (
-                                  <span className="text-blue-600">
-                                    {" "}
-                                    (Almoço: {field.value.lunchStart} -{" "}
-                                    {field.value.lunchEnd})
+                            {/* Horário de Almoço */}
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <h5 className="text-sm font-medium text-gray-700">
+                                  Horário de Almoço
+                                </h5>
+                                <label className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={dayValue.hasLunchBreak}
+                                    onChange={(e) =>
+                                      field.onChange({
+                                        ...dayValue,
+                                        hasLunchBreak: e.target.checked,
+                                      })
+                                    }
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                  />
+                                  <span className="text-xs text-gray-600">
+                                    Tem horário de almoço
                                   </span>
-                                )}
-                            </p>
+                                </label>
+                              </div>
+
+                              {dayValue.hasLunchBreak && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">
+                                      Início do Almoço
+                                    </label>
+                                    <Input
+                                      type="time"
+                                      value={dayValue.lunchStart || "12:00"}
+                                      onChange={(e) =>
+                                        field.onChange({
+                                          ...dayValue,
+                                          lunchStart: e.target.value,
+                                        })
+                                      }
+                                      className="w-full"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">
+                                      Fim do Almoço
+                                    </label>
+                                    <Input
+                                      type="time"
+                                      value={dayValue.lunchEnd || "13:00"}
+                                      onChange={(e) =>
+                                        field.onChange({
+                                          ...dayValue,
+                                          lunchEnd: e.target.value,
+                                        })
+                                      }
+                                      className="w-full"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Preview do Horário */}
+                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                              <p className="text-xs text-blue-800 font-medium mb-1">
+                                Como aparecerá no catálogo:
+                              </p>
+                              <p className="text-sm text-blue-700">
+                                {dayValue.open} - {dayValue.close}
+                                {dayValue.hasLunchBreak &&
+                                  dayValue.lunchStart &&
+                                  dayValue.lunchEnd && (
+                                    <span className="text-blue-600">
+                                      {" "}
+                                      (Almoço: {dayValue.lunchStart} -{" "}
+                                      {dayValue.lunchEnd})
+                                    </span>
+                                  )}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  }}
                 />
               ))}
             </div>
