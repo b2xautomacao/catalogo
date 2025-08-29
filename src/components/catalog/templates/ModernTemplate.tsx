@@ -8,6 +8,7 @@ import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { formatPrice } from '@/utils/formatPrice';
+import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 
 export interface CatalogSettingsData {
   colors?: {
@@ -58,9 +59,13 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const hasVariations = product.variations && product.variations.length > 0;
-  const currentPrice = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
+
+  // Usar o hook para cálculo correto de preços
+  const priceInfo = useProductDisplayPrice({
+    product,
+    catalogType,
+    quantity: 1,
+  });
 
   // Verificar estoque disponível
   const totalStock = hasVariations 
@@ -97,6 +102,15 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={() => setImageError(true)}
         />
+
+        {/* Badge de Destaque - Top Left */}
+        {product.is_featured && (
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-md">
+              ✨ DESTAQUE
+            </Badge>
+          </div>
+        )}
 
         {/* Botões de Ação - Top Right */}
         <div className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${
@@ -157,14 +171,17 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           <div className="mb-3">
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-gray-900">
-                {formatPrice(currentPrice)}
+                {formatPrice(priceInfo.displayPrice)}
               </span>
             </div>
             
-            {catalogType === 'retail' && product.wholesale_price && (
+            {priceInfo.shouldShowWholesaleInfo && 
+             priceInfo.shouldShowRetailPrice && 
+             !priceInfo.isWholesaleOnly && 
+             priceInfo.retailPrice !== priceInfo.wholesalePrice && (
               <p className="text-sm text-green-600 font-medium">
-                Atacado: {formatPrice(product.wholesale_price)}
-                {product.min_wholesale_qty && ` (mín: ${product.min_wholesale_qty})`}
+                Atacado: {formatPrice(priceInfo.wholesalePrice || 0)}
+                {priceInfo.minWholesaleQty && priceInfo.minWholesaleQty > 1 && ` (mín: ${priceInfo.minWholesaleQty})`}
               </p>
             )}
           </div>

@@ -8,6 +8,7 @@ import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { formatPrice } from '@/utils/formatPrice';
+import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 import { CatalogSettingsData } from './ModernTemplate';
 
 interface IndustrialTemplateProps {
@@ -37,9 +38,13 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const hasVariations = product.variations && product.variations.length > 0;
-  const currentPrice = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
+
+  // Usar o hook para cálculo correto de preços
+  const priceInfo = useProductDisplayPrice({
+    product,
+    catalogType,
+    quantity: 1,
+  });
 
   // Verificar estoque disponível
   const totalStock = hasVariations 
@@ -76,6 +81,15 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={() => setImageError(true)}
         />
+
+        {/* Badge de Destaque - Top Left */}
+        {product.is_featured && (
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-gradient-to-r from-yellow-600 to-amber-600 text-white text-xs font-bold uppercase tracking-wide shadow-md">
+              ✨ DESTAQUE
+            </Badge>
+          </div>
+        )}
 
         {/* Botões de Ação - Top Right */}
         <div className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${
@@ -137,15 +151,18 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           <div className="mb-3">
             <div className="flex items-center justify-between">
               <span className="text-xl font-black text-gray-900 font-mono">
-                {formatPrice(currentPrice)}
+                {formatPrice(priceInfo.displayPrice)}
               </span>
             </div>
             
-            {catalogType === 'retail' && product.wholesale_price && (
+            {priceInfo.shouldShowWholesaleInfo && 
+             priceInfo.shouldShowRetailPrice && 
+             !priceInfo.isWholesaleOnly && 
+             priceInfo.retailPrice !== priceInfo.wholesalePrice && (
               <div className="mt-2 p-2 bg-yellow-100 border-2 border-yellow-300 rounded">
                 <p className="text-xs text-yellow-800 font-bold uppercase">
-                  Bulk: {formatPrice(product.wholesale_price)}
-                  {product.min_wholesale_qty && ` (mín: ${product.min_wholesale_qty})`}
+                  Bulk: {formatPrice(priceInfo.wholesalePrice || 0)}
+                  {priceInfo.minWholesaleQty && priceInfo.minWholesaleQty > 1 && ` (mín: ${priceInfo.minWholesaleQty})`}
                 </p>
               </div>
             )}

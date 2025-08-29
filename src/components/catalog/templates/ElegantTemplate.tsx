@@ -8,6 +8,7 @@ import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { formatPrice } from '@/utils/formatPrice';
+import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 
 export interface CatalogSettingsData {
   colors?: {
@@ -58,9 +59,13 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const hasVariations = product.variations && product.variations.length > 0;
-  const currentPrice = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
+
+  // Usar o hook para cálculo correto de preços
+  const priceInfo = useProductDisplayPrice({
+    product,
+    catalogType,
+    quantity: 1,
+  });
 
   // Verificar estoque disponível
   const totalStock = hasVariations 
@@ -100,6 +105,15 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+
+        {/* Badge de Destaque - Top Left */}
+        {product.is_featured && (
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-lg">
+              ✨ DESTAQUE
+            </Badge>
+          </div>
+        )}
 
         {/* Botões de Ação - Top Right */}
         <div className={`absolute top-4 right-4 flex gap-2 transition-all duration-300 ${
@@ -153,16 +167,19 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           <div className="mb-4">
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold text-gray-900">
-                {formatPrice(currentPrice)}
+                {formatPrice(priceInfo.displayPrice)}
               </span>
             </div>
             
-            {catalogType === 'retail' && product.wholesale_price && (
+            {priceInfo.shouldShowWholesaleInfo && 
+             priceInfo.shouldShowRetailPrice && 
+             !priceInfo.isWholesaleOnly && 
+             priceInfo.retailPrice !== priceInfo.wholesalePrice && (
               <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                 <p className="text-sm text-green-700 font-semibold">
-                  Atacado: {formatPrice(product.wholesale_price)}
-                  {product.min_wholesale_qty && (
-                    <span className="text-green-600 ml-1">(mín: {product.min_wholesale_qty})</span>
+                  Atacado: {formatPrice(priceInfo.wholesalePrice || 0)}
+                  {priceInfo.minWholesaleQty && priceInfo.minWholesaleQty > 1 && (
+                    <span className="text-green-600 ml-1">(mín: {priceInfo.minWholesaleQty})</span>
                   )}
                 </p>
               </div>

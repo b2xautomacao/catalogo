@@ -8,6 +8,7 @@ import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { formatPrice } from '@/utils/formatPrice';
+import { useProductDisplayPrice } from '@/hooks/useProductDisplayPrice';
 import { CatalogSettingsData } from './ModernTemplate';
 
 interface MinimalTemplateProps {
@@ -37,9 +38,13 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const hasVariations = product.variations && product.variations.length > 0;
-  const currentPrice = catalogType === 'wholesale' && product.wholesale_price 
-    ? product.wholesale_price 
-    : product.retail_price;
+
+  // Usar o hook para cálculo correto de preços
+  const priceInfo = useProductDisplayPrice({
+    product,
+    catalogType,
+    quantity: 1,
+  });
 
   // Verificar estoque disponível
   const totalStock = hasVariations 
@@ -76,6 +81,15 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           className="w-full h-full object-cover"
           onError={() => setImageError(true)}
         />
+
+        {/* Badge de Destaque - Top Left */}
+        {product.is_featured && (
+          <div className="absolute top-2 left-2">
+            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm">
+              ✨ DESTAQUE
+            </Badge>
+          </div>
+        )}
 
         {/* Botões de Ação - Top Right */}
         <div className={`absolute top-2 right-2 flex gap-1 transition-opacity duration-200 ${
@@ -131,13 +145,16 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           <div>
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold text-gray-900">
-                {formatPrice(currentPrice)}
+                {formatPrice(priceInfo.displayPrice)}
               </span>
             </div>
             
-            {catalogType === 'retail' && product.wholesale_price && (
+            {priceInfo.shouldShowWholesaleInfo && 
+             priceInfo.shouldShowRetailPrice && 
+             !priceInfo.isWholesaleOnly && 
+             priceInfo.retailPrice !== priceInfo.wholesalePrice && (
               <p className="text-sm text-green-600 mt-1">
-                Atacado: {formatPrice(product.wholesale_price)}
+                Atacado: {formatPrice(priceInfo.wholesalePrice || 0)}
               </p>
             )}
           </div>
