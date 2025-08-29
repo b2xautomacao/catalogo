@@ -6,6 +6,8 @@ import { useUnifiedEditor } from '@/hooks/useUnifiedEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreData } from '@/hooks/useStoreData';
 import { Store } from '@/hooks/useCatalog';
+import { Product } from '@/hooks/useProducts';
+import { ProductVariation } from '@/types/variation';
 import TemplateWrapper from '@/components/catalog/TemplateWrapper';
 import ProductGrid from '@/components/catalog/ProductGrid';
 
@@ -20,6 +22,25 @@ const CatalogPreview: React.FC = () => {
   React.useEffect(() => {
     applyStylesImmediately();
   }, [applyStylesImmediately]);
+
+  // Função de adicionar ao carrinho para o preview (apenas log)
+  const handleAddToCart = (product: Product, quantity?: number, variation?: ProductVariation) => {
+    console.log('🎨 PREVIEW - Simulando adicionar ao carrinho:', {
+      productName: product.name,
+      quantity: quantity || 1,
+      variation: variation ? { id: variation.id, color: variation.color, size: variation.size } : null
+    });
+  };
+
+  // Função de adicionar à wishlist para o preview (apenas log)
+  const handleAddToWishlist = (product: Product) => {
+    console.log('🎨 PREVIEW - Simulando adicionar à wishlist:', product.name);
+  };
+
+  // Função de visualização rápida para o preview (apenas log)
+  const handleQuickView = (product: Product) => {
+    console.log('🎨 PREVIEW - Simulando visualização rápida:', product.name);
+  };
 
   if (loading) {
     return (
@@ -105,8 +126,9 @@ const CatalogPreview: React.FC = () => {
             products={products}
             catalogType="retail"
             loading={false}
-            onAddToWishlist={() => {}}
-            onQuickView={() => {}}
+            onAddToWishlist={handleAddToWishlist}
+            onQuickView={handleQuickView}
+            onAddToCart={handleAddToCart}
             wishlist={[]}
             storeIdentifier="preview"
             templateName={configuration.global.template}
