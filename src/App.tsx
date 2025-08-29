@@ -8,6 +8,11 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
+import Products from "./pages/Products";
+import Orders from "./pages/Orders";
+import Customers from "./pages/Customers";
+import Categories from "./pages/Categories";
+import Reports from "./pages/Reports";
 import PublicCatalogPage from "./pages/PublicCatalogPage";
 import PublicWholesalePage from "./pages/PublicWholesalePage";
 import AppLayout from "./components/layout/AppLayout";
@@ -33,12 +38,57 @@ function App() {
                     } 
                   />
                   
-                  {/* Configurações */}
+                  {/* Páginas administrativas */}
                   <Route 
                     path="/settings" 
                     element={
                       <AppLayout title="Configurações" subtitle="Gerencie as configurações da sua loja">
                         <Settings />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/products" 
+                    element={
+                      <AppLayout title="Produtos" subtitle="Gerencie o catálogo de produtos">
+                        <Products />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/orders" 
+                    element={
+                      <AppLayout title="Pedidos" subtitle="Acompanhe e gerencie pedidos">
+                        <Orders />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/customers" 
+                    element={
+                      <AppLayout title="Clientes" subtitle="Gerencie sua base de clientes">
+                        <Customers />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/categories" 
+                    element={
+                      <AppLayout title="Categorias" subtitle="Organize produtos por categoria">
+                        <Categories />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/reports" 
+                    element={
+                      <AppLayout title="Relatórios" subtitle="Análises e métricas do negócio">
+                        <Reports />
                       </AppLayout>
                     } 
                   />
