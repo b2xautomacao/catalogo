@@ -7,8 +7,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
+import Settings from "./pages/Settings";
 import PublicCatalogPage from "./pages/PublicCatalogPage";
 import PublicWholesalePage from "./pages/PublicWholesalePage";
+import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +23,27 @@ function App() {
             <BrowserRouter>
               <div className="min-h-screen bg-background font-sans antialiased">
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  {/* Dashboard principal */}
+                  <Route 
+                    path="/" 
+                    element={
+                      <AppLayout title="Dashboard">
+                        <Index />
+                      </AppLayout>
+                    } 
+                  />
+                  
+                  {/* Configurações */}
+                  <Route 
+                    path="/settings" 
+                    element={
+                      <AppLayout title="Configurações" subtitle="Gerencie as configurações da sua loja">
+                        <Settings />
+                      </AppLayout>
+                    } 
+                  />
+
+                  {/* Páginas do catálogo público (sem sidebar) */}
                   <Route path="/catalog/:storeIdentifier" element={<PublicCatalogPage />} />
                   <Route path="/wholesale/:storeIdentifier" element={<PublicWholesalePage />} />
                 </Routes>
