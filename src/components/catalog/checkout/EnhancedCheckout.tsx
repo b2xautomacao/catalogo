@@ -176,7 +176,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       quantity: 1,
       price: discountedPrice,
       originalPrice: product.retail_price,
-      catalogType: "retail",
+      catalogType: "retail" as const,
       // isOrderBump: true, // Removido para compatibilidade com CartItem
     });
     setOrderBumpTotal((prev) => prev + discountedPrice);
