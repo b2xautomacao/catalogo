@@ -15,3 +15,4 @@ CREATE INDEX IF NOT EXISTS idx_store_settings_business_hours_display_type
 ON store_settings(business_hours_display_type);
 
 
+

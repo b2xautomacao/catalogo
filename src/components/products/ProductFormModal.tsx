@@ -1,4 +1,3 @@
-
 import React from "react";
 import ImprovedProductFormWizard from "./ImprovedProductFormWizard";
 
@@ -19,10 +18,15 @@ const ProductFormModal = ({
 }: ProductFormModalProps) => {
   if (!open) return null;
 
-  const handleSuccess = () => {
+  const handleSuccess = async (productId: string) => {
+    console.log(
+      "🎯 ProductFormModal - handleSuccess chamado com productId:",
+      productId
+    );
+
     if (onSubmit) {
       try {
-        onSubmit({});
+        await onSubmit({ productId });
       } catch (error) {
         console.error("❌ Erro ao atualizar lista:", error);
       }

@@ -3,6 +3,7 @@ import { Plus, Upload, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BulkImportModal from "./BulkImportModal";
 import BulkStockModal from "./BulkStockModal";
+import ProductFormModal from "./ProductFormModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import ProductList from "./ProductList";
@@ -66,6 +67,17 @@ const ProductsPage = () => {
         onClose={() => setIsBulkStockModalOpen(false)}
         products={products}
         onStockUpdated={fetchProducts}
+      />
+
+      {/* Modal de Novo Produto */}
+      <ProductFormModal
+        open={showProductModal}
+        onOpenChange={setShowProductModal}
+        onSubmit={async () => {
+          // Recarregar lista de produtos após criar
+          await fetchProducts();
+        }}
+        mode="create"
       />
 
       {/* Lista de produtos */}

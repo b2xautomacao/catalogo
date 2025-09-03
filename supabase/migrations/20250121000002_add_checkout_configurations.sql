@@ -113,3 +113,4 @@ CREATE INDEX IF NOT EXISTS idx_store_order_bump_configs_store_id ON store_order_
 CREATE INDEX IF NOT EXISTS idx_store_order_bump_configs_product_id ON store_order_bump_configs(product_id);
 
 
+

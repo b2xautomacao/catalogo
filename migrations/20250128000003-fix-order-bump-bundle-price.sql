@@ -29,3 +29,4 @@ BEGIN
         ALTER TABLE store_order_bump_configs ADD COLUMN trigger_conditions JSONB DEFAULT '{}';
     END IF;
 END $$;
+
