@@ -8,6 +8,8 @@ import { useCart } from "@/hooks/useCart";
 import CartItemThumbnail from "./checkout/CartItemThumbnail";
 import CartItemPriceDisplay from "./CartItemPriceDisplay";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { useMinimumPurchaseValidation } from "@/hooks/useMinimumPurchaseValidation";
+import MinimumPurchaseAlert from "./MinimumPurchaseAlert";
 
 const formatCurrency = (value: number | undefined | null): string => {
   if (typeof value !== "number" || isNaN(value)) return "R$ 0,00";
@@ -26,14 +28,16 @@ const CartItem: React.FC<{
   onRemoveItem: (id: string) => void;
 }> = ({ item, onUpdateQuantity, onRemoveItem }) => {
   const quantity = item.quantity || 1;
-  const stock = item.variation && typeof item.variation.stock === "number"
-    ? item.variation.stock
-    : item.product?.stock ?? 0;
+  const stock =
+    item.variation && typeof item.variation.stock === "number"
+      ? item.variation.stock
+      : item.product?.stock ?? 0;
   const allowNegative = item.product?.allow_negative_stock ?? false;
 
   const { priceModel } = useStorePriceModel(item.product?.store_id);
   const modelKey = priceModel?.price_model || "retail_only";
-  const minQty = modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
+  const minQty =
+    modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
 
   // Validação de estoque
   const estoqueDisponivel = allowNegative ? Infinity : stock;
@@ -47,25 +51,25 @@ const CartItem: React.FC<{
       case "wholesale_only":
         return {
           text: "Atacado",
-          className: "bg-orange-100 text-orange-800 border-orange-300"
+          className: "bg-orange-100 text-orange-800 border-orange-300",
         };
       case "simple_wholesale":
         const isWholesale = quantity >= (item.product?.min_wholesale_qty || 1);
         return {
           text: isWholesale ? "Atacado" : "Varejo",
-          className: isWholesale 
+          className: isWholesale
             ? "bg-green-100 text-green-800 border-green-300"
-            : "bg-blue-100 text-blue-800 border-blue-300"
+            : "bg-blue-100 text-blue-800 border-blue-300",
         };
       case "gradual_wholesale":
         return {
           text: item.currentTier?.tier_name || "Nível 1",
-          className: "bg-purple-100 text-purple-800 border-purple-300"
+          className: "bg-purple-100 text-purple-800 border-purple-300",
         };
       default: // retail_only
         return {
           text: "Varejo",
-          className: "bg-blue-100 text-blue-800 border-blue-300"
+          className: "bg-blue-100 text-blue-800 border-blue-300",
         };
     }
   };
@@ -88,19 +92,28 @@ const CartItem: React.FC<{
       const needed = item.product.min_wholesale_qty - quantity;
       if (needed > 0) {
         return {
-          text: `Adicione mais ${needed} unidade${needed > 1 ? 's' : ''} para atacado`,
+          text: `Adicione mais ${needed} unidade${
+            needed > 1 ? "s" : ""
+          } para atacado`,
           buttonText: "Ativar Atacado",
           showSavings: true,
-          savings: item.product.wholesale_price ? 
-            (item.product.retail_price - item.product.wholesale_price) * item.product.min_wholesale_qty : 0
+          savings: item.product.wholesale_price
+            ? (item.product.retail_price - item.product.wholesale_price) *
+              item.product.min_wholesale_qty
+            : 0,
         };
       }
-    } else if (modelKey === "gradual_wholesale" && item.nextTierQuantityNeeded > 0) {
+    } else if (
+      modelKey === "gradual_wholesale" &&
+      item.nextTierQuantityNeeded > 0
+    ) {
       return {
-        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade${item.nextTierQuantityNeeded > 1 ? 's' : ''} para próximo nível`,
+        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade${
+          item.nextTierQuantityNeeded > 1 ? "s" : ""
+        } para próximo nível`,
         buttonText: `Próximo Nível`,
         showSavings: true,
-        savings: item.nextTierPotentialSavings || 0
+        savings: item.nextTierPotentialSavings || 0,
       };
     }
     return null;
@@ -109,9 +122,13 @@ const CartItem: React.FC<{
   const incentive = getIncentiveMessage();
 
   return (
-    <div className={`cart-item-card rounded-xl p-4 border-2 ${
-      badgeInfo.text.includes("Atacado") ? "border-green-400" : "border-gray-200"
-    } bg-white flex flex-col gap-2`}>
+    <div
+      className={`cart-item-card rounded-xl p-4 border-2 ${
+        badgeInfo.text.includes("Atacado")
+          ? "border-green-400"
+          : "border-gray-200"
+      } bg-white flex flex-col gap-2`}
+    >
       <div className="flex flex-row gap-4 items-start">
         {/* Imagem */}
         <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
@@ -121,7 +138,7 @@ const CartItem: React.FC<{
             size="lg"
           />
         </div>
-        
+
         {/* Infos principais */}
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex flex-row gap-4 items-start flex-wrap">
@@ -129,7 +146,7 @@ const CartItem: React.FC<{
               <h4 className="text-base font-semibold text-gray-900 truncate">
                 {item.product?.name || "Produto sem nome"}
               </h4>
-              
+
               {/* Badges de Grade e modelo especial */}
               <div className="flex flex-wrap items-center gap-1 mt-1">
                 {item.gradeInfo && (
@@ -138,12 +155,15 @@ const CartItem: React.FC<{
                   </Badge>
                 )}
                 {modelKey === "gradual_wholesale" && (
-                  <Badge className="bg-purple-500 text-white text-xs px-1.5 py-0.5" title="Descontos progressivos por quantidade">
+                  <Badge
+                    className="bg-purple-500 text-white text-xs px-1.5 py-0.5"
+                    title="Descontos progressivos por quantidade"
+                  >
                     Atacado Gradativo
                   </Badge>
                 )}
               </div>
-              
+
               {/* Tamanhos e pares por tamanho */}
               {item.gradeInfo && (
                 <div className="flex flex-wrap items-center gap-1 mt-0.5">
@@ -159,14 +179,14 @@ const CartItem: React.FC<{
                   )}
                 </div>
               )}
-              
+
               {item.variation && (
                 <p className="text-xs text-gray-500 truncate">
                   {item.variation.size} {item.variation.color}
                 </p>
               )}
             </div>
-            
+
             {/* Bloco de preço/desconto/economia */}
             <div className="flex flex-col gap-1 min-w-[120px] items-end text-right">
               <CartItemPriceDisplay item={item} />
@@ -174,14 +194,16 @@ const CartItem: React.FC<{
           </div>
         </div>
       </div>
-      
+
       {/* Rodapé: botões, badge e incentivo individual */}
       <div className="flex flex-row items-center justify-between mt-3 gap-2 flex-wrap border-t pt-2">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onUpdateQuantity(item.id, quantity - 1, modelKey, minQty)}
+            onClick={() =>
+              onUpdateQuantity(item.id, quantity - 1, modelKey, minQty)
+            }
             className="h-8 w-8 p-0 rounded-full"
             disabled={!podeRemover}
           >
@@ -203,7 +225,9 @@ const CartItem: React.FC<{
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onUpdateQuantity(item.id, quantity + 1, modelKey, minQty)}
+            onClick={() =>
+              onUpdateQuantity(item.id, quantity + 1, modelKey, minQty)
+            }
             className="h-8 w-8 p-0 rounded-full"
             disabled={!podeAdicionar}
           >
@@ -219,15 +243,17 @@ const CartItem: React.FC<{
             <Trash2 size={14} />
           </Button>
         </div>
-        
+
         {/* Badge no rodapé - só mostrar se não for retail_only */}
         {modelKey !== "retail_only" && (
-          <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${badgeInfo.className}`}>
+          <span
+            className={`px-3 py-1 rounded-lg text-xs font-bold border ${badgeInfo.className}`}
+          >
             {badgeInfo.text}
           </span>
         )}
       </div>
-      
+
       {/* Incentivo individual para próximo nível */}
       {incentive && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 bg-blue-50 border border-blue-200 rounded-lg px-2 py-2 sm:px-3 text-[11px] sm:text-xs text-blue-800 overflow-x-auto">
@@ -250,7 +276,7 @@ const CartItem: React.FC<{
           </Button>
         </div>
       )}
-      
+
       {/* Mensagem de erro de estoque */}
       {erroEstoque && (
         <div className="text-xs text-red-600 mt-1">
@@ -277,6 +303,9 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
     canGetWholesalePrice,
     itemsToWholesale,
   } = useCart();
+
+  // Validação de pedido mínimo
+  const minimumPurchaseValidation = useMinimumPurchaseValidation();
 
   // Debug dos valores do carrinho
   useEffect(() => {
@@ -309,12 +338,28 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
       .cart-header-gradient {
         background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
       }
-      .cart-checkout-button {
+      .cart-checkout-button:not(:disabled) {
         background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
       }
-      .cart-checkout-button:hover {
+      .cart-checkout-button:not(:disabled):hover {
         background: linear-gradient(135deg, var(--template-secondary, #FF6F00), var(--template-accent, #8E2DE2));
         transform: scale(1.05);
+      }
+      .cart-checkout-button:disabled {
+        background: #d1d5db !important;
+        color: #6b7280 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        opacity: 0.6 !important;
+        pointer-events: none !important;
+      }
+      .cart-checkout-button[disabled] {
+        background: #d1d5db !important;
+        color: #6b7280 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        opacity: 0.6 !important;
+        pointer-events: none !important;
       }
       .cart-modal-overlay {
         position: fixed;
@@ -425,6 +470,15 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                   </div>
 
                   <div className="border-t bg-gray-50 p-6 space-y-4">
+                    {/* Alerta de Pedido Mínimo */}
+                    <MinimumPurchaseAlert
+                      onAddMoreItems={() => {
+                        closeCart();
+                        // Scroll para o topo da página para ver produtos
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    />
+
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold">Total:</span>
                       <span className="text-2xl font-bold text-blue-600">
@@ -433,12 +487,24 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                     </div>
                     <Button
                       onClick={() => {
+                        // Verificar se pode prosseguir com o pedido mínimo
+                        if (!minimumPurchaseValidation.canProceed) {
+                          return; // Não prosseguir se não atender ao pedido mínimo
+                        }
                         closeCart();
                         onCheckout?.();
                       }}
-                      className="cart-checkout-button w-full text-white font-bold py-4 text-lg rounded-xl shadow-lg"
+                      disabled={!minimumPurchaseValidation.canProceed}
+                      className={`cart-checkout-button w-full font-bold py-4 text-lg rounded-xl shadow-lg transition-all ${
+                        minimumPurchaseValidation.canProceed
+                          ? "text-white"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
                     >
-                      <ShoppingCart className="h-5 w-5 mr-2" /> Finalizar Pedido
+                      <ShoppingCart className="h-5 w-5 mr-2" />
+                      {minimumPurchaseValidation.canProceed
+                        ? "Finalizar Pedido"
+                        : "Pedido Mínimo Necessário"}
                     </Button>
                     <Button
                       onClick={closeCart}

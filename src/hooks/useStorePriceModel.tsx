@@ -28,6 +28,9 @@ export interface StorePriceModel {
   show_price_tiers: boolean;
   show_savings_indicators: boolean;
   show_next_tier_hint: boolean;
+  minimum_purchase_enabled: boolean;
+  minimum_purchase_amount: number;
+  minimum_purchase_message: string;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +97,11 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         }
       } else if (data) {
         console.log("✅ useStorePriceModel: Modelo encontrado:", data);
+        console.log("🔍 useStorePriceModel: Campos de pedido mínimo:", {
+          minimum_purchase_enabled: data.minimum_purchase_enabled,
+          minimum_purchase_amount: data.minimum_purchase_amount,
+          minimum_purchase_message: data.minimum_purchase_message,
+        });
         setPriceModel({
           ...data,
           price_model: data.price_model as PriceModelType,
@@ -116,28 +124,72 @@ export const useStorePriceModel = (storeId: string | undefined) => {
   const updatePriceModel = async (updates: Partial<StorePriceModel>) => {
     if (!storeId) return;
 
+    console.log("🔄 useStorePriceModel: Atualizando modelo com:", updates);
+
     try {
-      const { data, error } = await supabase
+      // Primeiro, tentar atualizar o registro existente
+      const { data: updateData, error: updateError } = await supabase
         .from("store_price_models")
-        .upsert({
-          store_id: storeId,
-          ...updates,
-        })
+        .update(updates)
+        .eq("store_id", storeId)
         .select()
         .single();
 
-      if (error) throw error;
+      if (updateError) {
+        console.log(
+          "⚠️ useStorePriceModel: Erro no update, tentando insert:",
+          updateError
+        );
 
-      setPriceModel({
-        ...data,
-        price_model: data.price_model as PriceModelType,
-      });
+        // Se não existe, criar um novo registro
+        const { data: insertData, error: insertError } = await supabase
+          .from("store_price_models")
+          .insert({
+            store_id: storeId,
+            ...updates,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("❌ useStorePriceModel: Erro no insert:", insertError);
+          throw insertError;
+        }
+
+        console.log(
+          "✅ useStorePriceModel: Modelo criado com sucesso:",
+          insertData
+        );
+        setPriceModel({
+          ...insertData,
+          price_model: insertData.price_model as PriceModelType,
+        });
+      } else {
+        console.log(
+          "✅ useStorePriceModel: Modelo atualizado com sucesso:",
+          updateData
+        );
+        setPriceModel({
+          ...updateData,
+          price_model: updateData.price_model as PriceModelType,
+        });
+      }
+
+      console.log(
+        "🔍 useStorePriceModel: Campos de pedido mínimo após operação:",
+        {
+          minimum_purchase_enabled: updateData?.minimum_purchase_enabled,
+          minimum_purchase_amount: updateData?.minimum_purchase_amount,
+          minimum_purchase_message: updateData?.minimum_purchase_message,
+        }
+      );
+
       toast({
         title: "Modelo de preço atualizado",
         description: "As configurações foram salvas com sucesso.",
       });
     } catch (error: any) {
-      console.error("Error updating price model:", error);
+      console.error("❌ useStorePriceModel: Erro ao atualizar modelo:", error);
       toast({
         title: "Erro ao atualizar",
         description: error.message,
@@ -168,6 +220,10 @@ export const useStorePriceModel = (storeId: string | undefined) => {
       show_price_tiers: true,
       show_savings_indicators: true,
       show_next_tier_hint: true,
+      minimum_purchase_enabled: false,
+      minimum_purchase_amount: 0,
+      minimum_purchase_message:
+        "Pedido mínimo de R$ {amount} para finalizar a compra",
     };
 
     await updatePriceModel(defaultModel);

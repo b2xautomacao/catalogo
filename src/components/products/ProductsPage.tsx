@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import BulkImportModal from "./BulkImportModal";
 import BulkStockModal from "./BulkStockModal";
 import ProductFormModal from "./ProductFormModal";
+import PricingModeSelector from "./PricingModeSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import ProductList from "./ProductList";
@@ -52,6 +53,16 @@ const ProductsPage = () => {
             Novo Produto
           </Button>
         </div>
+      </div>
+
+      {/* Seletor de Modo de Preços */}
+      <div className="mb-6">
+        <PricingModeSelector
+          onModeChange={() => {
+            // Recarregar produtos quando o modo mudar
+            fetchProducts();
+          }}
+        />
       </div>
 
       {/* Modal de Importação */}

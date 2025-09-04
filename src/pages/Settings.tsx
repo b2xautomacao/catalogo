@@ -10,6 +10,7 @@ import {
   Shield,
   Image,
   ArrowLeftRight,
+  DollarSign,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,6 +28,10 @@ import ProtectedWhatsAppSettings from "@/components/settings/ProtectedWhatsAppSe
 import DomainSettings from "@/components/settings/DomainSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
+import MinimumPurchaseConfig from "@/components/settings/MinimumPurchaseConfig";
+import PricingModeSelector from "@/components/products/PricingModeSelector";
+import PriceModelDebug from "@/components/debug/PriceModelDebug";
+import ButtonTest from "@/components/debug/ButtonTest";
 
 import { useStoreData } from "@/hooks/useStoreData";
 
@@ -40,7 +45,7 @@ const Settings = () => {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
           <TabsTrigger value="store" className="flex items-center gap-2">
             <Store className="h-4 w-4" />
             <span className="hidden sm:inline">Loja</span>
@@ -48,6 +53,10 @@ const Settings = () => {
           <TabsTrigger value="catalog" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Catálogo</span>
+          </TabsTrigger>
+          <TabsTrigger value="pricing" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">Preços</span>
           </TabsTrigger>
           <TabsTrigger value="banners" className="flex items-center gap-2">
             <Image className="h-4 w-4" />
@@ -108,6 +117,15 @@ const Settings = () => {
               <CatalogSettings />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PricingModeSelector />
+            <MinimumPurchaseConfig />
+          </div>
+          <PriceModelDebug />
+          <ButtonTest />
         </TabsContent>
 
         <TabsContent value="banners" className="space-y-6">

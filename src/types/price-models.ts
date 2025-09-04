@@ -41,6 +41,11 @@ export interface StorePriceModel {
   show_savings_indicators: boolean;
   show_next_tier_hint: boolean;
 
+  // Configurações de pedido mínimo
+  minimum_purchase_enabled: boolean;
+  minimum_purchase_amount: number;
+  minimum_purchase_message: string;
+
   created_at: string;
   updated_at: string;
 }

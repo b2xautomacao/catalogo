@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
+import { useMinimumPurchaseValidation } from "@/hooks/useMinimumPurchaseValidation";
 import CartItemThumbnail from "./checkout/CartItemThumbnail";
 import CartItemPriceDisplay from "./CartItemPriceDisplay";
+import MinimumPurchaseAlert from "./MinimumPurchaseAlert";
 
 // Componente de loading skeleton para cards dos itens
 const CartItemSkeleton = () => (
@@ -88,6 +90,83 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
     isLoading, // Adicionar loading state
   } = useCart();
 
+  // Validação de pedido mínimo
+  console.log("🛒 FloatingCartNew: Chamando useMinimumPurchaseValidation");
+  console.log("🛒 FloatingCartNew: Dados antes da validação:", {
+    totalAmount,
+    items: items.length,
+    profile: profile?.store_id,
+  });
+
+  const minimumPurchaseValidation = useMinimumPurchaseValidation();
+
+  console.log(
+    "🛒 FloatingCartNew: useMinimumPurchaseValidation retornou:",
+    minimumPurchaseValidation
+  );
+
+  // Debug da validação
+  console.log("🛒 FloatingCartNew - Validação:", {
+    canProceed: minimumPurchaseValidation.canProceed,
+    isEnabled: minimumPurchaseValidation.isEnabled,
+    isWholesaleMode: minimumPurchaseValidation.isWholesaleMode,
+    minimumAmount: minimumPurchaseValidation.minimumAmount,
+    currentAmount: minimumPurchaseValidation.currentAmount,
+    totalAmount,
+    items: items.length,
+    itemsTotal: items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    ),
+  });
+
+  // Debug específico do botão
+  console.log("🔘 Botão Finalizar Pedido:", {
+    disabled: !minimumPurchaseValidation.canProceed,
+    canProceed: minimumPurchaseValidation.canProceed,
+    text: minimumPurchaseValidation.canProceed
+      ? "Finalizar Pedido"
+      : "Pedido Mínimo Necessário",
+  });
+
+  // Debug do contexto do carrinho
+  console.log("🛒 Contexto do Carrinho:", {
+    totalAmount,
+    items: items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      total: item.price * item.quantity,
+    })),
+    totalCalculated: items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    ),
+  });
+
+  // Debug do elemento DOM
+  React.useEffect(() => {
+    const button = document.querySelector(".cart-checkout-button");
+    if (button) {
+      const computedStyle = window.getComputedStyle(button);
+      console.log("🔍 Elemento DOM do botão:", {
+        disabled: button.hasAttribute("disabled"),
+        className: button.className,
+        style: button.getAttribute("style"),
+        computedStyle: {
+          backgroundColor: computedStyle.backgroundColor,
+          color: computedStyle.color,
+          cursor: computedStyle.cursor,
+          opacity: computedStyle.opacity,
+          pointerEvents: computedStyle.pointerEvents,
+        },
+        canProceed: minimumPurchaseValidation.canProceed,
+        shouldBeDisabled: !minimumPurchaseValidation.canProceed,
+      });
+    }
+  }, [minimumPurchaseValidation.canProceed]);
+
   // Função para verificar se os preços estão carregados corretamente
   const arePricesLoaded = (items: any[]) => {
     if (items.length === 0) return true;
@@ -144,13 +223,49 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
           background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
         }
         
-        .cart-checkout-button {
+        .cart-checkout-button:not(:disabled) {
           background: linear-gradient(135deg, var(--template-primary, #0057FF), var(--template-accent, #8E2DE2));
         }
         
-        .cart-checkout-button:hover {
+        .cart-checkout-button:not(:disabled):hover {
           background: linear-gradient(135deg, var(--template-secondary, #FF6F00), var(--template-accent, #8E2DE2));
           transform: scale(1.05);
+        }
+        
+        .cart-checkout-button:disabled {
+          background: #d1d5db !important;
+          color: #6b7280 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          opacity: 0.6 !important;
+          pointer-events: none !important;
+        }
+        
+        .cart-checkout-button[disabled] {
+          background: #d1d5db !important;
+          color: #6b7280 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          opacity: 0.6 !important;
+          pointer-events: none !important;
+        }
+        
+        .disabled-button {
+          background: #d1d5db !important;
+          color: #6b7280 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          opacity: 0.6 !important;
+          pointer-events: none !important;
+        }
+        
+        .cart-checkout-button.disabled-button {
+          background: #d1d5db !important;
+          color: #6b7280 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          opacity: 0.6 !important;
+          pointer-events: none !important;
         }
         
         .cart-item-card {
@@ -211,6 +326,11 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
   }, []);
 
   const handleCheckout = () => {
+    // Verificar se pode prosseguir com o pedido mínimo
+    if (!minimumPurchaseValidation.canProceed) {
+      return; // Não prosseguir se não atender ao pedido mínimo
+    }
+
     closeCart();
     if (onCheckout) {
       onCheckout();
@@ -453,6 +573,15 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
               {/* Footer com total e botões */}
               {!isLoading && !showSkeleton && items.length > 0 && (
                 <div className="border-t bg-gradient-to-r from-gray-50 to-gray-100 p-6 space-y-4">
+                  {/* Alerta de Pedido Mínimo */}
+                  <MinimumPurchaseAlert
+                    onAddMoreItems={() => {
+                      closeCart();
+                      // Scroll para o topo da página para ver produtos
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+
                   {/* Resumo de Economia */}
                   {potentialSavings > 0 && (
                     <div className="p-3 bg-orange-100 rounded-lg border border-orange-200">
@@ -480,11 +609,28 @@ const FloatingCart: React.FC<FloatingCartProps> = ({ onCheckout, storeId }) => {
 
                   <Button
                     onClick={handleCheckout}
-                    className="cart-checkout-button w-full text-white font-bold py-4 text-lg rounded-xl shadow-lg transition-all"
+                    disabled={!minimumPurchaseValidation.canProceed}
+                    className={`cart-checkout-button w-full font-bold py-4 text-lg rounded-xl shadow-lg transition-all ${
+                      !minimumPurchaseValidation.canProceed
+                        ? "disabled-button"
+                        : ""
+                    }`}
                     size="lg"
+                    style={
+                      !minimumPurchaseValidation.canProceed
+                        ? {
+                            backgroundColor: "#d1d5db",
+                            color: "#6b7280",
+                            cursor: "not-allowed",
+                            opacity: 0.6,
+                          }
+                        : {}
+                    }
                   >
                     <ShoppingCart className="h-5 w-5 mr-2" />
-                    Finalizar Pedido
+                    {minimumPurchaseValidation.canProceed
+                      ? "Finalizar Pedido"
+                      : "Pedido Mínimo Necessário"}
                   </Button>
                   {/* Botão Continuar Comprando */}
                   <Button
