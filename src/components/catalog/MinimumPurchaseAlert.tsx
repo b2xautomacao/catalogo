@@ -102,3 +102,4 @@ const MinimumPurchaseAlert: React.FC<MinimumPurchaseAlertProps> = ({
 };
 
 export default MinimumPurchaseAlert;
+

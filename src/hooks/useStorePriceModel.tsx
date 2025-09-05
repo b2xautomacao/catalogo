@@ -86,12 +86,39 @@ export const useStorePriceModel = (storeId: string | undefined) => {
 
       if (error) {
         if (error.code === "PGRST116") {
-          // Not found
+          // Not found - criar modelo padrão automaticamente
           console.warn(
             "⚠️ useStorePriceModel: Nenhum modelo encontrado para storeId:",
             storeId
           );
-          setPriceModel(null);
+          console.log(
+            "🔧 useStorePriceModel: Criando modelo padrão automaticamente..."
+          );
+
+          // Mostrar toast de configuração
+          toast({
+            title: "Configurando modelo de preços...",
+            description:
+              "Estamos configurando automaticamente o modelo padrão para sua loja.",
+            duration: 3000,
+          });
+
+          // Criar modelo padrão automaticamente
+          await createDefaultPriceModel();
+        } else if (error.code === "406" || error.message?.includes("406")) {
+          // Erro 406 - tentar criar modelo padrão
+          console.warn(
+            "⚠️ useStorePriceModel: Erro 406 detectado, criando modelo padrão..."
+          );
+
+          toast({
+            title: "Configurando modelo de preços...",
+            description:
+              "Estamos configurando automaticamente o modelo padrão para sua loja.",
+            duration: 3000,
+          });
+
+          await createDefaultPriceModel();
         } else {
           throw error;
         }
@@ -112,11 +139,25 @@ export const useStorePriceModel = (storeId: string | undefined) => {
             (data as any).minimum_purchase_message || "",
         });
       } else {
+        // Dados vazios - criar modelo padrão automaticamente
         console.warn(
           "⚠️ useStorePriceModel: Dados vazios retornados para storeId:",
           storeId
         );
-        setPriceModel(null);
+        console.log(
+          "🔧 useStorePriceModel: Criando modelo padrão automaticamente..."
+        );
+
+        // Mostrar toast de configuração
+        toast({
+          title: "Configurando modelo de preços...",
+          description:
+            "Estamos configurando automaticamente o modelo padrão para sua loja.",
+          duration: 3000,
+        });
+
+        // Criar modelo padrão automaticamente
+        await createDefaultPriceModel();
       }
     } catch (error: any) {
       console.error("❌ useStorePriceModel: Erro na busca:", error);
@@ -220,32 +261,55 @@ export const useStorePriceModel = (storeId: string | undefined) => {
   const createDefaultPriceModel = async () => {
     if (!storeId) return;
 
-    const defaultModel = {
-      store_id: storeId,
-      price_model: "retail_only" as PriceModelType,
-      tier_1_enabled: true,
-      tier_1_name: "Varejo",
-      tier_2_enabled: false,
-      tier_2_name: "Atacarejo",
-      tier_3_enabled: false,
-      tier_3_name: "Atacado Pequeno",
-      tier_4_enabled: false,
-      tier_4_name: "Atacado Grande",
-      simple_wholesale_enabled: false,
-      simple_wholesale_name: "Atacado",
-      simple_wholesale_min_qty: 10,
-      gradual_wholesale_enabled: false,
-      gradual_tiers_count: 2,
-      show_price_tiers: true,
-      show_savings_indicators: true,
-      show_next_tier_hint: true,
-      minimum_purchase_enabled: false,
-      minimum_purchase_amount: 0,
-      minimum_purchase_message:
-        "Pedido mínimo de R$ {amount} para finalizar a compra",
-    };
+    try {
+      const defaultModel = {
+        store_id: storeId,
+        price_model: "retail_only" as PriceModelType,
+        tier_1_enabled: true,
+        tier_1_name: "Varejo",
+        tier_2_enabled: false,
+        tier_2_name: "Atacarejo",
+        tier_3_enabled: false,
+        tier_3_name: "Atacado Pequeno",
+        tier_4_enabled: false,
+        tier_4_name: "Atacado Grande",
+        simple_wholesale_enabled: false,
+        simple_wholesale_name: "Atacado",
+        simple_wholesale_min_qty: 10,
+        gradual_wholesale_enabled: false,
+        gradual_tiers_count: 2,
+        show_price_tiers: true,
+        show_savings_indicators: true,
+        show_next_tier_hint: true,
+        minimum_purchase_enabled: false,
+        minimum_purchase_amount: 0,
+        minimum_purchase_message:
+          "Pedido mínimo de R$ {amount} para finalizar a compra",
+      };
 
-    await updatePriceModel(defaultModel);
+      await updatePriceModel(defaultModel);
+
+      // Mostrar toast de sucesso
+      toast({
+        title: "Modelo de preços configurado!",
+        description:
+          "Configuramos automaticamente o modelo padrão para sua loja.",
+        duration: 4000,
+      });
+
+      console.log("✅ useStorePriceModel: Modelo padrão criado com sucesso");
+    } catch (error) {
+      console.error(
+        "❌ useStorePriceModel: Erro ao criar modelo padrão:",
+        error
+      );
+      toast({
+        title: "Erro ao configurar modelo padrão",
+        description:
+          "Não foi possível criar o modelo de preços automaticamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isModelActive = (modelType: string) => {

@@ -11,3 +11,4 @@ ADD COLUMN minimum_purchase_message TEXT DEFAULT 'Pedido mínimo de R$ {amount} 
 COMMENT ON COLUMN store_price_models.minimum_purchase_enabled IS 'Habilita pedido mínimo para o catálogo';
 COMMENT ON COLUMN store_price_models.minimum_purchase_amount IS 'Valor mínimo do pedido em reais';
 COMMENT ON COLUMN store_price_models.minimum_purchase_message IS 'Mensagem personalizada para pedido mínimo (use {amount} para o valor)';
+

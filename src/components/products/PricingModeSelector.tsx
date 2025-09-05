@@ -119,44 +119,68 @@ const PricingModeSelector: React.FC<PricingModeSelectorProps> = ({
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
+    <Card
+      className={`${className} border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm`}
+    >
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-slate-800">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Settings className="h-5 w-5 text-blue-600" />
+          </div>
           Modo de Preços
         </CardTitle>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-slate-600 leading-relaxed">
           Configure como os preços são exibidos e calculados no catálogo
         </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {Object.entries(PRICE_MODEL_CONFIGS).map(([key, config]) => (
             <Button
               key={key}
               variant={selectedMode === key ? "default" : "outline"}
-              className={`h-auto p-4 flex flex-col items-start gap-2 ${
+              className={`h-auto p-5 flex flex-col items-start gap-3 transition-all duration-200 ${
                 selectedMode === key
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-gray-50"
+                  ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200 border-blue-500 hover:from-blue-600 hover:to-blue-700"
+                  : "hover:bg-slate-50 hover:border-slate-300 hover:shadow-md border-slate-200 bg-white"
               }`}
               onClick={() => handleModeChange(key)}
               disabled={loading}
             >
-              <div className="flex items-center gap-2 w-full">
-                {getModeIcon(key)}
-                <span className="font-medium">{config.displayName}</span>
-                {selectedMode === key && <Check className="h-4 w-4 ml-auto" />}
+              <div className="flex items-center gap-3 w-full">
+                <div
+                  className={`p-2 rounded-lg ${
+                    selectedMode === key ? "bg-white/20" : "bg-slate-100"
+                  }`}
+                >
+                  {getModeIcon(key)}
+                </div>
+                <span className="font-semibold text-left flex-1">
+                  {config.displayName}
+                </span>
+                {selectedMode === key && (
+                  <div className="p-1 bg-white/20 rounded-full">
+                    <Check className="h-4 w-4" />
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-left opacity-80">
+              <p
+                className={`text-sm text-left leading-relaxed ${
+                  selectedMode === key ? "text-white/90" : "text-slate-600"
+                }`}
+              >
                 {config.description}
               </p>
-              <div className="flex flex-wrap gap-1 mt-1">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {config.features.slice(0, 2).map((feature, index) => (
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="text-xs px-2 py-0.5"
+                    className={`text-xs px-3 py-1 font-medium ${
+                      selectedMode === key
+                        ? "bg-white/20 text-white border-white/30"
+                        : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
                   >
                     {feature}
                   </Badge>
@@ -167,21 +191,23 @@ const PricingModeSelector: React.FC<PricingModeSelectorProps> = ({
         </div>
 
         {/* Status Atual */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-md">
-          <div className="flex items-center gap-2">
-            <div className={`p-1 rounded ${getModeColor(selectedMode)}`}>
+        <div className="mt-6 p-5 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${getModeColor(selectedMode)}`}>
               {getModeIcon(selectedMode)}
             </div>
-            <div>
-              <p className="text-sm font-medium">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-800">
                 Modo Atual:{" "}
-                {
-                  PRICE_MODEL_CONFIGS[
-                    selectedMode as keyof typeof PRICE_MODEL_CONFIGS
-                  ]?.displayName
-                }
+                <span className="text-blue-600">
+                  {
+                    PRICE_MODEL_CONFIGS[
+                      selectedMode as keyof typeof PRICE_MODEL_CONFIGS
+                    ]?.displayName
+                  }
+                </span>
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                 {
                   PRICE_MODEL_CONFIGS[
                     selectedMode as keyof typeof PRICE_MODEL_CONFIGS

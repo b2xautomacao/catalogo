@@ -1,0 +1,363 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+export type PriceModelType =
+  | "retail_only"
+  | "simple_wholesale"
+  | "gradual_wholesale"
+  | "wholesale_only";
+
+export interface StorePriceModel {
+  id: string;
+  store_id: string;
+  price_model: PriceModelType;
+  simple_wholesale_enabled: boolean;
+  simple_wholesale_name: string;
+  simple_wholesale_min_qty: number;
+  gradual_wholesale_enabled: boolean;
+  gradual_tiers_count: number;
+  tier_1_name: string;
+  tier_2_name: string;
+  tier_3_name: string;
+  tier_4_name: string;
+  tier_1_enabled: boolean;
+  tier_2_enabled: boolean;
+  tier_3_enabled: boolean;
+  tier_4_enabled: boolean;
+  show_price_tiers: boolean;
+  show_savings_indicators: boolean;
+  show_next_tier_hint: boolean;
+  minimum_purchase_enabled: boolean;
+  minimum_purchase_amount: number;
+  minimum_purchase_message: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useStorePriceModelImproved = (storeId: string | undefined) => {
+  const [priceModel, setPriceModel] = useState<StorePriceModel | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Log para verificar quando o hook é chamado
+  console.log(
+    "🔍 useStorePriceModelImproved: Hook chamado com storeId:",
+    storeId
+  );
+
+  const fetchPriceModel = async () => {
+    if (!storeId) {
+      console.log("🔍 useStorePriceModelImproved: storeId não fornecido");
+      setPriceModel(null);
+      return;
+    }
+
+    console.log(
+      "🔍 useStorePriceModelImproved: Iniciando busca para storeId:",
+      storeId
+    );
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Primeiro, tentar consulta com maybeSingle() que não falha se não encontrar
+      const { data, error } = await supabase
+        .from("store_price_models")
+        .select("*")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      console.log("🔍 useStorePriceModelImproved: Resultado da consulta:", {
+        storeId,
+        data,
+        error,
+        errorCode: error?.code,
+      });
+
+      if (error) {
+        // Se for erro 406, tentar criar registro padrão
+        if (error.code === "406" || error.message?.includes("406")) {
+          console.warn(
+            "⚠️ useStorePriceModelImproved: Erro 406 detectado, tentando criar registro padrão"
+          );
+
+          // Tentar criar registro padrão
+          const defaultModel = {
+            store_id: storeId,
+            price_model: "retail_only" as PriceModelType,
+            simple_wholesale_enabled: false,
+            simple_wholesale_name: "Atacado",
+            simple_wholesale_min_qty: 10,
+            gradual_wholesale_enabled: false,
+            gradual_tiers_count: 2,
+            tier_1_name: "Varejo",
+            tier_2_name: "Atacarejo",
+            tier_3_name: "Atacado Pequeno",
+            tier_4_name: "Atacado Grande",
+            tier_1_enabled: true,
+            tier_2_enabled: false,
+            tier_3_enabled: false,
+            tier_4_enabled: false,
+            show_price_tiers: true,
+            show_savings_indicators: true,
+            show_next_tier_hint: true,
+            minimum_purchase_enabled: false,
+            minimum_purchase_amount: 0.0,
+            minimum_purchase_message:
+              "Pedido mínimo de R$ {amount} para finalizar a compra",
+          };
+
+          const { data: insertData, error: insertError } = await supabase
+            .from("store_price_models")
+            .insert(defaultModel)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error(
+              "❌ useStorePriceModelImproved: Erro ao criar registro padrão:",
+              insertError
+            );
+            // Se não conseguir criar, usar modelo padrão em memória
+            setPriceModel({
+              id: `temp-${storeId}`,
+              store_id: storeId,
+              ...defaultModel,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          } else {
+            console.log(
+              "✅ useStorePriceModelImproved: Registro padrão criado:",
+              insertData
+            );
+            setPriceModel({
+              ...insertData,
+              price_model: insertData.price_model as PriceModelType,
+              minimum_purchase_enabled:
+                insertData.minimum_purchase_enabled || false,
+              minimum_purchase_amount: insertData.minimum_purchase_amount || 0,
+              minimum_purchase_message:
+                insertData.minimum_purchase_message || "",
+            });
+          }
+        } else {
+          throw error;
+        }
+      } else if (data) {
+        console.log("✅ useStorePriceModelImproved: Modelo encontrado:", data);
+        setPriceModel({
+          ...data,
+          price_model: data.price_model as PriceModelType,
+          minimum_purchase_enabled: data.minimum_purchase_enabled || false,
+          minimum_purchase_amount: data.minimum_purchase_amount || 0,
+          minimum_purchase_message: data.minimum_purchase_message || "",
+        });
+      } else {
+        console.warn(
+          "⚠️ useStorePriceModelImproved: Nenhum modelo encontrado para storeId:",
+          storeId
+        );
+        // Criar modelo padrão em memória
+        const defaultModel = {
+          id: `temp-${storeId}`,
+          store_id: storeId,
+          price_model: "retail_only" as PriceModelType,
+          simple_wholesale_enabled: false,
+          simple_wholesale_name: "Atacado",
+          simple_wholesale_min_qty: 10,
+          gradual_wholesale_enabled: false,
+          gradual_tiers_count: 2,
+          tier_1_name: "Varejo",
+          tier_2_name: "Atacarejo",
+          tier_3_name: "Atacado Pequeno",
+          tier_4_name: "Atacado Grande",
+          tier_1_enabled: true,
+          tier_2_enabled: false,
+          tier_3_enabled: false,
+          tier_4_enabled: false,
+          show_price_tiers: true,
+          show_savings_indicators: true,
+          show_next_tier_hint: true,
+          minimum_purchase_enabled: false,
+          minimum_purchase_amount: 0.0,
+          minimum_purchase_message:
+            "Pedido mínimo de R$ {amount} para finalizar a compra",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setPriceModel(defaultModel);
+      }
+    } catch (error: any) {
+      console.error("❌ useStorePriceModelImproved: Erro na busca:", error);
+      setError(error.message);
+
+      // Em caso de erro, criar modelo padrão em memória
+      const defaultModel = {
+        id: `temp-${storeId}`,
+        store_id: storeId,
+        price_model: "retail_only" as PriceModelType,
+        simple_wholesale_enabled: false,
+        simple_wholesale_name: "Atacado",
+        simple_wholesale_min_qty: 10,
+        gradual_wholesale_enabled: false,
+        gradual_tiers_count: 2,
+        tier_1_name: "Varejo",
+        tier_2_name: "Atacarejo",
+        tier_3_name: "Atacado Pequeno",
+        tier_4_name: "Atacado Grande",
+        tier_1_enabled: true,
+        tier_2_enabled: false,
+        tier_3_enabled: false,
+        tier_4_enabled: false,
+        show_price_tiers: true,
+        show_savings_indicators: true,
+        show_next_tier_hint: true,
+        minimum_purchase_enabled: false,
+        minimum_purchase_amount: 0.0,
+        minimum_purchase_message:
+          "Pedido mínimo de R$ {amount} para finalizar a compra",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setPriceModel(defaultModel);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePriceModel = async (updates: Partial<StorePriceModel>) => {
+    if (!storeId) return;
+
+    try {
+      // Se for um modelo temporário, tentar criar no banco
+      if (priceModel?.id?.startsWith("temp-")) {
+        const { data, error } = await supabase
+          .from("store_price_models")
+          .insert({
+            store_id: storeId,
+            ...updates,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setPriceModel({
+          ...data,
+          price_model: data.price_model as PriceModelType,
+          minimum_purchase_enabled: data.minimum_purchase_enabled || false,
+          minimum_purchase_amount: data.minimum_purchase_amount || 0,
+          minimum_purchase_message: data.minimum_purchase_message || "",
+        });
+      } else {
+        // Atualizar modelo existente
+        const { data, error } = await supabase
+          .from("store_price_models")
+          .upsert({
+            store_id: storeId,
+            ...updates,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setPriceModel({
+          ...data,
+          price_model: data.price_model as PriceModelType,
+          minimum_purchase_enabled: data.minimum_purchase_enabled || false,
+          minimum_purchase_amount: data.minimum_purchase_amount || 0,
+          minimum_purchase_message: data.minimum_purchase_message || "",
+        });
+      }
+
+      toast({
+        title: "Modelo de preço atualizado",
+        description: "As configurações foram salvas com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Error updating price model:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createDefaultPriceModel = async () => {
+    if (!storeId) return;
+
+    try {
+      const defaultModel = {
+        store_id: storeId,
+        price_model: "retail_only" as PriceModelType,
+        simple_wholesale_enabled: false,
+        simple_wholesale_name: "Atacado",
+        simple_wholesale_min_qty: 10,
+        gradual_wholesale_enabled: false,
+        gradual_tiers_count: 2,
+        tier_1_name: "Varejo",
+        tier_2_name: "Atacarejo",
+        tier_3_name: "Atacado Pequeno",
+        tier_4_name: "Atacado Grande",
+        tier_1_enabled: true,
+        tier_2_enabled: false,
+        tier_3_enabled: false,
+        tier_4_enabled: false,
+        show_price_tiers: true,
+        show_savings_indicators: true,
+        show_next_tier_hint: true,
+        minimum_purchase_enabled: false,
+        minimum_purchase_amount: 0.0,
+        minimum_purchase_message:
+          "Pedido mínimo de R$ {amount} para finalizar a compra",
+      };
+
+      const { data, error } = await supabase
+        .from("store_price_models")
+        .insert(defaultModel)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPriceModel({
+        ...data,
+        price_model: data.price_model as PriceModelType,
+        minimum_purchase_enabled: data.minimum_purchase_enabled || false,
+        minimum_purchase_amount: data.minimum_purchase_amount || 0,
+        minimum_purchase_message: data.minimum_purchase_message || "",
+      });
+
+      toast({
+        title: "Modelo padrão criado",
+        description: "O modelo de preço padrão foi criado com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Error creating default price model:", error);
+      toast({
+        title: "Erro ao criar modelo padrão",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchPriceModel();
+  }, [storeId]);
+
+  return {
+    priceModel,
+    loading,
+    error,
+    fetchPriceModel,
+    updatePriceModel,
+    createDefaultPriceModel,
+  };
+};

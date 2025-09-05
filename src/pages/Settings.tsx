@@ -124,8 +124,6 @@ const Settings = () => {
             <PricingModeSelector />
             <MinimumPurchaseConfig />
           </div>
-          <PriceModelDebug />
-          <ButtonTest />
         </TabsContent>
 
         <TabsContent value="banners" className="space-y-6">
