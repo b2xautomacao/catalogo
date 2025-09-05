@@ -8,15 +8,53 @@ import PricingModeSelector from "./PricingModeSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import ProductList from "./ProductList";
+import { Product } from "@/types/product";
+import { useToast } from "@/hooks/use-toast";
 
 const ProductsPage = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBulkStockModalOpen, setIsBulkStockModalOpen] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { profile } = useAuth();
   const currentStore = profile?.store_id;
+  const { toast } = useToast();
 
-  const { products, fetchProducts } = useProducts();
+  const { products, fetchProducts, deleteProduct } = useProducts();
+
+  // Função para editar produto
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  // Função para deletar produto
+  const handleDelete = async (productId: string) => {
+    if (window.confirm("Tem certeza que deseja deletar este produto?")) {
+      try {
+        await deleteProduct(productId);
+        toast({
+          title: "Produto deletado",
+          description: "O produto foi removido com sucesso.",
+        });
+        await fetchProducts(); // Recarregar lista
+      } catch (error) {
+        console.error("Erro ao deletar produto:", error);
+        toast({
+          title: "Erro ao deletar",
+          description: "Não foi possível deletar o produto.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Função para fechar modal de edição
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -91,12 +129,25 @@ const ProductsPage = () => {
         mode="create"
       />
 
+      {/* Modal de Editar Produto */}
+      <ProductFormModal
+        open={isEditModalOpen}
+        onOpenChange={handleCloseEditModal}
+        initialData={editingProduct}
+        onSubmit={async () => {
+          // Recarregar lista de produtos após editar
+          await fetchProducts();
+        }}
+        mode="edit"
+      />
+
       {/* Lista de produtos */}
       <ProductList
         products={products}
-        onEdit={() => {}}
-        onDelete={() => {}}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         onGenerateDescription={() => {}}
+        onListUpdate={fetchProducts}
       />
     </div>
   );
