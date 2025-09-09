@@ -1,24 +1,27 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useCategories, CreateCategoryData } from '@/hooks/useCategories';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Sparkles } from 'lucide-react';
-import { usePlanPermissions } from '@/hooks/usePlanPermissions';
-import PlanUpgradeModal from '@/components/billing/PlanUpgradeModal';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useCategories, CreateCategoryData } from "@/hooks/useCategories";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Loader2, Sparkles } from "lucide-react";
+import { usePlanPermissions } from "@/hooks/usePlanPermissions";
+import PlanUpgradeModal from "@/components/billing/PlanUpgradeModal";
 
 interface QuickCategoryFormProps {
   onCategoryCreated: (category: any) => void;
   onCancel: () => void;
 }
 
-const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormProps) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+const QuickCategoryForm = ({
+  onCategoryCreated,
+  onCancel,
+}: QuickCategoryFormProps) => {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -32,42 +35,48 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
       toast({
         title: "Nome obrigatório",
         description: "Digite o nome da categoria antes de gerar a descrição",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Verificar acesso à funcionalidade de IA
-    if (!checkFeatureAccess('ai_agent', false)) {
+    if (!checkFeatureAccess("ai_agent", false)) {
       setShowUpgradeModal(true);
       return;
     }
 
     setGeneratingDescription(true);
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('ai-product-description', {
-        body: {
-          productName: `Categoria: ${name.trim()}`,
-          category: 'categoria de produtos'
+      const { data, error } = await supabase.functions.invoke(
+        "ai-content-generator",
+        {
+          body: {
+            productName: `Categoria: ${name.trim()}`,
+            category: "categoria de produtos",
+            contentType: "description",
+            storeId: "global",
+          },
         }
-      });
+      );
 
       if (error) throw error;
 
-      if (data?.description) {
-        setDescription(data.description);
+      if (data?.content) {
+        setDescription(data.content);
         toast({
           title: "Descrição gerada",
-          description: "Descrição criada com sucesso pela IA"
+          description: "Descrição criada com sucesso pela IA",
         });
       }
     } catch (error) {
-      console.error('Erro ao gerar descrição:', error);
+      console.error("Erro ao gerar descrição:", error);
       toast({
         title: "Erro ao gerar descrição",
-        description: "Não foi possível gerar a descrição. Verifique se a OpenAI está configurada.",
-        variant: "destructive"
+        description:
+          "Não foi possível gerar a descrição. Verifique se a OpenAI está configurada.",
+        variant: "destructive",
       });
     } finally {
       setGeneratingDescription(false);
@@ -77,12 +86,12 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!name.trim()) {
       toast({
         title: "Nome obrigatório",
         description: "Por favor, insira o nome da categoria",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -91,7 +100,7 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
       toast({
         title: "Erro",
         description: "Loja não identificada",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -103,33 +112,33 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
         store_id: profile.store_id,
         name: name.trim(),
         description: description.trim() || undefined,
-        is_active: true
+        is_active: true,
       };
 
       const { data, error } = await createCategory(categoryData);
 
       if (error) {
-        console.error('Erro ao criar categoria:', error);
+        console.error("Erro ao criar categoria:", error);
         toast({
           title: "Erro ao criar categoria",
           description: "Verifique se o nome não está duplicado",
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Categoria criada",
-          description: `A categoria "${name}" foi criada com sucesso`
+          description: `A categoria "${name}" foi criada com sucesso`,
         });
         onCategoryCreated(data);
-        setName('');
-        setDescription('');
+        setName("");
+        setDescription("");
       }
     } catch (error) {
-      console.error('Erro inesperado:', error);
+      console.error("Erro inesperado:", error);
       toast({
         title: "Erro inesperado",
         description: "Ocorreu um erro ao criar a categoria",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -143,7 +152,7 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
           <Plus className="h-4 w-4" />
           <h3 className="font-medium">Cadastro Rápido de Categoria</h3>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="categoryName">Nome da Categoria</Label>
@@ -172,7 +181,7 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
                 ) : (
                   <Sparkles className="h-4 w-4 mr-1" />
                 )}
-                {generatingDescription ? 'Gerando...' : 'Gerar com IA'}
+                {generatingDescription ? "Gerando..." : "Gerar com IA"}
               </Button>
             </div>
             <Textarea
@@ -186,8 +195,8 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
           </div>
 
           <div className="flex gap-2">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading || !name.trim()}
               className="flex-1"
             >
@@ -197,13 +206,13 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
                   Criando...
                 </>
               ) : (
-                'Criar Categoria'
+                "Criar Categoria"
               )}
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel} 
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
               disabled={loading}
             >
               Cancelar
@@ -212,7 +221,7 @@ const QuickCategoryForm = ({ onCategoryCreated, onCancel }: QuickCategoryFormPro
         </form>
       </div>
 
-      <PlanUpgradeModal 
+      <PlanUpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
       />

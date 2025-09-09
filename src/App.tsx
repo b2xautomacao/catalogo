@@ -15,6 +15,12 @@ import Reports from "./pages/Reports";
 import PublicCatalogPage from "./pages/PublicCatalogPage";
 import PublicWholesalePage from "./pages/PublicWholesalePage";
 import OrderTracking from "./pages/OrderTracking";
+import AdminSettings from "./pages/AdminSettings";
+import GlobalIntegrations from "./pages/GlobalIntegrations";
+import Automations from "./pages/Automations";
+import UserManagement from "./pages/UserManagement";
+import Analytics from "./pages/Analytics";
+import AISettings from "./pages/AISettings";
 import AppLayout from "./components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -145,6 +151,86 @@ function App() {
                   <Route
                     path="/wholesale/:storeIdentifier"
                     element={<PublicWholesalePage />}
+                  />
+
+                  {/* Rotas de Super Admin */}
+                  <Route
+                    path="/admin-settings"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Configurações Admin"
+                          subtitle="Configurações administrativas do sistema"
+                        >
+                          <AdminSettings />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/global-integrations"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Integrações Globais"
+                          subtitle="Gerencie todas as integrações do sistema"
+                        >
+                          <GlobalIntegrations />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/automations"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Automações"
+                          subtitle="Gerencie workflows e automações"
+                        >
+                          <Automations />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/user-management"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Gestão de Usuários"
+                          subtitle="Administre usuários e permissões"
+                        >
+                          <UserManagement />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/analytics"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Analytics"
+                          subtitle="Métricas e insights do sistema"
+                        >
+                          <Analytics />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/ai-settings"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout
+                          title="Configurações de IA"
+                          subtitle="Configure provedores de inteligência artificial"
+                        >
+                          <AISettings />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
                   />
                 </Routes>
               </div>

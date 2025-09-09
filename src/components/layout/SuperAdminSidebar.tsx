@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Building2,
   MonitorSpeaker,
+  Brain,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -133,6 +134,14 @@ const SuperAdminSidebar = () => {
           isActive: location.pathname === "/global-integrations",
           description: "APIs e integrações do sistema",
           badge: null,
+        },
+        {
+          icon: Brain,
+          label: "Configurações de IA",
+          href: "/ai-settings",
+          isActive: location.pathname === "/ai-settings",
+          description: "OpenAI, Gemini e outras IAs",
+          badge: "Pro",
         },
         {
           icon: Database,

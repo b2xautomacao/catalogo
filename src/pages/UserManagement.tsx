@@ -1,382 +1,301 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Users,
+  UserPlus,
+  Search,
+  Filter,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Shield,
+  Crown,
+  User,
+  Mail,
+  Calendar,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useUsers } from "@/hooks/useUsers";
-import { useStores } from "@/hooks/useStores";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-
-import {
-  Users,
-  Store,
-  AlertCircle,
-  RefreshCw,
-  Search,
-  Filter,
-  UserPlus,
-  Shield,
-} from "lucide-react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const UserManagement = () => {
-  const {
-    users,
-    loading: usersLoading,
-    updateUserStore,
-    updateUserRole,
-    fetchUsers,
-  } = useUsers();
-  const { stores, loading: storesLoading } = useStores();
-  const { profile } = useAuth();
-  const { toast } = useToast();
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [storeFilter, setStoreFilter] = useState("all");
 
-  const handleUpdateUserStore = async (userId: string, storeId: string) => {
-    setUpdating(userId);
-
-    try {
-      const { error } = await updateUserStore(
-        userId,
-        storeId === "none" ? null : storeId
-      );
-
-      if (error) {
-        console.error("Erro na atualização:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível atualizar a associação da loja",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sucesso",
-          description: "Usuário associado à loja com sucesso",
-        });
-      }
-    } catch (error) {
-      console.error("Erro inesperado:", error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao atualizar usuário",
-        variant: "destructive",
-      });
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const handleUpdateUserRole = async (
-    userId: string,
-    role: "superadmin" | "store_admin"
-  ) => {
-    setUpdating(userId);
-
-    try {
-      const { error } = await updateUserRole(userId, role);
-
-      if (error) {
-        console.error("Erro na atualização do papel:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível atualizar o papel do usuário",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sucesso",
-          description: "Papel do usuário atualizado com sucesso",
-        });
-      }
-    } catch (error) {
-      console.error("Erro inesperado:", error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao atualizar papel",
-        variant: "destructive",
-      });
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const handleRefresh = async () => {
-    await fetchUsers();
-    toast({
-      title: "Atualizado",
-      description: "Lista de usuários atualizada",
-    });
-  };
-
-  // Filtros
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-
-    const matchesStore =
-      storeFilter === "all" ||
-      (storeFilter === "no-store" && !user.store_id) ||
-      (storeFilter === "with-store" && user.store_id) ||
-      user.store_id === storeFilter;
-
-    return matchesSearch && matchesRole && matchesStore;
-  });
-
-  const usersWithoutStore = users.filter(
-    (user) => user.role === "store_admin" && !user.store_id
-  );
-  const superadmins = users.filter((user) => user.role === "superadmin");
-  const storeAdmins = users.filter((user) => user.role === "store_admin");
-
-  const breadcrumbs = [
-    { href: "/", label: "Dashboard" },
-    { label: "Gerenciamento de Usuários", current: true },
+  const users = [
+    {
+      id: "1",
+      name: "Giovani Machado",
+      email: "bcxautomacao@gmail.com",
+      role: "superadmin",
+      status: "active",
+      lastLogin: "2 minutos atrás",
+      createdAt: "15 Jan 2024",
+      avatar: "",
+    },
+    {
+      id: "2",
+      name: "Maria Silva",
+      email: "maria@loja.com",
+      role: "store_admin",
+      status: "active",
+      lastLogin: "1 hora atrás",
+      createdAt: "10 Jan 2024",
+      avatar: "",
+    },
+    {
+      id: "3",
+      name: "João Santos",
+      email: "joao@empresa.com",
+      role: "store_admin",
+      status: "inactive",
+      lastLogin: "3 dias atrás",
+      createdAt: "5 Jan 2024",
+      avatar: "",
+    },
+    {
+      id: "4",
+      name: "Ana Costa",
+      email: "ana@loja2.com",
+      role: "store_admin",
+      status: "active",
+      lastLogin: "30 minutos atrás",
+      createdAt: "8 Jan 2024",
+      avatar: "",
+    },
+    {
+      id: "5",
+      name: "Pedro Oliveira",
+      email: "pedro@loja3.com",
+      role: "store_admin",
+      status: "pending",
+      lastLogin: "Nunca",
+      createdAt: "Hoje",
+      avatar: "",
+    },
   ];
 
-  if (profile?.role !== "superadmin") {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Acesso Negado
-          </h2>
-          <p className="text-gray-600">
-            Você não tem permissão para acessar esta página.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case "superadmin":
+        return (
+          <Badge className="bg-purple-100 text-purple-700">
+            <Crown className="w-3 h-3 mr-1" />
+            Super Admin
+          </Badge>
+        );
+      case "store_admin":
+        return (
+          <Badge className="bg-blue-100 text-blue-700">
+            <Shield className="w-3 h-3 mr-1" />
+            Store Admin
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            <User className="w-3 h-3 mr-1" />
+            {role}
+          </Badge>
+        );
+    }
+  };
 
-  if (usersLoading || storesLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando usuários...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return (
+          <Badge className="bg-green-100 text-green-700">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Ativo
+          </Badge>
+        );
+      case "inactive":
+        return (
+          <Badge className="bg-red-100 text-red-700">
+            <XCircle className="w-3 h-3 mr-1" />
+            Inativo
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700">
+            <Calendar className="w-3 h-3 mr-1" />
+            Pendente
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (activeTab === "all") return matchesSearch;
+    if (activeTab === "active")
+      return matchesSearch && user.status === "active";
+    if (activeTab === "inactive")
+      return matchesSearch && user.status === "inactive";
+    if (activeTab === "pending")
+      return matchesSearch && user.status === "pending";
+
+    return matchesSearch;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Header com filtros e ações */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex-1 flex flex-col sm:flex-row gap-4 max-w-2xl">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Papel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os papéis</SelectItem>
-              <SelectItem value="superadmin">Super Admin</SelectItem>
-              <SelectItem value="store_admin">Admin da Loja</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={storeFilter} onValueChange={setStoreFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Loja" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="no-store">Sem loja</SelectItem>
-              <SelectItem value="with-store">Com loja</SelectItem>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Gestão de Usuários
+          </h1>
+          <p className="text-gray-600">
+            Administre usuários e permissões do sistema
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleRefresh} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Atualizar
-          </Button>
-          <Button className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Novo Usuário
-          </Button>
-        </div>
+        <Button>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Novo Usuário
+        </Button>
       </div>
 
-      {/* Métricas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Usuários</p>
-                <p className="text-2xl font-bold">{users.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm text-gray-600">Super Admins</p>
-                <p className="text-2xl font-bold">{superadmins.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Admins de Loja</p>
-                <p className="text-2xl font-bold">{storeAdmins.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Sem Loja</p>
-                <p className="text-2xl font-bold">{usersWithoutStore.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar usuários..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button variant="outline">
+          <Filter className="w-4 h-4 mr-2" />
+          Filtros
+        </Button>
       </div>
 
-      {/* Alertas */}
-      {usersWithoutStore.length > 0 && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Existem {usersWithoutStore.length} usuários do tipo "Admin da Loja"
-            sem loja associada.
-          </AlertDescription>
-        </Alert>
-      )}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">Todos</TabsTrigger>
+          <TabsTrigger value="active">Ativos</TabsTrigger>
+          <TabsTrigger value="inactive">Inativos</TabsTrigger>
+          <TabsTrigger value="pending">Pendentes</TabsTrigger>
+        </TabsList>
 
-      {/* Tabela de usuários */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Lista de Usuários ({filteredUsers.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredUsers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum usuário encontrado
-              </div>
-            ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">
-                        {user.full_name || user.email}
-                      </h3>
-                      <Badge
-                        variant={
-                          user.role === "superadmin" ? "default" : "secondary"
-                        }
-                      >
-                        {user.role === "superadmin"
-                          ? "Super Admin"
-                          : "Admin da Loja"}
-                      </Badge>
+        <TabsContent value={activeTab} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {filteredUsers.map((user) => (
+              <Card key={user.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {user.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Mail className="w-4 h-4" />
+                          {user.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="w-4 h-4" />
+                          Criado em {user.createdAt}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    {user.store_id && (
-                      <p className="text-sm text-blue-600">
-                        Loja:{" "}
-                        {stores.find((s) => s.id === user.store_id)?.name ||
-                          "Não encontrada"}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right space-y-2">
+                        <div className="flex items-center gap-2">
+                          {getRoleBadge(user.role)}
+                          {getStatusBadge(user.status)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Último login: {user.lastLogin}
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Shield className="w-4 h-4 mr-2" />
+                            Alterar Permissões
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {user.role === "store_admin" && (
-                      <Select
-                        value={user.store_id || "none"}
-                        onValueChange={(value) =>
-                          handleUpdateUserStore(user.id, value)
-                        }
-                        disabled={updating === user.id}
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue placeholder="Selecionar loja" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhuma loja</SelectItem>
-                          {stores.map((store) => (
-                            <SelectItem key={store.id} value={store.id}>
-                              {store.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Select
-                      value={user.role}
-                      onValueChange={(value) =>
-                        handleUpdateUserRole(
-                          user.id,
-                          value as "superadmin" | "store_admin"
-                        )
-                      }
-                      disabled={updating === user.id}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="superadmin">Super Admin</SelectItem>
-                        <SelectItem value="store_admin">
-                          Admin da Loja
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))
-            )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
+
+      {filteredUsers.length === 0 && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhum usuário encontrado
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {searchTerm
+                ? "Tente ajustar os termos de busca."
+                : "Comece adicionando usuários ao sistema."}
+            </p>
+            <Button>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Adicionar Usuário
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

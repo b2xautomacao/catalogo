@@ -15,7 +15,6 @@ import { useCategories } from "@/hooks/useCategories";
 import CategoryFormDialog from "@/components/products/CategoryFormDialog";
 import { WizardFormData } from "@/hooks/useImprovedProductFormWizard";
 import { useState } from "react";
-import { useAIProviders } from "@/hooks/useAIProviders";
 import { useToast } from "@/hooks/use-toast";
 
 interface BasicInfoStepProps {
@@ -31,7 +30,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const { toast } = useToast();
-  const { generateAIContent } = useAIProviders("global");
 
   const handleCategoryCreated = (newCategory: any) => {
     updateFormData({ category: newCategory.name });
@@ -53,36 +51,45 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     try {
       console.log("🤖 Gerando descrição para:", formData.name);
 
-      const response = await generateAIContent({
-        provider: "gemini", // Usar Gemini como padrão, mas pode ser alterado
-        prompt: `Crie uma descrição detalhada e atrativa para o produto "${
-          formData.name
-        }" da categoria "${
-          formData.category || "Produto"
-        }". A descrição deve ser persuasiva, destacar os benefícios do produto e ter entre 100-200 palavras.`,
-        max_tokens: 300,
-        temperature: 0.7,
-        system_message:
-          "Você é um especialista em copywriting para e-commerce. Crie descrições de produtos atrativas, informativas e que convertam vendas. Use um tom profissional mas acessível.",
-      });
+      // Usar a função genérica que respeita as configurações globais
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.functions.invoke(
+        "ai-content-generator",
+        {
+          body: {
+            productName: formData.name.trim(),
+            category: formData.category || "Produto",
+            contentType: "description",
+            storeId: "global", // Usar configurações globais
+          },
+        }
+      );
 
-      console.log("🤖 Resposta da IA:", response);
+      console.log("🤖 Resposta da função:", { data, error });
 
-      if (response.success && response.content) {
-        updateFormData({ description: response.content });
+      if (error) {
+        console.error("❌ Erro na função:", error);
+        throw new Error(error.message || "Erro ao chamar função IA");
+      }
+
+      if (data?.content) {
+        console.log(
+          "✅ Descrição gerada com sucesso:",
+          data.content.length,
+          "caracteres"
+        );
+        console.log("🤖 Provedor usado:", data.provider, "Modelo:", data.model);
+        updateFormData({ description: data.content });
         toast({
           title: "Descrição gerada!",
-          description: `A IA gerou uma descrição usando ${response.provider?.toUpperCase()}`,
+          description: `A IA criou uma descrição otimizada usando ${data.provider?.toUpperCase()}.`,
         });
       } else {
-        toast({
-          title: "Erro na geração",
-          description: response.error || "Nenhum conteúdo foi gerado pela IA",
-          variant: "destructive",
-        });
+        console.error("❌ Descrição não retornada:", data);
+        throw new Error("Descrição não foi gerada pela IA");
       }
     } catch (error: any) {
-      console.error("Erro ao gerar descrição:", error);
+      console.error("💥 Erro ao gerar descrição:", error);
       toast({
         title: "Erro na geração",
         description:

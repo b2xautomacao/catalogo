@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Hash, FileText, Loader2 } from "lucide-react";
 import { WizardFormData } from "@/hooks/useImprovedProductFormWizard";
 import { useState } from "react";
-import { useAIProviders } from "@/hooks/useAIProviders";
 import { useToast } from "@/hooks/use-toast";
 import ImprovedAIToolsModal from "@/components/products/ImprovedAIToolsModal";
 
@@ -22,7 +21,6 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
 
-  const { generateAIContent } = useAIProviders("global");
   const { toast } = useToast();
 
   const generateSlug = (name: string) => {
@@ -54,33 +52,36 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
 
     setGeneratingTitle(true);
     try {
-      const response = await generateAIContent({
-        provider: "gemini",
-        prompt: `Crie um título SEO otimizado para o produto "${
-          formData.name
-        }" da categoria "${
-          formData.category || "Produto"
-        }". O título deve ser atrativo, incluir palavras-chave relevantes e ter até 60 caracteres.`,
-        max_tokens: 100,
-        temperature: 0.7,
-        system_message:
-          "Você é um especialista em SEO e títulos otimizados para e-commerce.",
-      });
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.functions.invoke(
+        "ai-content-generator",
+        {
+          body: {
+            productName: formData.name.trim(),
+            category: formData.category || "Produto",
+            contentType: "title",
+            storeId: "global",
+          },
+        }
+      );
 
-      if (response.success && response.content) {
-        updateFormData({ meta_title: response.content });
+      if (error) {
+        console.error("❌ Erro na função:", error);
+        throw new Error(error.message || "Erro ao chamar função IA");
+      }
+
+      if (data?.content) {
+        console.log("✅ Título SEO gerado:", data.provider, data.model);
+        updateFormData({ meta_title: data.content });
         toast({
           title: "Título SEO gerado!",
-          description: `IA gerou um título otimizado usando ${response.provider?.toUpperCase()}`,
+          description: `IA gerou um título otimizado usando ${data.provider?.toUpperCase()}`,
         });
       } else {
-        toast({
-          title: "Erro na geração",
-          description: response.error || "Não foi possível gerar o título SEO",
-          variant: "destructive",
-        });
+        throw new Error("Título não foi gerado pela IA");
       }
     } catch (error: any) {
+      console.error("💥 Erro ao gerar título SEO:", error);
       toast({
         title: "Erro na geração",
         description: error.message || "Erro ao gerar título SEO",
@@ -104,34 +105,36 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
 
     setGeneratingDescription(true);
     try {
-      const response = await generateAIContent({
-        provider: "gemini",
-        prompt: `Crie uma descrição SEO otimizada para o produto "${
-          formData.name
-        }" da categoria "${
-          formData.category || "Produto"
-        }". A descrição deve ser atrativa, incluir palavras-chave relevantes e ter entre 150-160 caracteres para aparecer nos resultados de busca.`,
-        max_tokens: 200,
-        temperature: 0.7,
-        system_message:
-          "Você é um especialista em SEO e descrições otimizadas para e-commerce.",
-      });
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.functions.invoke(
+        "ai-content-generator",
+        {
+          body: {
+            productName: formData.name.trim(),
+            category: formData.category || "Produto",
+            contentType: "description",
+            storeId: "global",
+          },
+        }
+      );
 
-      if (response.success && response.content) {
-        updateFormData({ meta_description: response.content });
+      if (error) {
+        console.error("❌ Erro na função:", error);
+        throw new Error(error.message || "Erro ao chamar função IA");
+      }
+
+      if (data?.content) {
+        console.log("✅ Descrição SEO gerada:", data.provider, data.model);
+        updateFormData({ meta_description: data.content });
         toast({
           title: "Descrição SEO gerada!",
-          description: `IA gerou uma descrição otimizada usando ${response.provider?.toUpperCase()}`,
+          description: `IA gerou uma descrição otimizada usando ${data.provider?.toUpperCase()}`,
         });
       } else {
-        toast({
-          title: "Erro na geração",
-          description:
-            response.error || "Não foi possível gerar a descrição SEO",
-          variant: "destructive",
-        });
+        throw new Error("Descrição não foi gerada pela IA");
       }
     } catch (error: any) {
+      console.error("💥 Erro ao gerar descrição SEO:", error);
       toast({
         title: "Erro na geração",
         description: error.message || "Erro ao gerar descrição SEO",
@@ -156,34 +159,36 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
 
     setGeneratingKeywords(true);
     try {
-      const response = await generateAIContent({
-        provider: "gemini",
-        prompt: `Gere palavras-chave relevantes para SEO do produto "${
-          formData.name
-        }" da categoria "${
-          formData.category || "Produto"
-        }". Retorne uma lista separada por vírgulas com 8-12 palavras-chave relevantes para busca orgânica.`,
-        max_tokens: 150,
-        temperature: 0.7,
-        system_message:
-          "Você é um especialista em SEO e palavras-chave para e-commerce.",
-      });
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase.functions.invoke(
+        "ai-content-generator",
+        {
+          body: {
+            productName: formData.name.trim(),
+            category: formData.category || "Produto",
+            contentType: "keywords",
+            storeId: "global",
+          },
+        }
+      );
 
-      if (response.success && response.content) {
-        updateFormData({ keywords: response.content });
+      if (error) {
+        console.error("❌ Erro na função:", error);
+        throw new Error(error.message || "Erro ao chamar função IA");
+      }
+
+      if (data?.content) {
+        console.log("✅ Palavras-chave geradas:", data.provider, data.model);
+        updateFormData({ keywords: data.content });
         toast({
           title: "Palavras-chave geradas!",
-          description: `IA gerou palavras-chave otimizadas usando ${response.provider?.toUpperCase()}`,
+          description: `IA gerou palavras-chave otimizadas usando ${data.provider?.toUpperCase()}`,
         });
       } else {
-        toast({
-          title: "Erro na geração",
-          description:
-            response.error || "Não foi possível gerar as palavras-chave",
-          variant: "destructive",
-        });
+        throw new Error("Palavras-chave não foram geradas pela IA");
       }
     } catch (error: any) {
+      console.error("💥 Erro ao gerar palavras-chave:", error);
       toast({
         title: "Erro na geração",
         description: error.message || "Erro ao gerar palavras-chave",
