@@ -60,6 +60,15 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   ];
 
   const commonSizes = [
+    "17/18",
+    "19/20",
+    "21/22",
+    "23/24",
+    "25/26",
+    "26/27",
+    "28/29",
+    "30/31",
+    "32/33",
     "33",
     "34",
     "35",
@@ -97,9 +106,19 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
       distribution: [1, 2, 3, 3, 2, 1, 1],
     },
     {
-      name: "Grade Infantil",
-      sizes: ["20", "21", "22", "23", "24", "25", "26"],
-      distribution: [1, 1, 2, 2, 2, 1, 1],
+      name: "Grade Infantil Pequena",
+      sizes: ["17/18", "19/20", "21/22", "23/24"],
+      distribution: [3, 3, 3, 3],
+    },
+    {
+      name: "Grade Infantil Média",
+      sizes: ["21/22", "23/24", "25/26", "26/27"],
+      distribution: [3, 3, 3, 3],
+    },
+    {
+      name: "Grade Infantil Grande",
+      sizes: ["26/27", "28/29", "30/31", "32/33"],
+      distribution: [3, 3, 3, 3],
     },
   ];
 
