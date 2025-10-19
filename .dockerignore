@@ -44,11 +44,11 @@ Thumbs.db
 docs/
 README.md
 
-# Configuração Docker
+# Configuração Docker (não incluir no build, EXCETO nginx.conf que é necessário)
 Dockerfile
 docker-compose.yml
 .dockerignore
-nginx.conf
+# nginx.conf é NECESSÁRIO para o build - NÃO excluir!
 
 # Scripts de teste e diagnóstico (excluir .js de teste, mas manter configurações)
 check-*.js
