@@ -1,0 +1,76 @@
+# Dependências
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun.lockb
+
+# Build output
+dist
+build
+.next
+out
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+Thumbs.db
+
+# Documentação e arquivos de projeto
+*.md
+docs/
+README.md
+
+# Configuração Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+nginx.conf
+
+# Scripts de teste e diagnóstico (excluir .js de teste, mas manter configurações)
+check-*.js
+test-*.js
+diagnose-*.js
+insert-*.js
+clear-*.js
+docker-test.sh
+docker-test.ps1
+
+# Arquivos SQL
+*.sql
+migrations/
+
+# Arquivos Excel
+*.xlsx
+
+# Logs
+logs
+*.log
+
+# Temp files
+tmp/
+temp/
+
