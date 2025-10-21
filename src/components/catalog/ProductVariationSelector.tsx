@@ -70,6 +70,40 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     gradeCount: grades.length,
   };
 
+  // 🐛 DEBUG: Log detalhado das variações
+  console.log("🎨 ProductVariationSelector - Debug completo:", {
+    totalVariations: variations.length,
+    colors: {
+      count: colors.length,
+      values: colors,
+      allColorsInVariations: variations.map(v => v.color).filter(Boolean)
+    },
+    sizes: {
+      count: sizes.length,
+      values: sizes,
+      allSizesInVariations: variations.map(v => v.size).filter(Boolean)
+    },
+    grades: {
+      count: grades.length,
+      list: grades.map(g => ({
+        id: g.id,
+        color: g.color,
+        grade_color: g.grade_color,
+        grade_name: g.grade_name,
+        grade_sizes: g.grade_sizes
+      }))
+    },
+    allVariations: variations.map(v => ({
+      id: v.id,
+      color: v.color,
+      size: v.size,
+      is_grade: v.is_grade,
+      variation_type: v.variation_type,
+      grade_color: v.grade_color,
+      grade_name: v.grade_name
+    }))
+  });
+
   if (hasGradeVariations) {
     // Renderizar seletor para variações de grade
     return (
