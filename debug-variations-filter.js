@@ -7,14 +7,14 @@ console.clear();
 // Interceptar console.log para filtrar apenas logs de variações
 const originalLog = console.log;
 console.log = function(...args) {
-  const message = args.join(' ');
-  if (message.includes('ProductVariationSelector') || 
-      message.includes('Debug variações') ||
-      message.includes('Debug produto completo') ||
-      message.includes('🎨') ||
-      message.includes('VARIAÇÕES')) {
-    originalLog.apply(console, args);
-  }
+    const message = args.join(' ');
+    if (message.includes('ProductVariationSelector') ||
+        message.includes('Debug variações') ||
+        message.includes('Debug produto completo') ||
+        message.includes('🎨') ||
+        message.includes('VARIAÇÕES')) {
+        originalLog.apply(console, args);
+    }
 };
 
 console.log('🔍 Filtro ativado! Agora só aparecerão logs relacionados a variações.');

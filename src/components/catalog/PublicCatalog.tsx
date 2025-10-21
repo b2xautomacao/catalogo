@@ -9,6 +9,9 @@ import { ProductVariation } from "@/types/variation";
 import { CatalogType } from "@/hooks/useCatalog";
 import { useToast } from "@/hooks/use-toast";
 import ProductDetailsModal from "./ProductDetailsModal";
+import ProductDetailsModalOptimized from "./ProductDetailsModalOptimized";
+import ProductCardOptimized from "./ProductCardOptimized";
+import ConversionToggle from "./conversion/ConversionToggle";
 import FloatingCart from "./FloatingCart";
 import FloatingWhatsApp from "./FloatingWhatsApp";
 import TemplateWrapper from "./TemplateWrapper";
@@ -31,6 +34,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCheckout, setShowCheckout] = useState(false);
+  const [useOptimizedComponents, setUseOptimizedComponents] = useState(true);
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     categories: [],
     priceRange: [0, 1000],
@@ -210,6 +214,23 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
     });
   };
 
+  const handleShareProduct = (product: Product) => {
+    console.log("📤 PUBLIC CATALOG - Compartilhando produto:", product.name);
+    if (navigator.share) {
+      navigator.share({
+        title: product.name,
+        text: `Confira este produto: ${product.name}`,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copiado!",
+        description: "Link do produto copiado para a área de transferência.",
+      });
+    }
+  };
+
   const handleProductClick = (product: Product) => {
     console.log("👆 PUBLIC CATALOG - Produto clicado:", product.name);
     setSelectedProduct(product);
@@ -330,6 +351,14 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
               </div>
             )}
 
+            {/* Toggle de Conversão */}
+            <div className="flex justify-end mb-4">
+              <ConversionToggle
+                isOptimized={useOptimizedComponents}
+                onToggle={setUseOptimizedComponents}
+              />
+            </div>
+
             <ProductGrid
               products={filteredProducts}
               catalogType={catalogType}
@@ -360,22 +389,43 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
 
       {/* Modal de Detalhes do Produto */}
       {selectedProduct && (
-        <ProductDetailsModal
-          product={selectedProduct}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          onAddToCart={handleAddToCart}
-          catalogType={catalogType}
-          showStock={showStock}
-          showPrices={showPrices}
-          storeName={store.name}
-          storePhone={store.phone}
-          relatedProducts={products.filter(
-            (p) =>
-              p.id !== selectedProduct.id &&
-              p.category === selectedProduct.category
-          )}
-        />
+        useOptimizedComponents ? (
+          <ProductDetailsModalOptimized
+            product={selectedProduct}
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            onAddToCart={handleAddToCart}
+            catalogType={catalogType}
+            showStock={showStock}
+            showPrices={showPrices}
+            storeName={store.name}
+            storePhone={store.phone}
+            relatedProducts={products.filter(
+              (p) =>
+                p.id !== selectedProduct.id &&
+                p.category === selectedProduct.category
+            )}
+            showConversionElements={true}
+            cartTotal={cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)}
+          />
+        ) : (
+          <ProductDetailsModal
+            product={selectedProduct}
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            onAddToCart={handleAddToCart}
+            catalogType={catalogType}
+            showStock={showStock}
+            showPrices={showPrices}
+            storeName={store.name}
+            storePhone={store.phone}
+            relatedProducts={products.filter(
+              (p) =>
+                p.id !== selectedProduct.id &&
+                p.category === selectedProduct.category
+            )}
+          />
+        )
       )}
 
       {/* Carrinho Flutuante */}
