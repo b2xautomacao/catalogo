@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { Product, ProductVariation } from "@/types/product";
 import { CatalogType } from "@/hooks/useCatalog";
-import VariationDebugger from "../debug/VariationDebugger";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import HierarchicalColorSizeSelector from "./HierarchicalColorSizeSelector";
 import ProductVariationSelector from "@/components/catalog/ProductVariationSelector";

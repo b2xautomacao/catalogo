@@ -1,7 +1,6 @@
 import React from "react";
 import { Store, CatalogType } from "@/hooks/useCatalog";
 import { CatalogSettingsData } from "@/hooks/useCatalogSettings";
-import CatalogHeader from "@/components/catalog/CatalogHeader";
 import CatalogFooter from "@/components/catalog/CatalogFooter";
 import HeroBanner from "@/components/catalog/banners/HeroBanner";
 import PromotionalBanner from "@/components/catalog/banners/PromotionalBanner";
@@ -38,18 +37,10 @@ const ModernCatalogTemplate: React.FC<ModernCatalogTemplateProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <CatalogHeader
-        store={store}
-        catalogType={catalogType}
-        cartItemsCount={cartItemsCount}
-        wishlistCount={wishlistCount}
-        onSearch={onSearch}
-        onToggleFilters={onToggleFilters}
-        onCartClick={onCartClick}
-      />
+      {/* CatalogHeader removido - catálogo começa diretamente com o banner */}
 
       {/* Hero Banner Section */}
-      <HeroBanner storeId={storeId} className="container mx-auto px-4 py-6" />
+      <HeroBanner storeId={storeId} className="container mx-auto px-4 pt-6" />
 
       <div className="container mx-auto px-4 py-8">
         {/* Promotional Banners */}
