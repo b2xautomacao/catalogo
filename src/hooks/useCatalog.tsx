@@ -146,7 +146,7 @@ export const useCatalog = (storeSlug?: string) => {
 
       try {
         // 🚀 OTIMIZAÇÃO: Usar Promise.all para buscar dados em paralelo
-        const [productsResult, variationsResult, imagesResult] = await Promise.all([
+        const [productsResult, imagesResult] = await Promise.all([
           // Buscar produtos
           supabase
             .from("products")
@@ -154,13 +154,6 @@ export const useCatalog = (storeSlug?: string) => {
             .eq("store_id", storeId)
             .eq("is_active", true)
             .order("name", { ascending: true }),
-          
-          // Buscar todas as variações em paralelo
-          supabase
-            .from("product_variations")
-            .select("*")
-            .eq("is_active", true)
-            .order("display_order", { ascending: true }),
           
           // 🚀 NOVA: Buscar todas as imagens dos produtos de uma vez
           supabase
@@ -171,7 +164,6 @@ export const useCatalog = (storeSlug?: string) => {
         ]);
 
         const { data: productsData, error: productsError } = productsResult;
-        const { data: allVariations, error: variationsError } = variationsResult;
         const { data: allImages, error: imagesError } = imagesResult;
 
         if (productsError) {
@@ -179,17 +171,32 @@ export const useCatalog = (storeSlug?: string) => {
           return false;
         }
 
-        if (variationsError) {
-          console.warn("⚠️ Erro ao buscar variações:", variationsError);
-        }
-
         if (imagesError) {
           console.warn("⚠️ Erro ao buscar imagens:", imagesError);
         }
 
-        // Filtrar variações apenas dos produtos da loja
+        // Buscar variações específicas dos produtos da loja
         const productIds = productsData?.map((p) => p.id) || [];
-        const variationsData = allVariations?.filter(v => productIds.includes(v.product_id)) || [];
+        let variationsData: any[] = [];
+
+        if (productIds.length > 0) {
+          console.log(`🔍 Buscando variações para ${productIds.length} produtos...`);
+          
+          const { data: allVariations, error: variationsError } = await supabase
+            .from("product_variations")
+            .select("*")
+            .in("product_id", productIds)
+            .eq("is_active", true)
+            .order("display_order", { ascending: true });
+
+          if (variationsError) {
+            console.error("❌ Erro ao buscar variações:", variationsError);
+          } else {
+            variationsData = allVariations || [];
+            console.log(`✅ Variações carregadas: ${variationsData.length}`);
+          }
+        }
+
         const imagesData = allImages?.filter(img => productIds.includes(img.product_id)) || [];
 
         console.log(
@@ -223,6 +230,15 @@ export const useCatalog = (storeSlug?: string) => {
                 grade_pairs: (v as any).grade_pairs,
                 display_order: v.display_order,
               })) as ProductVariation[];
+
+            // 🐛 DEBUG: Log específico para o produto problemático
+            if (product.id === '9d556c2d-2c20-44c2-ae00-512475aca6c4') {
+              console.log('🔍 DEBUG - Produto Tênis Adidas NMB:');
+              console.log(`   Variações encontradas: ${productVariations.length}`);
+              console.log(`   Variações no banco para este produto:`, variationsData.filter(v => v.product_id === product.id));
+              console.log(`   Cores:`, [...new Set(productVariations.map(v => v.color).filter(Boolean))]);
+              console.log(`   Tamanhos:`, [...new Set(productVariations.map(v => v.size).filter(Boolean))]);
+            }
 
             // 🚀 NOVA: Adicionar imagens ao produto
             const productImages = imagesData.filter(img => img.product_id === product.id);
