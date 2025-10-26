@@ -118,6 +118,7 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const isLoading = isLoadingProduct; // Alias para compatibilidade
 
   // Hook do wizard
   const {
