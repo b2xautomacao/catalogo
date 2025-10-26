@@ -372,7 +372,7 @@ const ProductPage: React.FC = () => {
                 className={isWishlisted ? "text-red-600" : ""}
                 title={isWishlisted ? "Remover dos favoritos" : "Adicionar aos favoritos"}
               >
-                <Heart className={isWishlisted ? "fill-current" : ""} className="w-5 h-5" />
+                <Heart className={`w-5 h-5 ${isWishlisted ? "fill-current" : ""}`} />
               </Button>
             </div>
           </div>
@@ -604,8 +604,8 @@ const ProductPage: React.FC = () => {
               product.product_category_type === 'roupa_inferior') && (
               <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                 <AutoSizeChart
-                  gender={product.product_gender}
-                  category={product.product_category_type}
+                  gender={product.product_gender as any}
+                  category={product.product_category_type as any}
                   isCollapsible={true}
                   defaultOpen={false}
                 />

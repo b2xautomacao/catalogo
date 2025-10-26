@@ -126,7 +126,6 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
     saveProduct,
     loadProductForEditing,
     resetForm,
-    isLoading,
   } = useProductFormWizard();
   
   // Price model da loja
@@ -276,10 +275,10 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
           name: product.name,
           variationsCount: variations?.length || 0,
           imagesCount: images?.length || 0,
-          product_gender: product.product_gender,
-          product_category_type: product.product_category_type,
-          material: product.material,
-          video_url: product.video_url,
+          product_gender: (product as any).product_gender,
+          product_category_type: (product as any).product_category_type,
+          material: (product as any).material,
+          video_url: (product as any).video_url,
         });
 
         // Carregar no form wizard
