@@ -1,9 +1,21 @@
 import React from 'react';
 import { Store } from '@/hooks/useCatalog';
-import { ShoppingCart, Heart, Truck, Shield, Zap, Menu } from 'lucide-react';
+import { ShoppingCart, Heart, Truck, Shield, Zap, Menu, Star, Gift, Trophy, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import SmartSearch from '../SmartSearch';
+import { CatalogSettingsData } from '@/hooks/useCatalogSettings';
+
+// Mapa de ícones disponíveis
+const ICON_MAP: Record<string, any> = {
+  truck: Truck,
+  shield: Shield,
+  zap: Zap,
+  star: Star,
+  gift: Gift,
+  trophy: Trophy,
+  tag: Tag,
+};
 
 interface ConversionHeaderProps {
   store: Store;
@@ -15,7 +27,7 @@ interface ConversionHeaderProps {
   onCartClick: () => void;
   onToggleFilters: () => void;
   showBadges?: boolean;
-  freeShippingThreshold?: number;
+  storeSettings?: CatalogSettingsData | null;
 }
 
 const ConversionHeader: React.FC<ConversionHeaderProps> = ({
@@ -28,32 +40,70 @@ const ConversionHeader: React.FC<ConversionHeaderProps> = ({
   onCartClick,
   onToggleFilters,
   showBadges = true,
-  freeShippingThreshold = 200,
+  storeSettings,
 }) => {
+  // Verificar se badges estão habilitados e há pelo menos um badge ativo
+  const badgesEnabled = showBadges && storeSettings?.header_badges_enabled !== false;
+  const hasBadges = badgesEnabled && (
+    storeSettings?.header_badge_fast_delivery ||
+    storeSettings?.header_badge_free_shipping ||
+    storeSettings?.header_badge_secure_checkout ||
+    storeSettings?.header_badge_custom_1
+  );
+
   return (
     <div className="sticky top-0 z-50 bg-white shadow-sm">
       {/* Top Bar com badges de conversão */}
-      {showBadges && (
+      {hasBadges && (
         <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 border-b border-gray-200">
           <div className="container mx-auto px-4 py-2">
             <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap text-xs md:text-sm">
-              <div className="flex items-center gap-2 text-green-700 font-medium">
-                <Truck className="h-4 w-4" />
-                <span className="hidden sm:inline">Entrega Rápida em 24h</span>
-                <span className="sm:hidden">Entrega 24h</span>
-              </div>
+              {/* Badge: Entrega Rápida */}
+              {storeSettings?.header_badge_fast_delivery && (
+                <div className="flex items-center gap-2 text-green-700 font-medium">
+                  <Truck className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {storeSettings.header_badge_fast_delivery_text || 'Entrega Rápida em 24h'}
+                  </span>
+                  <span className="sm:hidden">Entrega 24h</span>
+                </div>
+              )}
               
-              <div className="flex items-center gap-2 text-blue-700 font-medium">
-                <Zap className="h-4 w-4" />
-                <span className="hidden sm:inline">Frete Grátis acima de R$ {freeShippingThreshold}</span>
-                <span className="sm:hidden">Frete Grátis</span>
-              </div>
+              {/* Badge: Frete Grátis */}
+              {storeSettings?.header_badge_free_shipping && (
+                <div className="flex items-center gap-2 text-blue-700 font-medium">
+                  <Zap className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {storeSettings.header_badge_free_shipping_text || 'Frete Grátis'}
+                    {storeSettings.header_free_shipping_threshold && storeSettings.header_free_shipping_threshold > 0 && (
+                      ` acima de R$ ${storeSettings.header_free_shipping_threshold.toFixed(2)}`
+                    )}
+                  </span>
+                  <span className="sm:hidden">Frete Grátis</span>
+                </div>
+              )}
               
-              <div className="flex items-center gap-2 text-purple-700 font-medium">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Compra 100% Segura</span>
-                <span className="sm:hidden">100% Segura</span>
-              </div>
+              {/* Badge: Compra Segura */}
+              {storeSettings?.header_badge_secure_checkout && (
+                <div className="flex items-center gap-2 text-purple-700 font-medium">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {storeSettings.header_badge_secure_checkout_text || 'Compra 100% Segura'}
+                  </span>
+                  <span className="sm:hidden">100% Segura</span>
+                </div>
+              )}
+
+              {/* Badge Customizado */}
+              {storeSettings?.header_badge_custom_1 && storeSettings.header_badge_custom_1_text && (
+                <div className="flex items-center gap-2 text-orange-700 font-medium">
+                  {React.createElement(
+                    ICON_MAP[storeSettings.header_badge_custom_1_icon || 'star'] || Star,
+                    { className: 'h-4 w-4' }
+                  )}
+                  <span>{storeSettings.header_badge_custom_1_text}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

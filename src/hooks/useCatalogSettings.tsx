@@ -66,6 +66,17 @@ export interface CatalogSettingsData {
   footer_bg_color?: string;
   footer_text_color?: string;
   header_badges_enabled?: boolean;
+  // Badges individuais do header
+  header_badge_fast_delivery?: boolean;
+  header_badge_fast_delivery_text?: string;
+  header_badge_free_shipping?: boolean;
+  header_badge_free_shipping_text?: string;
+  header_free_shipping_threshold?: number;
+  header_badge_secure_checkout?: boolean;
+  header_badge_secure_checkout_text?: string;
+  header_badge_custom_1?: boolean;
+  header_badge_custom_1_text?: string;
+  header_badge_custom_1_icon?: string;
   // Propriedades adicionais para compatibilidade com templates
   colors?: {
     primary: string;

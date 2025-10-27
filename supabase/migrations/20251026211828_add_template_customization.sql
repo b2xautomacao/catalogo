@@ -12,7 +12,18 @@ ADD COLUMN IF NOT EXISTS footer_style text DEFAULT 'dark' CHECK (footer_style IN
 ADD COLUMN IF NOT EXISTS footer_bg_color text DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS footer_text_color text DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS header_badges_enabled boolean DEFAULT true,
-ADD COLUMN IF NOT EXISTS conversion_mode text DEFAULT 'simple' CHECK (conversion_mode IN ('simple', 'optimized'));
+ADD COLUMN IF NOT EXISTS conversion_mode text DEFAULT 'simple' CHECK (conversion_mode IN ('simple', 'optimized')),
+-- Badges individuais do header
+ADD COLUMN IF NOT EXISTS header_badge_fast_delivery boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS header_badge_fast_delivery_text text DEFAULT 'Entrega Rápida em 24h',
+ADD COLUMN IF NOT EXISTS header_badge_free_shipping boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS header_badge_free_shipping_text text DEFAULT 'Frete Grátis',
+ADD COLUMN IF NOT EXISTS header_free_shipping_threshold numeric DEFAULT 200.00,
+ADD COLUMN IF NOT EXISTS header_badge_secure_checkout boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS header_badge_secure_checkout_text text DEFAULT 'Compra 100% Segura',
+ADD COLUMN IF NOT EXISTS header_badge_custom_1 boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS header_badge_custom_1_text text DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS header_badge_custom_1_icon text DEFAULT 'star';
 
 -- Add comments for documentation
 COMMENT ON COLUMN store_settings.logo_color_palette IS 'JSON object containing extracted color palette from logo: {primary, secondary, accent, neutral, text, background}';
@@ -21,8 +32,19 @@ COMMENT ON COLUMN store_settings.button_style IS 'Global button style for catalo
 COMMENT ON COLUMN store_settings.footer_style IS 'Footer appearance style: dark, light, or gradient';
 COMMENT ON COLUMN store_settings.footer_bg_color IS 'Custom background color for footer (overrides footer_style)';
 COMMENT ON COLUMN store_settings.footer_text_color IS 'Custom text color for footer (overrides footer_style)';
-COMMENT ON COLUMN store_settings.header_badges_enabled IS 'Show conversion badges in header (Fast Delivery, Free Shipping, Secure Checkout)';
+COMMENT ON COLUMN store_settings.header_badges_enabled IS 'Enable/disable all conversion badges in header';
 COMMENT ON COLUMN store_settings.conversion_mode IS 'Catalog conversion mode: simple (basic) or optimized (with urgency badges, reviews, etc)';
+-- Comentários dos badges individuais
+COMMENT ON COLUMN store_settings.header_badge_fast_delivery IS 'Show fast delivery badge in header';
+COMMENT ON COLUMN store_settings.header_badge_fast_delivery_text IS 'Custom text for fast delivery badge';
+COMMENT ON COLUMN store_settings.header_badge_free_shipping IS 'Show free shipping badge in header';
+COMMENT ON COLUMN store_settings.header_badge_free_shipping_text IS 'Custom text for free shipping badge';
+COMMENT ON COLUMN store_settings.header_free_shipping_threshold IS 'Minimum order value for free shipping';
+COMMENT ON COLUMN store_settings.header_badge_secure_checkout IS 'Show secure checkout badge in header';
+COMMENT ON COLUMN store_settings.header_badge_secure_checkout_text IS 'Custom text for secure checkout badge';
+COMMENT ON COLUMN store_settings.header_badge_custom_1 IS 'Show custom badge 1 in header';
+COMMENT ON COLUMN store_settings.header_badge_custom_1_text IS 'Custom text for badge 1';
+COMMENT ON COLUMN store_settings.header_badge_custom_1_icon IS 'Icon name for custom badge 1 (lucide-react icons)';
 
 -- Create index on button_style for faster queries
 CREATE INDEX IF NOT EXISTS idx_store_settings_button_style ON store_settings(button_style);

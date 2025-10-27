@@ -43,6 +43,9 @@ import {
   Search,
   Globe,
   Gift,
+  Truck,
+  Shield,
+  Star,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -605,18 +608,145 @@ const CatalogSettings = () => {
                 Badges no Header
               </CardTitle>
               <CardDescription>
-                Gatilhos de urgência e conversão no topo do catálogo
+                Gatilhos de urgência e conversão no topo do catálogo - Configure individualmente quais mostrar
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-6">
+              {/* Toggle geral */}
+              <div className="flex items-center justify-between pb-4 border-b">
                 <div>
-                  <Label htmlFor="header-badges">Exibir Badges de Conversão</Label>
+                  <Label htmlFor="header-badges-master">Exibir Badges no Header</Label>
                   <p className="text-xs text-gray-500 mt-1">
-                    Entrega Rápida, Frete Grátis, Compra Segura
+                    Ativar/desativar todos os badges de conversão
                   </p>
                 </div>
-                <Switch id="header-badges" defaultChecked />
+                <Switch id="header-badges-master" defaultChecked />
+              </div>
+
+              {/* Badge: Entrega Rápida */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-green-700" />
+                    <Label htmlFor="badge-fast-delivery">Entrega Rápida</Label>
+                  </div>
+                  <Switch id="badge-fast-delivery" defaultChecked />
+                </div>
+                <div className="ml-6">
+                  <Label htmlFor="badge-fast-delivery-text" className="text-xs text-gray-500">
+                    Texto Personalizado
+                  </Label>
+                  <Input
+                    id="badge-fast-delivery-text"
+                    placeholder="Entrega Rápida em 24h"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Badge: Frete Grátis */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-blue-700" />
+                    <Label htmlFor="badge-free-shipping">Frete Grátis</Label>
+                  </div>
+                  <Switch id="badge-free-shipping" defaultChecked />
+                </div>
+                <div className="ml-6 space-y-2">
+                  <div>
+                    <Label htmlFor="badge-free-shipping-text" className="text-xs text-gray-500">
+                      Texto Personalizado
+                    </Label>
+                    <Input
+                      id="badge-free-shipping-text"
+                      placeholder="Frete Grátis"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="free-shipping-threshold" className="text-xs text-gray-500">
+                      Valor Mínimo (deixe 0 para não mostrar)
+                    </Label>
+                    <Input
+                      id="free-shipping-threshold"
+                      type="number"
+                      placeholder="200.00"
+                      step="0.01"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Badge: Compra Segura */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-purple-700" />
+                    <Label htmlFor="badge-secure-checkout">Compra Segura</Label>
+                  </div>
+                  <Switch id="badge-secure-checkout" defaultChecked />
+                </div>
+                <div className="ml-6">
+                  <Label htmlFor="badge-secure-checkout-text" className="text-xs text-gray-500">
+                    Texto Personalizado
+                  </Label>
+                  <Input
+                    id="badge-secure-checkout-text"
+                    placeholder="Compra 100% Segura"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Badge Customizado */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-orange-700" />
+                    <Label htmlFor="badge-custom-1">Badge Customizado</Label>
+                  </div>
+                  <Switch id="badge-custom-1" />
+                </div>
+                <div className="ml-6 space-y-2">
+                  <div>
+                    <Label htmlFor="badge-custom-1-text" className="text-xs text-gray-500">
+                      Texto Personalizado
+                    </Label>
+                    <Input
+                      id="badge-custom-1-text"
+                      placeholder="Ex: Garantia de 30 dias"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="badge-custom-1-icon" className="text-xs text-gray-500">
+                      Ícone
+                    </Label>
+                    <Select defaultValue="star">
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="star">⭐ Estrela</SelectItem>
+                        <SelectItem value="gift">🎁 Presente</SelectItem>
+                        <SelectItem value="trophy">🏆 Troféu</SelectItem>
+                        <SelectItem value="tag">🏷️ Tag</SelectItem>
+                        <SelectItem value="zap">⚡ Raio</SelectItem>
+                        <SelectItem value="truck">🚚 Caminhão</SelectItem>
+                        <SelectItem value="shield">🛡️ Escudo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-xs text-gray-500">
+                  💡 <strong>Dica:</strong> Marque apenas os badges que fazem sentido para seu negócio. 
+                  Por exemplo, se você não oferece frete grátis, desmarque essa opção.
+                </p>
               </div>
             </CardContent>
           </Card>

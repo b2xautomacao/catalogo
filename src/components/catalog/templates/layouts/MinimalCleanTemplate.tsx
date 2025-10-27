@@ -51,7 +51,7 @@ const MinimalCleanTemplate: React.FC<MinimalCleanTemplateProps> = ({
         onCartClick={onCartClick}
         onToggleFilters={onToggleFilters}
         showBadges={storeSettings?.header_badges_enabled !== false}
-        freeShippingThreshold={200}
+        storeSettings={storeSettings}
       />
 
       {/* Hero Banner Full-Width */}
