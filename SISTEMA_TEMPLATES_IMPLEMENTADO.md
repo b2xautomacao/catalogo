@@ -30,7 +30,7 @@ Sistema completo de templates com personalização automática de cores, estilos
 - ✅ Carrega e extrai cores do logo automaticamente
 - ✅ Aplica paleta via CSS variables no documento
 - ✅ Permite reset para cores padrão do template
-- ✅ Salva paleta em `catalog_settings.logo_color_palette`
+- ✅ Salva paleta em `store_settings.logo_color_palette`
 - ✅ Carrega paleta salva ao montar componente
 - ✅ Feedback visual com toasts
 
@@ -264,7 +264,7 @@ onProductSelect?: (product: any) => void;
 
 **Arquivo:** `supabase/migrations/20251026211828_add_template_customization.sql`
 
-**Campos Adicionados em `catalog_settings`:**
+**Campos Adicionados em `store_settings`:**
 
 | Campo | Tipo | Padrão | Descrição |
 |-------|------|--------|-----------|
@@ -281,8 +281,8 @@ onProductSelect?: (product: any) => void;
 - `footer_style`: CHECK IN ('dark', 'light', 'gradient')
 
 **Índices Criados:**
-- `idx_catalog_settings_button_style`
-- `idx_catalog_settings_footer_style`
+- `idx_store_settings_button_style`
+- `idx_store_settings_footer_style`
 
 **Documentação:**
 - COMMENT ON COLUMN para cada campo

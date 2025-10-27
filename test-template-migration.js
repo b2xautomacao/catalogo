@@ -25,16 +25,16 @@ async function testMigration() {
 
   try {
     // 1. Verificar se os campos existem
-    console.log("\n1️⃣  Verificando novos campos em catalog_settings...");
+    console.log("\n1️⃣  Verificando novos campos em store_settings...");
     
     const { data: settings, error: fetchError } = await supabase
-      .from("catalog_settings")
+      .from("store_settings")
       .select("*")
       .limit(1)
       .maybeSingle();
 
     if (fetchError) {
-      console.error("❌ Erro ao buscar catalog_settings:", fetchError.message);
+      console.error("❌ Erro ao buscar store_settings:", fetchError.message);
       process.exit(1);
     }
 
@@ -53,10 +53,9 @@ async function testMigration() {
       }
 
       const { data: newSettings, error: createError } = await supabase
-        .from("catalog_settings")
+        .from("store_settings")
         .insert({
           store_id: stores.id,
-          template_name: "modern",
         })
         .select()
         .single();
@@ -80,10 +79,11 @@ async function testMigration() {
       'footer_bg_color',
       'footer_text_color',
       'header_badges_enabled',
+      'conversion_mode',
     ];
 
     const { data: testRecord } = await supabase
-      .from("catalog_settings")
+      .from("store_settings")
       .select(requiredFields.join(','))
       .limit(1)
       .maybeSingle();
@@ -129,7 +129,7 @@ async function testMigration() {
     };
 
     const { error: updateError } = await supabase
-      .from("catalog_settings")
+      .from("store_settings")
       .update({
         logo_color_palette: testPalette,
         auto_extract_colors: true,
@@ -138,6 +138,7 @@ async function testMigration() {
         footer_bg_color: '#1E293B',
         footer_text_color: '#FFFFFF',
         header_badges_enabled: true,
+        conversion_mode: 'optimized',
       })
       .eq('store_id', stores.id);
 
@@ -152,8 +153,8 @@ async function testMigration() {
     console.log("\n4️⃣  Verificando dados inseridos...");
     
     const { data: updatedSettings, error: verifyError } = await supabase
-      .from("catalog_settings")
-      .select("logo_color_palette, auto_extract_colors, button_style, footer_style, footer_bg_color, footer_text_color, header_badges_enabled")
+      .from("store_settings")
+      .select("logo_color_palette, auto_extract_colors, button_style, footer_style, footer_bg_color, footer_text_color, header_badges_enabled, conversion_mode")
       .eq('store_id', stores.id)
       .maybeSingle();
 
@@ -169,13 +170,14 @@ async function testMigration() {
     console.log(`      Estilo de footer: ${updatedSettings.footer_style}`);
     console.log(`      Cor do footer: ${updatedSettings.footer_bg_color || 'Padrão'}`);
     console.log(`      Badges no header: ${updatedSettings.header_badges_enabled ? 'Ativados' : 'Desativados'}`);
+    console.log(`      Modo de conversão: ${updatedSettings.conversion_mode}`);
 
     // 5. Verificar constraints
     console.log("\n5️⃣  Testando constraints de valores...");
     
     // Tentar inserir valor inválido para button_style
     const { error: constraintError } = await supabase
-      .from("catalog_settings")
+      .from("store_settings")
       .update({ button_style: 'invalid_value' })
       .eq('store_id', stores.id);
 

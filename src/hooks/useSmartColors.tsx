@@ -98,7 +98,7 @@ export const useSmartColors = (storeId?: string, autoExtract: boolean = false): 
       console.log('💾 Salvando paleta no banco:', storeIdToSave);
 
       const { error } = await supabase
-        .from('catalog_settings')
+        .from('store_settings')
         .update({
           logo_color_palette: paletteToSave,
           primary_color: paletteToSave.primary,
@@ -141,7 +141,7 @@ export const useSmartColors = (storeId?: string, autoExtract: boolean = false): 
 
       try {
         const { data, error } = await supabase
-          .from('catalog_settings')
+          .from('store_settings')
           .select('logo_color_palette, primary_color, secondary_color, accent_color, background_color, text_color')
           .eq('store_id', storeId)
           .maybeSingle();
