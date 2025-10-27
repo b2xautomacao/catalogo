@@ -29,6 +29,7 @@ import MobileLayoutSettings from "./MobileLayoutSettings";
 import FooterSettings from "./FooterSettings";
 import OrderBumpSettings from "./OrderBumpSettings";
 import ProductPageSettings from "./ProductPageSettings";
+import PixelTrackingSettings from "./PixelTrackingSettings";
 import {
   Palette,
   Eye,
@@ -48,6 +49,7 @@ import {
   Shield,
   Star,
   ShoppingBag,
+  Activity,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -120,6 +122,29 @@ const CatalogSettings = () => {
     product_size_chart_default_open: false,
     product_show_care_section: true,
     product_care_section_default_open: false,
+    // Pixels e Tracking
+    meta_pixel_id: "",
+    meta_pixel_enabled: false,
+    meta_pixel_access_token: "",
+    ga4_measurement_id: "",
+    ga4_enabled: false,
+    ga4_api_secret: "",
+    google_ads_id: "",
+    google_ads_enabled: false,
+    google_ads_conversion_label: "",
+    tiktok_pixel_id: "",
+    tiktok_pixel_enabled: false,
+    tracking_pageview: true,
+    tracking_view_content: true,
+    tracking_add_to_cart: true,
+    tracking_initiate_checkout: true,
+    tracking_add_payment_info: true,
+    tracking_purchase: true,
+    tracking_search: true,
+    tracking_view_category: true,
+    tracking_advanced_matching: false,
+    tracking_auto_events: true,
+    tracking_debug_mode: false,
   });
 
   useEffect(() => {
@@ -189,6 +214,29 @@ const CatalogSettings = () => {
         product_size_chart_default_open: (settings.product_size_chart_default_open as any) || false,
         product_show_care_section: (settings.product_show_care_section as any) !== false,
         product_care_section_default_open: (settings.product_care_section_default_open as any) || false,
+        // Pixels e Tracking
+        meta_pixel_id: (settings.meta_pixel_id as any) || "",
+        meta_pixel_enabled: (settings.meta_pixel_enabled as any) || false,
+        meta_pixel_access_token: (settings.meta_pixel_access_token as any) || "",
+        ga4_measurement_id: (settings.ga4_measurement_id as any) || "",
+        ga4_enabled: (settings.ga4_enabled as any) || false,
+        ga4_api_secret: (settings.ga4_api_secret as any) || "",
+        google_ads_id: (settings.google_ads_id as any) || "",
+        google_ads_enabled: (settings.google_ads_enabled as any) || false,
+        google_ads_conversion_label: (settings.google_ads_conversion_label as any) || "",
+        tiktok_pixel_id: (settings.tiktok_pixel_id as any) || "",
+        tiktok_pixel_enabled: (settings.tiktok_pixel_enabled as any) || false,
+        tracking_pageview: (settings.tracking_pageview as any) !== false,
+        tracking_view_content: (settings.tracking_view_content as any) !== false,
+        tracking_add_to_cart: (settings.tracking_add_to_cart as any) !== false,
+        tracking_initiate_checkout: (settings.tracking_initiate_checkout as any) !== false,
+        tracking_add_payment_info: (settings.tracking_add_payment_info as any) !== false,
+        tracking_purchase: (settings.tracking_purchase as any) !== false,
+        tracking_search: (settings.tracking_search as any) !== false,
+        tracking_view_category: (settings.tracking_view_category as any) !== false,
+        tracking_advanced_matching: (settings.tracking_advanced_matching as any) || false,
+        tracking_auto_events: (settings.tracking_auto_events as any) !== false,
+        tracking_debug_mode: (settings.tracking_debug_mode as any) || false,
       });
     }
   }, [settings]);
@@ -255,6 +303,29 @@ const CatalogSettings = () => {
       product_size_chart_default_open: localSettings.product_size_chart_default_open,
       product_show_care_section: localSettings.product_show_care_section,
       product_care_section_default_open: localSettings.product_care_section_default_open,
+      // Pixels e Tracking
+      meta_pixel_id: localSettings.meta_pixel_id || null,
+      meta_pixel_enabled: localSettings.meta_pixel_enabled,
+      meta_pixel_access_token: localSettings.meta_pixel_access_token || null,
+      ga4_measurement_id: localSettings.ga4_measurement_id || null,
+      ga4_enabled: localSettings.ga4_enabled,
+      ga4_api_secret: localSettings.ga4_api_secret || null,
+      google_ads_id: localSettings.google_ads_id || null,
+      google_ads_enabled: localSettings.google_ads_enabled,
+      google_ads_conversion_label: localSettings.google_ads_conversion_label || null,
+      tiktok_pixel_id: localSettings.tiktok_pixel_id || null,
+      tiktok_pixel_enabled: localSettings.tiktok_pixel_enabled,
+      tracking_pageview: localSettings.tracking_pageview,
+      tracking_view_content: localSettings.tracking_view_content,
+      tracking_add_to_cart: localSettings.tracking_add_to_cart,
+      tracking_initiate_checkout: localSettings.tracking_initiate_checkout,
+      tracking_add_payment_info: localSettings.tracking_add_payment_info,
+      tracking_purchase: localSettings.tracking_purchase,
+      tracking_search: localSettings.tracking_search,
+      tracking_view_category: localSettings.tracking_view_category,
+      tracking_advanced_matching: localSettings.tracking_advanced_matching,
+      tracking_auto_events: localSettings.tracking_auto_events,
+      tracking_debug_mode: localSettings.tracking_debug_mode,
     } as any; // Type assertion para novos campos
 
     const result = await updateSettings(updates);
@@ -376,7 +447,7 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-11">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-12">
           <TabsTrigger value="template" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Template</span>
@@ -392,6 +463,10 @@ const CatalogSettings = () => {
           <TabsTrigger value="product-page" className="flex items-center gap-1">
             <ShoppingBag className="h-4 w-4" />
             <span className="hidden sm:inline">Produto</span>
+          </TabsTrigger>
+          <TabsTrigger value="pixels" className="flex items-center gap-1">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Pixels</span>
           </TabsTrigger>
           <TabsTrigger value="mobile" className="flex items-center gap-1">
             <Smartphone className="h-4 w-4" />
@@ -1038,6 +1113,13 @@ const CatalogSettings = () => {
 
         <TabsContent value="product-page" className="space-y-6">
           <ProductPageSettings 
+            settings={localSettings}
+            onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
+          />
+        </TabsContent>
+
+        <TabsContent value="pixels" className="space-y-6">
+          <PixelTrackingSettings 
             settings={localSettings}
             onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
           />

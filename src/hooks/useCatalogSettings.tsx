@@ -105,6 +105,32 @@ export interface CatalogSettingsData {
   product_size_chart_default_open?: boolean;
   product_show_care_section?: boolean;
   product_care_section_default_open?: boolean;
+  // Pixels e Tracking
+  meta_pixel_id?: string;
+  meta_pixel_enabled?: boolean;
+  meta_pixel_access_token?: string;
+  meta_pixel_verified?: boolean;
+  meta_pixel_verified_at?: string;
+  ga4_measurement_id?: string;
+  ga4_enabled?: boolean;
+  ga4_api_secret?: string;
+  google_ads_id?: string;
+  google_ads_enabled?: boolean;
+  google_ads_conversion_label?: string;
+  tiktok_pixel_id?: string;
+  tiktok_pixel_enabled?: boolean;
+  tracking_pageview?: boolean;
+  tracking_view_content?: boolean;
+  tracking_add_to_cart?: boolean;
+  tracking_initiate_checkout?: boolean;
+  tracking_add_payment_info?: boolean;
+  tracking_purchase?: boolean;
+  tracking_search?: boolean;
+  tracking_view_category?: boolean;
+  tracking_advanced_matching?: boolean;
+  tracking_auto_events?: boolean;
+  tracking_debug_mode?: boolean;
+  custom_events_config?: any;
   // Propriedades adicionais para compatibilidade com templates
   colors?: {
     primary: string;
@@ -317,6 +343,32 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           product_size_chart_default_open: (data as any).product_size_chart_default_open,
           product_show_care_section: (data as any).product_show_care_section,
           product_care_section_default_open: (data as any).product_care_section_default_open,
+          // Pixels e Tracking
+          meta_pixel_id: (data as any).meta_pixel_id,
+          meta_pixel_enabled: (data as any).meta_pixel_enabled,
+          meta_pixel_access_token: (data as any).meta_pixel_access_token,
+          meta_pixel_verified: (data as any).meta_pixel_verified,
+          meta_pixel_verified_at: (data as any).meta_pixel_verified_at,
+          ga4_measurement_id: (data as any).ga4_measurement_id,
+          ga4_enabled: (data as any).ga4_enabled,
+          ga4_api_secret: (data as any).ga4_api_secret,
+          google_ads_id: (data as any).google_ads_id,
+          google_ads_enabled: (data as any).google_ads_enabled,
+          google_ads_conversion_label: (data as any).google_ads_conversion_label,
+          tiktok_pixel_id: (data as any).tiktok_pixel_id,
+          tiktok_pixel_enabled: (data as any).tiktok_pixel_enabled,
+          tracking_pageview: (data as any).tracking_pageview,
+          tracking_view_content: (data as any).tracking_view_content,
+          tracking_add_to_cart: (data as any).tracking_add_to_cart,
+          tracking_initiate_checkout: (data as any).tracking_initiate_checkout,
+          tracking_add_payment_info: (data as any).tracking_add_payment_info,
+          tracking_purchase: (data as any).tracking_purchase,
+          tracking_search: (data as any).tracking_search,
+          tracking_view_category: (data as any).tracking_view_category,
+          tracking_advanced_matching: (data as any).tracking_advanced_matching,
+          tracking_auto_events: (data as any).tracking_auto_events,
+          tracking_debug_mode: (data as any).tracking_debug_mode,
+          custom_events_config: (data as any).custom_events_config,
         });
       } else {
         console.log(
