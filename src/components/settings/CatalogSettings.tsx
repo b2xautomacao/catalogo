@@ -73,6 +73,23 @@ const CatalogSettings = () => {
     custom_css: "",
     seo_keywords: "",
     conversion_mode: "optimized" as "simple" | "optimized",
+    // Estilos de aparência
+    button_style: "modern" as "flat" | "modern" | "rounded",
+    footer_style: "dark" as "dark" | "light" | "gradient",
+    footer_bg_color: "",
+    footer_text_color: "",
+    // Badges do header
+    header_badges_enabled: true,
+    header_badge_fast_delivery: true,
+    header_badge_fast_delivery_text: "Entrega Rápida em 24h",
+    header_badge_free_shipping: true,
+    header_badge_free_shipping_text: "Frete Grátis",
+    header_free_shipping_threshold: 200,
+    header_badge_secure_checkout: true,
+    header_badge_secure_checkout_text: "Compra 100% Segura",
+    header_badge_custom_1: false,
+    header_badge_custom_1_text: "",
+    header_badge_custom_1_icon: "star",
   });
 
   useEffect(() => {
@@ -97,6 +114,23 @@ const CatalogSettings = () => {
         custom_css: "",
         seo_keywords: settings.seo_keywords || "",
         conversion_mode: settings.conversion_mode || "optimized",
+        // Estilos de aparência
+        button_style: (settings.button_style as any) || "modern",
+        footer_style: (settings.footer_style as any) || "dark",
+        footer_bg_color: (settings.footer_bg_color as any) || "",
+        footer_text_color: (settings.footer_text_color as any) || "",
+        // Badges do header
+        header_badges_enabled: (settings.header_badges_enabled as any) !== false,
+        header_badge_fast_delivery: (settings.header_badge_fast_delivery as any) !== false,
+        header_badge_fast_delivery_text: (settings.header_badge_fast_delivery_text as any) || "Entrega Rápida em 24h",
+        header_badge_free_shipping: (settings.header_badge_free_shipping as any) !== false,
+        header_badge_free_shipping_text: (settings.header_badge_free_shipping_text as any) || "Frete Grátis",
+        header_free_shipping_threshold: (settings.header_free_shipping_threshold as any) || 200,
+        header_badge_secure_checkout: (settings.header_badge_secure_checkout as any) !== false,
+        header_badge_secure_checkout_text: (settings.header_badge_secure_checkout_text as any) || "Compra 100% Segura",
+        header_badge_custom_1: (settings.header_badge_custom_1 as any) || false,
+        header_badge_custom_1_text: (settings.header_badge_custom_1_text as any) || "",
+        header_badge_custom_1_icon: (settings.header_badge_custom_1_icon as any) || "star",
       });
     }
   }, [settings]);
@@ -118,7 +152,24 @@ const CatalogSettings = () => {
       text_color: localSettings.text_color,
       border_color: localSettings.border_color,
       conversion_mode: localSettings.conversion_mode,
-    };
+      // Estilos de aparência
+      button_style: localSettings.button_style,
+      footer_style: localSettings.footer_style,
+      footer_bg_color: localSettings.footer_bg_color || null,
+      footer_text_color: localSettings.footer_text_color || null,
+      // Badges do header
+      header_badges_enabled: localSettings.header_badges_enabled,
+      header_badge_fast_delivery: localSettings.header_badge_fast_delivery,
+      header_badge_fast_delivery_text: localSettings.header_badge_fast_delivery_text,
+      header_badge_free_shipping: localSettings.header_badge_free_shipping,
+      header_badge_free_shipping_text: localSettings.header_badge_free_shipping_text,
+      header_free_shipping_threshold: localSettings.header_free_shipping_threshold,
+      header_badge_secure_checkout: localSettings.header_badge_secure_checkout,
+      header_badge_secure_checkout_text: localSettings.header_badge_secure_checkout_text,
+      header_badge_custom_1: localSettings.header_badge_custom_1,
+      header_badge_custom_1_text: localSettings.header_badge_custom_1_text || null,
+      header_badge_custom_1_icon: localSettings.header_badge_custom_1_icon,
+    } as any; // Type assertion para novos campos
 
     const result = await updateSettings(updates);
     if (result.data && !result.error) {
@@ -553,10 +604,22 @@ const CatalogSettings = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Flat */}
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card 
+                  className={`cursor-pointer transition-all ${
+                    localSettings.button_style === 'flat' 
+                      ? 'ring-2 ring-primary shadow-lg' 
+                      : 'hover:shadow-lg'
+                  }`}
+                  onClick={() => setLocalSettings({ ...localSettings, button_style: 'flat' })}
+                >
                   <CardContent className="p-4">
                     <div className="space-y-3">
-                      <h4 className="font-semibold">Flat</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        Flat
+                        {localSettings.button_style === 'flat' && (
+                          <Badge className="text-xs">Selecionado</Badge>
+                        )}
+                      </h4>
                       <p className="text-xs text-gray-500">Minimalista sem sombras</p>
                       <div className="flex items-center gap-2">
                         <button className="px-4 py-2 bg-primary text-white text-sm rounded" style={{borderRadius: '4px', boxShadow: 'none'}}>
@@ -568,10 +631,22 @@ const CatalogSettings = () => {
                 </Card>
 
                 {/* Modern */}
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card 
+                  className={`cursor-pointer transition-all ${
+                    localSettings.button_style === 'modern' 
+                      ? 'ring-2 ring-primary shadow-lg' 
+                      : 'hover:shadow-lg'
+                  }`}
+                  onClick={() => setLocalSettings({ ...localSettings, button_style: 'modern' })}
+                >
                   <CardContent className="p-4">
                     <div className="space-y-3">
-                      <h4 className="font-semibold">Modern</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        Modern
+                        {localSettings.button_style === 'modern' && (
+                          <Badge className="text-xs">Selecionado</Badge>
+                        )}
+                      </h4>
                       <p className="text-xs text-gray-500">Arredondado com sombras</p>
                       <div className="flex items-center gap-2">
                         <button className="px-4 py-2 bg-primary text-white text-sm rounded-lg shadow-md">
@@ -583,10 +658,22 @@ const CatalogSettings = () => {
                 </Card>
 
                 {/* Rounded */}
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card 
+                  className={`cursor-pointer transition-all ${
+                    localSettings.button_style === 'rounded' 
+                      ? 'ring-2 ring-primary shadow-lg' 
+                      : 'hover:shadow-lg'
+                  }`}
+                  onClick={() => setLocalSettings({ ...localSettings, button_style: 'rounded' })}
+                >
                   <CardContent className="p-4">
                     <div className="space-y-3">
-                      <h4 className="font-semibold">Rounded</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        Rounded
+                        {localSettings.button_style === 'rounded' && (
+                          <Badge className="text-xs">Selecionado</Badge>
+                        )}
+                      </h4>
                       <p className="text-xs text-gray-500">Muito arredondado</p>
                       <div className="flex items-center gap-2">
                         <button className="px-6 py-3 bg-primary text-white text-sm rounded-full shadow-lg">
@@ -620,7 +707,13 @@ const CatalogSettings = () => {
                     Ativar/desativar todos os badges de conversão
                   </p>
                 </div>
-                <Switch id="header-badges-master" defaultChecked />
+                <Switch 
+                  id="header-badges-master" 
+                  checked={localSettings.header_badges_enabled}
+                  onCheckedChange={(checked) => 
+                    setLocalSettings({ ...localSettings, header_badges_enabled: checked })
+                  }
+                />
               </div>
 
               {/* Badge: Entrega Rápida */}
@@ -630,7 +723,13 @@ const CatalogSettings = () => {
                     <Truck className="h-4 w-4 text-green-700" />
                     <Label htmlFor="badge-fast-delivery">Entrega Rápida</Label>
                   </div>
-                  <Switch id="badge-fast-delivery" defaultChecked />
+                  <Switch 
+                    id="badge-fast-delivery" 
+                    checked={localSettings.header_badge_fast_delivery}
+                    onCheckedChange={(checked) =>
+                      setLocalSettings({ ...localSettings, header_badge_fast_delivery: checked })
+                    }
+                  />
                 </div>
                 <div className="ml-6">
                   <Label htmlFor="badge-fast-delivery-text" className="text-xs text-gray-500">
@@ -640,6 +739,10 @@ const CatalogSettings = () => {
                     id="badge-fast-delivery-text"
                     placeholder="Entrega Rápida em 24h"
                     className="mt-1"
+                    value={localSettings.header_badge_fast_delivery_text}
+                    onChange={(e) =>
+                      setLocalSettings({ ...localSettings, header_badge_fast_delivery_text: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -651,7 +754,13 @@ const CatalogSettings = () => {
                     <Zap className="h-4 w-4 text-blue-700" />
                     <Label htmlFor="badge-free-shipping">Frete Grátis</Label>
                   </div>
-                  <Switch id="badge-free-shipping" defaultChecked />
+                  <Switch 
+                    id="badge-free-shipping" 
+                    checked={localSettings.header_badge_free_shipping}
+                    onCheckedChange={(checked) =>
+                      setLocalSettings({ ...localSettings, header_badge_free_shipping: checked })
+                    }
+                  />
                 </div>
                 <div className="ml-6 space-y-2">
                   <div>
@@ -662,6 +771,10 @@ const CatalogSettings = () => {
                       id="badge-free-shipping-text"
                       placeholder="Frete Grátis"
                       className="mt-1"
+                      value={localSettings.header_badge_free_shipping_text}
+                      onChange={(e) =>
+                        setLocalSettings({ ...localSettings, header_badge_free_shipping_text: e.target.value })
+                      }
                     />
                   </div>
                   <div>
@@ -674,6 +787,10 @@ const CatalogSettings = () => {
                       placeholder="200.00"
                       step="0.01"
                       className="mt-1"
+                      value={localSettings.header_free_shipping_threshold}
+                      onChange={(e) =>
+                        setLocalSettings({ ...localSettings, header_free_shipping_threshold: parseFloat(e.target.value) || 0 })
+                      }
                     />
                   </div>
                 </div>
@@ -686,7 +803,13 @@ const CatalogSettings = () => {
                     <Shield className="h-4 w-4 text-purple-700" />
                     <Label htmlFor="badge-secure-checkout">Compra Segura</Label>
                   </div>
-                  <Switch id="badge-secure-checkout" defaultChecked />
+                  <Switch 
+                    id="badge-secure-checkout" 
+                    checked={localSettings.header_badge_secure_checkout}
+                    onCheckedChange={(checked) =>
+                      setLocalSettings({ ...localSettings, header_badge_secure_checkout: checked })
+                    }
+                  />
                 </div>
                 <div className="ml-6">
                   <Label htmlFor="badge-secure-checkout-text" className="text-xs text-gray-500">
@@ -696,6 +819,10 @@ const CatalogSettings = () => {
                     id="badge-secure-checkout-text"
                     placeholder="Compra 100% Segura"
                     className="mt-1"
+                    value={localSettings.header_badge_secure_checkout_text}
+                    onChange={(e) =>
+                      setLocalSettings({ ...localSettings, header_badge_secure_checkout_text: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -707,7 +834,13 @@ const CatalogSettings = () => {
                     <Star className="h-4 w-4 text-orange-700" />
                     <Label htmlFor="badge-custom-1">Badge Customizado</Label>
                   </div>
-                  <Switch id="badge-custom-1" />
+                  <Switch 
+                    id="badge-custom-1" 
+                    checked={localSettings.header_badge_custom_1}
+                    onCheckedChange={(checked) =>
+                      setLocalSettings({ ...localSettings, header_badge_custom_1: checked })
+                    }
+                  />
                 </div>
                 <div className="ml-6 space-y-2">
                   <div>
@@ -718,13 +851,22 @@ const CatalogSettings = () => {
                       id="badge-custom-1-text"
                       placeholder="Ex: Garantia de 30 dias"
                       className="mt-1"
+                      value={localSettings.header_badge_custom_1_text}
+                      onChange={(e) =>
+                        setLocalSettings({ ...localSettings, header_badge_custom_1_text: e.target.value })
+                      }
                     />
                   </div>
                   <div>
                     <Label htmlFor="badge-custom-1-icon" className="text-xs text-gray-500">
                       Ícone
                     </Label>
-                    <Select defaultValue="star">
+                    <Select 
+                      value={localSettings.header_badge_custom_1_icon}
+                      onValueChange={(value) =>
+                        setLocalSettings({ ...localSettings, header_badge_custom_1_icon: value })
+                      }
+                    >
                       <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
@@ -769,10 +911,23 @@ const CatalogSettings = () => {
                   { value: 'light', label: 'Claro', bg: '#FFFFFF', text: '#1E293B' },
                   { value: 'gradient', label: 'Gradiente', bg: 'linear-gradient(135deg, #0057FF, #8E2DE2)', text: '#FFFFFF' },
                 ].map((style) => (
-                  <Card key={style.value} className="cursor-pointer hover:shadow-lg transition-all">
+                  <Card 
+                    key={style.value} 
+                    className={`cursor-pointer transition-all ${
+                      localSettings.footer_style === style.value
+                        ? 'ring-2 ring-primary shadow-lg'
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => setLocalSettings({ ...localSettings, footer_style: style.value as any })}
+                  >
                     <CardContent className="p-4">
                       <div className="space-y-3">
-                        <h4 className="font-semibold">{style.label}</h4>
+                        <h4 className="font-semibold flex items-center gap-2">
+                          {style.label}
+                          {localSettings.footer_style === style.value && (
+                            <Badge className="text-xs">Selecionado</Badge>
+                          )}
+                        </h4>
                         <div 
                           className="h-16 rounded-lg flex items-center justify-center text-sm font-medium"
                           style={{ 
