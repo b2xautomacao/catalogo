@@ -1,0 +1,81 @@
+=============================================================================
+GUIA RAPIDO - DOMINIOS CUSTOMIZADOS
+=============================================================================
+
+OPCAO 1: SUBDOMINIO GRATUITO (2 minutos)
+=========================================
+
+1. Admin > Configuracoes > Dominios
+2. Digite subdominio (ex: "mirazzi")
+3. Clique "Verificar"
+4. Marque switch "Habilitar Subdominio"
+5. Selecione modo "Subdominio"
+6. Salvar
+7. ✅ Pronto! https://mirazzi.aoseudispor.com.br
+
+OPCAO 2: DOMINIO PROPRIO (30 minutos)
+======================================
+
+1. ADMIN (5 min):
+   - Admin > Configuracoes > Dominios
+   - Digite dominio (ex: www.mirazzi.com.br)
+   - Clique "Gerar Token"
+   - Copie token
+
+2. DNS (10 min + propagacao):
+   Registro TXT:
+   _vendmais-verification  TXT  [token copiado]
+   
+   Registro CNAME:
+   www  CNAME  app.aoseudispor.com.br
+
+3. AGUARDAR (10-60 min):
+   - DNS propaga em 10-60 minutos
+   - Verifique em: https://dnschecker.org
+
+4. VERIFICAR (2 min):
+   - Volte no admin
+   - Clique "Verificar DNS"
+   - ✅ Badge verde = Verificado
+
+5. SSL (10 min):
+   SSH no servidor:
+   sudo certbot --nginx -d www.mirazzi.com.br
+
+6. ATIVAR (1 min):
+   - Marque switch "Habilitar Dominio Proprio"
+   - Selecione modo "Dominio Proprio"
+   - Salvar
+   - ✅ Pronto! https://www.mirazzi.com.br
+
+=============================================================================
+PERGUNTAS FREQUENTES
+=============================================================================
+
+P: Posso ter subdominio E dominio proprio?
+R: Sim! Configure ambos. Escolha qual sera o "oficial" no modo de acesso.
+
+P: Slug /catalog/mirazzi continua funcionando?
+R: Sim! Sempre disponivel, independente do modo escolhido.
+
+P: Quanto custa?
+R: Subdominio: GRATIS | Dominio proprio: ~R$ 40-80/ano (registro)
+
+P: SSL e automatico?
+R: Subdominio: SIM | Dominio proprio: Executar certbot (1 vez)
+
+P: DNS nao verifica, o que fazer?
+R: 1. Aguarde mais tempo (ate 60 min)
+   2. Verifique se adicionou registro TXT correto
+   3. Use dnschecker.org para debug
+
+=============================================================================
+SUPORTE
+=============================================================================
+
+Documentacao completa: docs/CONFIGURACAO_DOMINIOS.txt
+Video tutorial: [em breve]
+Suporte: suporte@aoseudispor.com.br
+
+=============================================================================
+
