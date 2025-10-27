@@ -30,6 +30,7 @@ import FooterSettings from "./FooterSettings";
 import OrderBumpSettings from "./OrderBumpSettings";
 import ProductPageSettings from "./ProductPageSettings";
 import PixelTrackingSettings from "./PixelTrackingSettings";
+import DomainSettings from "./DomainSettings";
 import {
   Palette,
   Eye,
@@ -50,6 +51,7 @@ import {
   Star,
   ShoppingBag,
   Activity,
+  Link2,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -145,6 +147,16 @@ const CatalogSettings = () => {
     tracking_advanced_matching: false,
     tracking_auto_events: true,
     tracking_debug_mode: false,
+    // Domínios
+    subdomain_enabled: false,
+    subdomain: "",
+    custom_domain: "",
+    custom_domain_enabled: false,
+    custom_domain_verified: false,
+    custom_domain_verification_token: "",
+    custom_domain_verified_at: "",
+    domain_mode: "slug" as "slug" | "subdomain" | "custom_domain",
+    ssl_cert_status: "pending" as "pending" | "active" | "failed",
   });
 
   useEffect(() => {
@@ -237,6 +249,16 @@ const CatalogSettings = () => {
         tracking_advanced_matching: (settings.tracking_advanced_matching as any) || false,
         tracking_auto_events: (settings.tracking_auto_events as any) !== false,
         tracking_debug_mode: (settings.tracking_debug_mode as any) || false,
+        // Domínios
+        subdomain_enabled: (settings.subdomain_enabled as any) || false,
+        subdomain: (settings.subdomain as any) || "",
+        custom_domain: (settings.custom_domain as any) || "",
+        custom_domain_enabled: (settings.custom_domain_enabled as any) || false,
+        custom_domain_verified: (settings.custom_domain_verified as any) || false,
+        custom_domain_verification_token: (settings.custom_domain_verification_token as any) || "",
+        custom_domain_verified_at: (settings.custom_domain_verified_at as any) || "",
+        domain_mode: (settings.domain_mode as any) || "slug",
+        ssl_cert_status: (settings.ssl_cert_status as any) || "pending",
       });
     }
   }, [settings]);
@@ -326,6 +348,16 @@ const CatalogSettings = () => {
       tracking_advanced_matching: localSettings.tracking_advanced_matching,
       tracking_auto_events: localSettings.tracking_auto_events,
       tracking_debug_mode: localSettings.tracking_debug_mode,
+      // Domínios
+      subdomain_enabled: localSettings.subdomain_enabled,
+      subdomain: localSettings.subdomain || null,
+      custom_domain: localSettings.custom_domain || null,
+      custom_domain_enabled: localSettings.custom_domain_enabled,
+      custom_domain_verified: localSettings.custom_domain_verified,
+      custom_domain_verification_token: localSettings.custom_domain_verification_token || null,
+      custom_domain_verified_at: localSettings.custom_domain_verified_at || null,
+      domain_mode: localSettings.domain_mode,
+      ssl_cert_status: localSettings.ssl_cert_status,
     } as any; // Type assertion para novos campos
 
     const result = await updateSettings(updates);
@@ -447,7 +479,7 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-12">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-13">
           <TabsTrigger value="template" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Template</span>
@@ -491,6 +523,10 @@ const CatalogSettings = () => {
           <TabsTrigger value="seo" className="flex items-center gap-1">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">SEO</span>
+          </TabsTrigger>
+          <TabsTrigger value="domains" className="flex items-center gap-1">
+            <Link2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Domínios</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1226,6 +1262,13 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="domains" className="space-y-6">
+          <DomainSettings
+            settings={localSettings}
+            onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
+          />
         </TabsContent>
       </Tabs>
 

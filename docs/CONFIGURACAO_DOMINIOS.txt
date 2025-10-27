@@ -1,0 +1,570 @@
+=============================================================================
+CONFIGURAÇÃO DE DOMÍNIOS CUSTOMIZADOS
+=============================================================================
+
+VISÃO GERAL:
+Sistema permite 3 formas de acesso ao catálogo:
+1. Slug Tradicional: app.aoseudispor.com.br/catalog/mirazzi
+2. Subdomínio Gratuito: mirazzi.aoseudispor.com.br
+3. Domínio Próprio: www.mirazzi.com.br
+
+=============================================================================
+OPÇÃO 1: SLUG TRADICIONAL (Padrão)
+=============================================================================
+
+CONFIGURAÇÃO:
+- Já funciona automaticamente
+- Não requer configuração adicional
+- URL: app.aoseudispor.com.br/catalog/[seu-slug]
+
+VANTAGENS:
+✅ Funciona imediatamente
+✅ Sem configuração de DNS
+✅ SSL automático
+✅ Sem custo
+
+DESVANTAGENS:
+❌ URL longa
+❌ Menos profissional
+❌ Não personalizável
+
+=============================================================================
+OPÇÃO 2: SUBDOMÍNIO GRATUITO
+=============================================================================
+
+PASSO A PASSO:
+
+1. ESCOLHER SUBDOMÍNIO:
+   - Acesse: Admin > Configurações > Domínios
+   - Digite o subdomínio desejado (ex: "mirazzi")
+   - Clique em "Verificar" para confirmar disponibilidade
+   
+   Regras:
+   - Apenas letras minúsculas, números e hífen
+   - Mínimo 3 caracteres
+   - Não pode começar/terminar com hífen
+   - Reservados: www, app, admin, api, mail, ftp, blog, shop, store
+
+2. ATIVAR SUBDOMÍNIO:
+   - Marque o switch "Habilitar Subdomínio"
+   - Selecione modo "Subdomínio" nos radio buttons
+   - Clique em "Salvar"
+
+3. VALIDAÇÃO AUTOMÁTICA:
+   - DNS wildcard já está configurado
+   - SSL é automático via Let's Encrypt
+   - Catálogo fica disponível imediatamente em:
+     https://[seu-subdominio].aoseudispor.com.br
+
+4. TESTAR:
+   - Abra o link gerado em aba anônima
+   - Deve carregar seu catálogo diretamente
+   - Verifique se SSL está ativo (cadeado verde)
+
+VANTAGENS:
+✅ Gratuito
+✅ Configuração simples (2 minutos)
+✅ SSL automático
+✅ URL profissional
+✅ Sem necessidade de domínio próprio
+
+DESVANTAGENS:
+❌ Limitado ao domínio .aoseudispor.com.br
+❌ Menos flexível que domínio próprio
+
+=============================================================================
+OPÇÃO 3: DOMÍNIO PRÓPRIO
+=============================================================================
+
+REQUISITOS PRÉVIOS:
+- Ter um domínio registrado (ex: mirazzi.com.br)
+- Acesso ao painel DNS do domínio (Registro.br, GoDaddy, etc)
+- Acesso SSH ao servidor (para SSL)
+
+---
+
+PASSO 1: CONFIGURAR DOMÍNIO NO ADMIN
+-------------------------------------
+1. Acesse: Admin > Configurações > Domínios
+2. Digite seu domínio completo (ex: www.mirazzi.com.br)
+3. Clique em "Gerar Token"
+4. Copie o token gerado
+
+---
+
+PASSO 2: CONFIGURAR DNS
+-----------------------
+
+A. Registro TXT (Verificação):
+   Tipo: TXT
+   Nome: _vendmais-verification
+   Valor: [token copiado acima]
+   TTL: 3600 (ou padrão)
+
+B. Registro CNAME ou A (Apontamento):
+   
+   OPÇÃO A - CNAME (Recomendado):
+   Tipo: CNAME
+   Nome: www (ou @ para domínio raiz)
+   Valor: app.aoseudispor.com.br
+   TTL: 3600
+
+   OPÇÃO B - Registro A:
+   Tipo: A
+   Nome: www (ou @ para domínio raiz)
+   Valor: [IP do servidor - consulte suporte]
+   TTL: 3600
+
+C. Aguardar Propagação:
+   - DNS leva 5-60 minutos para propagar
+   - Use https://dnschecker.org para verificar
+   - Procure pelo registro TXT em _vendmais-verification.[seu-dominio]
+
+---
+
+PASSO 3: VERIFICAR NO ADMIN
+----------------------------
+1. Aguarde 10-60 minutos (propagação DNS)
+2. Volte em: Admin > Configurações > Domínios
+3. Clique em "Verificar DNS"
+4. ✅ Deve aparecer: "Domínio verificado com sucesso!"
+
+Se falhar:
+- Aguarde mais tempo (DNS pode demorar até 24h em casos raros)
+- Verifique se registros foram adicionados corretamente
+- Use dig/nslookup para debug:
+  dig TXT _vendmais-verification.www.mirazzi.com.br
+
+---
+
+PASSO 4: CONFIGURAR SSL (HTTPS)
+--------------------------------
+
+MÉTODO: Let's Encrypt com Certbot
+
+A. Instalar Certbot (se não instalado):
+   Ubuntu/Debian:
+   sudo apt update
+   sudo apt install certbot python3-certbot-nginx
+
+   CentOS/RHEL:
+   sudo yum install certbot python3-certbot-nginx
+
+B. Gerar Certificado:
+   sudo certbot --nginx -d www.mirazzi.com.br
+
+C. Certificado é gerado automaticamente:
+   - Certbot detecta Nginx
+   - Configura SSL automaticamente
+   - Redireciona HTTP → HTTPS
+   - Renovação automática configurada
+
+D. Testar:
+   - Acesse: https://www.mirazzi.com.br
+   - Deve carregar com cadeado verde
+   - Certificado válido por 90 dias (renovação automática)
+
+E. Renovação Automática:
+   # Certbot adiciona cron job automaticamente
+   # Testar renovação:
+   sudo certbot renew --dry-run
+
+---
+
+PASSO 5: ATIVAR NO ADMIN
+-------------------------
+1. Volte em: Admin > Configurações > Domínios
+2. Marque switch "Habilitar Domínio Próprio"
+3. Selecione modo "Domínio Próprio" nos radio buttons
+4. Clique em "Salvar"
+5. ✅ Catálogo ficará disponível em: https://www.mirazzi.com.br
+
+---
+
+VANTAGENS:
+✅ Marca própria (www.sualoja.com.br)
+✅ Máxima profissionalidade
+✅ SEO otimizado
+✅ Credibilidade aumentada
+✅ Controle total
+
+DESVANTAGENS:
+❌ Requer domínio próprio (custo)
+❌ Configuração mais complexa
+❌ Requer acesso SSH para SSL
+❌ Validação obrigatória
+
+=============================================================================
+TROUBLESHOOTING
+=============================================================================
+
+PROBLEMA: Subdomínio não está disponível
+-----------------------------------------
+Causa: Outro cliente já está usando
+Solução: Escolha outro subdomínio
+
+PROBLEMA: Verificação DNS falha
+--------------------------------
+Causas possíveis:
+1. DNS ainda não propagou (aguarde mais)
+2. Registro TXT não foi adicionado corretamente
+3. Registro TXT tem valor errado
+
+Debug:
+# Linux/Mac
+dig TXT _vendmais-verification.www.seudominio.com.br
+
+# Windows
+nslookup -type=TXT _vendmais-verification.www.seudominio.com.br
+
+# Online
+https://dnschecker.org
+
+Solução:
+1. Verifique registros no painel DNS
+2. Copie token novamente (sem espaços)
+3. Aguarde mais tempo
+4. Teste com ferramenta online
+
+PROBLEMA: SSL não funciona
+--------------------------
+Causas:
+1. Certbot não instalado
+2. Nginx não configurado
+3. Portas 80/443 bloqueadas
+
+Solução:
+sudo certbot --nginx -d seudominio.com.br --dry-run
+# Se falhar, verifique:
+sudo nginx -t
+sudo systemctl status nginx
+sudo ufw status
+
+PROBLEMA: Catálogo não carrega em domínio próprio
+--------------------------------------------------
+Checklist:
+1. ✅ Domínio verificado? (badge verde no admin)
+2. ✅ Switch "Habilitar Domínio Próprio" marcado?
+3. ✅ Modo selecionado: "Domínio Próprio"?
+4. ✅ Salvou as configurações?
+5. ✅ DNS aponta para servidor correto?
+6. ✅ SSL configurado?
+
+PROBLEMA: SSL em subdomínio
+----------------------------
+Subdomínios usam certificado wildcard automático.
+Se não funcionar:
+1. Verifique se *.aoseudispor.com.br tem certificado
+2. Contate suporte técnico
+
+PROBLEMA: Erro "Loja não encontrada"
+-------------------------------------
+Causas:
+1. Subdomínio/domínio não salvo no banco
+2. Switch não está ativado
+3. Modo errado selecionado
+
+Solução:
+1. Verifique configurações salvas
+2. Teste com slug primeiro (sempre funciona)
+3. Recarregue página admin
+4. Tente salvar novamente
+
+=============================================================================
+MÚLTIPLOS DOMÍNIOS
+=============================================================================
+
+CENÁRIO: Quero que catálogo funcione em TODAS as URLs
+
+SOLUÇÃO:
+Mantenha todas as opções configuradas simultaneamente:
+1. Slug: Sempre disponível (não pode desativar)
+2. Subdomínio: Configure e ative
+3. Domínio próprio: Configure e ative
+
+Selecione o "Modo de Acesso" conforme preferência:
+- "Slug": Links compartilhados usarão app.aoseudispor.com.br/catalog/xxx
+- "Subdomínio": Links compartilhados usarão xxx.aoseudispor.com.br
+- "Domínio Próprio": Links compartilhados usarão www.xxx.com.br
+
+IMPORTANTE: Catálogo ficará acessível em TODAS as URLs configuradas,
+mas o modo escolhido define qual URL será compartilhada oficialmente.
+
+=============================================================================
+DNS - EXEMPLOS DE CONFIGURAÇÃO
+=============================================================================
+
+EXEMPLO 1: Registro.br
+----------------------
+1. Acesse painel.registro.br
+2. Clique em "DNS"
+3. Adicione:
+   
+   Registro TXT:
+   _vendmais-verification  IN  TXT  "vendmais-abc123..."
+   
+   Registro CNAME:
+   www  IN  CNAME  app.aoseudispor.com.br.
+
+4. Salvar e aguardar
+
+EXEMPLO 2: Cloudflare
+---------------------
+1. Dashboard → DNS → Add Record
+2. Tipo: TXT
+   Nome: _vendmais-verification
+   Conteúdo: vendmais-abc123...
+   Proxy: DNS only (cinza)
+
+3. Add Record
+4. Tipo: CNAME
+   Nome: www
+   Alvo: app.aoseudispor.com.br
+   Proxy: Proxied (laranja) ou DNS only (cinza)
+
+5. Save
+
+EXEMPLO 3: GoDaddy
+------------------
+1. My Products → Domains → DNS
+2. Add → TXT
+   Host: _vendmais-verification
+   TXT Value: vendmais-abc123...
+   TTL: 1 Hour
+
+3. Add → CNAME
+   Host: www
+   Points to: app.aoseudispor.com.br
+   TTL: 1 Hour
+
+4. Save
+
+=============================================================================
+SSL - CONFIGURAÇÃO DETALHADA
+=============================================================================
+
+MÉTODO 1: Certbot + Nginx (Recomendado)
+----------------------------------------
+# 1. Instalar Certbot
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
+
+# 2. Gerar certificado
+sudo certbot --nginx -d www.mirazzi.com.br
+
+# 3. Certbot faz tudo automaticamente:
+   - Gera certificado
+   - Configura Nginx
+   - Ativa HTTPS
+   - Configura renovação automática
+
+# 4. Verificar renovação automática
+sudo certbot renew --dry-run
+
+# 5. Verificar certificado
+openssl s_client -connect www.mirazzi.com.br:443 -servername www.mirazzi.com.br
+
+MÉTODO 2: Certbot Standalone
+-----------------------------
+# Se Nginx não estiver rodando:
+sudo certbot certonly --standalone -d www.mirazzi.com.br
+
+# Certificados ficam em:
+# /etc/letsencrypt/live/www.mirazzi.com.br/fullchain.pem
+# /etc/letsencrypt/live/www.mirazzi.com.br/privkey.pem
+
+# Configure manualmente no Nginx:
+server {
+    listen 443 ssl;
+    server_name www.mirazzi.com.br;
+    
+    ssl_certificate /etc/letsencrypt/live/www.mirazzi.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/www.mirazzi.com.br/privkey.pem;
+    
+    # ... resto da configuração
+}
+
+RENOVAÇÃO AUTOMÁTICA:
+---------------------
+Certbot adiciona entrada no cron/systemd:
+/etc/cron.d/certbot
+
+Para verificar:
+sudo systemctl list-timers | grep certbot
+
+Forçar renovação manual:
+sudo certbot renew
+
+=============================================================================
+CONFIGURAÇÃO NO PAINEL ADMIN
+=============================================================================
+
+LOCALIZAÇÃO:
+Configurações do Catálogo > Aba "Domínios"
+
+SEÇÃO 1: Modo de Acesso
+------------------------
+Radio buttons para escolher:
+( ) Slug Tradicional - app.aoseudispor.com.br/catalog/[slug]
+( ) Subdomínio - [subdominio].aoseudispor.com.br
+( ) Domínio Próprio - www.[seudominio].com.br
+
+Este modo define qual URL será usada em:
+- Links compartilháveis
+- QR Codes
+- Integração WhatsApp
+- Redes sociais
+
+IMPORTANTE: Catálogo ficará acessível em TODAS as URLs configuradas,
+mas o modo escolhido define a URL "oficial" compartilhada.
+
+SEÇÃO 2: Configuração de Subdomínio
+------------------------------------
+Campo: Digite o subdomínio desejado
+Botão: "Verificar" - Valida disponibilidade
+Preview: Mostra URL completa
+Switch: Habilitar/Desabilitar
+
+Status:
+✅ Disponível - pode usar
+❌ Em uso - escolha outro
+⏳ Verificando - aguarde
+
+SEÇÃO 3: Configuração de Domínio Próprio
+-----------------------------------------
+Campo: Digite domínio completo
+Botão: "Gerar Token" - Cria token único
+Instruções: Configuração DNS detalhada
+Botão: "Verificar DNS" - Valida configuração
+Status: Pendente/Verificado/Falhou
+Instruções SSL: Comandos do certbot
+
+Badge Verde "Verificado" = Pronto para usar
+Badge Amarelo "Pendente" = Aguardando verificação
+Badge Vermelho "Falhou" = Erro na verificação
+
+SEÇÃO 4: Links Disponíveis
+---------------------------
+Mostra todas URLs configuradas com:
+- Botão copiar
+- Botão abrir em nova aba
+- Status de cada URL
+
+=============================================================================
+FLUXO COMPLETO - DOMÍNIO PRÓPRIO
+=============================================================================
+
+TEMPO ESTIMADO: 30-60 minutos
+
+1. REGISTRAR DOMÍNIO (se não tiver)
+   - Registro.br, GoDaddy, Namecheap, etc
+   - Custo: R$ 40-80/ano
+
+2. CONFIGURAR NO ADMIN (5 min)
+   - Digite domínio
+   - Gere token
+   - Copie instruções
+
+3. CONFIGURAR DNS (10 min + propagação)
+   - Adicione registro TXT
+   - Adicione registro CNAME
+   - Aguarde propagação (5-60 min)
+
+4. VERIFICAR DNS (2 min)
+   - Clique em "Verificar DNS"
+   - Aguarde confirmação
+
+5. CONFIGURAR SSL (10 min)
+   - Acesse servidor via SSH
+   - Execute certbot
+   - Teste HTTPS
+
+6. ATIVAR (1 min)
+   - Marque switch "Habilitar"
+   - Selecione modo "Domínio Próprio"
+   - Salve
+
+7. VALIDAR (2 min)
+   - Abra https://www.seudominio.com.br
+   - Verifique cadeado verde (SSL)
+   - Teste navegação no catálogo
+
+TOTAL: ~30 min de trabalho + 30-60 min de espera (DNS)
+
+=============================================================================
+MIGRANDO ENTRE MODOS
+=============================================================================
+
+DE SLUG PARA SUBDOMÍNIO:
+1. Configure subdomínio (disponível imediatamente)
+2. Teste o subdomínio
+3. Mude modo para "Subdomínio"
+4. Salve
+5. Slug anterior continua funcionando (compatibilidade)
+
+DE SUBDOMÍNIO PARA DOMÍNIO PRÓPRIO:
+1. Configure domínio próprio
+2. Aguarde verificação DNS
+3. Configure SSL
+4. Mude modo para "Domínio Próprio"
+5. Salve
+6. Subdomínio e slug continuam funcionando
+
+ROLLBACK:
+Se algo der errado, sempre pode voltar para "Slug"
+que funciona sem configuração adicional.
+
+=============================================================================
+CHECKLIST DE VALIDAÇÃO
+=============================================================================
+
+SUBDOMÍNIO:
+[ ] Subdomínio escolhido (sem caracteres especiais)
+[ ] Verificado como disponível
+[ ] Switch "Habilitar" marcado
+[ ] Modo "Subdomínio" selecionado
+[ ] Configurações salvas
+[ ] URL abre em aba anônima
+[ ] SSL ativo (cadeado verde)
+[ ] Catálogo carrega corretamente
+
+DOMÍNIO PRÓPRIO:
+[ ] Domínio registrado e ativo
+[ ] Token de verificação gerado
+[ ] Registro TXT adicionado no DNS
+[ ] Registro CNAME/A adicionado no DNS
+[ ] DNS propagado (verificar com dnschecker.org)
+[ ] Verificação DNS passou (badge verde)
+[ ] Certbot executado com sucesso
+[ ] SSL ativo (https funciona)
+[ ] Switch "Habilitar" marcado
+[ ] Modo "Domínio Próprio" selecionado
+[ ] Configurações salvas
+[ ] URL abre corretamente
+[ ] Catálogo carrega sem erros
+
+=============================================================================
+SUPORTE TÉCNICO
+=============================================================================
+
+CONTATOS:
+- Suporte DNS: Seu provedor de domínio
+- Suporte SSL: https://letsencrypt.org/docs/
+- Suporte Plataforma: suporte@aoseudispor.com.br
+
+FERRAMENTAS ÚTEIS:
+- DNS Checker: https://dnschecker.org
+- SSL Test: https://www.ssllabs.com/ssltest/
+- Whois Lookup: https://registro.br/tecnologia/ferramentas/whois/
+
+LOGS:
+- DNS: /var/log/nginx/error.log
+- SSL: /var/log/letsencrypt/letsencrypt.log
+- Aplicação: Console do navegador (F12)
+
+=============================================================================
+IMPLEMENTADO COM SUCESSO! 🎉
+Sistema completo de domínios customizados
+Slug + Subdomínio + Domínio Próprio
+=============================================================================
+

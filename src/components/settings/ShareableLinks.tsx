@@ -83,10 +83,29 @@ const ShareableLinks = () => {
   const generateLinks = () => {
     if (!currentStore || !settings) return { catalogUrl: '', retailUrl: '', wholesaleUrl: '' };
 
-    const baseUrl = window.location.origin;
     const identifier = currentStore.url_slug || currentStore.id;
+    const domainMode = (settings as any).domain_mode || 'slug';
     
-    console.log('ShareableLinks: Gerando URLs para modo:', settings.catalog_mode, { 
+    // Determinar URL base conforme domain_mode
+    let baseUrl = '';
+    let pathPrefix = '';
+    
+    if (domainMode === 'subdomain' && (settings as any).subdomain) {
+      baseUrl = `https://${(settings as any).subdomain}.aoseudispor.com.br`;
+      pathPrefix = ''; // Sem /catalog/ no subdomínio
+    } else if (domainMode === 'custom_domain' && (settings as any).custom_domain) {
+      baseUrl = `https://${(settings as any).custom_domain}`;
+      pathPrefix = ''; // Sem /catalog/ no domínio próprio
+    } else {
+      baseUrl = 'https://app.aoseudispor.com.br';
+      pathPrefix = `/catalog/${identifier}`; // Com /catalog/ no slug tradicional
+    }
+    
+    console.log('ShareableLinks: Gerando URLs para modo:', { 
+      catalog_mode: settings.catalog_mode,
+      domain_mode: domainMode,
+      baseUrl,
+      pathPrefix,
       storeId: currentStore.id, 
       urlSlug: currentStore.url_slug, 
       finalIdentifier: identifier 
@@ -96,25 +115,25 @@ const ShareableLinks = () => {
     switch (settings.catalog_mode) {
       case 'separated':
         return {
-          catalogUrl: `${baseUrl}/catalog/${identifier}`,
-          retailUrl: `${baseUrl}/catalog/${identifier}?type=retail`,
-          wholesaleUrl: `${baseUrl}/catalog/${identifier}?type=wholesale`
+          catalogUrl: `${baseUrl}${pathPrefix}`,
+          retailUrl: `${baseUrl}${pathPrefix}?type=retail`,
+          wholesaleUrl: pathPrefix ? `${baseUrl}/wholesale/${identifier}` : `${baseUrl}?type=wholesale`
         };
       
       case 'hybrid':
       case 'toggle':
         // Para híbrido e toggle, um único link
         return {
-          catalogUrl: `${baseUrl}/catalog/${identifier}`,
+          catalogUrl: `${baseUrl}${pathPrefix}`,
           retailUrl: '',
           wholesaleUrl: ''
         };
       
       default:
         return {
-          catalogUrl: `${baseUrl}/catalog/${identifier}`,
-          retailUrl: `${baseUrl}/catalog/${identifier}?type=retail`,
-          wholesaleUrl: `${baseUrl}/catalog/${identifier}?type=wholesale`
+          catalogUrl: `${baseUrl}${pathPrefix}`,
+          retailUrl: `${baseUrl}${pathPrefix}?type=retail`,
+          wholesaleUrl: pathPrefix ? `${baseUrl}/wholesale/${identifier}` : `${baseUrl}?type=wholesale`
         };
     }
   };

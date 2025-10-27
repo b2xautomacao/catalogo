@@ -118,6 +118,33 @@ ADD COLUMN IF NOT EXISTS tracking_auto_events boolean DEFAULT true,
 ADD COLUMN IF NOT EXISTS tracking_debug_mode boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS custom_events_config jsonb DEFAULT '[]'::jsonb;
 
+-- ============================================================================
+-- DOMÍNIOS CUSTOMIZADOS
+-- ============================================================================
+
+-- Subdomínio e Domínio Próprio
+ALTER TABLE store_settings
+ADD COLUMN IF NOT EXISTS subdomain_enabled boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS subdomain text DEFAULT NULL UNIQUE,
+ADD COLUMN IF NOT EXISTS custom_domain text DEFAULT NULL UNIQUE,
+ADD COLUMN IF NOT EXISTS custom_domain_enabled boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS custom_domain_verified boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS custom_domain_verification_token text DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS custom_domain_verified_at timestamp with time zone DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS domain_mode text DEFAULT 'slug' CHECK (domain_mode IN ('slug', 'subdomain', 'custom_domain')),
+ADD COLUMN IF NOT EXISTS ssl_cert_status text DEFAULT 'pending' CHECK (ssl_cert_status IN ('pending', 'active', 'failed'));
+
+-- Constraint para garantir subdomínio válido
+ALTER TABLE store_settings
+ADD CONSTRAINT subdomain_format CHECK (
+  subdomain IS NULL OR 
+  subdomain ~ '^[a-z0-9-]+$'
+);
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_store_settings_subdomain ON store_settings(LOWER(subdomain)) WHERE subdomain IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_store_settings_custom_domain ON store_settings(LOWER(custom_domain)) WHERE custom_domain IS NOT NULL;
+
 -- Atualizar registros existentes
 UPDATE store_settings
 SET 

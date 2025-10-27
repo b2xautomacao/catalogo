@@ -35,6 +35,7 @@ import Security from "./pages/Security";
 import AppLayout from "./components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import DomainRouter from "./components/routing/DomainRouter";
 
 const queryClient = new QueryClient();
 
@@ -57,9 +58,15 @@ function App() {
                     element={<OrderTracking />}
                   />
 
-                  {/* Dashboard principal */}
+                  {/* Rota raiz inteligente - detecta domínio */}
                   <Route
                     path="/"
+                    element={<DomainRouter />}
+                  />
+
+                  {/* Dashboard principal (quando logado) */}
+                  <Route
+                    path="/dashboard"
                     element={
                       <ProtectedRoute>
                         <AppLayout title="Dashboard">

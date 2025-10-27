@@ -131,6 +131,16 @@ export interface CatalogSettingsData {
   tracking_auto_events?: boolean;
   tracking_debug_mode?: boolean;
   custom_events_config?: any;
+  // Domínios Customizados
+  subdomain_enabled?: boolean;
+  subdomain?: string;
+  custom_domain?: string;
+  custom_domain_enabled?: boolean;
+  custom_domain_verified?: boolean;
+  custom_domain_verification_token?: string;
+  custom_domain_verified_at?: string;
+  domain_mode?: "slug" | "subdomain" | "custom_domain";
+  ssl_cert_status?: "pending" | "active" | "failed";
   // Propriedades adicionais para compatibilidade com templates
   colors?: {
     primary: string;
@@ -369,6 +379,16 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           tracking_auto_events: (data as any).tracking_auto_events,
           tracking_debug_mode: (data as any).tracking_debug_mode,
           custom_events_config: (data as any).custom_events_config,
+          // Domínios
+          subdomain_enabled: (data as any).subdomain_enabled,
+          subdomain: (data as any).subdomain,
+          custom_domain: (data as any).custom_domain,
+          custom_domain_enabled: (data as any).custom_domain_enabled,
+          custom_domain_verified: (data as any).custom_domain_verified,
+          custom_domain_verification_token: (data as any).custom_domain_verification_token,
+          custom_domain_verified_at: (data as any).custom_domain_verified_at,
+          domain_mode: (data as any).domain_mode,
+          ssl_cert_status: (data as any).ssl_cert_status,
         });
       } else {
         console.log(
