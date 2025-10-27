@@ -97,6 +97,7 @@ export const useSmartColors = (storeId?: string, autoExtract: boolean = false): 
     try {
       console.log('💾 Salvando paleta no banco:', storeIdToSave);
 
+      // Usar type assertion para contornar tipos não atualizados
       const { error } = await supabase
         .from('store_settings')
         .update({
@@ -106,7 +107,7 @@ export const useSmartColors = (storeId?: string, autoExtract: boolean = false): 
           accent_color: paletteToSave.accent,
           background_color: paletteToSave.background,
           text_color: paletteToSave.text,
-        })
+        } as any)
         .eq('store_id', storeIdToSave);
 
       if (error) {
@@ -140,11 +141,12 @@ export const useSmartColors = (storeId?: string, autoExtract: boolean = false): 
       if (!storeId) return;
 
       try {
+        // Usar type assertion para contornar tipos não atualizados
         const { data, error } = await supabase
           .from('store_settings')
-          .select('logo_color_palette, primary_color, secondary_color, accent_color, background_color, text_color')
+          .select('*')
           .eq('store_id', storeId)
-          .maybeSingle();
+          .maybeSingle() as any;
 
         if (error) {
           console.error('Erro ao carregar paleta salva:', error);
