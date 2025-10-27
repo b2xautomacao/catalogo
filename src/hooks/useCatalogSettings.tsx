@@ -77,6 +77,34 @@ export interface CatalogSettingsData {
   header_badge_custom_1?: boolean;
   header_badge_custom_1_text?: string;
   header_badge_custom_1_icon?: string;
+  // Configurações da Página do Produto
+  product_show_urgency_badges?: boolean;
+  product_show_low_stock_badge?: boolean;
+  product_low_stock_threshold?: number;
+  product_show_best_seller_badge?: boolean;
+  product_show_sales_count?: boolean;
+  product_show_views_count?: boolean;
+  product_show_free_shipping_badge?: boolean;
+  product_show_fast_delivery_badge?: boolean;
+  product_show_social_proof_carousel?: boolean;
+  product_social_proof_autorotate?: boolean;
+  product_social_proof_interval?: number;
+  product_show_ratings?: boolean;
+  product_show_rating_distribution?: boolean;
+  product_show_trust_section?: boolean;
+  product_trust_free_shipping?: boolean;
+  product_trust_money_back?: boolean;
+  product_trust_fast_delivery?: boolean;
+  product_trust_secure_payment?: boolean;
+  product_trust_delivery_days?: string;
+  product_trust_return_days?: number;
+  product_show_videos?: boolean;
+  product_show_testimonials?: boolean;
+  product_testimonials_max_display?: number;
+  product_show_size_chart?: boolean;
+  product_size_chart_default_open?: boolean;
+  product_show_care_section?: boolean;
+  product_care_section_default_open?: boolean;
   // Propriedades adicionais para compatibilidade com templates
   colors?: {
     primary: string;
@@ -261,6 +289,34 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           header_badge_custom_1: (data as any).header_badge_custom_1,
           header_badge_custom_1_text: (data as any).header_badge_custom_1_text,
           header_badge_custom_1_icon: (data as any).header_badge_custom_1_icon,
+          // Configurações da Página do Produto
+          product_show_urgency_badges: (data as any).product_show_urgency_badges,
+          product_show_low_stock_badge: (data as any).product_show_low_stock_badge,
+          product_low_stock_threshold: (data as any).product_low_stock_threshold,
+          product_show_best_seller_badge: (data as any).product_show_best_seller_badge,
+          product_show_sales_count: (data as any).product_show_sales_count,
+          product_show_views_count: (data as any).product_show_views_count,
+          product_show_free_shipping_badge: (data as any).product_show_free_shipping_badge,
+          product_show_fast_delivery_badge: (data as any).product_show_fast_delivery_badge,
+          product_show_social_proof_carousel: (data as any).product_show_social_proof_carousel,
+          product_social_proof_autorotate: (data as any).product_social_proof_autorotate,
+          product_social_proof_interval: (data as any).product_social_proof_interval,
+          product_show_ratings: (data as any).product_show_ratings,
+          product_show_rating_distribution: (data as any).product_show_rating_distribution,
+          product_show_trust_section: (data as any).product_show_trust_section,
+          product_trust_free_shipping: (data as any).product_trust_free_shipping,
+          product_trust_money_back: (data as any).product_trust_money_back,
+          product_trust_fast_delivery: (data as any).product_trust_fast_delivery,
+          product_trust_secure_payment: (data as any).product_trust_secure_payment,
+          product_trust_delivery_days: (data as any).product_trust_delivery_days,
+          product_trust_return_days: (data as any).product_trust_return_days,
+          product_show_videos: (data as any).product_show_videos,
+          product_show_testimonials: (data as any).product_show_testimonials,
+          product_testimonials_max_display: (data as any).product_testimonials_max_display,
+          product_show_size_chart: (data as any).product_show_size_chart,
+          product_size_chart_default_open: (data as any).product_size_chart_default_open,
+          product_show_care_section: (data as any).product_show_care_section,
+          product_care_section_default_open: (data as any).product_care_section_default_open,
         });
       } else {
         console.log(

@@ -28,6 +28,7 @@ import ShareableLinks from "./ShareableLinks";
 import MobileLayoutSettings from "./MobileLayoutSettings";
 import FooterSettings from "./FooterSettings";
 import OrderBumpSettings from "./OrderBumpSettings";
+import ProductPageSettings from "./ProductPageSettings";
 import {
   Palette,
   Eye,
@@ -46,6 +47,7 @@ import {
   Truck,
   Shield,
   Star,
+  ShoppingBag,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -90,6 +92,34 @@ const CatalogSettings = () => {
     header_badge_custom_1: false,
     header_badge_custom_1_text: "",
     header_badge_custom_1_icon: "star",
+    // Configurações da Página do Produto
+    product_show_urgency_badges: true,
+    product_show_low_stock_badge: true,
+    product_low_stock_threshold: 10,
+    product_show_best_seller_badge: true,
+    product_show_sales_count: true,
+    product_show_views_count: true,
+    product_show_free_shipping_badge: true,
+    product_show_fast_delivery_badge: true,
+    product_show_social_proof_carousel: true,
+    product_social_proof_autorotate: true,
+    product_social_proof_interval: 4000,
+    product_show_ratings: true,
+    product_show_rating_distribution: true,
+    product_show_trust_section: true,
+    product_trust_free_shipping: true,
+    product_trust_money_back: true,
+    product_trust_fast_delivery: true,
+    product_trust_secure_payment: true,
+    product_trust_delivery_days: "2-5",
+    product_trust_return_days: 7,
+    product_show_videos: true,
+    product_show_testimonials: true,
+    product_testimonials_max_display: 3,
+    product_show_size_chart: true,
+    product_size_chart_default_open: false,
+    product_show_care_section: true,
+    product_care_section_default_open: false,
   });
 
   useEffect(() => {
@@ -131,6 +161,34 @@ const CatalogSettings = () => {
         header_badge_custom_1: (settings.header_badge_custom_1 as any) || false,
         header_badge_custom_1_text: (settings.header_badge_custom_1_text as any) || "",
         header_badge_custom_1_icon: (settings.header_badge_custom_1_icon as any) || "star",
+        // Configurações da Página do Produto
+        product_show_urgency_badges: (settings.product_show_urgency_badges as any) !== false,
+        product_show_low_stock_badge: (settings.product_show_low_stock_badge as any) !== false,
+        product_low_stock_threshold: (settings.product_low_stock_threshold as any) || 10,
+        product_show_best_seller_badge: (settings.product_show_best_seller_badge as any) !== false,
+        product_show_sales_count: (settings.product_show_sales_count as any) !== false,
+        product_show_views_count: (settings.product_show_views_count as any) !== false,
+        product_show_free_shipping_badge: (settings.product_show_free_shipping_badge as any) !== false,
+        product_show_fast_delivery_badge: (settings.product_show_fast_delivery_badge as any) !== false,
+        product_show_social_proof_carousel: (settings.product_show_social_proof_carousel as any) !== false,
+        product_social_proof_autorotate: (settings.product_social_proof_autorotate as any) !== false,
+        product_social_proof_interval: (settings.product_social_proof_interval as any) || 4000,
+        product_show_ratings: (settings.product_show_ratings as any) !== false,
+        product_show_rating_distribution: (settings.product_show_rating_distribution as any) !== false,
+        product_show_trust_section: (settings.product_show_trust_section as any) !== false,
+        product_trust_free_shipping: (settings.product_trust_free_shipping as any) !== false,
+        product_trust_money_back: (settings.product_trust_money_back as any) !== false,
+        product_trust_fast_delivery: (settings.product_trust_fast_delivery as any) !== false,
+        product_trust_secure_payment: (settings.product_trust_secure_payment as any) !== false,
+        product_trust_delivery_days: (settings.product_trust_delivery_days as any) || "2-5",
+        product_trust_return_days: (settings.product_trust_return_days as any) || 7,
+        product_show_videos: (settings.product_show_videos as any) !== false,
+        product_show_testimonials: (settings.product_show_testimonials as any) !== false,
+        product_testimonials_max_display: (settings.product_testimonials_max_display as any) || 3,
+        product_show_size_chart: (settings.product_show_size_chart as any) !== false,
+        product_size_chart_default_open: (settings.product_size_chart_default_open as any) || false,
+        product_show_care_section: (settings.product_show_care_section as any) !== false,
+        product_care_section_default_open: (settings.product_care_section_default_open as any) || false,
       });
     }
   }, [settings]);
@@ -169,6 +227,34 @@ const CatalogSettings = () => {
       header_badge_custom_1: localSettings.header_badge_custom_1,
       header_badge_custom_1_text: localSettings.header_badge_custom_1_text || null,
       header_badge_custom_1_icon: localSettings.header_badge_custom_1_icon,
+      // Página do Produto
+      product_show_urgency_badges: localSettings.product_show_urgency_badges,
+      product_show_low_stock_badge: localSettings.product_show_low_stock_badge,
+      product_low_stock_threshold: localSettings.product_low_stock_threshold,
+      product_show_best_seller_badge: localSettings.product_show_best_seller_badge,
+      product_show_sales_count: localSettings.product_show_sales_count,
+      product_show_views_count: localSettings.product_show_views_count,
+      product_show_free_shipping_badge: localSettings.product_show_free_shipping_badge,
+      product_show_fast_delivery_badge: localSettings.product_show_fast_delivery_badge,
+      product_show_social_proof_carousel: localSettings.product_show_social_proof_carousel,
+      product_social_proof_autorotate: localSettings.product_social_proof_autorotate,
+      product_social_proof_interval: localSettings.product_social_proof_interval,
+      product_show_ratings: localSettings.product_show_ratings,
+      product_show_rating_distribution: localSettings.product_show_rating_distribution,
+      product_show_trust_section: localSettings.product_show_trust_section,
+      product_trust_free_shipping: localSettings.product_trust_free_shipping,
+      product_trust_money_back: localSettings.product_trust_money_back,
+      product_trust_fast_delivery: localSettings.product_trust_fast_delivery,
+      product_trust_secure_payment: localSettings.product_trust_secure_payment,
+      product_trust_delivery_days: localSettings.product_trust_delivery_days,
+      product_trust_return_days: localSettings.product_trust_return_days,
+      product_show_videos: localSettings.product_show_videos,
+      product_show_testimonials: localSettings.product_show_testimonials,
+      product_testimonials_max_display: localSettings.product_testimonials_max_display,
+      product_show_size_chart: localSettings.product_show_size_chart,
+      product_size_chart_default_open: localSettings.product_size_chart_default_open,
+      product_show_care_section: localSettings.product_show_care_section,
+      product_care_section_default_open: localSettings.product_care_section_default_open,
     } as any; // Type assertion para novos campos
 
     const result = await updateSettings(updates);
@@ -290,7 +376,7 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-11">
           <TabsTrigger value="template" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Template</span>
@@ -302,6 +388,10 @@ const CatalogSettings = () => {
           <TabsTrigger value="appearance" className="flex items-center gap-1">
             <Zap className="h-4 w-4" />
             <span className="hidden sm:inline">Aparência</span>
+          </TabsTrigger>
+          <TabsTrigger value="product-page" className="flex items-center gap-1">
+            <ShoppingBag className="h-4 w-4" />
+            <span className="hidden sm:inline">Produto</span>
           </TabsTrigger>
           <TabsTrigger value="mobile" className="flex items-center gap-1">
             <Smartphone className="h-4 w-4" />
@@ -944,6 +1034,13 @@ const CatalogSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="product-page" className="space-y-6">
+          <ProductPageSettings 
+            settings={localSettings}
+            onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
+          />
         </TabsContent>
 
         <TabsContent value="mobile" className="space-y-6">

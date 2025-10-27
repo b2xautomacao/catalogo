@@ -33,6 +33,50 @@ ALTER TABLE store_settings
 ADD COLUMN IF NOT EXISTS logo_color_palette jsonb DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS auto_extract_colors boolean DEFAULT false;
 
+-- ============================================================================
+-- CONFIGURAÇÕES DA PÁGINA DO PRODUTO
+-- ============================================================================
+
+-- Badges de Urgência
+ALTER TABLE store_settings
+ADD COLUMN IF NOT EXISTS product_show_urgency_badges boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_low_stock_badge boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_low_stock_threshold integer DEFAULT 10,
+ADD COLUMN IF NOT EXISTS product_show_best_seller_badge boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_sales_count boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_views_count boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_free_shipping_badge boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_fast_delivery_badge boolean DEFAULT true,
+
+-- Prova Social (Carrossel)
+ADD COLUMN IF NOT EXISTS product_show_social_proof_carousel boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_social_proof_autorotate boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_social_proof_interval integer DEFAULT 4000,
+
+-- Avaliações
+ADD COLUMN IF NOT EXISTS product_show_ratings boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_rating_distribution boolean DEFAULT true,
+
+-- Seção de Confiança
+ADD COLUMN IF NOT EXISTS product_show_trust_section boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_trust_free_shipping boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_trust_money_back boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_trust_fast_delivery boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_trust_secure_payment boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_trust_delivery_days text DEFAULT '2-5',
+ADD COLUMN IF NOT EXISTS product_trust_return_days integer DEFAULT 7,
+
+-- Vídeos e Depoimentos
+ADD COLUMN IF NOT EXISTS product_show_videos boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_show_testimonials boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_testimonials_max_display integer DEFAULT 3,
+
+-- Tabela de Medidas e Cuidados
+ADD COLUMN IF NOT EXISTS product_show_size_chart boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_size_chart_default_open boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS product_show_care_section boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS product_care_section_default_open boolean DEFAULT false;
+
 -- Atualizar registros existentes
 UPDATE store_settings
 SET 
@@ -47,11 +91,19 @@ SET
   header_badge_custom_1_icon = COALESCE(header_badge_custom_1_icon, 'star'),
   button_style = COALESCE(button_style, 'modern'),
   footer_style = COALESCE(footer_style, 'dark'),
-  auto_extract_colors = COALESCE(auto_extract_colors, false)
+  auto_extract_colors = COALESCE(auto_extract_colors, false),
+  -- Página do Produto
+  product_show_urgency_badges = COALESCE(product_show_urgency_badges, true),
+  product_show_social_proof_carousel = COALESCE(product_show_social_proof_carousel, true),
+  product_show_ratings = COALESCE(product_show_ratings, true),
+  product_show_trust_section = COALESCE(product_show_trust_section, true),
+  product_show_videos = COALESCE(product_show_videos, true),
+  product_show_testimonials = COALESCE(product_show_testimonials, true),
+  product_show_size_chart = COALESCE(product_show_size_chart, true),
+  product_show_care_section = COALESCE(product_show_care_section, true)
 WHERE header_badge_fast_delivery IS NULL 
    OR button_style IS NULL 
-   OR footer_style IS NULL
-   OR auto_extract_colors IS NULL;
+   OR product_show_urgency_badges IS NULL;
 
 -- Verificar se funcionou
 SELECT 
