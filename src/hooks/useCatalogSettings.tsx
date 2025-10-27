@@ -58,6 +58,14 @@ export interface CatalogSettingsData {
   footer_copyright_text?: string;
   business_hours_display_type?: "summary" | "detailed";
   conversion_mode?: "simple" | "optimized"; // Modo de conversão do catálogo
+  // Novos campos para sistema de templates avançado
+  logo_color_palette?: any; // ColorPalette em JSON
+  auto_extract_colors?: boolean;
+  button_style?: "flat" | "modern" | "rounded";
+  footer_style?: "dark" | "light" | "gradient";
+  footer_bg_color?: string;
+  footer_text_color?: string;
+  header_badges_enabled?: boolean;
   // Propriedades adicionais para compatibilidade com templates
   colors?: {
     primary: string;

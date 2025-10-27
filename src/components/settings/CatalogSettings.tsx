@@ -200,6 +200,14 @@ const CatalogSettings = () => {
       features: ["Design limpo", "Tipografia clara", "Navegação simples"],
     },
     {
+      value: "minimal_clean",
+      label: "Minimalista Clean",
+      description: "Ultra clean com foco em conversão",
+      icon: Sparkles,
+      colors: ["#000000", "#FFFFFF", "#3B82F6"],
+      features: ["Banner full-width", "Header com badges", "Máximo clean"],
+    },
+    {
       value: "elegant",
       label: "Elegante",
       description: "Sofisticado e refinado",
@@ -228,7 +236,7 @@ const CatalogSettings = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="template" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-10">
           <TabsTrigger value="template" className="flex items-center gap-1">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Template</span>
@@ -236,6 +244,10 @@ const CatalogSettings = () => {
           <TabsTrigger value="display" className="flex items-center gap-1">
             <Eye className="h-4 w-4" />
             <span className="hidden sm:inline">Exibição</span>
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-1">
+            <Zap className="h-4 w-4" />
+            <span className="hidden sm:inline">Aparência</span>
           </TabsTrigger>
           <TabsTrigger value="mobile" className="flex items-center gap-1">
             <Smartphone className="h-4 w-4" />
@@ -518,6 +530,132 @@ const CatalogSettings = () => {
                     </Select>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance" className="space-y-6">
+          {/* Estilo de Botões */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Estilo de Botões
+              </CardTitle>
+              <CardDescription>
+                Escolha o estilo dos botões que melhor combina com sua marca
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Flat */}
+                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold">Flat</h4>
+                      <p className="text-xs text-gray-500">Minimalista sem sombras</p>
+                      <div className="flex items-center gap-2">
+                        <button className="px-4 py-2 bg-primary text-white text-sm rounded" style={{borderRadius: '4px', boxShadow: 'none'}}>
+                          Exemplo
+                        </button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Modern */}
+                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold">Modern</h4>
+                      <p className="text-xs text-gray-500">Arredondado com sombras</p>
+                      <div className="flex items-center gap-2">
+                        <button className="px-4 py-2 bg-primary text-white text-sm rounded-lg shadow-md">
+                          Exemplo
+                        </button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Rounded */}
+                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold">Rounded</h4>
+                      <p className="text-xs text-gray-500">Muito arredondado</p>
+                      <div className="flex items-center gap-2">
+                        <button className="px-6 py-3 bg-primary text-white text-sm rounded-full shadow-lg">
+                          Exemplo
+                        </button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Header Badges */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Badges no Header
+              </CardTitle>
+              <CardDescription>
+                Gatilhos de urgência e conversão no topo do catálogo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="header-badges">Exibir Badges de Conversão</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Entrega Rápida, Frete Grátis, Compra Segura
+                  </p>
+                </div>
+                <Switch id="header-badges" defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Footer Style */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Estilo do Footer
+              </CardTitle>
+              <CardDescription>
+                Personalize a aparência do rodapé
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { value: 'dark', label: 'Escuro', bg: '#1E293B', text: '#FFFFFF' },
+                  { value: 'light', label: 'Claro', bg: '#FFFFFF', text: '#1E293B' },
+                  { value: 'gradient', label: 'Gradiente', bg: 'linear-gradient(135deg, #0057FF, #8E2DE2)', text: '#FFFFFF' },
+                ].map((style) => (
+                  <Card key={style.value} className="cursor-pointer hover:shadow-lg transition-all">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">{style.label}</h4>
+                        <div 
+                          className="h-16 rounded-lg flex items-center justify-center text-sm font-medium"
+                          style={{ 
+                            background: style.bg,
+                            color: style.text 
+                          }}
+                        >
+                          Footer Preview
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>

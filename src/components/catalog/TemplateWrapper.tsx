@@ -5,9 +5,11 @@ import { CatalogSettingsData } from "@/hooks/useCatalogSettings";
 import ModernCatalogTemplate from "./templates/layouts/ModernCatalogTemplate";
 import IndustrialCatalogTemplate from "./templates/layouts/IndustrialCatalogTemplate";
 import MinimalCatalogTemplate from "./templates/layouts/MinimalCatalogTemplate";
+import MinimalCleanTemplate from "./templates/layouts/MinimalCleanTemplate";
 import ElegantCatalogTemplate from "./templates/layouts/ElegantCatalogTemplate";
 import { Store } from "@/hooks/useCatalog";
 import { CatalogType } from "@/hooks/useCatalog";
+import { ButtonStyleProvider } from "./ButtonStyleProvider";
 
 interface TemplateWrapperProps {
   templateName: string;
@@ -103,17 +105,29 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     );
   }
 
-  switch (templateName) {
-    case "industrial":
-      return <IndustrialCatalogTemplate {...templateProps} />;
-    case "minimal":
-      return <MinimalCatalogTemplate {...templateProps} />;
-    case "elegant":
-      return <ElegantCatalogTemplate {...templateProps} />;
-    case "modern":
-    default:
-      return <ModernCatalogTemplate {...templateProps} />;
-  }
+  const buttonStyle = (storeSettings?.button_style as 'flat' | 'modern' | 'rounded') || 'modern';
+
+  const renderTemplate = () => {
+    switch (templateName) {
+      case "industrial":
+        return <IndustrialCatalogTemplate {...templateProps} />;
+      case "minimal":
+        return <MinimalCatalogTemplate {...templateProps} />;
+      case "minimal_clean":
+        return <MinimalCleanTemplate {...templateProps} />;
+      case "elegant":
+        return <ElegantCatalogTemplate {...templateProps} />;
+      case "modern":
+      default:
+        return <ModernCatalogTemplate {...templateProps} />;
+    }
+  };
+
+  return (
+    <ButtonStyleProvider buttonStyle={buttonStyle}>
+      {renderTemplate()}
+    </ButtonStyleProvider>
+  );
 };
 
 export default TemplateWrapper;
