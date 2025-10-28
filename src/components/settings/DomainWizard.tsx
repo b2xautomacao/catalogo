@@ -31,6 +31,7 @@ import {
   validateSubdomain,
   checkSubdomainAvailability,
 } from '@/utils/dnsValidator';
+import EasypanelSetupGuide from './EasypanelSetupGuide';
 
 interface DomainWizardProps {
   settings: any;
@@ -66,6 +67,10 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
     error: string | null;
     checked: boolean;
   }>({ available: null, error: null, checked: false });
+
+  // Estado para mostrar guia do Easypanel
+  const [showEasypanelGuide, setShowEasypanelGuide] = useState(false);
+  const [savedSubdomain, setSavedSubdomain] = useState('');
 
   // Função para verificar disponibilidade de subdomínio
   const checkAvailability = async (subdomain: string) => {
@@ -216,7 +221,11 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
       await onUpdate('subdomain_enabled', true);
       await onUpdate('domain_mode', 'subdomain');
 
-      toast.success('Subdomínio configurado com sucesso!');
+      // Salvar subdomínio e mostrar guia
+      setSavedSubdomain(subdomainInput);
+      setShowEasypanelGuide(true);
+
+      toast.success('Subdomínio configurado! Agora configure no Easypanel.');
       setCurrentStep('select');
     } catch (error) {
       toast.error('Erro ao configurar subdomínio');
@@ -437,10 +446,24 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
               </Button>
             </div>
             
-            <Badge variant={settings.domain_mode === 'slug' ? 'default' : 'secondary'}>
-              Modo: {settings.domain_mode === 'subdomain' ? 'Subdomínio' : 
-                     settings.domain_mode === 'custom_domain' ? 'Domínio Próprio' : 'Slug Tradicional'}
-            </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={settings.domain_mode === 'slug' ? 'default' : 'secondary'}>
+                  Modo: {settings.domain_mode === 'subdomain' ? 'Subdomínio' : 
+                         settings.domain_mode === 'custom_domain' ? 'Domínio Próprio' : 'Slug Tradicional'}
+                </Badge>
+                
+                {/* Botão para mostrar guia Easypanel se há subdomínio */}
+                {settings.domain_mode === 'subdomain' && settings.subdomain && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEasypanelGuide(!showEasypanelGuide)}
+                    className="text-xs"
+                  >
+                    {showEasypanelGuide ? 'Ocultar' : 'Mostrar'} Guia Easypanel
+                  </Button>
+                )}
+              </div>
           </div>
         </CardContent>
       </Card>
@@ -526,6 +549,12 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
           O modo Slug sempre funciona como backup.
         </AlertDescription>
       </Alert>
+
+      {/* Guia do Easypanel */}
+      <EasypanelSetupGuide 
+        subdomain={savedSubdomain || settings.subdomain || ''}
+        isVisible={showEasypanelGuide || (settings.domain_mode === 'subdomain' && settings.subdomain)}
+      />
     </div>
   );
 };
