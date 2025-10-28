@@ -25,7 +25,6 @@ import CatalogSettings from "@/components/settings/CatalogSettings";
 import ProtectedShippingSettings from "@/components/settings/ProtectedShippingSettings";
 import ProtectedPaymentSettings from "@/components/settings/ProtectedPaymentSettings";
 import ProtectedWhatsAppSettings from "@/components/settings/ProtectedWhatsAppSettings";
-import DomainSettings from "@/components/settings/DomainSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
 import MinimumPurchaseConfig from "@/components/settings/MinimumPurchaseConfig";
@@ -143,20 +142,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="domain" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Configurações de Domínio
-              </CardTitle>
-              <CardDescription>
-                Configure seu domínio personalizado e URLs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DomainSettings />
-            </CardContent>
-          </Card>
+          {/* DomainSettings agora está em CatalogSettings > Aba Domínios */}
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">

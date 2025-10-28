@@ -21,7 +21,6 @@ export interface CatalogSettingsData {
   border_color?: string;
   mobile_columns?: number;
   catalog_mode?: string;
-  custom_domain?: string;
   catalog_url_slug?: string;
   checkout_type?: string;
   payment_methods?: any;
@@ -268,7 +267,6 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           border_color: data.border_color,
           mobile_columns: data.mobile_columns,
           catalog_mode: data.catalog_mode,
-          custom_domain: data.custom_domain,
           catalog_url_slug: data.catalog_url_slug,
           checkout_type: data.checkout_type,
           payment_methods: data.payment_methods,
