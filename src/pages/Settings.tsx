@@ -11,6 +11,8 @@ import {
   Image,
   ArrowLeftRight,
   DollarSign,
+  Activity,
+  Search,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,6 +27,8 @@ import CatalogSettings from "@/components/settings/CatalogSettings";
 import ProtectedShippingSettings from "@/components/settings/ProtectedShippingSettings";
 import ProtectedPaymentSettings from "@/components/settings/ProtectedPaymentSettings";
 import ProtectedWhatsAppSettings from "@/components/settings/ProtectedWhatsAppSettings";
+import DomainSettings from "@/components/settings/DomainSettings";
+import PixelTrackingSettings from "@/components/settings/PixelTrackingSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
 import MinimumPurchaseConfig from "@/components/settings/MinimumPurchaseConfig";
@@ -44,7 +48,7 @@ const Settings = () => {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-11">
           <TabsTrigger value="store" className="flex items-center gap-2">
             <Store className="h-4 w-4" />
             <span className="hidden sm:inline">Loja</span>
@@ -73,9 +77,17 @@ const Settings = () => {
             <MessageSquare className="h-4 w-4" />
             <span className="hidden sm:inline">WhatsApp</span>
           </TabsTrigger>
-          <TabsTrigger value="domain" className="flex items-center gap-2">
+          <TabsTrigger value="domains" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
-            <span className="hidden sm:inline">Domínioos</span>
+            <span className="hidden sm:inline">Domínios</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">SEO</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -142,7 +154,64 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="domains" className="space-y-6">
-          {/* DomainSettings agora está em CatalogSettings > Aba Domínios */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Configurações de Domínio
+              </CardTitle>
+              <CardDescription>
+                Configure subdomínios e domínios personalizados para o seu catálogo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DomainSettings 
+                settings={{}}
+                onUpdate={() => {}}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Pixels e Tracking de Conversão
+              </CardTitle>
+              <CardDescription>
+                Configure pixels do Facebook, Google Ads, TikTok e eventos de conversão
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PixelTrackingSettings
+                settings={{}}
+                onUpdate={() => {}}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                SEO e Marketing
+              </CardTitle>
+              <CardDescription>
+                Otimize o SEO do seu catálogo e configure estratégias de marketing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Conteúdo SEO será implementado aqui */}
+              <div className="text-center py-8 text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Configurações de SEO serão implementadas em breve</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">

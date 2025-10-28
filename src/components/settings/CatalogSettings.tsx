@@ -29,8 +29,6 @@ import MobileLayoutSettings from "./MobileLayoutSettings";
 import FooterSettings from "./FooterSettings";
 import OrderBumpSettings from "./OrderBumpSettings";
 import ProductPageSettings from "./ProductPageSettings";
-import PixelTrackingSettings from "./PixelTrackingSettings";
-import DomainSettings from "./DomainSettings";
 import {
   Palette,
   Eye,
@@ -43,15 +41,12 @@ import {
   Zap,
   Sparkles,
   Share2,
-  Search,
   Globe,
   Gift,
   Truck,
   Shield,
   Star,
   ShoppingBag,
-  Activity,
-  Link2,
 } from "lucide-react";
 
 const CatalogSettings = () => {
@@ -496,10 +491,6 @@ const CatalogSettings = () => {
             <ShoppingBag className="h-4 w-4" />
             <span className="hidden sm:inline">Produto</span>
           </TabsTrigger>
-          <TabsTrigger value="pixels" className="flex items-center gap-1">
-            <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">Pixels</span>
-          </TabsTrigger>
           <TabsTrigger value="mobile" className="flex items-center gap-1">
             <Smartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Mobile</span>
@@ -519,10 +510,6 @@ const CatalogSettings = () => {
           <TabsTrigger value="sharing" className="flex items-center gap-1">
             <Share2 className="h-4 w-4" />
             <span className="hidden sm:inline">Links</span>
-          </TabsTrigger>
-          <TabsTrigger value="seo" className="flex items-center gap-1">
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">SEO</span>
           </TabsTrigger>
           {/* <TabsTrigger value="domains" className="flex items-center gap-1">
             <Link2 className="h-4 w-4" />
@@ -1154,12 +1141,6 @@ const CatalogSettings = () => {
           />
         </TabsContent>
 
-        <TabsContent value="pixels" className="space-y-6">
-          <PixelTrackingSettings 
-            settings={localSettings}
-            onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
-          />
-        </TabsContent>
 
         <TabsContent value="mobile" className="space-y-6">
           <MobileLayoutSettings />
@@ -1192,84 +1173,7 @@ const CatalogSettings = () => {
           <OrderBumpSettings />
         </TabsContent>
 
-        <TabsContent value="seo" className="space-y-6">
-          {/* SEO Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Configurações de SEO
-              </CardTitle>
-              <CardDescription>
-                Otimize seu catálogo para mecanismos de busca
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="catalog-title">Título do Catálogo (SEO)</Label>
-                <Input
-                  id="catalog-title"
-                  value={localSettings.catalog_title}
-                  onChange={(e) =>
-                    setLocalSettings({
-                      ...localSettings,
-                      catalog_title: e.target.value,
-                    })
-                  }
-                  placeholder="Ex: Catálogo de Produtos - Minha Loja"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Aparece na aba do navegador e nos resultados de busca
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="catalog-description">
-                  Descrição do Catálogo (SEO)
-                </Label>
-                <Input
-                  id="catalog-description"
-                  value={localSettings.catalog_description}
-                  onChange={(e) =>
-                    setLocalSettings({
-                      ...localSettings,
-                      catalog_description: e.target.value,
-                    })
-                  }
-                  placeholder="Ex: Encontre os melhores produtos com os melhores preços"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Aparece nos resultados de busca do Google
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="seo-keywords">Palavras-chave (SEO)</Label>
-                <Input
-                  id="seo-keywords"
-                  value={localSettings.seo_keywords}
-                  onChange={(e) =>
-                    setLocalSettings({
-                      ...localSettings,
-                      seo_keywords: e.target.value,
-                    })
-                  }
-                  placeholder="Ex: produtos, loja online, varejo, atacado"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Separe as palavras-chave por vírgulas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="domains" className="space-y-6">
-          <DomainSettings
-            settings={localSettings}
-            onUpdate={(field, value) => setLocalSettings({ ...localSettings, [field]: value })}
-          />
-        </TabsContent>
       </Tabs>
 
       {/* Actions */}
