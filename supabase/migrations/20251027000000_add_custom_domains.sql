@@ -141,7 +141,11 @@ CREATE TRIGGER trigger_validate_domains
 -- ===============================================
 
 -- Policy para leitura pública de domínios verificados (necessário para roteamento)
-CREATE POLICY IF NOT EXISTS "Allow public read for verified domains" ON store_settings
+-- Dropar policy se existir
+DROP POLICY IF EXISTS "Allow public read for verified domains" ON store_settings;
+
+-- Criar nova policy
+CREATE POLICY "Allow public read for verified domains" ON store_settings
     FOR SELECT
     USING (
         (subdomain_enabled = true AND subdomain IS NOT NULL)
