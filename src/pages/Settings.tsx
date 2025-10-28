@@ -30,7 +30,7 @@ import CatalogSettings from "@/components/settings/CatalogSettings";
 import ProtectedShippingSettings from "@/components/settings/ProtectedShippingSettings";
 import ProtectedPaymentSettings from "@/components/settings/ProtectedPaymentSettings";
 import ProtectedWhatsAppSettings from "@/components/settings/ProtectedWhatsAppSettings";
-import DomainSettings from "@/components/settings/DomainSettings";
+import DomainWizard from "@/components/settings/DomainWizard";
 import PixelTrackingSettings from "@/components/settings/PixelTrackingSettings";
 import SEOSettings from "@/components/settings/SEOSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
@@ -185,40 +185,11 @@ const Settings = () => {
                 Configure subdomínios e domínios personalizados para o seu catálogo
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Debug Info */}
-              <Alert className="border-blue-200 bg-blue-50">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Status:</strong> {settings ? 'Dados carregados' : 'Carregando dados...'} | 
-                  <strong> Domínio atual:</strong> {settings?.custom_domain || 'Não configurado'} |
-                  <strong> Subdomínio:</strong> {settings?.subdomain || 'Não configurado'}
-                </AlertDescription>
-              </Alert>
-
-              <DomainSettings 
+            <CardContent>
+              <DomainWizard 
                 settings={settings || {}}
                 onUpdate={handleSettingsUpdate}
               />
-
-              {/* Botão Manual de Salvar */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button 
-                  onClick={async () => {
-                    try {
-                      await updateSettings(settings || {});
-                      toast.success('Configurações salvas com sucesso!');
-                    } catch (error) {
-                      console.error('Erro ao salvar:', error);
-                      toast.error('Erro ao salvar configurações');
-                    }
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Globe className="h-4 w-4" />
-                  Salvar Configurações de Domínio
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
