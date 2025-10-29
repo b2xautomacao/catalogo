@@ -31,7 +31,7 @@ import {
   validateSubdomain,
   checkSubdomainAvailability,
 } from '@/utils/dnsValidator';
-import EasypanelSetupGuide from './EasypanelSetupGuide';
+import AutomaticSubdomainInfo from './AutomaticSubdomainInfo';
 
 interface DomainWizardProps {
   settings: any;
@@ -452,7 +452,7 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
                          settings.domain_mode === 'custom_domain' ? 'Domínio Próprio' : 'Slug Tradicional'}
                 </Badge>
                 
-                {/* Botão para mostrar guia Easypanel se há subdomínio */}
+                {/* Botão para mostrar informações do sistema automático */}
                 {settings.domain_mode === 'subdomain' && settings.subdomain && (
                   <Button
                     variant="outline"
@@ -460,7 +460,7 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
                     onClick={() => setShowEasypanelGuide(!showEasypanelGuide)}
                     className="text-xs"
                   >
-                    {showEasypanelGuide ? 'Ocultar' : 'Mostrar'} Guia Easypanel
+                    {showEasypanelGuide ? 'Ocultar' : 'Mostrar'} Sistema Automático
                   </Button>
                 )}
               </div>
@@ -550,8 +550,8 @@ const DomainWizard: React.FC<DomainWizardProps> = ({
         </AlertDescription>
       </Alert>
 
-      {/* Guia do Easypanel */}
-      <EasypanelSetupGuide 
+      {/* Informações do Sistema Automático */}
+      <AutomaticSubdomainInfo 
         subdomain={savedSubdomain || settings.subdomain || ''}
         isVisible={showEasypanelGuide || (settings.domain_mode === 'subdomain' && settings.subdomain)}
       />
