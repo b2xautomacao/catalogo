@@ -178,7 +178,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Product Info */}
         <div className="flex-1">
-          <h3 className="font-semibold text-base line-clamp-2 leading-tight mb-1">
+          <h3 
+            className="font-semibold text-base line-clamp-2 leading-tight mb-1 cursor-pointer hover:text-primary transition-colors"
+            onClick={handleViewDetails}
+          >
             {product.name}
           </h3>
           {product.description && (
