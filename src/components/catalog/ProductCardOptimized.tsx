@@ -150,9 +150,34 @@ const ProductCardOptimized: React.FC<ProductCardOptimizedProps> = ({
     }
   };
 
-  const handleViewDetails = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onViewDetails) onViewDetails(product);
+  const handleViewDetails = (e?: React.MouseEvent) => {
+    console.log('🖱️ ProductCardOptimized - handleViewDetails chamado:', { 
+      productId: product.id, 
+      productName: product.name,
+      hasOnViewDetails: !!onViewDetails,
+      event: !!e 
+    });
+    
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    if (onViewDetails) {
+      onViewDetails(product);
+    } else {
+      // Fallback: redirecionar diretamente para página do produto
+      const currentHost = window.location.hostname;
+      const isSubdomain = currentHost.includes('.aoseudispor.com.br') && !currentHost.startsWith('app.');
+      
+      console.log('🔄 ProductCardOptimized - Redirecionando:', { currentHost, isSubdomain });
+      
+      if (isSubdomain) {
+        window.location.href = `/produto/${product.id}`;
+      } else {
+        window.location.href = `/catalog/${(product as any).store_slug || 'default'}/produto/${product.id}`;
+      }
+    }
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
