@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Coupons = () => {
   const [showForm, setShowForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const { coupons, createCoupon, updateCoupon, deleteCoupon, loading } = useCoupons();
   const { toast } = useToast();
 
@@ -32,8 +33,25 @@ const Coupons = () => {
   };
 
   const handleEditCoupon = (coupon: Coupon) => {
-    // Implementar edição posteriormente
-    console.log('Editar cupom:', coupon);
+    setEditingCoupon(coupon);
+  };
+
+  const handleUpdateCoupon = async (data: any) => {
+    if (!editingCoupon) return;
+    const { error } = await updateCoupon(editingCoupon.id, data);
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o cupom",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Cupom atualizado com sucesso",
+      });
+      setEditingCoupon(null);
+    }
   };
 
   const handleDeleteCoupon = async (id: string) => {
@@ -102,6 +120,21 @@ const Coupons = () => {
             <CouponForm 
               onSubmit={handleCreateCoupon}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para editar cupom */}
+        <Dialog open={!!editingCoupon} onOpenChange={(open) => !open && setEditingCoupon(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Cupom</DialogTitle>
+            </DialogHeader>
+            {editingCoupon && (
+              <CouponForm 
+                coupon={editingCoupon}
+                onSubmit={handleUpdateCoupon}
+              />
+            )}
           </DialogContent>
         </Dialog>
     </div>
