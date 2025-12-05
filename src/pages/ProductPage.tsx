@@ -401,7 +401,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar ao Catálogo
+              Voltar
             </Button>
 
             <div className="flex gap-2">

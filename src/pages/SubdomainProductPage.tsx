@@ -72,7 +72,7 @@ const SubdomainProductPage: React.FC = () => {
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao Catálogo
+              Voltar
             </Button>
             <Button 
               variant="outline"
@@ -100,7 +100,7 @@ const SubdomainProductPage: React.FC = () => {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Voltar ao Catálogo
+            Voltar
           </Button>
         </div>
       </div>
