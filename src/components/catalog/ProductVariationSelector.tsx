@@ -142,6 +142,11 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
 
         {/* Seletor de Grade Flexível (se disponível) */}
         {selectedVariation && (() => {
+          // 🔴 CORREÇÃO: Verificar se é realmente uma grade antes de mostrar opções flexíveis
+          const isGradeVariation = selectedVariation.is_grade || 
+                                   selectedVariation.variation_type === "grade" ||
+                                   (selectedVariation.grade_name && selectedVariation.grade_sizes);
+          
           const hasConfig = hasFlexibleConfig(selectedVariation);
           const allowsMultiple = selectedVariation.flexible_grade_config 
             ? allowsMultiplePurchaseOptions(selectedVariation.flexible_grade_config)
@@ -149,14 +154,18 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           
           // 🔍 DEBUG: Log detalhado
           console.log("🔍 FlexibleGradeSelector - Verificação:", {
+            isGradeVariation,
             gradeSelected: selectedVariation.grade_name,
             hasConfig,
             allowsMultiple,
             config: selectedVariation.flexible_grade_config,
-            willRender: hasConfig && allowsMultiple,
+            is_grade: selectedVariation.is_grade,
+            variation_type: selectedVariation.variation_type,
+            willRender: isGradeVariation && hasConfig && allowsMultiple,
           });
           
-          if (hasConfig && allowsMultiple) {
+          // 🔴 CORREÇÃO: Só mostrar se for realmente uma grade
+          if (isGradeVariation && hasConfig && allowsMultiple) {
             return (
               <FlexibleGradeSelector
                 variation={selectedVariation}
@@ -168,6 +177,12 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
               />
             );
           }
+          
+          // Se for produto unitário, não mostrar opções de grade
+          if (!isGradeVariation) {
+            console.log("ℹ️ ProductVariationSelector - Produto unitário detectado, não mostrando grade flexível");
+          }
+          
           return null;
         })()}
       </div>

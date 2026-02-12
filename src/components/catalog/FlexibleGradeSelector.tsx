@@ -109,10 +109,14 @@ const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
 
   // Handler para seleção de modo
   const handleModeSelection = (mode: 'full' | 'half' | 'custom') => {
+    console.log('🔍 FlexibleGradeSelector - handleModeSelection chamado:', mode);
+    
     if (mode === 'custom') {
       setShowCustomBuilder(true);
     } else {
       setShowCustomBuilder(false);
+      // 🔴 CORREÇÃO: Garantir que onModeSelect seja chamado para todos os modos
+      console.log('✅ FlexibleGradeSelector - Chamando onModeSelect com modo:', mode);
       onModeSelect(mode);
     }
   };
@@ -187,32 +191,32 @@ const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-lg">Grade Completa</h4>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h4 className="font-bold text-xl text-gray-900">Grade Completa</h4>
+                  <p className="text-base font-medium text-gray-700 mt-1.5">
                     {prices.full.pairs} pares
                   </p>
                 </div>
 
-                {/* Preço */}
+                {/* Preço - Melhor contraste */}
                 {showPrices && (
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="space-y-1.5">
+                    <div className="text-3xl font-bold text-blue-700">
                       {formatCurrency(prices.full.total)}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-base font-medium text-gray-700">
                       {formatCurrency(prices.full.unit)}/par
                     </div>
                   </div>
                 )}
 
-                {/* Benefícios */}
-                <div className="space-y-1 text-sm">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle className="w-4 h-4" />
+                {/* Benefícios - Melhor contraste */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2.5 text-green-700 font-medium">
+                    <CheckCircle className="w-5 h-5" />
                     <span>Melhor custo-benefício</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <CheckCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-2.5 text-gray-700 font-medium">
+                    <CheckCircle className="w-5 h-5" />
                     <span>Sortimento completo</span>
                   </div>
                 </div>
@@ -234,7 +238,12 @@ const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
                 ? 'border-orange-500 border-2 bg-orange-50' 
                 : 'border-gray-200'
             }`}
-            onClick={() => handleModeSelection('half')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🖱️ FlexibleGradeSelector - Card Meia Grade clicado');
+              handleModeSelection('half');
+            }}
           >
             <CardContent className="p-6">
               <div className="space-y-4">
@@ -247,22 +256,22 @@ const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-lg">Meia Grade</h4>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h4 className="font-bold text-xl text-gray-900">Meia Grade</h4>
+                  <p className="text-base font-medium text-gray-700 mt-1.5">
                     {prices.half.pairs} pares ({config.half_grade_percentage}%)
                   </p>
                 </div>
 
-                {/* Preço */}
+                {/* Preço - Melhor contraste */}
                 {showPrices && (
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold text-orange-600">
+                  <div className="space-y-1.5">
+                    <div className="text-3xl font-bold text-orange-700">
                       {formatCurrency(prices.half.total)}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {formatCurrency(prices.half.unit)}/par
+                    <div className="text-base font-medium text-gray-700 flex items-center gap-2">
+                      <span>{formatCurrency(prices.half.unit)}/par</span>
                       {prices.half.discount > 0 && (
-                        <Badge variant="outline" className="ml-2 text-green-600">
+                        <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 font-semibold">
                           -{prices.half.discount}%
                         </Badge>
                       )}

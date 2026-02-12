@@ -227,6 +227,7 @@ export const useStoreWizard = () => {
         store_id: storeData.id,
         retail_catalog_active: true,
         wholesale_catalog_active: false,
+        catalog_mode: 'separated', // 🔴 CORREÇÃO: Adicionar catalog_mode padrão
         whatsapp_number: data.whatsapp_number,
         whatsapp_integration_active: !!data.whatsapp_number,
         payment_methods: {

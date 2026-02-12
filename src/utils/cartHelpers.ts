@@ -79,11 +79,14 @@ export const createCartItem = (
     }
   }
 
-  // Calcular quantidade mínima
-  let minQuantity =
-    catalogType === "wholesale" && product.min_wholesale_qty
-      ? product.min_wholesale_qty
-      : 1;
+  // 🔴 CORREÇÃO: Calcular quantidade mínima respeitando modalidade
+  // Se catalogType é "retail", quantidade mínima é sempre 1 (permite compra unitária)
+  // Se catalogType é "wholesale", aplicar quantidade mínima de atacado
+  let minQuantity = 1; // Padrão: permite compra unitária
+  
+  if (catalogType === "wholesale" && product.min_wholesale_qty) {
+    minQuantity = product.min_wholesale_qty;
+  }
 
   // Para produtos com grade, quantidade sempre é 1 (1 grade completa)
   let finalQuantity = Math.max(minQuantity, Math.floor(quantity));
@@ -91,6 +94,12 @@ export const createCartItem = (
   if (variation && variation.is_grade) {
     finalQuantity = 1; // Sempre 1 grade completa
     console.log("📦 CART HELPER - Produto com grade: quantidade fixada em 1");
+  }
+
+  // 🔴 CORREÇÃO: Se catalogType é "retail", garantir que quantidade pode ser 1
+  if (catalogType === "retail") {
+    finalQuantity = Math.max(1, Math.floor(quantity)); // Mínimo 1, mas pode ser qualquer quantidade
+    console.log("🛒 CART HELPER - MODO VAREJO: Permitindo compra unitária (qtd:", finalQuantity, ")");
   }
 
   console.log("💰 CART HELPER - Cálculo de preço:", {

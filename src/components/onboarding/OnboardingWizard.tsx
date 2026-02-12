@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +35,7 @@ interface OnboardingData {
   // Configurações do catálogo
   retail_catalog_active: boolean;
   wholesale_catalog_active: boolean;
+  catalog_mode: 'separated' | 'hybrid' | 'toggle'; // 🔴 CORREÇÃO: Adicionar catalog_mode
   template_name: string;
   
   // Métodos de pagamento
@@ -67,6 +70,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ open, onComplete })
       store_address: '',
       retail_catalog_active: true,
       wholesale_catalog_active: false,
+      catalog_mode: 'separated', // 🔴 CORREÇÃO: Valor padrão
       template_name: 'modern',
       pix: false,
       credit_card: false,
@@ -118,6 +122,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ open, onComplete })
       const storeSettings = {
         retail_catalog_active: data.retail_catalog_active,
         wholesale_catalog_active: data.wholesale_catalog_active,
+        catalog_mode: data.catalog_mode, // 🔴 CORREÇÃO: Adicionar catalog_mode
         template_name: data.template_name,
         payment_methods: {
           pix: data.pix,
@@ -265,6 +270,63 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ open, onComplete })
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* 🔴 CORREÇÃO: Adicionar seleção de modo de catálogo */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="catalog_mode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modo do Catálogo</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="space-y-3"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="separated" id="separated" />
+                            <Label htmlFor="separated" className="cursor-pointer">
+                              <div>
+                                <div className="font-medium">Catálogos Separados</div>
+                                <div className="text-sm text-muted-foreground">
+                                  URLs diferentes para varejo e atacado
+                                </div>
+                              </div>
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="hybrid" id="hybrid" />
+                            <Label htmlFor="hybrid" className="cursor-pointer">
+                              <div>
+                                <div className="font-medium">Catálogo Híbrido</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Um catálogo que mostra preços conforme o tipo de cliente
+                                </div>
+                              </div>
+                            </Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="toggle" id="toggle" />
+                            <Label htmlFor="toggle" className="cursor-pointer">
+                              <div>
+                                <div className="font-medium">Catálogo com Toggle</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Permite alternar entre varejo e atacado na mesma página
+                                </div>
+                              </div>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <div className="space-y-4">
                 <FormField
                   control={form.control}

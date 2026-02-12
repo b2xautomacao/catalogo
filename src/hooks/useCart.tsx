@@ -355,15 +355,30 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
+      // 🔴 CORREÇÃO CRÍTICA: Separar lógica de modalidade da lógica de quantidade mínima
+      // Se catalogType é "retail", SEMPRE usar preço varejo, independente da quantidade
+      if (item.catalogType === "retail") {
+        console.log(
+          `📋 [recalculateItemPrices] ${product.name}: MODO VAREJO - Mantendo preço varejo (qtd: ${quantity}): R$${item.originalPrice}`
+        );
+        return {
+          ...item,
+          price: item.originalPrice,
+          isWholesalePrice: false,
+        };
+      }
+
+      // Se catalogType é "wholesale", aplicar regra de quantidade mínima
       // Verificar preço atacado simples do produto (só se atacado gradativo estiver desativado)
       if (
+        item.catalogType === "wholesale" &&
         !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
         product.wholesale_price &&
         product.min_wholesale_qty &&
         quantity >= product.min_wholesale_qty
       ) {
         console.log(
-          `✅ [recalculateItemPrices] ${product.name}: Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${product.wholesale_price}`
+          `✅ [recalculateItemPrices] ${product.name}: MODO ATACADO - Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${product.wholesale_price}`
         );
         return {
           ...item,
@@ -372,9 +387,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Usar preço original (varejo)
+      // Se modo atacado mas quantidade < mínima, usar preço varejo como fallback
+      if (item.catalogType === "wholesale") {
+        console.log(
+          `⚠️ [recalculateItemPrices] ${product.name}: MODO ATACADO - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
+        );
+        return {
+          ...item,
+          price: item.originalPrice,
+          isWholesalePrice: false,
+        };
+      }
+
+      // Fallback: usar preço original (varejo)
       console.log(
-        `📋 [recalculateItemPrices] ${product.name}: Mantendo preço varejo: R$${item.originalPrice}`
+        `📋 [recalculateItemPrices] ${product.name}: Fallback - Mantendo preço varejo: R$${item.originalPrice}`
       );
       return {
         ...item,
