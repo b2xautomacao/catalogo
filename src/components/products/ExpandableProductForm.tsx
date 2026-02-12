@@ -421,47 +421,63 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                 savedCount++;
               }
             } else {
-              // 🔴 CORREÇÃO: Verificar se já existe antes de inserir (evitar erro 409)
-              // Constraint UNIQUE: (product_id, color, size) ou (product_id, name) ou (product_id, grade_name, grade_color)
+              // 🔴 CORREÇÃO: Verificar TODAS as constraints possíveis antes de inserir (evitar erro 409)
+              // Constraints UNIQUE:
+              // 1. (product_id, color, size)
+              // 2. (product_id, name)
+              // 3. (product_id, grade_name, grade_color)
               let existingVariation = null;
               
-              // Verificar por grade_name e grade_color (para grades)
+              // Verificar TODAS as constraints possíveis (não apenas uma)
+              const checks: Promise<any>[] = [];
+              
+              // Check 1: grade_name + grade_color (prioridade para grades)
               if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
-                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
-                const result = await supabaseAny
-                  .from('product_variations')
-                  .select('id')
-                  .eq('product_id', variationData.product_id)
-                  .eq('grade_name', variationData.grade_name)
-                  .eq('grade_color', variationData.grade_color)
-                  .maybeSingle();
-                
-                existingVariation = result.data;
+                checks.push(
+                  supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('grade_name', variationData.grade_name)
+                    .eq('grade_color', variationData.grade_color)
+                    .maybeSingle()
+                );
               }
-              // Verificar por name (se tiver nome único)
-              else if (variationData.name) {
-                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
-                const result = await supabaseAny
-                  .from('product_variations')
-                  .select('id')
-                  .eq('product_id', variationData.product_id)
-                  .eq('name', variationData.name)
-                  .maybeSingle();
-                
-                existingVariation = result.data;
+              
+              // Check 2: name (pode existir junto com outros campos)
+              if (variationData.name) {
+                checks.push(
+                  supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('name', variationData.name)
+                    .maybeSingle()
+                );
               }
-              // Verificar por color e size (variações simples)
-              else if (variationData.color && variationData.size) {
-                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
-                const result = await supabaseAny
-                  .from('product_variations')
-                  .select('id')
-                  .eq('product_id', variationData.product_id)
-                  .eq('color', variationData.color)
-                  .eq('size', variationData.size)
-                  .maybeSingle();
-                
-                existingVariation = result.data;
+              
+              // Check 3: color + size (pode existir junto com name)
+              if (variationData.color && variationData.size) {
+                checks.push(
+                  supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('color', variationData.color)
+                    .eq('size', variationData.size)
+                    .maybeSingle()
+                );
+              }
+              
+              // Executar todas as verificações
+              if (checks.length > 0) {
+                const results = await Promise.all(checks);
+                for (const result of results) {
+                  if (result.data) {
+                    existingVariation = result.data;
+                    break; // Encontrou uma variação existente
+                  }
+                }
               }
               
               if (existingVariation) {
@@ -481,7 +497,7 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                   savedCount++;
                 }
               } else {
-                // Criar nova variação
+                // Tentar criar nova variação
                 console.log(`  ➕ INSERT nova variação:`, variation.name || variation.color);
                 // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
                 const { data, error } = await supabaseAny
@@ -491,14 +507,82 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                   .single();
                 
                 if (error) {
-                  console.error(`❌ Erro ao inserir variação:`, error);
-                  console.error(`❌ Detalhes:`, {
-                    code: error.code,
-                    message: error.message,
-                    hint: error.hint,
-                    details: error.details
-                  });
-                  errorCount++;
+                  // Se erro 409 (Conflict), tentar encontrar e atualizar
+                  if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+                    console.log(`  ⚠️ Erro 409 detectado, tentando encontrar variação existente...`);
+                    
+                    // Tentar encontrar novamente verificando todas as constraints
+                    let foundVariation = null;
+                    
+                    // Check 1: grade_name + grade_color
+                    if (variationData.grade_name && variationData.grade_color) {
+                      const result = await supabaseAny
+                        .from('product_variations')
+                        .select('id')
+                        .eq('product_id', variationData.product_id)
+                        .eq('grade_name', variationData.grade_name)
+                        .eq('grade_color', variationData.grade_color)
+                        .maybeSingle();
+                      if (result.data) foundVariation = result.data;
+                    }
+                    
+                    // Check 2: name
+                    if (!foundVariation && variationData.name) {
+                      const result = await supabaseAny
+                        .from('product_variations')
+                        .select('id')
+                        .eq('product_id', variationData.product_id)
+                        .eq('name', variationData.name)
+                        .maybeSingle();
+                      if (result.data) foundVariation = result.data;
+                    }
+                    
+                    // Check 3: color + size
+                    if (!foundVariation && variationData.color && variationData.size) {
+                      const result = await supabaseAny
+                        .from('product_variations')
+                        .select('id')
+                        .eq('product_id', variationData.product_id)
+                        .eq('color', variationData.color)
+                        .eq('size', variationData.size)
+                        .maybeSingle();
+                      if (result.data) foundVariation = result.data;
+                    }
+                    
+                    if (foundVariation) {
+                      console.log(`  🔄 UPDATE variação encontrada após erro 409 ID: ${foundVariation.id}`);
+                      const { error: updateError } = await supabaseAny
+                        .from('product_variations')
+                        .update(variationData)
+                        .eq('id', foundVariation.id);
+                      
+                      if (updateError) {
+                        console.error(`❌ Erro ao atualizar após 409:`, updateError);
+                        errorCount++;
+                      } else {
+                        console.log(`  ✅ Variação ${foundVariation.id} atualizada após erro 409`);
+                        savedCount++;
+                      }
+                    } else {
+                      console.error(`❌ Erro 409 mas não foi possível encontrar variação existente:`, error);
+                      console.error(`❌ Detalhes:`, {
+                        code: error.code,
+                        message: error.message,
+                        hint: error.hint,
+                        details: error.details
+                      });
+                      errorCount++;
+                    }
+                  } else {
+                    console.error(`❌ Erro ao inserir variação:`, error);
+                    console.error(`❌ Detalhes:`, {
+                      code: error.code,
+                      message: error.message,
+                      hint: error.hint,
+                      details: error.details
+                    });
+                    errorCount++;
+                  }
                 } else {
                   console.log(`  ✅ Variação criada ID: ${data.id}`);
                   savedCount++;
