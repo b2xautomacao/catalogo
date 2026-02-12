@@ -417,20 +417,83 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                 savedCount++;
               }
             } else {
-              // Criar nova variação
-              console.log(`  ➕ INSERT nova variação:`, variation.name || variation.color);
-              const { data, error } = await supabase
-                .from('product_variations')
-                .insert(variationData)
-                .select()
-                .single();
+              // 🔴 CORREÇÃO: Verificar se já existe antes de inserir (evitar erro 409)
+              // Constraint UNIQUE: (product_id, color, size) ou (product_id, name) ou (product_id, grade_name, grade_color)
+              let existingVariation = null;
               
-              if (error) {
-                console.error(`❌ Erro ao inserir variação:`, error);
-                errorCount++;
+              // Verificar por grade_name e grade_color (para grades)
+              if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
+                const { data: gradeCheck } = await supabase
+                  .from('product_variations')
+                  .select('id')
+                  .eq('product_id', variationData.product_id)
+                  .eq('grade_name', variationData.grade_name)
+                  .eq('grade_color', variationData.grade_color)
+                  .maybeSingle();
+                
+                existingVariation = gradeCheck;
+              }
+              // Verificar por name (se tiver nome único)
+              else if (variationData.name) {
+                const { data: nameCheck } = await supabase
+                  .from('product_variations')
+                  .select('id')
+                  .eq('product_id', variationData.product_id)
+                  .eq('name', variationData.name)
+                  .maybeSingle();
+                
+                existingVariation = nameCheck;
+              }
+              // Verificar por color e size (variações simples)
+              else if (variationData.color && variationData.size) {
+                const { data: colorSizeCheck } = await supabase
+                  .from('product_variations')
+                  .select('id')
+                  .eq('product_id', variationData.product_id)
+                  .eq('color', variationData.color)
+                  .eq('size', variationData.size)
+                  .maybeSingle();
+                
+                existingVariation = colorSizeCheck;
+              }
+              
+              if (existingVariation) {
+                // Atualizar variação existente em vez de criar nova
+                console.log(`  🔄 UPDATE variação existente ID: ${existingVariation.id}`);
+                const { error } = await supabase
+                  .from('product_variations')
+                  .update(variationData)
+                  .eq('id', existingVariation.id);
+                
+                if (error) {
+                  console.error(`❌ Erro ao atualizar variação existente:`, error);
+                  errorCount++;
+                } else {
+                  console.log(`  ✅ Variação ${existingVariation.id} atualizada`);
+                  savedCount++;
+                }
               } else {
-                console.log(`  ✅ Variação criada ID: ${data.id}`);
-                savedCount++;
+                // Criar nova variação
+                console.log(`  ➕ INSERT nova variação:`, variation.name || variation.color);
+                const { data, error } = await supabase
+                  .from('product_variations')
+                  .insert(variationData)
+                  .select()
+                  .single();
+                
+                if (error) {
+                  console.error(`❌ Erro ao inserir variação:`, error);
+                  console.error(`❌ Detalhes:`, {
+                    code: error.code,
+                    message: error.message,
+                    hint: error.hint,
+                    details: error.details
+                  });
+                  errorCount++;
+                } else {
+                  console.log(`  ✅ Variação criada ID: ${data.id}`);
+                  savedCount++;
+                }
               }
             }
           } catch (variationError: any) {

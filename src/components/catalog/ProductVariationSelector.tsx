@@ -266,18 +266,20 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                     )
                   }
                   disabled={showStock && !isAvailable}
-                  className={`relative h-12 ${
+                  className={`relative h-12 transition-all ${
                     showStock && !isAvailable ? "opacity-50" : ""
                   } ${
                     isSelected
-                      ? "border-primary shadow-md"
-                      : "hover:border-primary/50"
+                      ? "border-2 border-primary shadow-lg bg-primary text-primary-foreground font-semibold"
+                      : "hover:border-primary/70 hover:bg-primary/5 border-gray-300 bg-white text-gray-900"
                   }`}
                 >
                   <div className="flex flex-col items-center">
-                    <span className="font-medium">{color}</span>
+                    <span className={`font-semibold ${isSelected ? "text-white" : "text-gray-900"}`}>
+                      {color}
+                    </span>
                     {showStock && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className={`text-xs ${isSelected ? "text-primary-foreground/80" : "text-gray-600"}`}>
                         {isAvailable ? "Disponível" : "Indisponível"}
                       </span>
                     )}
@@ -322,18 +324,20 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                     )
                   }
                   disabled={showStock && !isAvailable}
-                  className={`relative h-12 ${
+                  className={`relative h-12 transition-all ${
                     showStock && !isAvailable ? "opacity-50" : ""
                   } ${
                     isSelected
-                      ? "border-primary shadow-md"
-                      : "hover:border-primary/50"
+                      ? "border-2 border-primary shadow-lg bg-primary text-primary-foreground font-semibold"
+                      : "hover:border-primary/70 hover:bg-primary/5 border-gray-300 bg-white text-gray-900"
                   }`}
                 >
                   <div className="flex flex-col items-center">
-                    <span className="font-medium">{size}</span>
+                    <span className={`font-semibold ${isSelected ? "text-white" : "text-gray-900"}`}>
+                      {size}
+                    </span>
                     {showStock && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className={`text-xs ${isSelected ? "text-primary-foreground/80" : "text-gray-600"}`}>
                         {isAvailable ? "Disponível" : "Indisponível"}
                       </span>
                     )}
