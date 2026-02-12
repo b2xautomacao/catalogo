@@ -426,12 +426,25 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               // 1. (product_id, color, size)
               // 2. (product_id, name)
               // 3. (product_id, grade_name, grade_color)
+              // 4. (product_id, sku) ⚠️ ADICIONADO
               let existingVariation = null;
               
               // Verificar TODAS as constraints possíveis (não apenas uma)
               const checks: Promise<any>[] = [];
               
-              // Check 1: grade_name + grade_color (prioridade para grades)
+              // Check 1: SKU (prioridade - SKU deve ser único)
+              if (variationData.sku) {
+                checks.push(
+                  supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('sku', variationData.sku)
+                    .maybeSingle()
+                );
+              }
+              
+              // Check 2: grade_name + grade_color (prioridade para grades)
               if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
                 checks.push(
                   supabaseAny
@@ -444,7 +457,7 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                 );
               }
               
-              // Check 2: name (pode existir junto com outros campos)
+              // Check 3: name (pode existir junto com outros campos)
               if (variationData.name) {
                 checks.push(
                   supabaseAny
@@ -456,7 +469,7 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                 );
               }
               
-              // Check 3: color + size (pode existir junto com name)
+              // Check 4: color + size (pode existir junto com name)
               if (variationData.color && variationData.size) {
                 checks.push(
                   supabaseAny
@@ -514,8 +527,26 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                     // Tentar encontrar novamente verificando todas as constraints
                     let foundVariation = null;
                     
-                    // Check 1: grade_name + grade_color
-                    if (variationData.grade_name && variationData.grade_color) {
+                    // Verificar qual constraint foi violada pela mensagem de erro
+                    const errorMessage = error.message || '';
+                    const isSkuError = errorMessage.includes('product_variations_product_id_sku_key');
+                    const isGradeError = errorMessage.includes('product_variations_grade_unique');
+                    const isNameError = errorMessage.includes('product_variations_product_id_name_key');
+                    const isColorSizeError = errorMessage.includes('product_variations_product_id_color_size_key');
+                    
+                    // Check 1: SKU (prioridade - verificar primeiro se erro menciona SKU)
+                    if ((isSkuError || variationData.sku) && variationData.sku) {
+                      const result = await supabaseAny
+                        .from('product_variations')
+                        .select('id')
+                        .eq('product_id', variationData.product_id)
+                        .eq('sku', variationData.sku)
+                        .maybeSingle();
+                      if (result.data) foundVariation = result.data;
+                    }
+                    
+                    // Check 2: grade_name + grade_color
+                    if (!foundVariation && (isGradeError || (variationData.grade_name && variationData.grade_color))) {
                       const result = await supabaseAny
                         .from('product_variations')
                         .select('id')
@@ -526,8 +557,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                       if (result.data) foundVariation = result.data;
                     }
                     
-                    // Check 2: name
-                    if (!foundVariation && variationData.name) {
+                    // Check 3: name
+                    if (!foundVariation && (isNameError || variationData.name)) {
                       const result = await supabaseAny
                         .from('product_variations')
                         .select('id')
@@ -537,8 +568,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                       if (result.data) foundVariation = result.data;
                     }
                     
-                    // Check 3: color + size
-                    if (!foundVariation && variationData.color && variationData.size) {
+                    // Check 4: color + size
+                    if (!foundVariation && (isColorSizeError || (variationData.color && variationData.size))) {
                       const result = await supabaseAny
                         .from('product_variations')
                         .select('id')
