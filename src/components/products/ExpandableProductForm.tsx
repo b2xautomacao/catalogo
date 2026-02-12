@@ -30,6 +30,9 @@ import { ProductStepValidator } from "@/lib/validators/productStepValidator";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { supabase } from "@/integrations/supabase/client";
 
+// 🔴 CORREÇÃO: Função auxiliar para evitar erro "Type instantiation is excessively deep"
+const supabaseAny = supabase as any;
+
 // Importar steps do wizard
 import BasicInfoStep from "./wizard/steps/BasicInfoStep";
 import ImagesStep from "./wizard/steps/ImagesStep";
@@ -404,7 +407,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
             if (isExisting) {
               // Atualizar variação existente
               console.log(`  📝 UPDATE variação ID: ${variation.id}`);
-              const { error } = await supabase
+              // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+              const { error } = await supabaseAny
                 .from('product_variations')
                 .update(variationData)
                 .eq('id', variation.id);
@@ -423,8 +427,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               
               // Verificar por grade_name e grade_color (para grades)
               if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
-                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
-                const result: any = await supabase
+                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+                const result = await supabaseAny
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
@@ -436,8 +440,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               }
               // Verificar por name (se tiver nome único)
               else if (variationData.name) {
-                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
-                const result: any = await supabase
+                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+                const result = await supabaseAny
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
@@ -448,8 +452,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               }
               // Verificar por color e size (variações simples)
               else if (variationData.color && variationData.size) {
-                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
-                const result: any = await supabase
+                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+                const result = await supabaseAny
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
@@ -463,7 +467,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               if (existingVariation) {
                 // Atualizar variação existente em vez de criar nova
                 console.log(`  🔄 UPDATE variação existente ID: ${existingVariation.id}`);
-                const { error } = await supabase
+                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+                const { error } = await supabaseAny
                   .from('product_variations')
                   .update(variationData)
                   .eq('id', existingVariation.id);
@@ -478,7 +483,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               } else {
                 // Criar nova variação
                 console.log(`  ➕ INSERT nova variação:`, variation.name || variation.color);
-                const { data, error } = await supabase
+                // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
+                const { data, error } = await supabaseAny
                   .from('product_variations')
                   .insert(variationData)
                   .select()
