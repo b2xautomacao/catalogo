@@ -370,13 +370,13 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
         let savedCount = 0;
         let errorCount = 0;
         
-        for (const variation of formData.variations) {
+          for (const variation of formData.variations) {
           try {
-            const variationData = {
+            // 🔴 CORREÇÃO: Tipar explicitamente para evitar erro "Type instantiation is excessively deep"
+            const variationData: Record<string, any> = {
               product_id: savedProductId,
               color: variation.color || null,
               size: variation.size || null,
-              // material: variation.material || null, // ❌ Campo não existe na tabela
               sku: variation.sku || null,
               stock: variation.stock || 0,
               price_adjustment: variation.price_adjustment || 0,
@@ -423,7 +423,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               
               // Verificar por grade_name e grade_color (para grades)
               if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
-                const { data: gradeCheck } = await supabase
+                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
+                const result: any = await supabase
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
@@ -431,22 +432,24 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                   .eq('grade_color', variationData.grade_color)
                   .maybeSingle();
                 
-                existingVariation = gradeCheck;
+                existingVariation = result.data;
               }
               // Verificar por name (se tiver nome único)
               else if (variationData.name) {
-                const { data: nameCheck } = await supabase
+                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
+                const result: any = await supabase
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
                   .eq('name', variationData.name)
                   .maybeSingle();
                 
-                existingVariation = nameCheck;
+                existingVariation = result.data;
               }
               // Verificar por color e size (variações simples)
               else if (variationData.color && variationData.size) {
-                const { data: colorSizeCheck } = await supabase
+                // 🔴 CORREÇÃO: Usar any para evitar erro "Type instantiation is excessively deep"
+                const result: any = await supabase
                   .from('product_variations')
                   .select('id')
                   .eq('product_id', variationData.product_id)
@@ -454,7 +457,7 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                   .eq('size', variationData.size)
                   .maybeSingle();
                 
-                existingVariation = colorSizeCheck;
+                existingVariation = result.data;
               }
               
               if (existingVariation) {
