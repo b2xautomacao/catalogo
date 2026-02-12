@@ -1034,10 +1034,12 @@ export type Database = {
           color: string | null;
           created_at: string;
           display_order: number | null;
+          flexible_grade_config: Json | null;
           grade_color: string | null;
           grade_name: string | null;
           grade_pairs: Json | null;
           grade_quantity: number | null;
+          grade_sale_mode: string | null;
           grade_sizes: Json | null;
           hex_color: string | null;
           id: string;
@@ -1062,10 +1064,12 @@ export type Database = {
           color?: string | null;
           created_at?: string;
           display_order?: number | null;
+          flexible_grade_config?: Json | null;
           grade_color?: string | null;
           grade_name?: string | null;
           grade_pairs?: Json | null;
           grade_quantity?: number | null;
+          grade_sale_mode?: string | null;
           grade_sizes?: Json | null;
           hex_color?: string | null;
           id?: string;
@@ -1090,10 +1094,12 @@ export type Database = {
           color?: string | null;
           created_at?: string;
           display_order?: number | null;
+          flexible_grade_config?: Json | null;
           grade_color?: string | null;
           grade_name?: string | null;
           grade_pairs?: Json | null;
           grade_quantity?: number | null;
+          grade_sale_mode?: string | null;
           grade_sizes?: Json | null;
           hex_color?: string | null;
           id?: string;
