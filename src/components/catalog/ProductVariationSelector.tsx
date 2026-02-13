@@ -94,6 +94,20 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   const hasGradeVariations = variations.some(
     (v) => v.variation_type === "grade" || v.is_grade
   );
+  
+  console.log("🔍 ProductVariationSelector - Detecção de grades:", {
+    totalVariations: variations.length,
+    hasGradeVariations,
+    variations: variations.map(v => ({
+      id: v.id,
+      is_grade: v.is_grade,
+      variation_type: v.variation_type,
+      grade_name: v.grade_name,
+      color: v.color,
+      grade_color: v.grade_color,
+    })),
+    hasOnAddToCart: !!onAddToCart,
+  });
 
   // Calcular informações sobre tipos de variação
   const colors = [
@@ -133,6 +147,11 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
         gradesCount: grades.length,
         hasOnAddToCart: !!onAddToCart,
         addedColorsCount: addedColors?.length || 0,
+        grades: grades.map(g => ({
+          id: g.id?.substring(0, 8),
+          grade_name: g.grade_name,
+          grade_color: g.grade_color,
+        })),
       });
       return (
         <GradeFirstSelector
@@ -148,6 +167,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     
     console.log("⚠️ ProductVariationSelector - onAddToCart não fornecido, usando fluxo antigo", {
       gradesCount: grades.length,
+      onAddToCart: typeof onAddToCart,
     });
     
     // Fluxo antigo (compatibilidade)
@@ -277,6 +297,21 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       onVariationChange(null);
     }
   };
+
+  // 🔍 DEBUG: Log quando cai no fluxo antigo
+  console.log("⚠️ ProductVariationSelector - CAINDO NO FLUXO ANTIGO (cores primeiro):", {
+    hasGradeVariations,
+    gradesCount: grades.length,
+    hasOnAddToCart: !!onAddToCart,
+    colorsCount: colors.length,
+    sizesCount: sizes.length,
+    variations: variations.map(v => ({
+      id: v.id?.substring(0, 8),
+      is_grade: v.is_grade,
+      variation_type: v.variation_type,
+      color: v.color,
+    })),
+  });
 
   return (
     <div className="space-y-6">
