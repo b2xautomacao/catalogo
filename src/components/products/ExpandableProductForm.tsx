@@ -500,15 +500,53 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               if (existingVariation) {
                 // Atualizar variação existente em vez de criar nova
                 console.log(`  🔄 UPDATE variação existente ID: ${existingVariation.id}`);
+                
+                // 🔴 CORREÇÃO: Verificar se SKU está sendo atualizado e se já existe em outra variação
+                let finalVariationData = { ...variationData };
+                if (variationData.sku) {
+                  const skuCheck = await supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('sku', variationData.sku)
+                    .neq('id', existingVariation.id) // Excluir a própria variação
+                    .maybeSingle();
+                  
+                  if (skuCheck.data) {
+                    console.warn(`  ⚠️ SKU ${variationData.sku} já existe em outra variação (ID: ${skuCheck.data.id}), removendo SKU do update`);
+                    // Remover SKU do update para evitar conflito
+                    const { sku, ...variationDataWithoutSku } = variationData;
+                    finalVariationData = variationDataWithoutSku;
+                  }
+                }
+                
                 // 🔴 CORREÇÃO: Usar supabaseAny para evitar erro TypeScript
                 const { error } = await supabaseAny
                   .from('product_variations')
-                  .update(variationData)
+                  .update(finalVariationData)
                   .eq('id', existingVariation.id);
                 
                 if (error) {
                   console.error(`❌ Erro ao atualizar variação existente:`, error);
-                  errorCount++;
+                  // Se erro 409, tentar novamente sem SKU
+                  if (error.code === '23505' && variationData.sku) {
+                    console.log(`  🔄 Tentando atualizar sem SKU...`);
+                    const { sku, ...variationDataWithoutSku } = variationData;
+                    const { error: retryError } = await supabaseAny
+                      .from('product_variations')
+                      .update(variationDataWithoutSku)
+                      .eq('id', existingVariation.id);
+                    
+                    if (retryError) {
+                      console.error(`❌ Erro ao atualizar variação (sem SKU):`, retryError);
+                      errorCount++;
+                    } else {
+                      console.log(`  ✅ Variação ${existingVariation.id} atualizada (sem SKU)`);
+                      savedCount++;
+                    }
+                  } else {
+                    errorCount++;
+                  }
                 } else {
                   console.log(`  ✅ Variação ${existingVariation.id} atualizada`);
                   savedCount++;
@@ -552,8 +590,8 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                     }
                     
                     // Check 2: SKU (verificar depois de grade para não conflitar com múltiplas cores)
-                    if (!foundVariation && (isSkuError || variationData.sku) && variationData.sku && !variationData.is_grade) {
-                      // Para grades, não verificar SKU isoladamente porque pode haver múltiplas cores com SKUs diferentes
+                    // 🔴 CORREÇÃO: Verificar SKU mesmo para grades, mas só se o erro for de SKU
+                    if (!foundVariation && (isSkuError || variationData.sku) && variationData.sku) {
                       const result = await supabaseAny
                         .from('product_variations')
                         .select('id')

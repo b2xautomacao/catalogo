@@ -640,11 +640,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           )}
                         </div>
                         <ProductVariationSelector
-                          variations={
-                            isGradeSelected && selectedVariation
-                              ? [selectedVariation] // Mostrar apenas a grade selecionada
-                              : product.variations || []
-                          }
+                          variations={product.variations || []}
                           selectedVariation={selectedVariation}
                           onVariationChange={(variation) => {
                             setSelectedVariation(variation);
