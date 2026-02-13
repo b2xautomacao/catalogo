@@ -126,13 +126,14 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   }
 
   if (hasGradeVariations) {
-    // 🔴 NOVO: Verificar se tem configuração flexível para usar novo fluxo
-    const firstGradeVariation = grades[0];
-    const hasFlexible = firstGradeVariation?.flexible_grade_config && 
-                       allowsMultiplePurchaseOptions(firstGradeVariation.flexible_grade_config);
-    
-    // Se tem configuração flexível E tem callback onAddToCart, usar novo fluxo
-    if (hasFlexible && onAddToCart) {
+    // 🔴 NOVO: Sempre usar novo fluxo para grades (melhor UX)
+    // Se tem callback onAddToCart, usar GradeFirstSelector completo
+    if (onAddToCart) {
+      console.log("✅ ProductVariationSelector - Usando GradeFirstSelector (novo fluxo)", {
+        gradesCount: grades.length,
+        hasOnAddToCart: !!onAddToCart,
+        addedColorsCount: addedColors?.length || 0,
+      });
       return (
         <GradeFirstSelector
           variations={grades}
@@ -140,10 +141,14 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           onAddToCart={onAddToCart}
           showPrices={showPriceInCards}
           showStock={showStock}
-          addedColors={addedColors}
+          addedColors={addedColors || []}
         />
       );
     }
+    
+    console.log("⚠️ ProductVariationSelector - onAddToCart não fornecido, usando fluxo antigo", {
+      gradesCount: grades.length,
+    });
     
     // Fluxo antigo (compatibilidade)
     return (

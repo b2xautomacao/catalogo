@@ -271,14 +271,6 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
               )}
             </div>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="flex-shrink-0 h-8 w-8 p-0 hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </DialogHeader>
         </div>
 

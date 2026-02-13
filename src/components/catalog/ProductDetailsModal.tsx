@@ -440,23 +440,12 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0">
-        {/* Header Fixo com botão de fechar */}
+        {/* Header Fixo */}
         <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-10 p-6 pb-4">
           <DialogHeader>
-            <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-xl md:text-2xl font-bold text-left line-clamp-2 flex-1">
-                {product.name}
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="flex-shrink-0 h-8 w-8 p-0 hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Fechar</span>
-              </Button>
-            </div>
+            <DialogTitle className="text-xl md:text-2xl font-bold text-left line-clamp-2">
+              {product.name}
+            </DialogTitle>
           </DialogHeader>
         </div>
 
