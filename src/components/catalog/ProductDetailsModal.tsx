@@ -677,6 +677,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                                 quantity: item.quantity || 0,
                               })),
                               totalPairs: selection.totalPairs || 0,
+                              meetsMinimum: selection.meetsMinimum || false,
+                              estimatedPrice: selection.estimatedPrice,
                             } : null);
                           }}
                         />

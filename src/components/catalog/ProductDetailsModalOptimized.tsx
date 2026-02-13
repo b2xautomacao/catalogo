@@ -101,14 +101,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
   const [quantity, setQuantity] = useState(1);
   // 🔴 NOVO: Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
-  const [customGradeSelection, setCustomGradeSelection] = useState<{
-    items: Array<{
-      color: string;
-      size: string;
-      quantity: number;
-    }>;
-    totalPairs: number;
-  } | null>(null);
+  const [customGradeSelection, setCustomGradeSelection] = useState<CustomGradeSelection | null>(null);
 
   // Dados simulados para demonstração
   const mockData = {
@@ -456,7 +449,16 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                         setFlexibleGradeMode(mode);
                       }}
                       onCustomSelectionChange={(selection) => {
-                        setCustomGradeSelection(selection);
+                        setCustomGradeSelection(selection ? {
+                          items: selection.items.map(item => ({
+                            color: item.color || '',
+                            size: item.size || '',
+                            quantity: item.quantity || 0,
+                          })),
+                          totalPairs: selection.totalPairs || 0,
+                          meetsMinimum: selection.meetsMinimum || false,
+                          estimatedPrice: selection.estimatedPrice,
+                        } : null);
                       }}
                     />
                   </div>
