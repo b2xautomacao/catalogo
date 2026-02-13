@@ -89,25 +89,9 @@ const SubdomainProductPage: React.FC = () => {
 
   // Render the complete ProductPage but in public template context
   // The ProductPage will handle all the conversion elements automatically
+  // (ProductPage já tem seu próprio botão "Voltar" na navegação)
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back to catalog button - positioned outside template */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Button 
-            variant="outline" 
-            onClick={handleBackToCatalog}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </Button>
-        </div>
-      </div>
-
-      {/* Complete ProductPage with all conversion elements */}
-      <ProductPage isPublicContext={true} storeContext={store} />
-    </div>
+    <ProductPage isPublicContext={true} storeContext={store} />
   );
 };
 
