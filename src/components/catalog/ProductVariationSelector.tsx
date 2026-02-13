@@ -9,6 +9,7 @@ import GradeVariationCard from "./GradeVariationCard";
 import VariationInfoPanel from "./VariationInfoPanel";
 import VariationSelectionAlert from "./VariationSelectionAlert";
 import FlexibleGradeSelector from "./FlexibleGradeSelector";
+import GradeFirstSelector from "./GradeFirstSelector";
 import { hasFlexibleConfig, allowsMultiplePurchaseOptions } from "@/types/flexible-grade";
 import type { CustomGradeSelection } from "@/types/flexible-grade";
 
@@ -35,6 +36,8 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   showStock = false,
   onFlexibleGradeModeChange,
   onCustomSelectionChange,
+  onAddToCart,
+  addedColors = [],
 }) => {
   // Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
@@ -115,7 +118,26 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   }
 
   if (hasGradeVariations) {
-    // Renderizar seletor para variações de grade
+    // 🔴 NOVO: Verificar se tem configuração flexível para usar novo fluxo
+    const firstGradeVariation = grades[0];
+    const hasFlexible = firstGradeVariation?.flexible_grade_config && 
+                       allowsMultiplePurchaseOptions(firstGradeVariation.flexible_grade_config);
+    
+    // Se tem configuração flexível E tem callback onAddToCart, usar novo fluxo
+    if (hasFlexible && onAddToCart) {
+      return (
+        <GradeFirstSelector
+          variations={grades}
+          basePrice={basePrice}
+          onAddToCart={onAddToCart}
+          showPrices={showPriceInCards}
+          showStock={showStock}
+          addedColors={addedColors}
+        />
+      );
+    }
+    
+    // Fluxo antigo (compatibilidade)
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Header */}

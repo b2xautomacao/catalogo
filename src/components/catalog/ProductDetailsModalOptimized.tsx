@@ -102,6 +102,8 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
   // 🔴 NOVO: Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
   const [customGradeSelection, setCustomGradeSelection] = useState<CustomGradeSelection | null>(null);
+  // 🔴 NOVO: Rastrear cores adicionadas ao carrinho
+  const [addedColors, setAddedColors] = useState<string[]>([]);
 
   // Dados simulados para demonstração
   const mockData = {
@@ -184,6 +186,12 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
       );
       
       addItem(cartItem);
+      
+      // 🔴 NOVO: Adicionar cor à lista de cores adicionadas
+      const color = selectedVariation.grade_color || selectedVariation.color || '';
+      if (color && !addedColors.includes(color)) {
+        setAddedColors(prev => [...prev, color]);
+      }
       
       toast({
         title: "Produto adicionado!",
@@ -460,6 +468,44 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                           estimatedPrice: selection.estimatedPrice,
                         } : null);
                       }}
+                      // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
+                      onAddToCart={(variation, gradeMode, customSel) => {
+                        const finalQuantity = variation.is_grade ? 1 : quantity;
+                        const cartItem = createCartItem(
+                          product,
+                          catalogType,
+                          finalQuantity,
+                          variation,
+                          gradeMode,
+                          customSel ? {
+                            items: customSel.items.map(item => ({
+                              color: item.color || '',
+                              size: item.size || '',
+                              quantity: item.quantity || 0,
+                            })),
+                            totalPairs: customSel.totalPairs || 0,
+                          } : undefined
+                        );
+                        
+                        addItem(cartItem);
+                        
+                        // Adicionar cor à lista de cores adicionadas
+                        const color = variation.grade_color || variation.color || '';
+                        if (color && !addedColors.includes(color)) {
+                          setAddedColors(prev => [...prev, color]);
+                        }
+                        
+                        toast({
+                          title: "Produto adicionado!",
+                          description: `${color} ${
+                            variation.is_grade 
+                              ? ` (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''})` 
+                              : ""
+                          } adicionado.`,
+                        });
+                      }}
+                      // 🔴 NOVO: Passar cores já adicionadas para sugestões
+                      addedColors={addedColors}
                     />
                   </div>
                 ) : null}
