@@ -21,6 +21,7 @@ import { createCartItem } from "@/utils/cartHelpers";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductVariationSelector from "@/components/catalog/ProductVariationSelector";
 import ImprovedGradeSelector from "@/components/catalog/ImprovedGradeSelector";
+import type { CustomGradeSelection } from "@/types/flexible-grade";
 import FloatingCart from "@/components/catalog/FloatingCart";
 import EnhancedCheckout from "@/components/catalog/checkout/EnhancedCheckout";
 // 🚀 Componentes de Conversão - FASE 1
@@ -77,6 +78,8 @@ const ProductPage: React.FC<ProductPageProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  // 🔴 NOVO: Rastrear cores adicionadas ao carrinho (para sugestões)
+  const [addedColors, setAddedColors] = useState<string[]>([]);
   const [storeName, setStoreName] = useState<string>('');
   const [storePhone, setStorePhone] = useState<string>('');
   const [catalogUrl, setCatalogUrl] = useState<string>('/');
@@ -596,13 +599,64 @@ const ProductPage: React.FC<ProductPageProps> = ({
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
                 {hasGradeVariations ? (
-                  <ImprovedGradeSelector
+                  <ProductVariationSelector
                     variations={product.variations || []}
                     selectedVariation={selectedVariation}
                     onVariationChange={setSelectedVariation}
                     basePrice={product.retail_price}
-                    showPrices={true}
+                    showPriceInCards={true}
                     showStock={true}
+                    // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
+                    onAddToCart={(variation, gradeMode, customSel) => {
+                      if (!product) return;
+                      
+                      const finalQuantity = variation.is_grade ? 1 : quantity;
+                      const cartItem = createCartItem(
+                        product,
+                        'retail',
+                        finalQuantity,
+                        variation,
+                        gradeMode,
+                        customSel ? {
+                          items: customSel.items.map(item => ({
+                            color: item.color || '',
+                            size: item.size || '',
+                            quantity: item.quantity || 0,
+                          })),
+                          totalPairs: customSel.totalPairs || 0,
+                        } : undefined
+                      );
+                      
+                      addItem(cartItem);
+                      
+                      // Adicionar cor à lista de cores adicionadas
+                      const color = variation.grade_color || variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
+                      
+                      // 📊 Tracking: AddToCart
+                      trackAddToCart({
+                        id: product.id,
+                        name: product.name,
+                        price: cartItem.price,
+                        quantity: finalQuantity,
+                      });
+                      
+                      toast({
+                        title: "✅ Adicionado ao carrinho!",
+                        description: `${color} ${
+                          variation.is_grade 
+                            ? ` (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''})` 
+                            : ""
+                        } adicionado.`,
+                      });
+                      
+                      // Abrir FloatingCart automaticamente
+                      toggleCart();
+                    }}
+                    // 🔴 NOVO: Passar cores já adicionadas para sugestões
+                    addedColors={addedColors}
                   />
                 ) : (
                   <ProductVariationSelector
@@ -612,6 +666,57 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     basePrice={product.retail_price}
                     showPriceInCards={true}
                     showStock={true}
+                    // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
+                    onAddToCart={(variation, gradeMode, customSel) => {
+                      if (!product) return;
+                      
+                      const finalQuantity = variation.is_grade ? 1 : quantity;
+                      const cartItem = createCartItem(
+                        product,
+                        'retail',
+                        finalQuantity,
+                        variation,
+                        gradeMode,
+                        customSel ? {
+                          items: customSel.items.map(item => ({
+                            color: item.color || '',
+                            size: item.size || '',
+                            quantity: item.quantity || 0,
+                          })),
+                          totalPairs: customSel.totalPairs || 0,
+                        } : undefined
+                      );
+                      
+                      addItem(cartItem);
+                      
+                      // Adicionar cor à lista de cores adicionadas
+                      const color = variation.grade_color || variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
+                      
+                      // 📊 Tracking: AddToCart
+                      trackAddToCart({
+                        id: product.id,
+                        name: product.name,
+                        price: cartItem.price,
+                        quantity: finalQuantity,
+                      });
+                      
+                      toast({
+                        title: "✅ Adicionado ao carrinho!",
+                        description: `${color} ${
+                          variation.is_grade 
+                            ? ` (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''})` 
+                            : ""
+                        } adicionado.`,
+                      });
+                      
+                      // Abrir FloatingCart automaticamente
+                      toggleCart();
+                    }}
+                    // 🔴 NOVO: Passar cores já adicionadas para sugestões
+                    addedColors={addedColors}
                   />
                 )}
               </div>
