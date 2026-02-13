@@ -24,6 +24,14 @@ interface ProductVariationSelectorProps {
   // 🔴 NOVO: Callbacks para expor estado de grade flexível
   onFlexibleGradeModeChange?: (mode: 'full' | 'half' | 'custom') => void;
   onCustomSelectionChange?: (selection: CustomGradeSelection | null) => void;
+  // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (para novo fluxo)
+  onAddToCart?: (
+    variation: ProductVariation,
+    gradeMode: 'full' | 'half' | 'custom',
+    customSelection?: CustomGradeSelection
+  ) => void;
+  // 🔴 NOVO: Cores já adicionadas ao carrinho (para sugestões)
+  addedColors?: string[];
 }
 
 const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
