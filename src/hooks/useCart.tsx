@@ -245,10 +245,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const product = item.product;
       const quantity = item.quantity;
 
-      // Se for uma grade, não recalcular o preço (já foi calculado corretamente no cartHelpers)
+      // 🔴 NOVO: Se for uma grade com modo flexível (meia grade ou custom), não recalcular o preço
+      // O preço já foi calculado corretamente no cartHelpers baseado no modo selecionado
       if (item.gradeInfo && item.variation?.is_grade) {
+        // Se tem flexibleGradeMode diferente de 'full', preservar o preço calculado
+        if (item.flexibleGradeMode && item.flexibleGradeMode !== 'full') {
+          console.log(
+            `📦 [recalculateItemPrices] ${product.name}: Mantendo preço de ${item.flexibleGradeMode === 'half' ? 'meia grade' : 'grade customizada'} (R$${item.price})`
+          );
+          return {
+            ...item,
+            // Manter o preço original calculado para meia grade/custom
+            isWholesalePrice: item.catalogType === "wholesale",
+            currentTier: undefined,
+            nextTier: undefined,
+            nextTierQuantityNeeded: undefined,
+            nextTierPotentialSavings: undefined,
+          };
+        }
+        
+        // Para grade completa, também preservar o preço (já calculado corretamente)
         console.log(
-          `📦 [recalculateItemPrices] ${product.name}: Mantendo preço da grade (R$${item.price})`
+          `📦 [recalculateItemPrices] ${product.name}: Mantendo preço da grade completa (R$${item.price})`
         );
         return {
           ...item,

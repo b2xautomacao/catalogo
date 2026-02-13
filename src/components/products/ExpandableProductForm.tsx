@@ -432,19 +432,9 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
               // Verificar TODAS as constraints possíveis (não apenas uma)
               const checks: Promise<any>[] = [];
               
-              // Check 1: SKU (prioridade - SKU deve ser único)
-              if (variationData.sku) {
-                checks.push(
-                  supabaseAny
-                    .from('product_variations')
-                    .select('id')
-                    .eq('product_id', variationData.product_id)
-                    .eq('sku', variationData.sku)
-                    .maybeSingle()
-                );
-              }
-              
-              // Check 2: grade_name + grade_color (prioridade para grades)
+              // 🔴 CORREÇÃO: Para grades, verificar grade_name + grade_color PRIMEIRO
+              // porque cada cor deve ter um grade_name diferente (ex: "Baixa - Preto" vs "Baixa - Amarelo")
+              // e isso é mais específico que SKU
               if (variationData.is_grade && variationData.grade_name && variationData.grade_color) {
                 checks.push(
                   supabaseAny
@@ -453,6 +443,20 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                     .eq('product_id', variationData.product_id)
                     .eq('grade_name', variationData.grade_name)
                     .eq('grade_color', variationData.grade_color)
+                    .maybeSingle()
+                );
+              }
+              
+              // Check 2: SKU (verificar depois de grade para não conflitar com múltiplas cores)
+              // SKU deve ser único, mas para grades com múltiplas cores, cada cor deve ter SKU diferente
+              if (variationData.sku && !variationData.is_grade) {
+                // Para grades, não verificar SKU isoladamente porque pode haver múltiplas cores com SKUs diferentes
+                checks.push(
+                  supabaseAny
+                    .from('product_variations')
+                    .select('id')
+                    .eq('product_id', variationData.product_id)
+                    .eq('sku', variationData.sku)
                     .maybeSingle()
                 );
               }
@@ -534,25 +538,27 @@ const ExpandableProductFormContent: React.FC<ExpandableProductFormProps> = ({
                     const isNameError = errorMessage.includes('product_variations_product_id_name_key');
                     const isColorSizeError = errorMessage.includes('product_variations_product_id_color_size_key');
                     
-                    // Check 1: SKU (prioridade - verificar primeiro se erro menciona SKU)
-                    if ((isSkuError || variationData.sku) && variationData.sku) {
-                      const result = await supabaseAny
-                        .from('product_variations')
-                        .select('id')
-                        .eq('product_id', variationData.product_id)
-                        .eq('sku', variationData.sku)
-                        .maybeSingle();
-                      if (result.data) foundVariation = result.data;
-                    }
-                    
-                    // Check 2: grade_name + grade_color
-                    if (!foundVariation && (isGradeError || (variationData.grade_name && variationData.grade_color))) {
+                    // 🔴 CORREÇÃO: Para grades, verificar grade_name + grade_color PRIMEIRO
+                    // porque cada cor deve ter um grade_name diferente
+                    if (!foundVariation && variationData.is_grade && (isGradeError || (variationData.grade_name && variationData.grade_color))) {
                       const result = await supabaseAny
                         .from('product_variations')
                         .select('id')
                         .eq('product_id', variationData.product_id)
                         .eq('grade_name', variationData.grade_name)
                         .eq('grade_color', variationData.grade_color)
+                        .maybeSingle();
+                      if (result.data) foundVariation = result.data;
+                    }
+                    
+                    // Check 2: SKU (verificar depois de grade para não conflitar com múltiplas cores)
+                    if (!foundVariation && (isSkuError || variationData.sku) && variationData.sku && !variationData.is_grade) {
+                      // Para grades, não verificar SKU isoladamente porque pode haver múltiplas cores com SKUs diferentes
+                      const result = await supabaseAny
+                        .from('product_variations')
+                        .select('id')
+                        .eq('product_id', variationData.product_id)
+                        .eq('sku', variationData.sku)
                         .maybeSingle();
                       if (result.data) foundVariation = result.data;
                     }

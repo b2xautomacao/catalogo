@@ -37,6 +37,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { createCartItem } from "@/utils/cartHelpers";
+import { useCart } from "@/hooks/useCart";
+import type { CustomGradeSelection } from "@/types/flexible-grade";
 
 // Componente para exibir imagem do produto relacionado
 const RelatedProductImage: React.FC<{
@@ -138,11 +141,15 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   relatedProducts = [],
 }) => {
   const { toast } = useToast();
+  const { addItem } = useCart();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedVariation, setSelectedVariation] =
     useState<ProductVariation | null>(null);
   const [quickAddItems, setQuickAddItems] = useState<VariationSelection[]>([]);
   const [isGradeSelected, setIsGradeSelected] = useState(false);
+  // 🔴 NOVO: Estado para grade flexível
+  const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
+  const [customGradeSelection, setCustomGradeSelection] = useState<CustomGradeSelection | null>(null);
 
   // Usar um produto "vazio" para manter consistência dos hooks
   const safeProduct =
@@ -296,6 +303,39 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const handleSingleVariationAddToCart = (variation: ProductVariation) => {
     // Para produtos com grade, quantidade sempre é 1 (1 grade completa)
     const finalQuantity = variation.is_grade ? 1 : minQuantity;
+
+    // 🔴 NOVO: Se for grade flexível, usar createCartItem diretamente com flexibleGradeMode
+    if (variation.is_grade && variation.flexible_grade_config) {
+      const cartItem = createCartItem(
+        product,
+        catalogType,
+        finalQuantity,
+        variation,
+        flexibleGradeMode,
+        customGradeSelection ? {
+          items: customGradeSelection.items.map(item => ({
+            color: item.color || '',
+            size: item.size || '',
+            quantity: item.quantity || 0,
+          })),
+          totalPairs: customGradeSelection.totalPairs || 0,
+        } : undefined
+      );
+      
+      addItem(cartItem);
+      
+      toast({
+        title: "Adicionado ao carrinho!",
+        description: `${variation.color || ""} ${
+          variation.size || ""
+        }${
+          variation.is_grade 
+            ? ` (${variation.grade_name || "Grade"}${flexibleGradeMode === 'half' ? ' - Meia Grade' : flexibleGradeMode === 'custom' ? ' - Personalizada' : ''})` 
+            : ""
+        } adicionado.`,
+      });
+      return;
+    }
 
     onAddToCart(product, finalQuantity, variation);
 
@@ -612,6 +652,11 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           onVariationChange={(variation) => {
                             setSelectedVariation(variation);
                             setIsGradeSelected(!!variation?.is_grade);
+                            // Resetar modo quando variação muda
+                            if (variation?.id !== selectedVariation?.id) {
+                              setFlexibleGradeMode('full');
+                              setCustomGradeSelection(null);
+                            }
                           }}
                           basePrice={
                             catalogType === "wholesale"
@@ -622,6 +667,18 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           }
                           showPriceInCards={false}
                           showStock={showStock}
+                          // 🔴 NOVO: Passar callbacks para capturar modo de grade flexível
+                          onFlexibleGradeModeChange={setFlexibleGradeMode}
+                          onCustomSelectionChange={(selection) => {
+                            setCustomGradeSelection(selection ? {
+                              items: selection.items.map(item => ({
+                                color: item.color || '',
+                                size: item.size || '',
+                                quantity: item.quantity || 0,
+                              })),
+                              totalPairs: selection.totalPairs || 0,
+                            } : null);
+                          }}
                         />
 
                         {/* Card de variação selecionada */}

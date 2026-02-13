@@ -41,6 +41,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { createCartItem } from "@/utils/cartHelpers";
+import { useCart } from "@/hooks/useCart";
+import type { CustomGradeSelection } from "@/types/flexible-grade";
 
 // Componentes de conversão
 import UrgencyBadges from "./conversion/UrgencyBadges";
@@ -89,12 +92,23 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
   cartTotal = 0,
 }) => {
   const { toast } = useToast();
+  const { addItem } = useCart();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [quickAddItems, setQuickAddItems] = useState<VariationSelection[]>([]);
   const [isGradeSelected, setIsGradeSelected] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  // 🔴 NOVO: Estado para grade flexível
+  const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
+  const [customGradeSelection, setCustomGradeSelection] = useState<{
+    items: Array<{
+      color: string;
+      size: string;
+      quantity: number;
+    }>;
+    totalPairs: number;
+  } | null>(null);
 
   // Dados simulados para demonstração
   const mockData = {
@@ -153,6 +167,40 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
         title: "Selecione uma variação",
         description: "Escolha cor, tamanho ou grade antes de adicionar ao carrinho.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // 🔴 NOVO: Se for grade flexível, usar createCartItem diretamente
+    if (selectedVariation?.is_grade && selectedVariation?.flexible_grade_config) {
+      const finalQuantity = selectedVariation.is_grade ? 1 : quantity;
+      const cartItem = createCartItem(
+        product,
+        catalogType,
+        finalQuantity,
+        selectedVariation,
+        flexibleGradeMode,
+        customGradeSelection ? {
+          items: customGradeSelection.items.map(item => ({
+            color: item.color || '',
+            size: item.size || '',
+            quantity: item.quantity || 0,
+          })),
+          totalPairs: customGradeSelection.totalPairs || 0,
+        } : undefined
+      );
+      
+      addItem(cartItem);
+      
+      toast({
+        title: "Produto adicionado!",
+        description: `${selectedVariation.color || ""} ${
+          selectedVariation.size || ""
+        }${
+          selectedVariation.is_grade 
+            ? ` (${selectedVariation.grade_name || "Grade"}${flexibleGradeMode === 'half' ? ' - Meia Grade' : flexibleGradeMode === 'custom' ? ' - Personalizada' : ''})` 
+            : ""
+        } adicionado.`,
       });
       return;
     }
@@ -402,6 +450,14 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                       basePrice={price}
                       showPriceInCards={true}
                       showStock={showStock}
+                      // 🔴 NOVO: Passar callbacks para capturar modo de grade flexível
+                      onFlexibleGradeModeChange={(mode) => {
+                        // Armazenar modo para usar ao adicionar ao carrinho
+                        setFlexibleGradeMode(mode);
+                      }}
+                      onCustomSelectionChange={(selection) => {
+                        setCustomGradeSelection(selection);
+                      }}
                     />
                   </div>
                 ) : null}

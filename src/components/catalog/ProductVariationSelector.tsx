@@ -20,6 +20,9 @@ interface ProductVariationSelectorProps {
   basePrice?: number;
   showPriceInCards?: boolean;
   showStock?: boolean;
+  // 🔴 NOVO: Callbacks para expor estado de grade flexível
+  onFlexibleGradeModeChange?: (mode: 'full' | 'half' | 'custom') => void;
+  onCustomSelectionChange?: (selection: CustomGradeSelection | null) => void;
 }
 
 const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
@@ -30,10 +33,35 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   basePrice = 0,
   showPriceInCards = false,
   showStock = false,
+  onFlexibleGradeModeChange,
+  onCustomSelectionChange,
 }) => {
   // Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
   const [customSelection, setCustomSelection] = useState<CustomGradeSelection | null>(null);
+  
+  // 🔴 CORREÇÃO: Atualizar callbacks quando o modo ou seleção customizada mudar
+  const handleModeSelect = (mode: 'full' | 'half' | 'custom') => {
+    setFlexibleGradeMode(mode);
+    if (onFlexibleGradeModeChange) {
+      onFlexibleGradeModeChange(mode);
+    }
+  };
+  
+  const handleCustomSelection = (selection: CustomGradeSelection | null) => {
+    setCustomSelection(selection);
+    if (onCustomSelectionChange) {
+      onCustomSelectionChange(selection);
+    }
+  };
+  
+  // 🔴 CORREÇÃO: Resetar modo quando a variação selecionada mudar
+  React.useEffect(() => {
+    if (selectedVariation) {
+      setFlexibleGradeMode('full');
+      setCustomSelection(null);
+    }
+  }, [selectedVariation?.id]);
   if (loading) {
     return (
       <div className="space-y-4">
@@ -169,8 +197,8 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
             return (
               <FlexibleGradeSelector
                 variation={selectedVariation}
-                onModeSelect={setFlexibleGradeMode}
-                onCustomSelection={setCustomSelection}
+                onModeSelect={handleModeSelect}
+                onCustomSelection={handleCustomSelection}
                 basePrice={basePrice}
                 selectedMode={flexibleGradeMode}
                 showPrices={showPriceInCards}

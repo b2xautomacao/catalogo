@@ -2,12 +2,22 @@ import { Product } from "@/hooks/useProducts";
 import { CatalogType } from "@/hooks/useCatalog";
 import { CartItem } from "@/hooks/useCart";
 import { ProductVariation } from "@/types/variation";
+import { calculateHalfGradeInfo } from "@/types/flexible-grade";
 
 export const createCartItem = (
   product: Product,
   catalogType: CatalogType,
   quantity: number = 1,
-  variation?: ProductVariation
+  variation?: ProductVariation,
+  flexibleGradeMode?: 'full' | 'half' | 'custom',
+  customSelection?: {
+    items: Array<{
+      color: string;
+      size: string;
+      quantity: number;
+    }>;
+    totalPairs: number;
+  }
 ): CartItem => {
   console.log("🛒 CART HELPER - Criando item do carrinho:", {
     productId: product.id,
@@ -45,15 +55,16 @@ export const createCartItem = (
     ? basePrice + (variation.price_adjustment || 0)
     : basePrice;
 
-  // Se for uma variação de grade, calcular preço baseado na quantidade de pares
+  // 🔴 NOVO: Se for uma variação de grade, calcular preço baseado no modo selecionado
   if (
     variation &&
     variation.is_grade &&
     variation.grade_pairs &&
-    variation.grade_sizes
+    variation.grade_sizes &&
+    variation.flexible_grade_config
   ) {
     try {
-      // Calcular total de pares na grade
+      const config = variation.flexible_grade_config;
       const totalPairs = Array.isArray(variation.grade_pairs)
         ? variation.grade_pairs.reduce(
             (sum: number, pairs: number) => sum + pairs,
@@ -61,10 +72,87 @@ export const createCartItem = (
           )
         : 0;
 
-      // Preço unitário × quantidade de pares na grade
+      // Calcular preço baseado no modo selecionado
+      if (flexibleGradeMode === 'half' && config.allow_half_grade) {
+        // Meia grade: calcular pares da meia grade e aplicar desconto
+        const halfGradeInfo = calculateHalfGradeInfo(
+          variation.grade_sizes,
+          variation.grade_pairs,
+          config
+        );
+        
+        const halfGradeDiscount = (config.half_grade_discount_percentage || 0) / 100;
+        const halfGradeUnitPrice = basePrice * (1 - halfGradeDiscount);
+        finalPrice = halfGradeUnitPrice * halfGradeInfo.totalPairs;
+        
+        console.log("📦 CART HELPER - Cálculo de MEIA GRADE:", {
+          productName: product.name,
+          gradeName: variation.grade_name,
+          totalPairsFull: totalPairs,
+          totalPairsHalf: halfGradeInfo.totalPairs,
+          basePrice,
+          halfGradeUnitPrice,
+          discount: config.half_grade_discount_percentage,
+          finalPrice: `R$ ${finalPrice.toFixed(2)}`,
+        });
+      } else if (flexibleGradeMode === 'custom' && config.allow_custom_mix && customSelection) {
+        // Grade customizada: usar seleção customizada
+        const customMixAdjustment = config.custom_mix_price_adjustment || 0;
+        const customUnitPrice = basePrice + customMixAdjustment;
+        finalPrice = customUnitPrice * customSelection.totalPairs;
+        
+        console.log("📦 CART HELPER - Cálculo de GRADE CUSTOMIZADA:", {
+          productName: product.name,
+          gradeName: variation.grade_name,
+          totalPairs: customSelection.totalPairs,
+          basePrice,
+          customMixAdjustment,
+          customUnitPrice,
+          finalPrice: `R$ ${finalPrice.toFixed(2)}`,
+        });
+      } else {
+        // Grade completa (padrão)
+        finalPrice = basePrice * totalPairs;
+        
+        console.log("📦 CART HELPER - Cálculo de GRADE COMPLETA:", {
+          productName: product.name,
+          gradeName: variation.grade_name,
+          gradeSizes: variation.grade_sizes,
+          gradePairs: variation.grade_pairs,
+          totalPairs,
+          basePrice,
+          finalPrice: `R$ ${finalPrice.toFixed(2)}`,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Erro ao calcular preço da grade:", error);
+      // Fallback para cálculo padrão
+      const totalPairs = Array.isArray(variation.grade_pairs)
+        ? variation.grade_pairs.reduce(
+            (sum: number, pairs: number) => sum + pairs,
+            0
+          )
+        : 0;
+      finalPrice = basePrice * totalPairs;
+    }
+  } else if (
+    variation &&
+    variation.is_grade &&
+    variation.grade_pairs &&
+    variation.grade_sizes
+  ) {
+    // Fallback: se não tem config flexível, calcular como grade completa
+    try {
+      const totalPairs = Array.isArray(variation.grade_pairs)
+        ? variation.grade_pairs.reduce(
+            (sum: number, pairs: number) => sum + pairs,
+            0
+          )
+        : 0;
+
       finalPrice = basePrice * totalPairs;
 
-      console.log("📦 CART HELPER - Cálculo de grade:", {
+      console.log("📦 CART HELPER - Cálculo de grade (sem config flexível):", {
         productName: product.name,
         gradeName: variation.grade_name,
         gradeSizes: variation.grade_sizes,
@@ -75,7 +163,6 @@ export const createCartItem = (
       });
     } catch (error) {
       console.error("❌ Erro ao calcular preço da grade:", error);
-      // Fallback para preço normal se houver erro
     }
   }
 
@@ -185,6 +272,9 @@ export const createCartItem = (
               : [],
           }
         : undefined,
+    // 🔴 NOVO: Adicionar modo de grade flexível e seleção customizada
+    flexibleGradeMode: flexibleGradeMode || 'full',
+    customGradeSelection: customSelection,
   };
 
   console.log("✅ CART HELPER - Item criado:", {
