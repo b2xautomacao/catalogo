@@ -37,6 +37,8 @@ import { formatCurrency } from "@/lib/utils";
 interface CustomGradeBuilderProps {
   /** Variação de grade base */
   variation: ProductVariation;
+  /** Todas as variações de grade do produto (para obter todas as cores disponíveis) */
+  allVariations?: ProductVariation[];
   /** Configuração de grade flexível */
   config: FlexibleGradeConfig;
   /** Preço base por par */
@@ -49,6 +51,7 @@ interface CustomGradeBuilderProps {
 
 const CustomGradeBuilder: React.FC<CustomGradeBuilderProps> = ({
   variation,
+  allVariations,
   config,
   basePrice,
   onComplete,
@@ -70,10 +73,32 @@ const CustomGradeBuilder: React.FC<CustomGradeBuilderProps> = ({
 
   // Cores e tamanhos disponíveis
   const availableColors = useMemo(() => {
-    // Em um cenário real, isso viria de todas as cores disponíveis
-    // Por agora, usar a cor da grade como opção
-    return [variation.grade_color || variation.color || 'Padrão'];
-  }, [variation]);
+    // 🔴 NOVO: Obter todas as cores disponíveis de todas as variações de grade
+    const colorsSet = new Set<string>();
+    
+    // Se temos todas as variações, usar todas as cores
+    if (allVariations && allVariations.length > 0) {
+      allVariations.forEach(v => {
+        const color = v.grade_color || v.color;
+        if (color) {
+          colorsSet.add(color);
+        }
+      });
+    } else {
+      // Fallback: usar apenas a cor da variação atual
+      const color = variation.grade_color || variation.color;
+      if (color) {
+        colorsSet.add(color);
+      }
+    }
+    
+    // Se não encontrou nenhuma cor, usar 'Padrão'
+    if (colorsSet.size === 0) {
+      colorsSet.add('Padrão');
+    }
+    
+    return Array.from(colorsSet).sort();
+  }, [variation, allVariations]);
 
   const availableSizes = useMemo(() => {
     if (config.custom_mix_allow_any_size && variation.grade_sizes) {

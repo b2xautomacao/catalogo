@@ -223,6 +223,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
         
         <CustomGradeBuilder
           variation={firstVariation}
+          allVariations={variations}
           config={config!}
           basePrice={basePrice}
           onComplete={handleCustomSelectionComplete}

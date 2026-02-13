@@ -252,6 +252,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
             return (
               <FlexibleGradeSelector
                 variation={selectedVariation}
+                allVariations={variations}
                 onModeSelect={handleModeSelect}
                 onCustomSelection={handleCustomSelection}
                 basePrice={basePrice}

@@ -34,6 +34,8 @@ import CustomGradeBuilder from "./CustomGradeBuilder";
 interface FlexibleGradeSelectorProps {
   /** Variação de grade com configuração flexível */
   variation: ProductVariation;
+  /** Todas as variações de grade do produto (para obter todas as cores disponíveis) */
+  allVariations?: ProductVariation[];
   /** Callback quando modo é selecionado */
   onModeSelect: (mode: 'full' | 'half' | 'custom') => void;
   /** Callback quando seleção customizada é feita */
@@ -48,6 +50,7 @@ interface FlexibleGradeSelectorProps {
 
 const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
   variation,
+  allVariations,
   onModeSelect,
   onCustomSelection,
   basePrice,
@@ -144,6 +147,7 @@ const FlexibleGradeSelector: React.FC<FlexibleGradeSelectorProps> = ({
         
         <CustomGradeBuilder
           variation={variation}
+          allVariations={allVariations}
           config={config}
           basePrice={basePrice}
           onComplete={handleCustomSelectionComplete}
