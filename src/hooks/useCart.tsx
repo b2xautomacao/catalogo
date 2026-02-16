@@ -241,7 +241,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       cartItems.length
     );
 
-    return cartItems.map((item) => {
+    const recalculatedItems = cartItems.map((item) => {
       const product = item.product;
       const quantity = item.quantity;
 
@@ -279,23 +279,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Debug para verificar se gradeInfo está chegando
-      console.log(
-        `🔍 [recalculateItemPrices] ${product.name}: Debug gradeInfo:`,
-        {
-          hasGradeInfo: !!item.gradeInfo,
-          gradeInfo: item.gradeInfo,
-          hasVariation: !!item.variation,
-          variationIsGrade: item.variation?.is_grade,
-          itemPrice: item.price,
-          itemKeys: Object.keys(item),
-        }
-      );
-
       // Se for catálogo atacado ou apenas atacado, sempre usar preço de atacado
+      // MAS: se tiver atacado gradativo ativo, deixar a lógica de tiers processar primeiro
       if (
-        item.catalogType === "wholesale" ||
-        product.price_model === "wholesale_only"
+        (item.catalogType === "wholesale" || product.price_model === "wholesale_only") &&
+        !product.enable_gradual_wholesale // Só aplicar diretamente se não tiver gradativo
       ) {
         const wholesalePrice =
           product.wholesale_price || product.retail_price || 0;
@@ -386,10 +374,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Se catalogType é "wholesale", aplicar regra de quantidade mínima
+      // Se catalogType é "wholesale" (mas não é wholesale_only), aplicar regra de quantidade mínima
       // Verificar preço atacado simples do produto (só se atacado gradativo estiver desativado)
       if (
         item.catalogType === "wholesale" &&
+        product.price_model !== "wholesale_only" && // Não é wholesale_only
         !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
         product.wholesale_price &&
         product.min_wholesale_qty &&
@@ -405,8 +394,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Se modo atacado mas quantidade < mínima, usar preço varejo como fallback
-      if (item.catalogType === "wholesale") {
+      // Se modo atacado mas quantidade < mínima (e não é wholesale_only), usar preço varejo como fallback
+      if (
+        item.catalogType === "wholesale" &&
+        product.price_model !== "wholesale_only"
+      ) {
         console.log(
           `⚠️ [recalculateItemPrices] ${product.name}: MODO ATACADO - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
         );
@@ -414,6 +406,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           ...item,
           price: item.originalPrice,
           isWholesalePrice: false,
+        };
+      }
+
+      // Se é wholesale_only mas não entrou na condição anterior (porque tem gradativo), aplicar preço de atacado diretamente
+      if (product.price_model === "wholesale_only") {
+        const wholesalePrice =
+          product.wholesale_price || product.retail_price || 0;
+        console.log(
+          `✅ [recalculateItemPrices] ${product.name}: WHOLESALE_ONLY - Aplicando preço atacado: R$${wholesalePrice}`
+        );
+        return {
+          ...item,
+          price: wholesalePrice,
+          originalPrice: wholesalePrice,
+          isWholesalePrice: true,
+          currentTier: undefined,
+          nextTier: undefined,
+          nextTierQuantityNeeded: undefined,
+          nextTierPotentialSavings: undefined,
         };
       }
 
@@ -428,70 +439,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     });
 
-    // Log final para verificar se os preços foram recalculados
-    const finalItems = cartItems.map((item) => {
-      const product = item.product;
-      const quantity = item.quantity;
-
-      // Se for catálogo atacado ou apenas atacado, sempre usar preço de atacado
-      if (
-        item.catalogType === "wholesale" ||
-        product.price_model === "wholesale_only"
-      ) {
-        // Debug para verificar por que não está entrando na condição da grade
-        console.log(
-          `🔍 [recalculateItemPrices] ${product.name}: Debug grade:`,
-          {
-            hasGradeInfo: !!item.gradeInfo,
-            hasVariation: !!item.variation,
-            variationIsGrade: item.variation?.is_grade,
-            gradeInfo: item.gradeInfo,
-            variation: item.variation,
-          }
-        );
-
-        // Para grades, preservar o preço já calculado
-        if (item.gradeInfo && item.variation?.is_grade) {
-          console.log(
-            `📦 [recalculateItemPrices] ${product.name}: Preservando preço da grade (R$${item.price})`
-          );
-          return {
-            ...item,
-            isWholesalePrice: true,
-            currentTier: undefined,
-            nextTier: undefined,
-            nextTierQuantityNeeded: undefined,
-            nextTierPotentialSavings: undefined,
-          };
-        }
-
-        const wholesalePrice =
-          product.wholesale_price || product.retail_price || 0;
-        return {
-          ...item,
-          price: wholesalePrice,
-          originalPrice: wholesalePrice,
-          isWholesalePrice: true,
-          currentTier: undefined,
-          nextTier: undefined,
-          nextTierQuantityNeeded: undefined,
-          nextTierPotentialSavings: undefined,
-        };
-      }
-      return item;
-    });
-
     console.log(
       "🔄 [recalculateItemPrices] FINALIZANDO - Itens recalculados:",
-      finalItems.map((item) => ({
+      recalculatedItems.map((item) => ({
         name: item.product.name,
         price: item.price,
         catalogType: item.catalogType,
         isWholesalePrice: item.isWholesalePrice,
+        quantity: item.quantity,
+        subtotal: item.price * item.quantity,
       }))
     );
 
-    return finalItems;
+    return recalculatedItems;
   };
 
   // Carregar itens do localStorage com validação (APENAS UMA VEZ)
