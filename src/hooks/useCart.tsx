@@ -224,12 +224,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const { supabase } = await import("../integrations/supabase/client");
-      const { data: priceModel } = await supabase
+      const res = await supabase
         .from("store_price_models")
-        .select("*")
+        .select("id, store_id, price_model, is_active, minimum_purchase_amount, minimum_purchase_message, simple_wholesale_enabled, simple_wholesale_name")
         .eq("store_id", storeId)
         .eq("is_active", true)
-        .single();
+        .maybeSingle();
+      const priceModel = res.data as { id: string; store_id: string; price_model: string } | null;
 
       if (priceModel) {
         setPriceModelCache((prev) => ({ ...prev, [storeId]: priceModel }));
@@ -598,7 +599,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             }
 
             // Recalcular preços ao carregar
-            const recalculatedItems = recalculateItemPrices(validItems);
+            const recalculatedItems = await recalculateItemPrices(validItems);
             setItems(recalculatedItems);
           } else {
             console.warn(
