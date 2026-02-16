@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -38,11 +39,16 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
   onUnsavedChanges, // 🎯 NOVO: Callback para mudanças pendentes
 }) => {
   const [selectedMode, setSelectedMode] = useState<string>("retail_only");
-  const [originalMode, setOriginalMode] = useState<string>("retail_only"); // 🎯 NOVO: Valor original
+  const [originalMode, setOriginalMode] = useState<string>("retail_only");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // 🎯 NOVO: Estado de mudanças
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // Atacado por quantidade total do carrinho (apenas para simple_wholesale)
+  const [simpleWholesaleByCartTotal, setSimpleWholesaleByCartTotal] = useState(false);
+  const [simpleWholesaleCartMinQty, setSimpleWholesaleCartMinQty] = useState(10);
+  const [originalByCartTotal, setOriginalByCartTotal] = useState(false);
+  const [originalCartMinQty, setOriginalCartMinQty] = useState(10);
   const { toast } = useToast();
 
   const pricingModes: PricingMode[] = [
@@ -140,10 +146,16 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
 
       if (data) {
         setSelectedMode(data.price_model || "retail_only");
-        setOriginalMode(data.price_model || "retail_only"); // 🎯 NOVO: Salva o valor original
+        setOriginalMode(data.price_model || "retail_only");
+        const byCart = data.simple_wholesale_by_cart_total === true;
+        const cartMin = typeof data.simple_wholesale_cart_min_qty === "number" ? data.simple_wholesale_cart_min_qty : 10;
+        setSimpleWholesaleByCartTotal(byCart);
+        setSimpleWholesaleCartMinQty(cartMin);
+        setOriginalByCartTotal(byCart);
+        setOriginalCartMinQty(cartMin);
       } else {
         setSelectedMode("retail_only");
-        setOriginalMode("retail_only"); // 🎯 NOVO: Salva o valor original
+        setOriginalMode("retail_only");
       }
     } catch (error) {
       console.error("Erro ao carregar configuração:", error);
@@ -166,10 +178,14 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
       );
       if (!selectedModeConfig) return;
 
-      const configToSave = {
+      const configToSave: Record<string, unknown> = {
         store_id: storeId,
         ...selectedModeConfig.config,
       };
+      if (selectedMode === "simple_wholesale") {
+        configToSave.simple_wholesale_by_cart_total = simpleWholesaleByCartTotal;
+        configToSave.simple_wholesale_cart_min_qty = simpleWholesaleCartMinQty;
+      }
 
       const { error } = await supabase
         .from("store_price_models")
@@ -189,9 +205,12 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
         onConfigChange(configToSave);
       }
 
-      setOriginalMode(selectedMode); // 🎯 NOVO: Atualiza o valor original após salvar
-      setHasUnsavedChanges(false); // �� NOVO: Limpa as mudanças pendentes
-
+      setOriginalMode(selectedMode);
+      if (selectedMode === "simple_wholesale") {
+        setOriginalByCartTotal(simpleWholesaleByCartTotal);
+        setOriginalCartMinQty(simpleWholesaleCartMinQty);
+      }
+      setHasUnsavedChanges(false);��
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -206,18 +225,23 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
   };
 
   useEffect(() => {
-    if (selectedMode !== originalMode) {
-      setHasUnsavedChanges(true);
-      if (onUnsavedChanges) {
-        onUnsavedChanges(true);
-      }
-    } else {
-      setHasUnsavedChanges(false);
-      if (onUnsavedChanges) {
-        onUnsavedChanges(false);
-      }
-    }
-  }, [selectedMode, originalMode, onUnsavedChanges]);
+    const modeChanged = selectedMode !== originalMode;
+    const simpleExtraChanged =
+      selectedMode === "simple_wholesale" &&
+      (simpleWholesaleByCartTotal !== originalByCartTotal ||
+        simpleWholesaleCartMinQty !== originalCartMinQty);
+    const hasChanges = modeChanged || simpleExtraChanged;
+    setHasUnsavedChanges(hasChanges);
+    if (onUnsavedChanges) onUnsavedChanges(hasChanges);
+  }, [
+    selectedMode,
+    originalMode,
+    simpleWholesaleByCartTotal,
+    simpleWholesaleCartMinQty,
+    originalByCartTotal,
+    originalCartMinQty,
+    onUnsavedChanges,
+  ]);
 
   if (loading) {
     return (
@@ -312,6 +336,42 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Atacado por quantidade total do carrinho (apenas para Varejo + Atacado) */}
+          {selectedMode === "simple_wholesale" && (
+            <div className="space-y-4 rounded-lg border p-4 bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Atacado por quantidade total do carrinho</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativado, o preço de atacado é aplicado a todos os produtos do carrinho que tenham preço de atacado, desde que o total de unidades no carrinho atinja o mínimo (ex.: 3 un. do produto A + 7 un. do produto B = 10 un. → todos com preço atacado).
+                  </p>
+                </div>
+                <Switch
+                  checked={simpleWholesaleByCartTotal}
+                  onCheckedChange={setSimpleWholesaleByCartTotal}
+                />
+              </div>
+              {simpleWholesaleByCartTotal && (
+                <div className="max-w-xs">
+                  <Label htmlFor="simple_wholesale_cart_min_qty">
+                    Quantidade mínima total (unidades no carrinho)
+                  </Label>
+                  <Input
+                    id="simple_wholesale_cart_min_qty"
+                    type="number"
+                    min={1}
+                    value={simpleWholesaleCartMinQty}
+                    onChange={(e) =>
+                      setSimpleWholesaleCartMinQty(
+                        Math.max(1, parseInt(e.target.value, 10) || 10)
+                      )
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Informações sobre o modo selecionado */}
           <Alert>

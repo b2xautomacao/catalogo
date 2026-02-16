@@ -45,14 +45,20 @@ const PriceModelIndicator: React.FC<PriceModelIndicatorProps> = ({
           color: "bg-orange-50 border-orange-200 text-orange-800",
           badgeColor: "bg-orange-500",
         };
-      case "simple_wholesale":
+      case "simple_wholesale": {
+        const byCartTotal = priceModel.simple_wholesale_by_cart_total === true;
+        const cartMin = priceModel.simple_wholesale_cart_min_qty ?? 10;
+        const description = byCartTotal
+          ? `Atacado quando o carrinho tiver ${cartMin}+ unidades no total`
+          : `Atacado a partir de ${priceModel.simple_wholesale_min_qty} unidades por produto`;
         return {
           icon: <TrendingUp className="h-4 w-4" />,
           title: "Varejo + Atacado",
-          description: `Atacado a partir de ${priceModel.simple_wholesale_min_qty} unidades`,
+          description,
           color: "bg-green-50 border-green-200 text-green-800",
           badgeColor: "bg-green-500",
         };
+      }
       case "gradual_wholesale":
         return {
           icon: <TrendingUp className="h-4 w-4" />,

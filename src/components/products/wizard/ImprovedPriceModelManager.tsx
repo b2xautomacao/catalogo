@@ -28,6 +28,8 @@ interface PriceModelConfig {
   simple_wholesale_enabled: boolean;
   simple_wholesale_min_qty: number;
   simple_wholesale_name: string;
+  simple_wholesale_by_cart_total?: boolean;
+  simple_wholesale_cart_min_qty?: number;
   gradual_wholesale_enabled: boolean;
   gradual_tiers_count: number;
   tier_1_enabled: boolean;
@@ -58,6 +60,8 @@ const ImprovedPriceModelManager: React.FC<ImprovedPriceModelManagerProps> = ({
     simple_wholesale_enabled: false,
     simple_wholesale_min_qty: 10,
     simple_wholesale_name: "Atacado",
+    simple_wholesale_by_cart_total: false,
+    simple_wholesale_cart_min_qty: 10,
     gradual_wholesale_enabled: false,
     gradual_tiers_count: 2,
     tier_1_enabled: true,
@@ -178,7 +182,11 @@ const ImprovedPriceModelManager: React.FC<ImprovedPriceModelManagerProps> = ({
       case "retail_only":
         return "Apenas preço de varejo para todos os clientes";
       case "simple_wholesale":
-        return `Preço de varejo + atacado a partir de ${config.simple_wholesale_min_qty} unidades`;
+        if (config.simple_wholesale_by_cart_total) {
+          const min = config.simple_wholesale_cart_min_qty ?? 10;
+          return `Preço de varejo + atacado quando o carrinho tiver ${min}+ unidades no total`;
+        }
+        return `Preço de varejo + atacado a partir de ${config.simple_wholesale_min_qty} unidades por produto`;
       case "gradual_wholesale":
         return `Sistema de níveis graduais com ${config.gradual_tiers_count} faixas de preço`;
       default:
@@ -353,7 +361,7 @@ const ImprovedPriceModelManager: React.FC<ImprovedPriceModelManagerProps> = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="min_qty">Quantidade Mínima</Label>
+                  <Label htmlFor="min_qty">Quantidade Mínima (por produto)</Label>
                   <QuantityInput
                     value={config.simple_wholesale_min_qty}
                     onChange={(value) =>
@@ -363,6 +371,35 @@ const ImprovedPriceModelManager: React.FC<ImprovedPriceModelManagerProps> = ({
                   />
                 </div>
               </div>
+              <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label>Atacado por quantidade total do carrinho</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativado, o atacado é aplicado a todos os itens da loja que tenham preço de atacado, desde que o total de unidades no carrinho atinja o mínimo.
+                  </p>
+                </div>
+                <Switch
+                  checked={config.simple_wholesale_by_cart_total === true}
+                  onCheckedChange={(checked) =>
+                    updateConfig({ simple_wholesale_by_cart_total: checked })
+                  }
+                />
+              </div>
+              {config.simple_wholesale_by_cart_total && (
+                <div className="max-w-xs">
+                  <Label htmlFor="cart_min_qty">Quantidade mínima total (unidades no carrinho)</Label>
+                  <QuantityInput
+                    id="cart_min_qty"
+                    value={config.simple_wholesale_cart_min_qty ?? 10}
+                    onChange={(value) =>
+                      updateConfig({
+                        simple_wholesale_cart_min_qty: Math.max(1, value),
+                      })
+                    }
+                    min={1}
+                  />
+                </div>
+              )}
             </div>
           )}
 

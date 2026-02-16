@@ -19,6 +19,10 @@ export interface StorePriceModel {
   simple_wholesale_enabled: boolean;
   simple_wholesale_name: string;
   simple_wholesale_min_qty: number;
+  /** Quando true, atacado é aplicado a todos os itens da loja se o total de unidades no carrinho atingir simple_wholesale_cart_min_qty */
+  simple_wholesale_by_cart_total?: boolean;
+  /** Quantidade mínima total no carrinho (soma de todos os itens da loja) para ativar atacado em todos */
+  simple_wholesale_cart_min_qty?: number;
 
   // Configurações para atacado gradativo
   gradual_wholesale_enabled: boolean;

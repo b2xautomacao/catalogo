@@ -23,6 +23,8 @@ export interface StorePriceModel {
   simple_wholesale_enabled: boolean;
   simple_wholesale_name: string;
   simple_wholesale_min_qty: number;
+  simple_wholesale_by_cart_total?: boolean;
+  simple_wholesale_cart_min_qty?: number;
   gradual_wholesale_enabled: boolean;
   gradual_tiers_count: number;
   show_price_tiers: boolean;

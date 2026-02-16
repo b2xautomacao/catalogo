@@ -44,17 +44,23 @@ const CatalogPriceModelBanner: React.FC<CatalogPriceModelBannerProps> = ({
           badgeColor: "bg-orange-500 text-white",
           badge: "Atacado Exclusivo"
         };
-      case "simple_wholesale":
+      case "simple_wholesale": {
+        const byCartTotal = priceModel.simple_wholesale_by_cart_total === true;
+        const cartMin = priceModel.simple_wholesale_cart_min_qty ?? 10;
+        const description = byCartTotal
+          ? `Atacado quando o carrinho tiver ${cartMin}+ unidades no total.`
+          : `Preços especiais de atacado para compras a partir de ${priceModel.simple_wholesale_min_qty} unidades por produto.`;
         return {
           icon: <TrendingUp className="h-5 w-5" />,
           title: "Varejo e Atacado",
-          description: `Preços especiais de atacado para compras a partir de ${priceModel.simple_wholesale_min_qty} unidades.`,
+          description,
           bgColor: "bg-gradient-to-r from-green-50 to-green-100",
           borderColor: "border-green-200",
           textColor: "text-green-800",
           badgeColor: "bg-green-500 text-white",
           badge: "Atacado Disponível"
         };
+      }
       case "gradual_wholesale":
         return {
           icon: <Layers className="h-5 w-5" />,

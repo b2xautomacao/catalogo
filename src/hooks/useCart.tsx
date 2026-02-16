@@ -224,11 +224,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const { supabase } = await import("../integrations/supabase/client");
-      type Row = { id: string; store_id: string; price_model: string };
+      type Row = {
+        id: string;
+        store_id: string;
+        price_model: string;
+        simple_wholesale_by_cart_total?: boolean;
+        simple_wholesale_cart_min_qty?: number;
+      };
       const client = supabase as unknown as {
         from: (t: string) => { select: (c: string) => { eq: (col: string, val: string) => { limit: (n: number) => Promise<{ data: Row[] | null; error: unknown }> } } };
       };
-      const res = await client.from("store_price_models").select("id, store_id, price_model").eq("store_id", storeId).limit(1);
+      const res = await client
+        .from("store_price_models")
+        .select("id, store_id, price_model, simple_wholesale_by_cart_total, simple_wholesale_cart_min_qty")
+        .eq("store_id", storeId)
+        .limit(1);
       if (res.error || !res.data || res.data.length === 0) return null;
       const priceModel = res.data[0];
       setPriceModelCache((prev) => ({ ...prev, [storeId]: priceModel }));
@@ -278,9 +288,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn("⚠️ [recalculateItemPrices] Nenhum item tem product.store_id - preço de atacado não será aplicado. Verifique se o produto foi adicionado com store_id.");
     }
     const fetchedModels = await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
-    const modelByStoreId: Record<string, { id: string; store_id: string; price_model: string } | null> = {};
+    type PriceModelRow = {
+      id: string;
+      store_id: string;
+      price_model: string;
+      simple_wholesale_by_cart_total?: boolean;
+      simple_wholesale_cart_min_qty?: number;
+    };
+    const modelByStoreId: Record<string, PriceModelRow | null> = {};
     storeIds.forEach((id, i) => { modelByStoreId[id] = fetchedModels[i]; });
-    console.log("🔄 [recalculateItemPrices] Modelos por loja:", { storeIds, hasModels: storeIds.map(id => !!modelByStoreId[id]) });
+
+    // Total de unidades por loja (para atacado por quantidade total do carrinho)
+    const totalUnitsByStore: Record<string, number> = {};
+    storeIds.forEach((id) => {
+      totalUnitsByStore[id] = cartItems
+        .filter((item) => item.product.store_id === id)
+        .reduce((sum, i) => sum + i.quantity, 0);
+    });
+    console.log("🔄 [recalculateItemPrices] Modelos e totais por loja:", {
+      storeIds,
+      hasModels: storeIds.map((id) => !!modelByStoreId[id]),
+      totalUnitsByStore,
+    });
 
     const recalculatedItems = cartItems.map((item) => {
       const product = item.product;
@@ -407,17 +436,39 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // 🔴 CORREÇÃO CRÍTICA: Verificar modelo simple_wholesale ANTES de verificar catalogType
-      // Usar priceModelType (do modelo da loja), não product.price_model (não vem no item do carrinho)
+      // Atacado por quantidade total do carrinho: se a loja tiver by_cart_total ativo e o total
+      // de unidades da loja atingir o mínimo, todos os itens com wholesale_price recebem atacado
+      const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
+      const byCartTotal =
+        priceModel?.simple_wholesale_by_cart_total === true &&
+        storeId &&
+        (totalUnitsByStore[storeId] ?? 0) >= cartMinQty;
       if (
         priceModelType === "simple_wholesale" &&
-        !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
+        !product.enable_gradual_wholesale &&
+        product.wholesale_price &&
+        byCartTotal
+      ) {
+        console.log(
+          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsByStore[storeId]} >= ${cartMinQty}: R$${product.wholesale_price}`
+        );
+        return {
+          ...item,
+          price: product.wholesale_price,
+          isWholesalePrice: true,
+        };
+      }
+
+      // Atacado por produto: quantidade mínima por item (regra original)
+      if (
+        priceModelType === "simple_wholesale" &&
+        !product.enable_gradual_wholesale &&
         product.wholesale_price &&
         product.min_wholesale_qty &&
         quantity >= product.min_wholesale_qty
       ) {
         console.log(
-          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Aplicando preço atacado (qtd: ${quantity} >= ${product.min_wholesale_qty}): R$${product.wholesale_price}`
+          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${product.min_wholesale_qty}: R$${product.wholesale_price}`
         );
         return {
           ...item,
