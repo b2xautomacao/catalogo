@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useStorePriceModel } from "./useStorePriceModel";
 import { useAuth } from "./useAuth";
 import { useCart } from "./useCart";
+import { useCurrentStoreId } from "@/contexts/CurrentStoreIdContext";
 
 export interface MinimumPurchaseValidation {
   isEnabled: boolean;
@@ -17,7 +18,8 @@ export interface MinimumPurchaseValidation {
 /** @param storeIdOverride - Quando no catálogo público (sem login), passar storeId da loja (ex: items[0]?.product?.store_id) */
 export const useMinimumPurchaseValidation = (storeIdOverride?: string): MinimumPurchaseValidation => {
   const { profile } = useAuth();
-  const storeId = storeIdOverride ?? profile?.store_id;
+  const currentStoreId = useCurrentStoreId();
+  const storeId = storeIdOverride ?? profile?.store_id ?? currentStoreId;
   const { priceModel } = useStorePriceModel(storeId);
   const { totalAmount, items } = useCart();
 

@@ -18,6 +18,7 @@ import ProductGrid from "./ProductGrid";
 import FilterSidebar, { FilterState } from "./FilterSidebar";
 import EnhancedCheckout from "./checkout/EnhancedCheckout";
 import DynamicMetaTags from "@/components/seo/DynamicMetaTags";
+import { CurrentStoreIdProvider } from "@/contexts/CurrentStoreIdContext";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
 
@@ -312,7 +313,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
   const useOptimizedComponents = settings?.conversion_mode === "optimized";
 
   return (
-    <>
+    <CurrentStoreIdProvider storeId={store?.id}>
       {/* Meta tags dinâmicas para SEO e compartilhamento */}
       <DynamicMetaTags storeIdentifier={storeIdentifier} catalogType={catalogType} />
       
@@ -455,7 +456,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
         </div>
       )}
       </div>
-    </>
+    </CurrentStoreIdProvider>
   );
 };
 

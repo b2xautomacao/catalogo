@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useCart } from "@/hooks/useCart";
+import { useCurrentStoreId } from "@/contexts/CurrentStoreIdContext";
 
 interface CartItem {
   id: string;
@@ -47,9 +48,11 @@ export const useCartPriceCalculation = (
   item: CartItem
 ): PriceCalculationResult => {
   const { items } = useCart();
+  const currentStoreId = useCurrentStoreId();
   const storeId =
     item.product?.store_id ??
-    items.find((i) => i.product?.store_id)?.product?.store_id;
+    items.find((i) => i.product?.store_id)?.product?.store_id ??
+    currentStoreId;
   const { priceModel, loading } = useStorePriceModel(storeId);
 
   return useMemo(() => {
