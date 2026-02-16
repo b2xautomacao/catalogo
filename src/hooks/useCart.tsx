@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/variation";
 import { usePriceCalculation } from "./usePriceCalculation";
@@ -785,41 +785,85 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsOpen(false);
   };
 
-  // Calcular valores com validação de segurança
-  // LOG: Total do carrinho e detalhes dos itens
-  console.log("🛒 [useCart] DEBUG - Itens antes do cálculo:", {
-    itemsCount: items.length,
-    items: items.map((item) => ({
-      id: item.id,
-      name: item.product?.name,
-      price: item.price,
-      quantity: item.quantity,
-      catalogType: item.catalogType,
-      isWholesalePrice: item.isWholesalePrice,
-      originalPrice: item.originalPrice,
-      productWholesalePrice: item.product?.wholesale_price,
-      productRetailPrice: item.product?.retail_price,
-    })),
-  });
+  // Calcular valores com validação de segurança usando useMemo para garantir recálculo correto
+  const totalAmount = useMemo(() => {
+    // LOG: Total do carrinho e detalhes dos itens
+    console.log("🛒 [useCart] DEBUG - Itens antes do cálculo:", {
+      itemsCount: items.length,
+      items: items.map((item) => ({
+        id: item.id,
+        name: item.product?.name,
+        price: item.price,
+        quantity: item.quantity,
+        catalogType: item.catalogType,
+        isWholesalePrice: item.isWholesalePrice,
+        originalPrice: item.originalPrice,
+        productWholesalePrice: item.product?.wholesale_price,
+        productRetailPrice: item.product?.retail_price,
+        hasGradeInfo: !!item.gradeInfo,
+        currentTier: item.currentTier?.tier_name,
+      })),
+    });
 
-  const totalAmount = items.reduce((total, item) => {
-    const itemPrice =
-      typeof item.price === "number" && !isNaN(item.price) ? item.price : 0;
-    const itemQuantity =
-      typeof item.quantity === "number" && !isNaN(item.quantity)
-        ? item.quantity
-        : 0;
-    const subtotal = itemPrice * itemQuantity;
-    console.log(
-      `💰 [useCart] Item ${
-        item.product?.name
-      }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${
-        item.currentTier?.tier_name || "-"
-      }`
-    );
-    return total + subtotal;
-  }, 0);
-  console.log(`🟩 [useCart] TOTAL calculado: R$${totalAmount}`);
+    const calculatedTotal = items.reduce((total, item) => {
+      const itemPrice =
+        typeof item.price === "number" && !isNaN(item.price) ? item.price : 0;
+      const itemQuantity =
+        typeof item.quantity === "number" && !isNaN(item.quantity)
+          ? item.quantity
+          : 0;
+      
+      // 🔴 CORREÇÃO: Para grades, o item.price já é o preço total da grade
+      // Multiplicar pela quantidade de grades adicionadas
+      let subtotal: number;
+      if (item.gradeInfo && item.variation?.is_grade) {
+        // Para grades: item.price já é o total de uma grade, multiplicar pela quantidade de grades
+        subtotal = itemPrice * itemQuantity;
+        console.log(
+          `💰 [useCart] Grade ${
+            item.product?.name
+          }: ${itemQuantity} grade(s) x R$${itemPrice} (preço total da grade) = R$${subtotal}`
+        );
+      } else {
+        // Para produtos normais: multiplicar preço unitário pela quantidade
+        // O item.price já deve estar atualizado com o preço correto (varejo ou atacado)
+        subtotal = itemPrice * itemQuantity;
+        
+        // Verificar se o preço está correto comparando com o preço esperado
+        const expectedPrice = item.isWholesalePrice 
+          ? (item.product?.wholesale_price || item.originalPrice)
+          : (item.originalPrice || item.product?.retail_price || 0);
+        
+        if (Math.abs(itemPrice - expectedPrice) > 0.01) {
+          console.warn(
+            `⚠️ [useCart] PREÇO DESATUALIZADO para ${item.product?.name}:`,
+            {
+              itemPrice,
+              expectedPrice,
+              isWholesalePrice: item.isWholesalePrice,
+              catalogType: item.catalogType,
+              quantity: itemQuantity,
+              minWholesaleQty: item.product?.min_wholesale_qty,
+            }
+          );
+        }
+        
+        console.log(
+          `💰 [useCart] Item ${
+            item.product?.name
+          }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${
+            item.currentTier?.tier_name || "-"
+          } | isWholesale: ${item.isWholesalePrice || false} | expectedPrice: R$${expectedPrice}`
+        );
+      }
+      
+      return total + subtotal;
+    }, 0);
+    
+    console.log(`🟩 [useCart] TOTAL calculado: R$${calculatedTotal}`);
+    
+    return calculatedTotal;
+  }, [items]); // Recalcular sempre que items mudar
 
   const totalItems = items.reduce((total, item) => {
     const itemQuantity =
