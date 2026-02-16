@@ -224,18 +224,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const { supabase } = await import("../integrations/supabase/client");
-      const res = await supabase
-        .from("store_price_models")
-        .select("id, store_id, price_model, is_active, minimum_purchase_amount, minimum_purchase_message, simple_wholesale_enabled, simple_wholesale_name")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .maybeSingle();
-      const priceModel = res.data as { id: string; store_id: string; price_model: string } | null;
-
-      if (priceModel) {
-        setPriceModelCache((prev) => ({ ...prev, [storeId]: priceModel }));
-        return priceModel;
-      }
+      type Row = { id: string; store_id: string; price_model: string };
+      const client = supabase as unknown as {
+        from: (t: string) => { select: (c: string) => { eq: (col: string, val: string) => { limit: (n: number) => Promise<{ data: Row[] | null; error: unknown }> } } };
+      };
+      const res = await client.from("store_price_models").select("id, store_id, price_model").eq("store_id", storeId).limit(1);
+      if (res.error || !res.data || res.data.length === 0) return null;
+      const priceModel = res.data[0];
+      setPriceModelCache((prev) => ({ ...prev, [storeId]: priceModel }));
+      return priceModel;
     } catch (error) {
       console.error("Erro ao buscar modelo de preço:", error);
     }
