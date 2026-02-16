@@ -1292,6 +1292,8 @@ export type Database = {
           show_savings_indicators: boolean | null
           simple_wholesale_enabled: boolean | null
           simple_wholesale_min_qty: number | null
+          simple_wholesale_by_cart_total: boolean | null
+          simple_wholesale_cart_min_qty: number | null
           simple_wholesale_name: string | null
           store_id: string | null
           tier_1_enabled: boolean | null
@@ -1315,6 +1317,8 @@ export type Database = {
           show_savings_indicators?: boolean | null
           simple_wholesale_enabled?: boolean | null
           simple_wholesale_min_qty?: number | null
+          simple_wholesale_by_cart_total?: boolean | null
+          simple_wholesale_cart_min_qty?: number | null
           simple_wholesale_name?: string | null
           store_id?: string | null
           tier_1_enabled?: boolean | null
@@ -1338,6 +1342,8 @@ export type Database = {
           show_savings_indicators?: boolean | null
           simple_wholesale_enabled?: boolean | null
           simple_wholesale_min_qty?: number | null
+          simple_wholesale_by_cart_total?: boolean | null
+          simple_wholesale_cart_min_qty?: number | null
           simple_wholesale_name?: string | null
           store_id?: string | null
           tier_1_enabled?: boolean | null
