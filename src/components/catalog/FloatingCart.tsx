@@ -289,6 +289,7 @@ const CartItem: React.FC<{
 
 const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
   onCheckout,
+  storeId: storeIdProp,
 }) => {
   const {
     items,
@@ -304,8 +305,9 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
     itemsToWholesale,
   } = useCart();
 
-  // Validação de pedido mínimo
-  const minimumPurchaseValidation = useMinimumPurchaseValidation();
+  // Validação de pedido mínimo: usar storeId da prop ou do primeiro item do carrinho (catálogo público)
+  const storeIdForValidation = storeIdProp ?? items[0]?.product?.store_id;
+  const minimumPurchaseValidation = useMinimumPurchaseValidation(storeIdForValidation);
 
   // Debug dos valores do carrinho
   useEffect(() => {

@@ -271,17 +271,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       cartItems.length
     );
 
-    // Buscar modelos de preço para todas as lojas únicas
-    const storeIds = [...new Set(cartItems.map(item => item.product.store_id).filter(Boolean))];
-    await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
+    // Buscar modelos de preço para todas as lojas únicas e usar o retorno (não o cache),
+    // pois setState é assíncrono e o cache ainda estaria vazio nesta execução
+    const storeIds = [...new Set(cartItems.map(item => item.product.store_id).filter(Boolean))] as string[];
+    const fetchedModels = await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
+    const modelByStoreId: Record<string, { id: string; store_id: string; price_model: string } | null> = {};
+    storeIds.forEach((id, i) => { modelByStoreId[id] = fetchedModels[i]; });
 
     const recalculatedItems = cartItems.map((item) => {
       const product = item.product;
       const quantity = item.quantity;
       const storeId = product.store_id;
       
-      // Buscar modelo de preço do cache
-      const priceModel = storeId ? priceModelCache[storeId] : null;
+      // Usar modelo buscado nesta execução (não o cache do estado)
+      const priceModel = storeId ? modelByStoreId[storeId] : null;
       const priceModelType = priceModel?.price_model || product.price_model;
 
       // 🔴 NOVO: Se for uma grade com modo flexível (meia grade ou custom), não recalcular o preço

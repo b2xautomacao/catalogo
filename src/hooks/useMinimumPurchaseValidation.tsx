@@ -14,9 +14,11 @@ export interface MinimumPurchaseValidation {
   canProceed: boolean;
 }
 
-export const useMinimumPurchaseValidation = (): MinimumPurchaseValidation => {
+/** @param storeIdOverride - Quando no catálogo público (sem login), passar storeId da loja (ex: items[0]?.product?.store_id) */
+export const useMinimumPurchaseValidation = (storeIdOverride?: string): MinimumPurchaseValidation => {
   const { profile } = useAuth();
-  const { priceModel } = useStorePriceModel(profile?.store_id);
+  const storeId = storeIdOverride ?? profile?.store_id;
+  const { priceModel } = useStorePriceModel(storeId);
   const { totalAmount, items } = useCart();
 
   console.log("🔍 useMinimumPurchaseValidation - Inputs:", {
