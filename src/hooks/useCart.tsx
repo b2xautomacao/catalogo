@@ -613,9 +613,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
               };
             });
 
-            const validItems = validationResults
+            let validItems = validationResults
               .filter(r => r.validated !== null)
               .map(r => r.validated!);
+
+            // Garantir store_id em todos os itens (para recalculateItemPrices aplicar atacado)
+            const firstStoreId = validItems.find((i) => i.product?.store_id)?.product?.store_id;
+            if (firstStoreId) {
+              validItems = validItems.map((i) => ({
+                ...i,
+                product: {
+                  ...i.product,
+                  store_id: i.product?.store_id || firstStoreId,
+                },
+              }));
+            }
 
             console.log("✅ Itens válidos encontrados:", validItems.length);
             console.log("📊 Resultado da validação:", validationResults.map(r => ({
@@ -919,7 +931,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsOpen(false);
   };
 
-  // Calcular valores com validação de segurança usando useMemo para garantir recálculo correto
+  // Total SEMPRE com base em item.price (preço já recalculado por recalculateItemPrices)
   const totalAmount = useMemo(() => {
     // LOG: Total do carrinho e detalhes dos itens
     console.log("🛒 [useCart] DEBUG - Itens antes do cálculo:", {
