@@ -432,7 +432,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
       )}
 
       {/* Carrinho Flutuante */}
-      <FloatingCart onCheckout={handleOpenCheckout} />
+      <FloatingCart onCheckout={handleOpenCheckout} storeId={store?.id} />
 
       {/* WhatsApp Flutuante */}
       <FloatingWhatsApp
