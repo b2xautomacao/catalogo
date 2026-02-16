@@ -274,9 +274,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     // Buscar modelos de preço para todas as lojas únicas e usar o retorno (não o cache),
     // pois setState é assíncrono e o cache ainda estaria vazio nesta execução
     const storeIds = [...new Set(cartItems.map(item => item.product.store_id).filter(Boolean))] as string[];
+    if (storeIds.length === 0) {
+      console.warn("⚠️ [recalculateItemPrices] Nenhum item tem product.store_id - preço de atacado não será aplicado. Verifique se o produto foi adicionado com store_id.");
+    }
     const fetchedModels = await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
     const modelByStoreId: Record<string, { id: string; store_id: string; price_model: string } | null> = {};
     storeIds.forEach((id, i) => { modelByStoreId[id] = fetchedModels[i]; });
+    console.log("🔄 [recalculateItemPrices] Modelos por loja:", { storeIds, hasModels: storeIds.map(id => !!modelByStoreId[id]) });
 
     const recalculatedItems = cartItems.map((item) => {
       const product = item.product;
@@ -404,10 +408,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // 🔴 CORREÇÃO CRÍTICA: Verificar modelo simple_wholesale ANTES de verificar catalogType
-      // Se o modelo é simple_wholesale, aplicar preço de atacado quando quantidade >= mínima
-      // Isso funciona tanto para catalogType "retail" quanto "wholesale"
+      // Usar priceModelType (do modelo da loja), não product.price_model (não vem no item do carrinho)
       if (
-        product.price_model === "simple_wholesale" &&
+        priceModelType === "simple_wholesale" &&
         !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
         product.wholesale_price &&
         product.min_wholesale_qty &&
@@ -424,7 +427,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Se catalogType é "retail" e não é simple_wholesale, usar preço varejo
-      if (item.catalogType === "retail" && product.price_model !== "simple_wholesale") {
+      if (item.catalogType === "retail" && priceModelType !== "simple_wholesale") {
         console.log(
           `📋 [recalculateItemPrices] ${product.name}: MODO VAREJO - Mantendo preço varejo (qtd: ${quantity}): R$${item.originalPrice}`
         );
@@ -457,7 +460,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Se simple_wholesale mas quantidade < mínima, usar preço varejo
       if (
-        product.price_model === "simple_wholesale" &&
+        priceModelType === "simple_wholesale" &&
         (!product.wholesale_price ||
           !product.min_wholesale_qty ||
           quantity < product.min_wholesale_qty)
@@ -475,7 +478,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // Se modo atacado mas quantidade < mínima (e não é wholesale_only), usar preço varejo como fallback
       if (
         item.catalogType === "wholesale" &&
-        product.price_model !== "wholesale_only"
+        priceModelType !== "wholesale_only"
       ) {
         console.log(
           `⚠️ [recalculateItemPrices] ${product.name}: MODO ATACADO - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
