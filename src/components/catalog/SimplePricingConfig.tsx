@@ -210,7 +210,7 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
         setOriginalByCartTotal(simpleWholesaleByCartTotal);
         setOriginalCartMinQty(simpleWholesaleCartMinQty);
       }
-      setHasUnsavedChanges(false);��
+      setHasUnsavedChanges(false);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error("Erro ao salvar:", error);
