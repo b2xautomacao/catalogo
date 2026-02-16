@@ -209,6 +209,38 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     {}
   );
 
+  // Cache para modelos de preço das lojas
+  const [priceModelCache, setPriceModelCache] = useState<Record<string, any>>(
+    {}
+  );
+
+  // Função para buscar modelo de preço de uma loja
+  const fetchStorePriceModel = async (storeId: string) => {
+    if (!storeId) return null;
+    
+    if (priceModelCache[storeId]) {
+      return priceModelCache[storeId];
+    }
+
+    try {
+      const { supabase } = await import("../integrations/supabase/client");
+      const { data: priceModel } = await supabase
+        .from("store_price_models")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .single();
+
+      if (priceModel) {
+        setPriceModelCache((prev) => ({ ...prev, [storeId]: priceModel }));
+        return priceModel;
+      }
+    } catch (error) {
+      console.error("Erro ao buscar modelo de preço:", error);
+    }
+    return null;
+  };
+
   // Função para buscar níveis de preço de um produto
   const fetchProductTiers = async (productId: string) => {
     if (priceTiersCache[productId]) {
@@ -235,15 +267,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Função para recalcular preços baseado na quantidade (lógica híbrida)
-  const recalculateItemPrices = (cartItems: CartItem[]): CartItem[] => {
+  const recalculateItemPrices = async (cartItems: CartItem[]): Promise<CartItem[]> => {
     console.log(
       "🔄 [recalculateItemPrices] INICIANDO - Itens recebidos:",
       cartItems.length
     );
 
+    // Buscar modelos de preço para todas as lojas únicas
+    const storeIds = [...new Set(cartItems.map(item => item.product.store_id).filter(Boolean))];
+    await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
+
     const recalculatedItems = cartItems.map((item) => {
       const product = item.product;
       const quantity = item.quantity;
+      const storeId = product.store_id;
+      
+      // Buscar modelo de preço do cache
+      const priceModel = storeId ? priceModelCache[storeId] : null;
+      const priceModelType = priceModel?.price_model || product.price_model;
 
       // 🔴 NOVO: Se for uma grade com modo flexível (meia grade ou custom), não recalcular o preço
       // O preço já foi calculado corretamente no cartHelpers baseado no modo selecionado
@@ -282,7 +323,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // Se for catálogo atacado ou apenas atacado, sempre usar preço de atacado
       // MAS: se tiver atacado gradativo ativo, deixar a lógica de tiers processar primeiro
       if (
-        (item.catalogType === "wholesale" || product.price_model === "wholesale_only") &&
+        (item.catalogType === "wholesale" || priceModelType === "wholesale_only") &&
         !product.enable_gradual_wholesale // Só aplicar diretamente se não tiver gradativo
       ) {
         const wholesalePrice =
@@ -361,9 +402,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // 🔴 CORREÇÃO CRÍTICA: Separar lógica de modalidade da lógica de quantidade mínima
-      // Se catalogType é "retail", SEMPRE usar preço varejo, independente da quantidade
-      if (item.catalogType === "retail") {
+      // 🔴 CORREÇÃO CRÍTICA: Verificar modelo simple_wholesale ANTES de verificar catalogType
+      // Se o modelo é simple_wholesale, aplicar preço de atacado quando quantidade >= mínima
+      // Isso funciona tanto para catalogType "retail" quanto "wholesale"
+      if (
+        product.price_model === "simple_wholesale" &&
+        !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
+        product.wholesale_price &&
+        product.min_wholesale_qty &&
+        quantity >= product.min_wholesale_qty
+      ) {
+        console.log(
+          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Aplicando preço atacado (qtd: ${quantity} >= ${product.min_wholesale_qty}): R$${product.wholesale_price}`
+        );
+        return {
+          ...item,
+          price: product.wholesale_price,
+          isWholesalePrice: true,
+        };
+      }
+
+      // Se catalogType é "retail" e não é simple_wholesale, usar preço varejo
+      if (item.catalogType === "retail" && product.price_model !== "simple_wholesale") {
         console.log(
           `📋 [recalculateItemPrices] ${product.name}: MODO VAREJO - Mantendo preço varejo (qtd: ${quantity}): R$${item.originalPrice}`
         );
@@ -378,7 +438,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // Verificar preço atacado simples do produto (só se atacado gradativo estiver desativado)
       if (
         item.catalogType === "wholesale" &&
-        product.price_model !== "wholesale_only" && // Não é wholesale_only
+        priceModelType !== "wholesale_only" && // Não é wholesale_only
         !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
         product.wholesale_price &&
         product.min_wholesale_qty &&
@@ -391,6 +451,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           ...item,
           price: product.wholesale_price,
           isWholesalePrice: true,
+        };
+      }
+
+      // Se simple_wholesale mas quantidade < mínima, usar preço varejo
+      if (
+        product.price_model === "simple_wholesale" &&
+        (!product.wholesale_price ||
+          !product.min_wholesale_qty ||
+          quantity < product.min_wholesale_qty)
+      ) {
+        console.log(
+          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
+        );
+        return {
+          ...item,
+          price: item.originalPrice,
+          isWholesalePrice: false,
         };
       }
 
@@ -410,7 +487,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Se é wholesale_only mas não entrou na condição anterior (porque tem gradativo), aplicar preço de atacado diretamente
-      if (product.price_model === "wholesale_only") {
+      if (priceModelType === "wholesale_only") {
         const wholesalePrice =
           product.wholesale_price || product.retail_price || 0;
         console.log(
@@ -578,7 +655,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [items, isLoading]);
 
   // addItem agora recebe modelKey como parâmetro
-  const addItem = (item: CartItem, modelKey?: CartPriceModelType) => {
+  const addItem = async (item: CartItem, modelKey?: CartPriceModelType) => {
     console.log("🔄 [addItem] Item recebido:", {
       itemId: item.id,
       itemPrice: item.price,
@@ -645,131 +722,133 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       fetchProductTiers(validatedItem.product.id);
     }
 
-    setItems((current) => {
-      const existingIndex = current.findIndex(
-        (cartItem) =>
-          cartItem.product.id === validatedItem.product.id &&
-          cartItem.catalogType === validatedItem.catalogType &&
-          // Comparar variações incluindo IDs se disponíveis
-          ((!cartItem.variation && !validatedItem.variation) ||
-            (cartItem.variation &&
-              validatedItem.variation &&
-              cartItem.variation.id === validatedItem.variation.id &&
-              cartItem.variation.color === validatedItem.variation.color &&
-              cartItem.variation.size === validatedItem.variation.size))
-      );
+    const currentItems = items;
+    const existingIndex = currentItems.findIndex(
+      (cartItem) =>
+        cartItem.product.id === validatedItem.product.id &&
+        cartItem.catalogType === validatedItem.catalogType &&
+        // Comparar variações incluindo IDs se disponíveis
+        ((!cartItem.variation && !validatedItem.variation) ||
+          (cartItem.variation &&
+            validatedItem.variation &&
+            cartItem.variation.id === validatedItem.variation.id &&
+            cartItem.variation.color === validatedItem.variation.color &&
+            cartItem.variation.size === validatedItem.variation.size))
+    );
 
-      let newItems;
-      if (existingIndex >= 0) {
-        newItems = [...current];
-        // Se for wholesale_only, garantir que a soma nunca fique abaixo do mínimo
-        if (validatedItem.product.price_model === "wholesale_only") {
-          newItems[existingIndex].quantity = Math.max(
-            validatedItem.product.min_wholesale_qty || 1,
-            newItems[existingIndex].quantity + validatedItem.quantity
-          );
-        } else {
-          newItems[existingIndex] = {
-            ...newItems[existingIndex],
-            quantity: newItems[existingIndex].quantity + validatedItem.quantity,
-          };
-        }
+    let newItems;
+    if (existingIndex >= 0) {
+      newItems = [...currentItems];
+      // Se for wholesale_only, garantir que a soma nunca fique abaixo do mínimo
+      if (validatedItem.product.price_model === "wholesale_only") {
+        newItems[existingIndex].quantity = Math.max(
+          validatedItem.product.min_wholesale_qty || 1,
+          newItems[existingIndex].quantity + validatedItem.quantity
+        );
       } else {
-        newItems = [...current, validatedItem];
+        newItems[existingIndex] = {
+          ...newItems[existingIndex],
+          quantity: newItems[existingIndex].quantity + validatedItem.quantity,
+        };
       }
+    } else {
+      newItems = [...currentItems, validatedItem];
+    }
 
-      // Recalcular preços após adicionar
-      console.log("🔄 [addItem] ANTES do recalculateItemPrices:", {
-        newItemsCount: newItems.length,
-        newItems: newItems.map((item) => ({
-          name: item.product.name,
-          price: item.price,
-          catalogType: item.catalogType,
-          isWholesalePrice: item.isWholesalePrice,
-          hasGradeInfo: !!item.gradeInfo,
-          gradeInfo: item.gradeInfo,
-        })),
-      });
-
-      const recalculatedItems = recalculateItemPrices(newItems);
-
-      console.log("🔄 [addItem] DEPOIS do recalculateItemPrices:", {
-        recalculatedItemsCount: recalculatedItems.length,
-        recalculatedItems: recalculatedItems.map((item) => ({
-          name: item.product.name,
-          price: item.price,
-          catalogType: item.catalogType,
-          isWholesalePrice: item.isWholesalePrice,
-          hasGradeInfo: !!item.gradeInfo,
-          gradeInfo: item.gradeInfo,
-        })),
-      });
-
-      // Verificar se algum item mudou para preço de atacado
-      const itemWithWholesalePrice = recalculatedItems.find(
-        (recalcItem, index) =>
-          recalcItem.product.id === item.product.id &&
-          recalcItem.isWholesalePrice &&
-          !newItems[index]?.isWholesalePrice
-      );
-
-      // Mostrar notificação adequada
-      if (itemWithWholesalePrice) {
-        const savings =
-          (itemWithWholesalePrice.originalPrice -
-            itemWithWholesalePrice.price) *
-          itemWithWholesalePrice.quantity;
-        toast({
-          title: "🎉 Preço de atacado ativado!",
-          description: `Você economizou R$ ${savings.toFixed(2)} com ${
-            itemWithWholesalePrice.product.name
-          }`,
-          duration: 4000,
-        });
-      } else {
-        const variationText = item.variation
-          ? ` (${[item.variation.color, item.variation.size]
-              .filter(Boolean)
-              .join(", ")})`
-          : "";
-        toast({
-          title: "Produto adicionado!",
-          description: `${item.product.name}${variationText} foi adicionado ao carrinho.`,
-          duration: 2000,
-        });
-      }
-
-      return recalculatedItems;
+    // Recalcular preços após adicionar
+    console.log("🔄 [addItem] ANTES do recalculateItemPrices:", {
+      newItemsCount: newItems.length,
+      newItems: newItems.map((item) => ({
+        name: item.product.name,
+        price: item.price,
+        catalogType: item.catalogType,
+        isWholesalePrice: item.isWholesalePrice,
+        hasGradeInfo: !!item.gradeInfo,
+        gradeInfo: item.gradeInfo,
+      })),
     });
+
+    const recalculatedItems = await recalculateItemPrices(newItems);
+
+    console.log("🔄 [addItem] DEPOIS do recalculateItemPrices:", {
+      recalculatedItemsCount: recalculatedItems.length,
+      recalculatedItems: recalculatedItems.map((item) => ({
+        name: item.product.name,
+        price: item.price,
+        catalogType: item.catalogType,
+        isWholesalePrice: item.isWholesalePrice,
+        hasGradeInfo: !!item.gradeInfo,
+        gradeInfo: item.gradeInfo,
+      })),
+    });
+
+    // Verificar se algum item mudou para preço de atacado
+    const itemWithWholesalePrice = recalculatedItems.find(
+      (recalcItem, index) =>
+        recalcItem.product.id === item.product.id &&
+        recalcItem.isWholesalePrice &&
+        !newItems[index]?.isWholesalePrice
+    );
+
+    // Mostrar notificação adequada
+    if (itemWithWholesalePrice) {
+      const savings =
+        (itemWithWholesalePrice.originalPrice -
+          itemWithWholesalePrice.price) *
+        itemWithWholesalePrice.quantity;
+      toast({
+        title: "🎉 Preço de atacado ativado!",
+        description: `Você economizou R$ ${savings.toFixed(2)} com ${
+          itemWithWholesalePrice.product.name
+        }`,
+        duration: 4000,
+      });
+    } else {
+      const variationText = item.variation
+        ? ` (${[item.variation.color, item.variation.size]
+            .filter(Boolean)
+            .join(", ")})`
+        : "";
+      toast({
+        title: "Produto adicionado!",
+        description: `${item.product.name}${variationText} foi adicionado ao carrinho.`,
+        duration: 2000,
+      });
+    }
+
+    setItems(recalculatedItems);
   };
 
-  const removeItem = (itemId: string) => {
-    setItems((current) => {
-      const newItems = current.filter((item) => item.id !== itemId);
-      return recalculateItemPrices(newItems);
-    });
+  const removeItem = async (itemId: string) => {
+    const currentItems = items;
+    const newItems = currentItems.filter((item) => item.id !== itemId);
+    const recalculatedItems = await recalculateItemPrices(newItems);
+    setItems(recalculatedItems);
   };
 
   // updateQuantity agora recebe modelKey como parâmetro
-  const updateQuantity = (
+  const updateQuantity = async (
     itemId: string,
     quantity: number,
     modelKey?: CartPriceModelType,
     minWholesaleQty?: number
   ) => {
-    setItems((current) => {
-      const item = current.find((i) => i.id === itemId);
-      if (!item) return current;
-      const minQty = modelKey === "wholesale_only" ? minWholesaleQty || 1 : 1;
-      let newQuantity = Math.max(minQty, Math.floor(quantity));
-      if (newQuantity <= 0) {
-        return current.filter((i) => i.id !== itemId);
-      }
-      const newItems = current.map((i) =>
-        i.id === itemId ? { ...i, quantity: newQuantity } : i
-      );
-      return recalculateItemPrices(newItems);
-    });
+    const currentItems = items;
+    const item = currentItems.find((i) => i.id === itemId);
+    if (!item) return;
+    const minQty = modelKey === "wholesale_only" ? minWholesaleQty || 1 : 1;
+    let newQuantity = Math.max(minQty, Math.floor(quantity));
+    if (newQuantity <= 0) {
+      const newItems = currentItems.filter((i) => i.id !== itemId);
+      const recalculatedItems = await recalculateItemPrices(newItems);
+      setItems(recalculatedItems);
+      return;
+    }
+    const newItems = currentItems.map((i) =>
+      i.id === itemId ? { ...i, quantity: newQuantity } : i
+    );
+    const recalculatedItems = await recalculateItemPrices(newItems);
+    setItems(recalculatedItems);
   };
 
   const clearCart = () => {
