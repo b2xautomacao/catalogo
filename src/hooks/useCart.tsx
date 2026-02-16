@@ -196,6 +196,20 @@ const validateCartItem = (item: any): CartItem | null => {
   }
 };
 
+/** Garante que todo item tenha product.store_id (usa o primeiro disponível na lista) */
+function normalizeCartItemsStoreId(cartItems: CartItem[]): CartItem[] {
+  const firstStoreId = cartItems.find((i) => i.product?.store_id)?.product?.store_id;
+  if (!firstStoreId) return cartItems;
+  return cartItems.map((item) =>
+    item.product?.store_id
+      ? item
+      : {
+          ...item,
+          product: { ...item.product, store_id: firstStoreId },
+        }
+  );
+}
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -666,7 +680,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
             // Recalcular preços ao carregar
             const recalculatedItems = await recalculateItemPrices(validItems);
-            setItems(recalculatedItems);
+            setItems(normalizeCartItemsStoreId(recalculatedItems));
           } else {
             console.warn(
               "⚠️ Dados do carrinho em formato inválido, limpando localStorage"
@@ -883,14 +897,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     }
 
-    setItems(recalculatedItems);
+    setItems(normalizeCartItemsStoreId(recalculatedItems));
   };
 
   const removeItem = async (itemId: string) => {
     const currentItems = items;
     const newItems = currentItems.filter((item) => item.id !== itemId);
     const recalculatedItems = await recalculateItemPrices(newItems);
-    setItems(recalculatedItems);
+    setItems(normalizeCartItemsStoreId(recalculatedItems));
   };
 
   // updateQuantity agora recebe modelKey como parâmetro
@@ -908,14 +922,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     if (newQuantity <= 0) {
       const newItems = currentItems.filter((i) => i.id !== itemId);
       const recalculatedItems = await recalculateItemPrices(newItems);
-      setItems(recalculatedItems);
+      setItems(normalizeCartItemsStoreId(recalculatedItems));
       return;
     }
     const newItems = currentItems.map((i) =>
       i.id === itemId ? { ...i, quantity: newQuantity } : i
     );
     const recalculatedItems = await recalculateItemPrices(newItems);
-    setItems(recalculatedItems);
+    setItems(normalizeCartItemsStoreId(recalculatedItems));
   };
 
   const clearCart = () => {

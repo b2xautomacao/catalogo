@@ -67,6 +67,7 @@ interface ProductDetailsModalOptimizedProps {
   showPrices?: boolean;
   storeName?: string;
   storePhone?: string;
+  storeId?: string;
   relatedProducts?: Product[];
   showConversionElements?: boolean;
   cartTotal?: number;
@@ -87,6 +88,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
   showPrices = true,
   storeName = "",
   storePhone = "",
+  storeId: storeIdProp,
   relatedProducts = [],
   showConversionElements = true,
   cartTotal = 0,
@@ -463,8 +465,9 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                       // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
                       onAddToCart={(variation, gradeMode, customSel) => {
                         const finalQuantity = variation.is_grade ? 1 : quantity;
+                        const productWithStore = { ...product, store_id: product.store_id ?? storeIdProp ?? "" };
                         const cartItem = createCartItem(
-                          product,
+                          productWithStore,
                           catalogType,
                           finalQuantity,
                           variation,

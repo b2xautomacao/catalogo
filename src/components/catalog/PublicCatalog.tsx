@@ -153,8 +153,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
           : null,
       });
 
+      const productWithStore = {
+        ...product,
+        store_id: product.store_id ?? store?.id ?? "",
+      };
       const cartItem = createCartItem(
-        product,
+        productWithStore,
         catalogType,
         quantity,
         variation
@@ -398,6 +402,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
             showPrices={showPrices}
             storeName={store.name}
             storePhone={store.phone}
+            storeId={store?.id}
             relatedProducts={products.filter(
               (p) =>
                 p.id !== selectedProduct.id &&

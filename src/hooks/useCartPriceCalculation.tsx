@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { useCart } from "@/hooks/useCart";
 
 interface CartItem {
   id: string;
@@ -45,8 +46,11 @@ interface PriceCalculationResult {
 export const useCartPriceCalculation = (
   item: CartItem
 ): PriceCalculationResult => {
-  // Sempre buscar o modelo da loja via store_id do produto
-  const { priceModel, loading } = useStorePriceModel(item.product.store_id);
+  const { items } = useCart();
+  const storeId =
+    item.product?.store_id ??
+    items.find((i) => i.product?.store_id)?.product?.store_id;
+  const { priceModel, loading } = useStorePriceModel(storeId);
 
   return useMemo(() => {
     // Se ainda está carregando ou não tem modelo, não calcula nada
