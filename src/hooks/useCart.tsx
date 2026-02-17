@@ -836,12 +836,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       newItems = [...currentItems, validatedItem];
     }
 
-    // Recalcular preços após adicionar
+    // Garantir store_id em todos os itens ANTES de recalcular (para aplicar atacado corretamente)
+    const itemsToRecalc = normalizeCartItemsStoreId(newItems);
     console.log("🔄 [addItem] ANTES do recalculateItemPrices:", {
-      newItemsCount: newItems.length,
-      newItems: newItems.map((item) => ({
+      newItemsCount: itemsToRecalc.length,
+      newItems: itemsToRecalc.map((item) => ({
         name: item.product.name,
         price: item.price,
+        store_id: item.product?.store_id,
         catalogType: item.catalogType,
         isWholesalePrice: item.isWholesalePrice,
         hasGradeInfo: !!item.gradeInfo,
@@ -849,7 +851,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       })),
     });
 
-    const recalculatedItems = await recalculateItemPrices(newItems);
+    const recalculatedItems = await recalculateItemPrices(itemsToRecalc);
 
     console.log("🔄 [addItem] DEPOIS do recalculateItemPrices:", {
       recalculatedItemsCount: recalculatedItems.length,
@@ -921,14 +923,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     let newQuantity = Math.max(minQty, Math.floor(quantity));
     if (newQuantity <= 0) {
       const newItems = currentItems.filter((i) => i.id !== itemId);
-      const recalculatedItems = await recalculateItemPrices(newItems);
+      const itemsToRecalc = normalizeCartItemsStoreId(newItems);
+      const recalculatedItems = await recalculateItemPrices(itemsToRecalc);
       setItems(normalizeCartItemsStoreId(recalculatedItems));
       return;
     }
     const newItems = currentItems.map((i) =>
       i.id === itemId ? { ...i, quantity: newQuantity } : i
     );
-    const recalculatedItems = await recalculateItemPrices(newItems);
+    const itemsToRecalc = normalizeCartItemsStoreId(newItems);
+    const recalculatedItems = await recalculateItemPrices(itemsToRecalc);
     setItems(normalizeCartItemsStoreId(recalculatedItems));
   };
 
