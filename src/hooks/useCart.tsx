@@ -196,9 +196,14 @@ const validateCartItem = (item: any): CartItem | null => {
   }
 };
 
-/** Garante que todo item tenha product.store_id (usa o primeiro disponível na lista) */
-function normalizeCartItemsStoreId(cartItems: CartItem[]): CartItem[] {
-  const firstStoreId = cartItems.find((i) => i.product?.store_id)?.product?.store_id;
+/** Garante que todo item tenha product.store_id (usa o primeiro da lista ou fallback) */
+function normalizeCartItemsStoreId(
+  cartItems: CartItem[],
+  fallbackStoreId?: string
+): CartItem[] {
+  const firstStoreId =
+    cartItems.find((i) => i.product?.store_id)?.product?.store_id ??
+    fallbackStoreId;
   if (!firstStoreId) return cartItems;
   return cartItems.map((item) =>
     item.product?.store_id
@@ -217,6 +222,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Loading state
   const { toast } = useToast();
+  const catalogStoreId = useCatalogStoreId()?.storeId;
 
   // Cache para níveis de preço
   const [priceTiersCache, setPriceTiersCache] = useState<Record<string, any[]>>(
@@ -680,7 +686,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
             // Recalcular preços ao carregar
             const recalculatedItems = await recalculateItemPrices(validItems);
-            setItems(normalizeCartItemsStoreId(recalculatedItems));
+            setItems(normalizeCartItemsStoreId(recalculatedItems, catalogStoreId));
           } else {
             console.warn(
               "⚠️ Dados do carrinho em formato inválido, limpando localStorage"
@@ -705,6 +711,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
     loadCartFromStorage();
   }, []); // ⭐ VAZIO - Carregar APENAS na montagem inicial do CartProvider
+
+  // Quando o catálogo informa storeId e há itens sem store_id, normalizar e recalcular (corrige total atacado)
+  useEffect(() => {
+    if (!catalogStoreId || isLoading || items.length === 0) return;
+    const hasMissing = items.some((i) => !i.product?.store_id);
+    if (!hasMissing) return;
+    const normalized = normalizeCartItemsStoreId(items, catalogStoreId);
+    recalculateItemPrices(normalized).then((rec) =>
+      setItems(normalizeCartItemsStoreId(rec, catalogStoreId))
+    );
+  }, [catalogStoreId, isLoading, items]);
 
   // Salvar no localStorage sempre que items mudarem
   useEffect(() => {
@@ -899,14 +916,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     }
 
-    setItems(normalizeCartItemsStoreId(recalculatedItems));
+    setItems(normalizeCartItemsStoreId(recalculatedItems, catalogStoreId));
   };
 
   const removeItem = async (itemId: string) => {
     const currentItems = items;
     const newItems = currentItems.filter((item) => item.id !== itemId);
     const recalculatedItems = await recalculateItemPrices(newItems);
-    setItems(normalizeCartItemsStoreId(recalculatedItems));
+    setItems(normalizeCartItemsStoreId(recalculatedItems, catalogStoreId));
   };
 
   // updateQuantity agora recebe modelKey como parâmetro
@@ -923,17 +940,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     let newQuantity = Math.max(minQty, Math.floor(quantity));
     if (newQuantity <= 0) {
       const newItems = currentItems.filter((i) => i.id !== itemId);
-      const itemsToRecalc = normalizeCartItemsStoreId(newItems);
+      const itemsToRecalc = normalizeCartItemsStoreId(newItems, catalogStoreId);
       const recalculatedItems = await recalculateItemPrices(itemsToRecalc);
-      setItems(normalizeCartItemsStoreId(recalculatedItems));
+      setItems(normalizeCartItemsStoreId(recalculatedItems, catalogStoreId));
       return;
     }
     const newItems = currentItems.map((i) =>
       i.id === itemId ? { ...i, quantity: newQuantity } : i
     );
-    const itemsToRecalc = normalizeCartItemsStoreId(newItems);
+    const itemsToRecalc = normalizeCartItemsStoreId(newItems, catalogStoreId);
     const recalculatedItems = await recalculateItemPrices(itemsToRecalc);
-    setItems(normalizeCartItemsStoreId(recalculatedItems));
+    setItems(normalizeCartItemsStoreId(recalculatedItems, catalogStoreId));
   };
 
   const clearCart = () => {

@@ -19,6 +19,7 @@ import FilterSidebar, { FilterState } from "./FilterSidebar";
 import EnhancedCheckout from "./checkout/EnhancedCheckout";
 import DynamicMetaTags from "@/components/seo/DynamicMetaTags";
 import { CurrentStoreIdProvider } from "@/contexts/CurrentStoreIdContext";
+import { useCatalogStoreId } from "@/contexts/CatalogStoreIdContext";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
 
@@ -67,6 +68,14 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
   } = useCatalog(storeIdentifier);
 
   const { settings } = useCatalogSettings(storeIdentifier);
+  const catalogStoreIdApi = useCatalogStoreId();
+
+  // Informar o carrinho qual é o store_id do catálogo (para aplicar atacado no total)
+  useEffect(() => {
+    if (!catalogStoreIdApi) return;
+    catalogStoreIdApi.setStoreId(store?.id);
+    return () => catalogStoreIdApi.setStoreId(undefined);
+  }, [store?.id, catalogStoreIdApi]);
 
   const applyFilters = useCallback(() => {
     console.log("🎯 PUBLIC CATALOG - Aplicando filtros:", {

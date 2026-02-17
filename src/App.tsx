@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import { CatalogStoreIdProvider } from "@/contexts/CatalogStoreIdContext";
 import { SaasRouter } from "@/components/routing/SaasRouter";
 import { logSubdomainInfo } from "@/utils/subdomainRouter";
 
@@ -38,8 +39,9 @@ function App() {
               </div>
               <Toaster />
               <Sonner />
-            </BrowserRouter>
-          </CartProvider>
+              </BrowserRouter>
+            </CartProvider>
+          </CatalogStoreIdProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
