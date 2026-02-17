@@ -32,13 +32,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <div className="min-h-screen bg-background font-sans antialiased">
-                <SaasRouter />
-              </div>
-              <Toaster />
-              <Sonner />
+          <CatalogStoreIdProvider>
+            <CartProvider>
+              <BrowserRouter>
+                <div className="min-h-screen bg-background font-sans antialiased">
+                  <SaasRouter />
+                </div>
+                <Toaster />
+                <Sonner />
               </BrowserRouter>
             </CartProvider>
           </CatalogStoreIdProvider>
