@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/variation";
 import { usePriceCalculation } from "./usePriceCalculation";
 import { useStorePriceModel } from "@/hooks/useStorePriceModel";
+import { useCatalogStoreId } from "@/contexts/CatalogStoreIdContext";
 
 export interface CartItem {
   id: string;
