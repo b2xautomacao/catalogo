@@ -341,6 +341,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const priceModel = storeId ? modelByStoreId[storeId] : null;
       const priceModelType = priceModel?.price_model || product.price_model;
 
+      // 🐛 DEBUG: Log detalhado para entender o fluxo
+      console.log(`🔍 [recalculateItemPrices] Processando ${product.name}:`, {
+        storeId,
+        priceModelType,
+        priceModel: priceModel ? { ...priceModel } : null,
+        quantity,
+        catalogType: item.catalogType,
+        enable_gradual_wholesale: product.enable_gradual_wholesale,
+        wholesale_price: product.wholesale_price,
+        min_wholesale_qty: product.min_wholesale_qty,
+        retail_price: product.retail_price,
+        itemPriceAtual: item.price,
+        originalPrice: item.originalPrice,
+        hasGradeInfo: !!item.gradeInfo,
+      });
+
       // 🔴 NOVO: Se for uma grade com modo flexível (meia grade ou custom), não recalcular o preço
       // O preço já foi calculado corretamente no cartHelpers baseado no modo selecionado
       if (item.gradeInfo && item.variation?.is_grade) {
@@ -481,15 +497,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Atacado por produto: quantidade mínima por item (regra original)
-      if (
+      // Usar min_wholesale_qty do produto ou fallback para simple_wholesale_min_qty do modelo de preço
+      const minQtyForProduct = product.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
+      const shouldApplyWholesaleByProduct =
         priceModelType === "simple_wholesale" &&
         !product.enable_gradual_wholesale &&
         product.wholesale_price &&
-        product.min_wholesale_qty &&
-        quantity >= product.min_wholesale_qty
-      ) {
+        minQtyForProduct &&
+        quantity >= minQtyForProduct;
+      
+      console.log(`🔍 [recalculateItemPrices] ${product.name} - Verificando atacado por produto:`, {
+        priceModelType,
+        isSimpleWholesale: priceModelType === "simple_wholesale",
+        hasGradual: product.enable_gradual_wholesale,
+        hasWholesalePrice: !!product.wholesale_price,
+        productMinQty: product.min_wholesale_qty,
+        modelMinQty: priceModel?.simple_wholesale_min_qty,
+        minQtyForProduct,
+        quantity,
+        quantityMeetsMin: quantity >= minQtyForProduct,
+        shouldApply: shouldApplyWholesaleByProduct,
+      });
+
+      if (shouldApplyWholesaleByProduct) {
         console.log(
-          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${product.min_wholesale_qty}: R$${product.wholesale_price}`
+          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${product.wholesale_price}`
         );
         return {
           ...item,
@@ -531,14 +563,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Se simple_wholesale mas quantidade < mínima, usar preço varejo
+      // Usar min_wholesale_qty do produto ou fallback para simple_wholesale_min_qty do modelo de preço
+      const minQtyForProductFallback = product.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
       if (
         priceModelType === "simple_wholesale" &&
         (!product.wholesale_price ||
-          !product.min_wholesale_qty ||
-          quantity < product.min_wholesale_qty)
+          !minQtyForProductFallback ||
+          quantity < minQtyForProductFallback)
       ) {
         console.log(
-          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
+          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Quantidade insuficiente (qtd: ${quantity}, mín: ${minQtyForProductFallback}), usando preço varejo: R$${item.originalPrice}`
         );
         return {
           ...item,
@@ -582,8 +616,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Fallback: usar preço original (varejo)
-      console.log(
-        `📋 [recalculateItemPrices] ${product.name}: Fallback - Mantendo preço varejo: R$${item.originalPrice}`
+      console.warn(
+        `⚠️ [recalculateItemPrices] ${product.name}: FALLBACK - Nenhuma condição aplicou atacado! Mantendo preço varejo: R$${item.originalPrice}`,
+        {
+          priceModelType,
+          catalogType: item.catalogType,
+          enable_gradual_wholesale: product.enable_gradual_wholesale,
+          wholesale_price: product.wholesale_price,
+          min_wholesale_qty: product.min_wholesale_qty,
+          quantity,
+          byCartTotal,
+          hasTiers: !!(product.enable_gradual_wholesale && priceTiersCache[product.id]),
+        }
       );
       return {
         ...item,
