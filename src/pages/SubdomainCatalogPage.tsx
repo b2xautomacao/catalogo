@@ -1,8 +1,19 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import { useSubdomainStore } from "@/hooks/useSubdomainStore";
 import { getSubdomainInfo } from "@/utils/subdomainRouter";
 import PublicCatalog from "@/components/catalog/PublicCatalog";
 import { Loader2 } from "lucide-react";
+
+// Slugs reservados (rotas do app) - não tratados como vendedor
+const RESERVED_SLUGS = ["produto", "catalog", "track", "auth", "c"];
+
+/** Extrai sellerSlug do path (ex: /daniel → "daniel") */
+function extractSellerSlugFromPath(pathname: string): string | undefined {
+  const segment = pathname.replace(/^\//, "").split("/")[0]?.toLowerCase().trim();
+  if (!segment || RESERVED_SLUGS.includes(segment)) return undefined;
+  return segment;
+}
 
 /**
  * Catalog page specifically for subdomain routing
@@ -81,8 +92,7 @@ const SubdomainCatalogPage: React.FC = () => {
     );
   }
 
-  // Render the catalog using store slug as identifier
-  return <PublicCatalog storeIdentifier={store.slug} />;
+  return <PublicCatalog storeIdentifier={store.slug} sellerSlug={sellerSlug} />;
 };
 
 export default SubdomainCatalogPage;

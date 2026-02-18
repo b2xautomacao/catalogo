@@ -2,16 +2,29 @@ import React from "react";
 import { useParams, useLocation } from "react-router-dom";
 import PublicCatalog from "@/components/catalog/PublicCatalog";
 
+const RESERVED_SLUGS = ["produto", "catalog", "track", "auth", "c"];
+
+/** Extrai sellerSlug do splat (ex: "daniel" ou "produto/123" → no segundo caso, não é vendedor) */
+function extractSellerSlugFromSplat(splat: string | undefined): string | undefined {
+  if (!splat) return undefined;
+  const firstSegment = splat.split("/")[0]?.toLowerCase().trim();
+  if (!firstSegment || RESERVED_SLUGS.includes(firstSegment)) return undefined;
+  // Se tem mais de um segmento (ex: produto/123), não é slug de vendedor
+  if (splat.includes("/")) return undefined;
+  return firstSegment;
+}
+
 const PublicCatalogPage = () => {
-  const { storeIdentifier, storeSlug, productId } = useParams<{
+  const params = useParams<{
     storeIdentifier?: string;
     storeSlug?: string;
     productId?: string;
+    "*"?: string;
   }>();
   const location = useLocation();
 
-  // Determine the store identifier - could be from old URL format or new
-  const storeId = storeIdentifier || storeSlug;
+  const storeId = params.storeIdentifier || params.storeSlug;
+  const sellerSlug = extractSellerSlugFromSplat(params["*"]);
 
   if (!storeId) {
     return (
@@ -29,14 +42,11 @@ const PublicCatalogPage = () => {
     );
   }
 
-  // For legacy routes with product ID, redirect to subdomain format
-  if (productId && storeSlug) {
-    // Check if this store has a subdomain configured
-    // For now, redirect to legacy product page within catalog
-    console.log('Legacy product URL detected:', { storeSlug, productId });
+  if (params.productId && params.storeSlug) {
+    console.log('Legacy product URL detected:', { storeSlug: params.storeSlug, productId: params.productId });
   }
 
-  return <PublicCatalog storeIdentifier={storeId} />;
+  return <PublicCatalog storeIdentifier={storeId} sellerSlug={sellerSlug} />;
 };
 
 export default PublicCatalogPage;

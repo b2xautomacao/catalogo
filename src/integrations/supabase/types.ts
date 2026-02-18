@@ -1797,6 +1797,47 @@ export type Database = {
           },
         ]
       }
+      sellers: {
+        Row: {
+          id: string
+          store_id: string
+          slug: string
+          name: string
+          whatsapp_phone: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          store_id: string
+          slug: string
+          name: string
+          whatsapp_phone: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          store_id?: string
+          slug?: string
+          name?: string
+          whatsapp_phone?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sellers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           created_at: string

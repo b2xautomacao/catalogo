@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useCatalogSettings } from "@/hooks/useCatalogSettings";
+import { useSeller } from "@/hooks/useSeller";
 import { useCart } from "@/hooks/useCart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { createCartItem } from "@/utils/cartHelpers";
@@ -62,10 +63,13 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
     filteredProducts,
     loading,
     storeError,
-    catalogType, // Agora obtido automaticamente do useCatalog
+    catalogType,
     searchProducts,
     filterProducts,
   } = useCatalog(storeIdentifier);
+
+  const { seller } = useSeller(store?.id, sellerSlug);
+  const effectivePhone = seller?.whatsapp_phone ?? store?.phone ?? undefined;
 
   const { settings } = useCatalogSettings(storeIdentifier);
   const catalogStoreIdApi = useCatalogStoreId();
@@ -411,7 +415,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
             showStock={showStock}
             showPrices={showPrices}
             storeName={store.name}
-            storePhone={store.phone}
+            storePhone={effectivePhone}
             storeId={store?.id}
             relatedProducts={products.filter(
               (p) =>
@@ -446,9 +450,9 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
 
       {/* WhatsApp Flutuante */}
       <FloatingWhatsApp
-        phoneNumber={store.phone || undefined}
+        phoneNumber={effectivePhone}
         storeName={store.name}
-        isVisible={!!store.phone}
+        isVisible={!!effectivePhone}
       />
 
       {/* Checkout Modal */}
@@ -458,7 +462,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
             <EnhancedCheckout
               storeId={store.id}
               storeName={store.name}
-              storePhone={store.phone}
+              storePhone={effectivePhone}
               onClose={() => setShowCheckout(false)}
             />
           </div>

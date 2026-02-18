@@ -14,6 +14,7 @@ import {
   Activity,
   Search,
   Info,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -68,7 +69,7 @@ const Settings = () => {
         className="space-y-6"
       >
         <div className="overflow-x-auto">
-          <TabsList className="w-max grid grid-cols-11 h-auto">
+          <TabsList className="w-max grid grid-cols-12 h-auto">
             <TabsTrigger value="store" className="flex items-center gap-2 whitespace-nowrap">
               <Store className="h-4 w-4" />
               <span className="hidden sm:inline">Loja</span>
@@ -174,6 +175,10 @@ const Settings = () => {
 
         <TabsContent value="whatsapp" className="space-y-6">
           <ProtectedWhatsAppSettings />
+        </TabsContent>
+
+        <TabsContent value="sellers" className="space-y-6">
+          <SellersSettings />
         </TabsContent>
 
         <TabsContent value="domains" className="space-y-6">
