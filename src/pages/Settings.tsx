@@ -38,6 +38,7 @@ import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
 import MinimumPurchaseConfig from "@/components/settings/MinimumPurchaseConfig";
 import WholesaleMinConfig from "@/components/settings/WholesaleMinConfig";
+import SellersSettings from "@/components/settings/SellersSettings";
 import PricingModeSelector from "@/components/products/PricingModeSelector";
 import PriceModelDebug from "@/components/debug/PriceModelDebug";
 import ButtonTest from "@/components/debug/ButtonTest";

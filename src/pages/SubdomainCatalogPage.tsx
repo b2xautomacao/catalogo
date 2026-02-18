@@ -20,8 +20,10 @@ function extractSellerSlugFromPath(pathname: string): string | undefined {
  * Uses subdomain detection instead of URL parameters
  */
 const SubdomainCatalogPage: React.FC = () => {
+  const { pathname } = useLocation();
   const { store, loading, error } = useSubdomainStore();
   const { subdomain } = getSubdomainInfo();
+  const sellerSlug = extractSellerSlugFromPath(pathname);
 
   if (loading) {
     return (

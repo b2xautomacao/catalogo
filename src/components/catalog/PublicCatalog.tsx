@@ -26,9 +26,10 @@ import { Filter } from "lucide-react";
 
 interface PublicCatalogProps {
   storeIdentifier: string;
+  sellerSlug?: string;
 }
 
-const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier }) => {
+const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSlug }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
