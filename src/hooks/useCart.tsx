@@ -236,10 +236,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // Função para buscar modelo de preço de uma loja
-  const fetchStorePriceModel = async (storeId: string) => {
+  const fetchStorePriceModel = async (storeId: string, skipCache = false) => {
     if (!storeId) return null;
     
-    if (priceModelCache[storeId]) {
+    if (!skipCache && priceModelCache[storeId]) {
       return priceModelCache[storeId];
     }
 
@@ -297,7 +297,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Função para recalcular preços baseado na quantidade (lógica híbrida)
-  const recalculateItemPrices = async (cartItems: CartItem[]): Promise<CartItem[]> => {
+  const recalculateItemPrices = async (cartItems: CartItem[], options?: { skipCache?: boolean }): Promise<CartItem[]> => {
+    const skipCache = options?.skipCache ?? false;
     console.log(
       "🔄 [recalculateItemPrices] INICIANDO - Itens recebidos:",
       cartItems.length
@@ -744,13 +745,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     loadCartFromStorage();
   }, []); // ⭐ VAZIO - Carregar APENAS na montagem inicial do CartProvider
 
-  // Quando o catálogo informa storeId e há itens sem store_id, normalizar e recalcular (corrige total atacado)
+  // Quando o catálogo informa storeId: normalizar itens sem store_id e recalcular preços (corrige total atacado)
+  const prevCatalogStoreIdRef = React.useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!catalogStoreId || isLoading || items.length === 0) return;
+    if (isLoading || items.length === 0) return;
     const hasMissing = items.some((i) => !i.product?.store_id);
-    if (!hasMissing) return;
-    const normalized = normalizeCartItemsStoreId(items, catalogStoreId);
-    recalculateItemPrices(normalized).then((rec) =>
+    const catalogJustLoaded = !!catalogStoreId && prevCatalogStoreIdRef.current === undefined;
+    prevCatalogStoreIdRef.current = catalogStoreId;
+
+    // Recalcular quando: (1) há itens sem store_id e temos catalogStoreId, ou (2) catalogStoreId acabou de ficar disponível
+    const shouldRecalc = (hasMissing && catalogStoreId) || catalogJustLoaded;
+    if (!shouldRecalc || !catalogStoreId) return;
+
+    const toRecalc = normalizeCartItemsStoreId(items, catalogStoreId);
+    recalculateItemPrices(toRecalc, { skipCache: true }).then((rec) =>
       setItems(normalizeCartItemsStoreId(rec, catalogStoreId))
     );
   }, [catalogStoreId, isLoading, items]);

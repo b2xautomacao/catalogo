@@ -36,6 +36,7 @@ import SEOSettings from "@/components/settings/SEOSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import BannerManager from "@/components/settings/BannerManager";
 import MinimumPurchaseConfig from "@/components/settings/MinimumPurchaseConfig";
+import WholesaleMinConfig from "@/components/settings/WholesaleMinConfig";
 import PricingModeSelector from "@/components/products/PricingModeSelector";
 import PriceModelDebug from "@/components/debug/PriceModelDebug";
 import ButtonTest from "@/components/debug/ButtonTest";
@@ -156,6 +157,7 @@ const Settings = () => {
             <PricingModeSelector />
             <MinimumPurchaseConfig />
           </div>
+          <WholesaleMinConfig />
         </TabsContent>
 
         <TabsContent value="banners" className="space-y-6">
