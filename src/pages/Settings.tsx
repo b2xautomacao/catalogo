@@ -103,6 +103,10 @@ const Settings = () => {
               <Globe className="h-4 w-4" />
               <span className="hidden sm:inline">Domínios</span>
             </TabsTrigger>
+            <TabsTrigger value="sellers" className="flex items-center gap-2 whitespace-nowrap">
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Vendedores</span>
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2 whitespace-nowrap">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>

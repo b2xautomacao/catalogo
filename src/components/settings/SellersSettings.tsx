@@ -26,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { useStores } from "@/hooks/useStores";
 import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { supabase } from "@/integrations/supabase/client";
