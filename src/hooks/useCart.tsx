@@ -304,13 +304,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       cartItems.length
     );
 
-    // Buscar modelos de preço para todas as lojas únicas e usar o retorno (não o cache),
-    // pois setState é assíncrono e o cache ainda estaria vazio nesta execução
-    const storeIds = [...new Set(cartItems.map(item => item.product.store_id).filter(Boolean))] as string[];
-    if (storeIds.length === 0) {
-      console.warn("⚠️ [recalculateItemPrices] Nenhum item tem product.store_id - preço de atacado não será aplicado. Verifique se o produto foi adicionado com store_id.");
+    // Normalizar store_id: se nenhum item tem, usar catalogStoreId como fallback
+    const itemsWithStore = cartItems.map((item) => {
+      const sid = item.product?.store_id ?? catalogStoreId;
+      if (!sid) return item;
+      return item.product?.store_id ? item : { ...item, product: { ...item.product, store_id: sid } };
+    });
+
+    let storeIds = [...new Set(itemsWithStore.map(item => item.product?.store_id ?? catalogStoreId).filter(Boolean))] as string[];
+    if (storeIds.length === 0 && catalogStoreId) {
+      storeIds = [catalogStoreId];
+      console.log("🔄 [recalculateItemPrices] Usando catalogStoreId como fallback:", catalogStoreId);
     }
-    const fetchedModels = await Promise.all(storeIds.map(storeId => fetchStorePriceModel(storeId)));
+    if (storeIds.length === 0) {
+      console.warn("⚠️ [recalculateItemPrices] Nenhum item tem product.store_id e catalogStoreId indisponível.");
+    }
+    const fetchedModels = await Promise.all(storeIds.map(sid => fetchStorePriceModel(sid, skipCache)));
     type PriceModelRow = {
       id: string;
       store_id: string;
@@ -322,12 +331,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     const modelByStoreId: Record<string, PriceModelRow | null> = {};
     storeIds.forEach((id, i) => { modelByStoreId[id] = fetchedModels[i]; });
 
-    // Total de unidades por loja (para atacado por quantidade total do carrinho)
+    // Total de unidades por loja (soma de TODOS os itens da loja)
     const totalUnitsByStore: Record<string, number> = {};
     storeIds.forEach((id) => {
-      totalUnitsByStore[id] = cartItems
-        .filter((item) => item.product.store_id === id)
-        .reduce((sum, i) => sum + i.quantity, 0);
+      totalUnitsByStore[id] = itemsWithStore
+        .filter((item) => (item.product?.store_id ?? catalogStoreId) === id)
+        .reduce((sum, i) => sum + (typeof i.quantity === "number" && !isNaN(i.quantity) ? i.quantity : 0), 0);
     });
     console.log("🔄 [recalculateItemPrices] Modelos e totais por loja:", {
       storeIds,
@@ -335,10 +344,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       totalUnitsByStore,
     });
 
-    const recalculatedItems = cartItems.map((item) => {
+    const recalculatedItems = itemsWithStore.map((item) => {
       const product = item.product;
-      const quantity = item.quantity;
-      const storeId = product.store_id;
+      const quantity = typeof item.quantity === "number" && !isNaN(item.quantity) ? item.quantity : 0;
+      const storeId = product?.store_id ?? catalogStoreId ?? undefined;
       
       // Usar modelo buscado nesta execução (não o cache do estado)
       const priceModel = storeId ? modelByStoreId[storeId] : null;
@@ -745,17 +754,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     loadCartFromStorage();
   }, []); // ⭐ VAZIO - Carregar APENAS na montagem inicial do CartProvider
 
-  // Quando o catálogo informa storeId: normalizar itens sem store_id e recalcular preços (corrige total atacado)
+  // Quando o catálogo informa storeId: normalizar e recalcular preços (corrige total atacado)
   const prevCatalogStoreIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (isLoading || items.length === 0) return;
+    if (isLoading || items.length === 0 || !catalogStoreId) return;
     const hasMissing = items.some((i) => !i.product?.store_id);
-    const catalogJustLoaded = !!catalogStoreId && prevCatalogStoreIdRef.current === undefined;
+    const catalogJustLoaded = prevCatalogStoreIdRef.current === undefined;
     prevCatalogStoreIdRef.current = catalogStoreId;
 
-    // Recalcular quando: (1) há itens sem store_id e temos catalogStoreId, ou (2) catalogStoreId acabou de ficar disponível
-    const shouldRecalc = (hasMissing && catalogStoreId) || catalogJustLoaded;
-    if (!shouldRecalc || !catalogStoreId) return;
+    // Recalcular quando: (1) há itens sem store_id, ou (2) catalogStoreId acabou de ficar disponível
+    const shouldRecalc = hasMissing || catalogJustLoaded;
+    if (!shouldRecalc) return;
 
     const toRecalc = normalizeCartItemsStoreId(items, catalogStoreId);
     recalculateItemPrices(toRecalc, { skipCache: true }).then((rec) =>
