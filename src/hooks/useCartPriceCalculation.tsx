@@ -126,10 +126,17 @@ export const useCartPriceCalculation = (
         savings = 0; // Não mostrar economia para wholesale_only
         break;
 
-      case "simple_wholesale":
-        // Varejo + Atacado simples - verificar quantidade
-        if (wholesalePrice && quantity >= minWholesaleQty) {
-          finalPrice = wholesalePrice;
+      case "simple_wholesale": {
+        const totalUnitsInCart = items.reduce((s, i) => s + (typeof i.quantity === "number" ? i.quantity : 0), 0);
+        const isByCartTotal = priceModel.simple_wholesale_by_cart_total === true;
+        const cartMinQty = priceModel.simple_wholesale_cart_min_qty ?? 10;
+        const minQtyProduct = item.product.min_wholesale_qty ?? priceModel.simple_wholesale_min_qty ?? 10;
+        const qualifiesWholesale = wholesalePrice && (
+          (isByCartTotal && totalUnitsInCart >= cartMinQty) ||
+          (!isByCartTotal && quantity >= minQtyProduct)
+        );
+        if (qualifiesWholesale) {
+          finalPrice = wholesalePrice!;
           currentTierName = "Atacado";
           savings = (retailPrice - wholesalePrice) * quantity;
         } else {
@@ -137,17 +144,14 @@ export const useCartPriceCalculation = (
           currentTierName = "Varejo";
 
           // Dica para próximo nível
-          if (wholesalePrice && quantity < minWholesaleQty) {
-            const neededQty = minWholesaleQty - quantity;
-            const potentialSavings =
-              (retailPrice - wholesalePrice) * minWholesaleQty;
-            nextTierHint = {
-              quantityNeeded: neededQty,
-              potentialSavings,
-            };
+          const neededQty = isByCartTotal ? Math.max(0, cartMinQty - totalUnitsInCart) : Math.max(0, minQtyProduct - quantity);
+          if (wholesalePrice && neededQty > 0) {
+            const potentialSavings = (retailPrice - wholesalePrice) * quantity;
+            nextTierHint = { quantityNeeded: neededQty, potentialSavings };
           }
         }
         break;
+      }
 
       case "gradual_wholesale":
         // Para gradativo, usar preço exato do item calculado (já vem correto do carrinho)
@@ -225,5 +229,5 @@ export const useCartPriceCalculation = (
       nextTierHint,
       priceModel: modelType, // Adicionar modelo de preço para uso nos componentes
     };
-  }, [item, priceModel, loading]);
+  }, [item, priceModel, loading, items]);
 };

@@ -224,6 +224,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true); // Loading state
   const { toast } = useToast();
   const catalogStoreId = useCatalogStoreId()?.storeId;
+  const storeIdForModel = catalogStoreId || items[0]?.product?.store_id;
+  const { priceModel } = useStorePriceModel(storeIdForModel);
 
   // Cache para níveis de preço
   const [priceTiersCache, setPriceTiersCache] = useState<Record<string, any[]>>(
@@ -1017,6 +1019,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Total SEMPRE com base em item.price (preço já recalculado por recalculateItemPrices)
   const totalAmount = useMemo(() => {
+    const totalUnitsInCart = items.reduce((s, i) => s + (typeof i.quantity === "number" && !isNaN(i.quantity) ? i.quantity : 0), 0);
+    const modelType = priceModel?.price_model;
+    const isByCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
+    const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
+    const getEffectiveUnitPrice = (it: CartItem): number => {
+      const q = typeof it.quantity === "number" && !isNaN(it.quantity) ? it.quantity : 0;
+      const ret = it.product?.retail_price ?? it.originalPrice ?? 0;
+      const whl = it.product?.wholesale_price;
+      const minQ = it.product?.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
+      if (it.gradeInfo && it.variation?.is_grade) return (typeof it.price === "number" && !isNaN(it.price) ? it.price : ret) / Math.max(1, q);
+      if (modelType === "wholesale_only" && whl) return whl;
+      if (modelType === "retail_only") return ret;
+      if (modelType === "simple_wholesale" && whl) {
+        if (isByCartTotal && totalUnitsInCart >= cartMinQty) return whl;
+        if (!isByCartTotal && q >= minQ) return whl;
+      }
+      if (modelType === "gradual_wholesale" && it.currentTier?.price != null) return it.currentTier.price;
+      return typeof it.price === "number" && !isNaN(it.price) ? it.price : ret;
+    };
     // LOG: Total do carrinho e detalhes dos itens
     console.log("🛒 [useCart] DEBUG - Itens antes do cálculo:", {
       itemsCount: items.length,
@@ -1036,8 +1057,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     const calculatedTotal = items.reduce((total, item) => {
-      const itemPrice =
-        typeof item.price === "number" && !isNaN(item.price) ? item.price : 0;
+      const itemPrice = getEffectiveUnitPrice(item);
       const itemQuantity =
         typeof item.quantity === "number" && !isNaN(item.quantity)
           ? item.quantity
@@ -1093,7 +1113,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log(`🟩 [useCart] TOTAL calculado: R$${calculatedTotal}`);
     
     return calculatedTotal;
-  }, [items]); // Recalcular sempre que items mudar
+  }, [items, priceModel]); // Recalcular quando items ou priceModel mudar
 
   const totalItems = items.reduce((total, item) => {
     const itemQuantity =
