@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { QuantityInput } from "@/components/ui/quantity-input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -340,36 +342,57 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
           {/* Atacado por quantidade total do carrinho (apenas para Varejo + Atacado) */}
           {selectedMode === "simple_wholesale" && (
             <div className="space-y-4 rounded-lg border p-4 bg-gray-50/50">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Atacado por quantidade total do carrinho</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Quando ativado, o preço de atacado é aplicado a todos os produtos do carrinho que tenham preço de atacado, desde que o total de unidades no carrinho atinja o mínimo (ex.: 3 un. do produto A + 7 un. do produto B = 10 un. → todos com preço atacado).
-                  </p>
+              <Label className="text-base font-semibold">Tipo de Pedido Mínimo</Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Escolha como o preço de atacado será aplicado:
+              </p>
+              <RadioGroup
+                value={simpleWholesaleByCartTotal ? "cart" : "product"}
+                onValueChange={(value) => {
+                  setSimpleWholesaleByCartTotal(value === "cart");
+                }}
+                className="space-y-3"
+              >
+                <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-white transition-colors">
+                  <RadioGroupItem value="product" id="min_by_product_simple" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="min_by_product_simple" className="font-medium cursor-pointer">
+                      Por Produto
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Cada produto precisa atingir sua quantidade mínima individual para receber preço de atacado.
+                    </p>
+                  </div>
                 </div>
-                <Switch
-                  checked={simpleWholesaleByCartTotal}
-                  onCheckedChange={setSimpleWholesaleByCartTotal}
-                />
-              </div>
-              {simpleWholesaleByCartTotal && (
-                <div className="max-w-xs">
-                  <Label htmlFor="simple_wholesale_cart_min_qty">
-                    Quantidade mínima total (unidades no carrinho)
-                  </Label>
-                  <Input
-                    id="simple_wholesale_cart_min_qty"
-                    type="number"
-                    min={1}
-                    value={simpleWholesaleCartMinQty}
-                    onChange={(e) =>
-                      setSimpleWholesaleCartMinQty(
-                        Math.max(1, parseInt(e.target.value, 10) || 10)
-                      )
-                    }
-                  />
+
+                <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-white transition-colors">
+                  <RadioGroupItem value="cart" id="min_by_cart_simple" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="min_by_cart_simple" className="font-medium cursor-pointer">
+                      Por Carrinho (Total de Unidades)
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      O preço de atacado é aplicado a todos os produtos quando o total de unidades no carrinho atinge o mínimo configurado (ex.: 3 un. do produto A + 7 un. do produto B = 10 un. → todos com preço atacado).
+                    </p>
+                    {simpleWholesaleByCartTotal && (
+                      <div className="mt-3 max-w-xs">
+                        <Label htmlFor="simple_wholesale_cart_min_qty" className="text-sm">
+                          Quantidade Mínima Total no Carrinho
+                        </Label>
+                        <QuantityInput
+                          id="simple_wholesale_cart_min_qty"
+                          value={simpleWholesaleCartMinQty}
+                          onChange={(value) =>
+                            setSimpleWholesaleCartMinQty(Math.max(1, value))
+                          }
+                          min={1}
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </RadioGroup>
             </div>
           )}
 

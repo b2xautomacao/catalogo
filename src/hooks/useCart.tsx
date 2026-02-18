@@ -473,60 +473,61 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Atacado por quantidade total do carrinho: se a loja tiver by_cart_total ativo e o total
-      // de unidades da loja atingir o mínimo, todos os itens com wholesale_price recebem atacado
-      const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
-      const byCartTotal =
-        priceModel?.simple_wholesale_by_cart_total === true &&
-        storeId &&
-        (totalUnitsByStore[storeId] ?? 0) >= cartMinQty;
+      // 🎯 CORRIGIDO: Verificar se é simple_wholesale e aplicar a regra correta
       if (
         priceModelType === "simple_wholesale" &&
         !product.enable_gradual_wholesale &&
-        product.wholesale_price &&
-        byCartTotal
+        product.wholesale_price
       ) {
+        const isByCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
+        const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
+        const totalUnitsInCart = storeId ? (totalUnitsByStore[storeId] ?? 0) : 0;
+        const minQtyForProduct = product.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
+
+        console.log(`🔍 [recalculateItemPrices] ${product.name} - Verificando atacado:`, {
+          priceModelType,
+          isByCartTotal,
+          cartMinQty,
+          totalUnitsInCart,
+          productMinQty: product.min_wholesale_qty,
+          modelMinQty: priceModel?.simple_wholesale_min_qty,
+          minQtyForProduct,
+          quantity,
+          storeId,
+        });
+
+        // Opção 1: Por carrinho (total de unidades)
+        if (isByCartTotal && storeId && totalUnitsInCart >= cartMinQty) {
+          console.log(
+            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsInCart} >= ${cartMinQty}: R$${product.wholesale_price}`
+          );
+          return {
+            ...item,
+            price: product.wholesale_price,
+            isWholesalePrice: true,
+          };
+        }
+
+        // Opção 2: Por produto (quantidade individual)
+        if (!isByCartTotal && quantity >= minQtyForProduct) {
+          console.log(
+            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${product.wholesale_price}`
+          );
+          return {
+            ...item,
+            price: product.wholesale_price,
+            isWholesalePrice: true,
+          };
+        }
+
+        // Se não atingiu nenhum mínimo, usar varejo
         console.log(
-          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsByStore[storeId]} >= ${cartMinQty}: R$${product.wholesale_price}`
+          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Não atingiu mínimo (por ${isByCartTotal ? 'carrinho' : 'produto'}), usando varejo: R$${item.originalPrice}`
         );
         return {
           ...item,
-          price: product.wholesale_price,
-          isWholesalePrice: true,
-        };
-      }
-
-      // Atacado por produto: quantidade mínima por item (regra original)
-      // Usar min_wholesale_qty do produto ou fallback para simple_wholesale_min_qty do modelo de preço
-      const minQtyForProduct = product.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
-      const shouldApplyWholesaleByProduct =
-        priceModelType === "simple_wholesale" &&
-        !product.enable_gradual_wholesale &&
-        product.wholesale_price &&
-        minQtyForProduct &&
-        quantity >= minQtyForProduct;
-      
-      console.log(`🔍 [recalculateItemPrices] ${product.name} - Verificando atacado por produto:`, {
-        priceModelType,
-        isSimpleWholesale: priceModelType === "simple_wholesale",
-        hasGradual: product.enable_gradual_wholesale,
-        hasWholesalePrice: !!product.wholesale_price,
-        productMinQty: product.min_wholesale_qty,
-        modelMinQty: priceModel?.simple_wholesale_min_qty,
-        minQtyForProduct,
-        quantity,
-        quantityMeetsMin: quantity >= minQtyForProduct,
-        shouldApply: shouldApplyWholesaleByProduct,
-      });
-
-      if (shouldApplyWholesaleByProduct) {
-        console.log(
-          `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${product.wholesale_price}`
-        );
-        return {
-          ...item,
-          price: product.wholesale_price,
-          isWholesalePrice: true,
+          price: item.originalPrice,
+          isWholesalePrice: false,
         };
       }
 
@@ -562,24 +563,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Se simple_wholesale mas quantidade < mínima, usar preço varejo
-      // Usar min_wholesale_qty do produto ou fallback para simple_wholesale_min_qty do modelo de preço
-      const minQtyForProductFallback = product.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
-      if (
-        priceModelType === "simple_wholesale" &&
-        (!product.wholesale_price ||
-          !minQtyForProductFallback ||
-          quantity < minQtyForProductFallback)
-      ) {
-        console.log(
-          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Quantidade insuficiente (qtd: ${quantity}, mín: ${minQtyForProductFallback}), usando preço varejo: R$${item.originalPrice}`
-        );
-        return {
-          ...item,
-          price: item.originalPrice,
-          isWholesalePrice: false,
-        };
-      }
+      // Nota: A lógica de simple_wholesale já foi tratada acima (por produto ou por carrinho)
 
       // Se modo atacado mas quantidade < mínima (e não é wholesale_only), usar preço varejo como fallback
       if (

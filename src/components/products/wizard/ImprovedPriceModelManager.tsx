@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -360,46 +361,82 @@ const ImprovedPriceModelManager: React.FC<ImprovedPriceModelManagerProps> = ({
                     placeholder="Ex: Atacado, Bulk, Varejo"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="min_qty">Quantidade Mínima (por produto)</Label>
-                  <QuantityInput
-                    value={config.simple_wholesale_min_qty}
-                    onChange={(value) =>
-                      updateConfig({ simple_wholesale_min_qty: value })
-                    }
-                    min={1}
-                  />
-                </div>
               </div>
-              <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/30">
-                <div className="space-y-0.5">
-                  <Label>Atacado por quantidade total do carrinho</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Quando ativado, o atacado é aplicado a todos os itens da loja que tenham preço de atacado, desde que o total de unidades no carrinho atinja o mínimo.
-                  </p>
-                </div>
-                <Switch
-                  checked={config.simple_wholesale_by_cart_total === true}
-                  onCheckedChange={(checked) =>
-                    updateConfig({ simple_wholesale_by_cart_total: checked })
-                  }
-                />
+
+              {/* 🎯 NOVO: Escolha clara entre "por produto" ou "por carrinho" */}
+              <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+                <Label className="text-base font-semibold">Tipo de Pedido Mínimo</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Escolha como o preço de atacado será aplicado:
+                </p>
+                <RadioGroup
+                  value={config.simple_wholesale_by_cart_total === true ? "cart" : "product"}
+                  onValueChange={(value) => {
+                    updateConfig({ 
+                      simple_wholesale_by_cart_total: value === "cart" 
+                    });
+                  }}
+                  className="space-y-3"
+                >
+                  <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-background transition-colors">
+                    <RadioGroupItem value="product" id="min_by_product" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="min_by_product" className="font-medium cursor-pointer">
+                        Por Produto
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Cada produto precisa atingir sua quantidade mínima individual para receber preço de atacado.
+                      </p>
+                      {config.simple_wholesale_by_cart_total !== true && (
+                        <div className="mt-3">
+                          <Label htmlFor="min_qty_product" className="text-sm">
+                            Quantidade Mínima por Produto
+                          </Label>
+                          <QuantityInput
+                            id="min_qty_product"
+                            value={config.simple_wholesale_min_qty}
+                            onChange={(value) =>
+                              updateConfig({ simple_wholesale_min_qty: value })
+                            }
+                            min={1}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-background transition-colors">
+                    <RadioGroupItem value="cart" id="min_by_cart" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="min_by_cart" className="font-medium cursor-pointer">
+                        Por Carrinho (Total de Unidades)
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        O preço de atacado é aplicado a todos os produtos quando o total de unidades no carrinho atinge o mínimo configurado.
+                      </p>
+                      {config.simple_wholesale_by_cart_total === true && (
+                        <div className="mt-3">
+                          <Label htmlFor="cart_min_qty" className="text-sm">
+                            Quantidade Mínima Total no Carrinho
+                          </Label>
+                          <QuantityInput
+                            id="cart_min_qty"
+                            value={config.simple_wholesale_cart_min_qty ?? 10}
+                            onChange={(value) =>
+                              updateConfig({
+                                simple_wholesale_cart_min_qty: Math.max(1, value),
+                              })
+                            }
+                            min={1}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
-              {config.simple_wholesale_by_cart_total && (
-                <div className="max-w-xs">
-                  <Label htmlFor="cart_min_qty">Quantidade mínima total (unidades no carrinho)</Label>
-                  <QuantityInput
-                    id="cart_min_qty"
-                    value={config.simple_wholesale_cart_min_qty ?? 10}
-                    onChange={(value) =>
-                      updateConfig({
-                        simple_wholesale_cart_min_qty: Math.max(1, value),
-                      })
-                    }
-                    min={1}
-                  />
-                </div>
-              )}
             </div>
           )}
 
