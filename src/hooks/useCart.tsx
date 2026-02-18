@@ -249,6 +249,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         id: string;
         store_id: string;
         price_model: string;
+        simple_wholesale_min_qty?: number;
         simple_wholesale_by_cart_total?: boolean;
         simple_wholesale_cart_min_qty?: number;
       };
@@ -257,7 +258,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       const res = await client
         .from("store_price_models")
-        .select("id, store_id, price_model, simple_wholesale_by_cart_total, simple_wholesale_cart_min_qty")
+        .select("id, store_id, price_model, simple_wholesale_min_qty, simple_wholesale_by_cart_total, simple_wholesale_cart_min_qty")
         .eq("store_id", storeId)
         .limit(1);
       if (res.error || !res.data || res.data.length === 0) return null;
@@ -313,6 +314,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       id: string;
       store_id: string;
       price_model: string;
+      simple_wholesale_min_qty?: number;
       simple_wholesale_by_cart_total?: boolean;
       simple_wholesale_cart_min_qty?: number;
     };
@@ -600,6 +602,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Fallback: usar preço original (varejo)
+      const isByCartTotalFallback = priceModel?.simple_wholesale_by_cart_total === true;
       console.warn(
         `⚠️ [recalculateItemPrices] ${product.name}: FALLBACK - Nenhuma condição aplicou atacado! Mantendo preço varejo: R$${item.originalPrice}`,
         {
@@ -609,7 +612,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           wholesale_price: product.wholesale_price,
           min_wholesale_qty: product.min_wholesale_qty,
           quantity,
-          byCartTotal,
+          isByCartTotal: isByCartTotalFallback,
           hasTiers: !!(product.enable_gradual_wholesale && priceTiersCache[product.id]),
         }
       );
