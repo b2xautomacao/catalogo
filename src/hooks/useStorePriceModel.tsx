@@ -131,9 +131,12 @@ export const useStorePriceModel = (storeId: string | undefined) => {
           minimum_purchase_amount: (data as any).minimum_purchase_amount,
           minimum_purchase_message: (data as any).minimum_purchase_message,
         });
+        const row = data as Record<string, unknown>;
         setPriceModel({
           ...data,
           price_model: data.price_model as PriceModelType,
+          simple_wholesale_by_cart_total: row.simple_wholesale_by_cart_total === true,
+          simple_wholesale_cart_min_qty: typeof row.simple_wholesale_cart_min_qty === "number" ? row.simple_wholesale_cart_min_qty : 10,
           minimum_purchase_enabled:
             (data as any).minimum_purchase_enabled || false,
           minimum_purchase_amount: (data as any).minimum_purchase_amount || 0,
@@ -219,13 +222,18 @@ export const useStorePriceModel = (storeId: string | undefined) => {
             (insertData as any).minimum_purchase_message || "",
         });
       } else {
+        const row = updateData as Record<string, unknown>;
         console.log(
           "✅ useStorePriceModel: Modelo atualizado com sucesso:",
-          updateData
+          updateData,
+          "simple_wholesale_by_cart_total:",
+          row.simple_wholesale_by_cart_total
         );
         setPriceModel({
           ...updateData,
           price_model: updateData.price_model as PriceModelType,
+          simple_wholesale_by_cart_total: row.simple_wholesale_by_cart_total === true,
+          simple_wholesale_cart_min_qty: typeof row.simple_wholesale_cart_min_qty === "number" ? row.simple_wholesale_cart_min_qty : 10,
           minimum_purchase_enabled:
             (updateData as any).minimum_purchase_enabled || false,
           minimum_purchase_amount:
@@ -278,6 +286,8 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         simple_wholesale_enabled: false,
         simple_wholesale_name: "Atacado",
         simple_wholesale_min_qty: 10,
+        simple_wholesale_by_cart_total: false,
+        simple_wholesale_cart_min_qty: 10,
         gradual_wholesale_enabled: false,
         gradual_tiers_count: 2,
         show_price_tiers: true,

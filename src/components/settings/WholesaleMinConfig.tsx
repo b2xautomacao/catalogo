@@ -17,7 +17,7 @@ import { QuantityInput } from "@/components/ui/quantity-input";
 const WholesaleMinConfig: React.FC = () => {
   const { toast } = useToast();
   const { profile } = useAuth();
-  const { priceModel, updatePriceModel, loading } = useStorePriceModel(
+  const { priceModel, updatePriceModel, refetch, loading } = useStorePriceModel(
     profile?.store_id
   );
 
@@ -39,10 +39,11 @@ const WholesaleMinConfig: React.FC = () => {
     setSaving(true);
     try {
       await updatePriceModel({
-        simple_wholesale_by_cart_total: byCartTotal,
-        simple_wholesale_min_qty: minQtyProduct,
-        simple_wholesale_cart_min_qty: minQtyCart,
+        simple_wholesale_by_cart_total: Boolean(byCartTotal),
+        simple_wholesale_min_qty: Number(minQtyProduct) || 10,
+        simple_wholesale_cart_min_qty: Number(minQtyCart) || 10,
       });
+      await refetch();
       toast({
         title: "Configuração salva!",
         description: "Configurações de quantidade mínima para atacado atualizadas.",
