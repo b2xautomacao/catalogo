@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, useMemo } from "react";
+import { useState, useEffect, createContext, useContext, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/variation";
 import { usePriceCalculation } from "./usePriceCalculation";
@@ -746,7 +746,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []); // ⭐ VAZIO - Carregar APENAS na montagem inicial do CartProvider
 
   // Quando o catálogo informa storeId: normalizar itens sem store_id e recalcular preços (corrige total atacado)
-  const prevCatalogStoreIdRef = React.useRef<string | undefined>(undefined);
+  const prevCatalogStoreIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (isLoading || items.length === 0) return;
     const hasMissing = items.some((i) => !i.product?.store_id);
