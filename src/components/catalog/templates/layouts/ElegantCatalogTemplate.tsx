@@ -31,6 +31,7 @@ const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,

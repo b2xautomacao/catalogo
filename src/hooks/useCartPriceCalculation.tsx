@@ -80,7 +80,7 @@ export const useCartPriceCalculation = (
     let currentTierName = "Varejo";
     let savings = 0;
     let nextTierHint:
-      | { quantityNeeded: number; potentialSavings: number }
+      | { quantityNeeded: number; potentialSavings: number; byCartTotal?: boolean }
       | undefined;
 
     // O modelo de preço SEMPRE vem da loja

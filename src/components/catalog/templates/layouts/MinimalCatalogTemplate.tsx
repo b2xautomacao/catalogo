@@ -31,6 +31,7 @@ const MinimalCatalogTemplate: React.FC<MinimalCatalogTemplateProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,

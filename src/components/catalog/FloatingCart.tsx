@@ -20,6 +20,9 @@ const formatCurrency = (value: number | undefined | null): string => {
 // Componente separado para cada item do carrinho
 const CartItem: React.FC<{
   item: any;
+  totalUnitsInCart?: number;
+  cartMinQty?: number;
+  isByCartTotal?: boolean;
   onUpdateQuantity: (
     id: string,
     quantity: number,
@@ -90,6 +93,11 @@ const CartItem: React.FC<{
 
   const getIncentiveMessage = () => {
     if (modelKey === "simple_wholesale" && item.product?.wholesale_price) {
+      const minQtyProduct = item.product?.min_wholesale_qty || 1;
+      // Não mostrar incentivo se o item já está com preço de atacado
+      if (isByCartTotal && totalUnitsInCart >= cartMinQty) return null;
+      if (!isByCartTotal && quantity >= minQtyProduct) return null;
+
       if (isByCartTotal && cartMinQty > 0) {
         const needed = Math.max(0, cartMinQty - totalUnitsInCart);
         if (needed > 0) {

@@ -31,6 +31,7 @@ const ModernCatalogTemplate: React.FC<ModernCatalogTemplateProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,
