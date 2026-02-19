@@ -18,6 +18,7 @@ interface TemplateWrapperProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -34,6 +35,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,
@@ -83,6 +85,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     cartItemsCount,
     wishlistCount,
     whatsappNumber,
+    sellerName,
     storeSettings,
     onSearch,
     onToggleFilters,

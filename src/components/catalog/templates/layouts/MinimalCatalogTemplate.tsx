@@ -14,6 +14,7 @@ interface MinimalCatalogTemplateProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -56,7 +57,14 @@ const MinimalCatalogTemplate: React.FC<MinimalCatalogTemplateProps> = ({
                   className="w-8 h-8 rounded object-cover"
                 />
               )}
-              <h1 className="font-semibold text-gray-900 hidden sm:block">{store.name}</h1>
+              <div className="hidden sm:block">
+                <h1 className="font-semibold text-gray-900">{store.name}</h1>
+                {sellerName && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Atendimento: <span className="font-medium text-gray-700">{sellerName}</span>
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Busca */}

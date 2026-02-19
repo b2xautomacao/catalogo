@@ -14,6 +14,7 @@ interface ElegantCatalogTemplateProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -65,6 +66,11 @@ const ElegantCatalogTemplate: React.FC<ElegantCatalogTemplateProps> = ({
                   {store.name}
                   <Crown className="h-4 w-4 text-amber-600" />
                 </h1>
+                {sellerName && (
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Atendimento: <span className="font-medium text-amber-900">{sellerName}</span>
+                  </p>
+                )}
               </div>
             </div>
 

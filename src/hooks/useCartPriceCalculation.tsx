@@ -40,6 +40,8 @@ interface PriceCalculationResult {
   nextTierHint?: {
     quantityNeeded: number;
     potentialSavings: number;
+    /** Quando true, refere-se ao total de unidades no carrinho (atacado por carrinho) */
+    byCartTotal?: boolean;
   };
   priceModel?: string;
 }
@@ -115,12 +117,6 @@ export const useCartPriceCalculation = (
 
       case "wholesale_only":
         // Apenas atacado - usar sempre o preço de atacado
-        console.log("🔍 useCartPriceCalculation: Caso wholesale_only:", {
-          wholesalePrice,
-          retailPrice,
-          finalPrice: wholesalePrice || retailPrice,
-          currentTierName: "Atacado",
-        });
         finalPrice = wholesalePrice || retailPrice;
         currentTierName = "Atacado";
         savings = 0; // Não mostrar economia para wholesale_only
@@ -146,8 +142,10 @@ export const useCartPriceCalculation = (
           // Dica para próximo nível
           const neededQty = isByCartTotal ? Math.max(0, cartMinQty - totalUnitsInCart) : Math.max(0, minQtyProduct - quantity);
           if (wholesalePrice && neededQty > 0) {
-            const potentialSavings = (retailPrice - wholesalePrice) * quantity;
-            nextTierHint = { quantityNeeded: neededQty, potentialSavings };
+            const potentialSavings = isByCartTotal
+              ? (retailPrice - wholesalePrice) * quantity
+              : (retailPrice - wholesalePrice) * neededQty;
+            nextTierHint = { quantityNeeded: neededQty, potentialSavings, byCartTotal: isByCartTotal };
           }
         }
         break;
@@ -198,14 +196,6 @@ export const useCartPriceCalculation = (
     if (item.gradeInfo && item.variation?.is_grade) {
       // Para grades, o preço já é o total da grade
       total = item.price || finalPrice;
-      console.log("📦 useCartPriceCalculation - Grade detectada:", {
-        productName: item.product.name,
-        gradeName: item.gradeInfo.name,
-        itemPrice: item.price,
-        finalPrice,
-        total,
-        quantity,
-      });
     } else {
       // Para produtos normais, multiplicar preço unitário por quantidade
       total = finalPrice * quantity;

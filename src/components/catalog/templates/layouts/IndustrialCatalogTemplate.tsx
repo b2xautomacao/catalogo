@@ -14,6 +14,7 @@ interface IndustrialCatalogTemplateProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -30,6 +31,7 @@ const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,
@@ -65,6 +67,11 @@ const IndustrialCatalogTemplate: React.FC<IndustrialCatalogTemplateProps> = ({
                   {store.name}
                   <Settings className="h-4 w-4 text-amber-500" />
                 </h1>
+                {sellerName && (
+                  <p className="text-xs text-amber-200 mt-0.5">
+                    Atendimento: <span className="font-medium">{sellerName}</span>
+                  </p>
+                )}
               </div>
             </div>
 

@@ -338,7 +338,8 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
         catalogType={catalogType}
         cartItemsCount={totalItems}
         wishlistCount={wishlist.length}
-        whatsappNumber={store.phone || undefined}
+        whatsappNumber={effectivePhone}
+        sellerName={seller?.name}
         storeSettings={settings}
         onSearch={handleSearchChange}
         onToggleFilters={() => setShowFilters(true)}
@@ -464,6 +465,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
               storeId={store.id}
               storeName={store.name}
               storePhone={effectivePhone}
+              sellerName={seller?.name}
               onClose={() => setShowCheckout(false)}
             />
           </div>

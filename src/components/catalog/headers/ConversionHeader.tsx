@@ -19,6 +19,7 @@ const ICON_MAP: Record<string, any> = {
 
 interface ConversionHeaderProps {
   store: Store;
+  sellerName?: string;
   cartItemsCount: number;
   wishlistCount: number;
   products?: any[];
@@ -32,6 +33,7 @@ interface ConversionHeaderProps {
 
 const ConversionHeader: React.FC<ConversionHeaderProps> = ({
   store,
+  sellerName,
   cartItemsCount,
   wishlistCount,
   products = [],
@@ -131,9 +133,13 @@ const ConversionHeader: React.FC<ConversionHeaderProps> = ({
               )}
               <div className="hidden md:block">
                 <h1 className="font-bold text-gray-900 text-lg md:text-xl">{store.name}</h1>
-                {store.description && (
+                {sellerName ? (
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Atendimento: <span className="font-medium text-gray-800">{sellerName}</span>
+                  </p>
+                ) : store.description ? (
                   <p className="text-xs text-gray-500 line-clamp-1">{store.description}</p>
-                )}
+                ) : null}
               </div>
             </div>
 

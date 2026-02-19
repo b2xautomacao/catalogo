@@ -14,6 +14,7 @@ interface ModernCatalogTemplateProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -58,6 +59,11 @@ const ModernCatalogTemplate: React.FC<ModernCatalogTemplateProps> = ({
               )}
               <div className="hidden sm:block">
                 <h1 className="font-bold text-gray-900 text-lg">{store.name}</h1>
+                {sellerName && (
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Atendimento: <span className="font-medium text-gray-800">{sellerName}</span>
+                  </p>
+                )}
               </div>
             </div>
 

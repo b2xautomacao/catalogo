@@ -1,6 +1,6 @@
 // FloatingCart.tsx
 import React, { useEffect, useState } from "react";
-import { ShoppingCart, Trash2, Plus, Minus, X, TrendingUp, Bug } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, X, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ const CartItem: React.FC<{
     minQty?: number
   ) => void;
   onRemoveItem: (id: string) => void;
-}> = ({ item, onUpdateQuantity, onRemoveItem }) => {
+}> = ({ item, totalUnitsInCart = 0, cartMinQty = 10, isByCartTotal = false, onUpdateQuantity, onRemoveItem }) => {
   const quantity = item.quantity || 1;
   const stock =
     item.variation && typeof item.variation.stock === "number"
@@ -89,20 +89,29 @@ const CartItem: React.FC<{
   };
 
   const getIncentiveMessage = () => {
-    if (modelKey === "simple_wholesale" && item.product?.min_wholesale_qty) {
-      const needed = item.product.min_wholesale_qty - quantity;
-      if (needed > 0) {
-        return {
-          text: `Adicione mais ${needed} unidade${
-            needed > 1 ? "s" : ""
-          } para atacado`,
-          buttonText: "Ativar Atacado",
-          showSavings: true,
-          savings: item.product.wholesale_price
-            ? (item.product.retail_price - item.product.wholesale_price) *
-              item.product.min_wholesale_qty
-            : 0,
-        };
+    if (modelKey === "simple_wholesale" && item.product?.wholesale_price) {
+      if (isByCartTotal && cartMinQty > 0) {
+        const needed = Math.max(0, cartMinQty - totalUnitsInCart);
+        if (needed > 0) {
+          return {
+            text: needed === 1
+              ? "Adicione mais 1 unidade no carrinho para atacado em todos os itens"
+              : `Adicione mais ${needed} unidades no carrinho para atacado em todos os itens`,
+            buttonText: "Adicionar Unidades",
+            showSavings: true,
+            savings: (item.product.retail_price - item.product.wholesale_price) * quantity,
+          };
+        }
+      } else if (item.product?.min_wholesale_qty) {
+        const needed = item.product.min_wholesale_qty - quantity;
+        if (needed > 0) {
+          return {
+            text: `Adicione mais ${needed} unidade${needed > 1 ? "s" : ""} para atacado`,
+            buttonText: "Ativar Atacado",
+            showSavings: true,
+            savings: (item.product.retail_price - item.product.wholesale_price) * item.product.min_wholesale_qty,
+          };
+        }
       }
     } else if (
       modelKey === "gradual_wholesale" &&
@@ -399,8 +408,6 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
     };
   }, []);
 
-  console.log("🛒 FloatingCart: Renderizando - totalItems:", totalItems);
-
   // Só renderiza se houver itens no carrinho
   if (totalItems === 0) return null;
 
@@ -468,6 +475,9 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                       <CartItem
                         key={item.id}
                         item={item}
+                        totalUnitsInCart={items.reduce((s, i) => s + (i.quantity || 0), 0)}
+                        cartMinQty={priceModel?.simple_wholesale_cart_min_qty ?? 10}
+                        isByCartTotal={priceModel?.simple_wholesale_by_cart_total === true}
                         onUpdateQuantity={updateQuantity}
                         onRemoveItem={removeItem}
                       />
@@ -490,160 +500,7 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                         {formatCurrency(totalAmount)}
                       </span>
                     </div>
-                    
-                    {/* Botão de Debug */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const debugInfo = {
-                          totalAtual: totalAmount,
-                          itemsNoEstado: items.map((item) => ({
-                            id: item.id,
-                            nome: item.product?.name,
-                            quantidade: item.quantity,
-                            precoNoEstado: item.price,
-                            precoOriginal: item.originalPrice,
-                            isWholesalePrice: item.isWholesalePrice,
-                            temStoreId: !!item.product?.store_id,
-                            storeId: item.product?.store_id,
-                            retailPrice: item.product?.retail_price,
-                            wholesalePrice: item.product?.wholesale_price,
-                            minWholesaleQty: item.product?.min_wholesale_qty,
-                            subtotalEstado: item.price * item.quantity,
-                          })),
-                          calculoEsperadoPorItem: items.map((item) => {
-                            // Simular o que useCartPriceCalculation faria
-                            const qty = item.quantity;
-                            const retail = item.product?.retail_price || 0;
-                            const wholesale = item.product?.wholesale_price || 0;
-                            const minQty = item.product?.min_wholesale_qty || 1;
-                            const modelType = priceModel?.price_model || "retail_only";
-                            
-                            let finalPrice = retail;
-                            let subtotalEsperado = retail * qty;
-                            
-                            if (modelType === "simple_wholesale") {
-                              const byCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
-                              const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
-                              const totalUnits = items.reduce((sum, i) => sum + i.quantity, 0);
-                              
-                              if (byCartTotal && totalUnits >= cartMinQty && wholesale) {
-                                finalPrice = wholesale;
-                                subtotalEsperado = wholesale * qty;
-                              } else if (qty >= minQty && wholesale) {
-                                finalPrice = wholesale;
-                                subtotalEsperado = wholesale * qty;
-                              }
-                            } else if (modelType === "wholesale_only" && wholesale) {
-                              finalPrice = wholesale;
-                              subtotalEsperado = wholesale * qty;
-                            }
-                            
-                            return {
-                              nome: item.product?.name,
-                              quantidade: qty,
-                              precoUnitarioEsperado: finalPrice,
-                              subtotalEsperado,
-                              diferenca: (item.price * qty) - subtotalEsperado,
-                            };
-                          }),
-                          totalEsperado: items.reduce((sum, item) => {
-                            const qty = item.quantity;
-                            const retail = item.product?.retail_price || 0;
-                            const wholesale = item.product?.wholesale_price || 0;
-                            const minQty = item.product?.min_wholesale_qty || 1;
-                            const modelType = priceModel?.price_model || "retail_only";
-                            
-                            let finalPrice = retail;
-                            
-                            if (modelType === "simple_wholesale") {
-                              const byCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
-                              const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
-                              const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-                              
-                              if (byCartTotal && totalUnits >= cartMinQty && wholesale) {
-                                finalPrice = wholesale;
-                              } else if (qty >= minQty && wholesale) {
-                                finalPrice = wholesale;
-                              }
-                            } else if (modelType === "wholesale_only" && wholesale) {
-                              finalPrice = wholesale;
-                            }
-                            
-                            return sum + (finalPrice * qty);
-                          }, 0),
-                          modeloPreco: {
-                            tipo: priceModel?.price_model,
-                            byCartTotal: priceModel?.simple_wholesale_by_cart_total,
-                            cartMinQty: priceModel?.simple_wholesale_cart_min_qty,
-                          },
-                          totalUnidadesCarrinho: items.reduce((sum, i) => sum + i.quantity, 0),
-                          storeIdUsado: storeIdForValidation,
-                        };
-                        console.log("🐛 DEBUG TOTAL CARRINHO:", debugInfo);
-                        alert(
-                          `🐛 DEBUG TOTAL CARRINHO\n\n` +
-                          `Total Atual (estado): R$ ${totalAmount.toFixed(2)}\n` +
-                          `Total Esperado: R$ ${debugInfo.totalEsperado.toFixed(2)}\n` +
-                          `Diferença: R$ ${(totalAmount - debugInfo.totalEsperado).toFixed(2)}\n\n` +
-                          `Modelo: ${debugInfo.modeloPreco.tipo}\n` +
-                          `Atacado por carrinho: ${debugInfo.modeloPreco.byCartTotal ? "SIM" : "NÃO"}\n` +
-                          `Mínimo carrinho: ${debugInfo.modeloPreco.cartMinQty || "N/A"}\n` +
-                          `Total unidades: ${debugInfo.totalUnidadesCarrinho}\n\n` +
-                          `Ver console para detalhes completos.`
-                        );
-                        setShowDebug(!showDebug);
-                      }}
-                      className="w-full text-xs bg-yellow-50 border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                    >
-                      <Bug className="h-3 w-3 mr-1" />
-                      Debug Total
-                    </Button>
-                    
-                    {showDebug && (
-                      <div className="text-xs bg-gray-100 p-3 rounded border border-gray-300 max-h-60 overflow-y-auto">
-                        <div className="font-bold mb-2">🐛 Debug Info:</div>
-                        <div className="space-y-1">
-                          <div><strong>Total Estado:</strong> R$ {totalAmount.toFixed(2)}</div>
-                          <div><strong>Total Esperado:</strong> R$ {items.reduce((sum, item) => {
-                            const qty = item.quantity;
-                            const retail = item.product?.retail_price || 0;
-                            const wholesale = item.product?.wholesale_price || 0;
-                            const minQty = item.product?.min_wholesale_qty || 1;
-                            const modelType = priceModel?.price_model || "retail_only";
-                            let finalPrice = retail;
-                            if (modelType === "simple_wholesale") {
-                              const byCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
-                              const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
-                              const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-                              if (byCartTotal && totalUnits >= cartMinQty && wholesale) {
-                                finalPrice = wholesale;
-                              } else if (qty >= minQty && wholesale) {
-                                finalPrice = wholesale;
-                              }
-                            } else if (modelType === "wholesale_only" && wholesale) {
-                              finalPrice = wholesale;
-                            }
-                            return sum + (finalPrice * qty);
-                          }, 0).toFixed(2)}</div>
-                          <div><strong>Modelo:</strong> {priceModel?.price_model || "N/A"}</div>
-                          <div><strong>Por Carrinho:</strong> {priceModel?.simple_wholesale_by_cart_total ? "SIM" : "NÃO"}</div>
-                          <div><strong>Mín. Carrinho:</strong> {priceModel?.simple_wholesale_cart_min_qty || "N/A"}</div>
-                          <div><strong>Total Unidades:</strong> {items.reduce((s, i) => s + i.quantity, 0)}</div>
-                          {items.map((item, idx) => (
-                            <div key={idx} className="mt-2 p-2 bg-white rounded border">
-                              <div><strong>{item.product?.name}</strong></div>
-                              <div>Qtd: {item.quantity} | Preço Estado: R$ {item.price.toFixed(2)} | Subtotal Estado: R$ {(item.price * item.quantity).toFixed(2)}</div>
-                              <div>Retail: R$ {item.product?.retail_price?.toFixed(2)} | Wholesale: R$ {item.product?.wholesale_price?.toFixed(2)}</div>
-                              <div>Store ID: {item.product?.store_id || "❌ FALTANDO"}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
+
                     <Button
                       onClick={() => {
                         // Verificar se pode prosseguir com o pedido mínimo

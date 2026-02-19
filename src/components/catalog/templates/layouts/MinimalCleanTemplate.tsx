@@ -11,6 +11,7 @@ interface MinimalCleanTemplateProps {
   cartItemsCount: number;
   wishlistCount: number;
   whatsappNumber?: string;
+  sellerName?: string;
   storeSettings?: CatalogSettingsData | null;
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
@@ -27,6 +28,7 @@ const MinimalCleanTemplate: React.FC<MinimalCleanTemplateProps> = ({
   cartItemsCount,
   wishlistCount,
   whatsappNumber,
+  sellerName,
   storeSettings,
   onSearch,
   onToggleFilters,
@@ -43,6 +45,7 @@ const MinimalCleanTemplate: React.FC<MinimalCleanTemplateProps> = ({
       {/* Header com badges de conversão */}
       <ConversionHeader
         store={store}
+        sellerName={sellerName}
         cartItemsCount={cartItemsCount}
         wishlistCount={wishlistCount}
         products={products}

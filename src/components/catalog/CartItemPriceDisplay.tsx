@@ -24,28 +24,6 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
   const product = item.product;
   const quantity = item.quantity;
 
-  // Debug logs para entender o que está acontecendo
-  console.log("🔍 CartItemPriceDisplay - Debug completo:", {
-    product: {
-      id: product.id,
-      name: product.name,
-      store_id: product.store_id,
-      retail_price: product.retail_price,
-      wholesale_price: product.wholesale_price,
-      min_wholesale_qty: product.min_wholesale_qty,
-    },
-    quantity,
-    itemPrice: item.price,
-    hasGradeInfo: !!item.gradeInfo,
-    gradeInfo: item.gradeInfo,
-    priceCalculation: {
-      priceModel: priceCalculation.priceModel,
-      total: priceCalculation.total,
-      currentTier: priceCalculation.currentTier,
-      formattedTotal: priceCalculation.formattedTotal,
-    },
-  });
-
   const {
     total,
     savings,
@@ -154,8 +132,19 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
       {/* Dica do próximo tier */}
       {nextTierHint && (
         <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-          Adicione mais {nextTierHint.quantityNeeded} unidade(s) para economizar
-          R$ {nextTierHint.potentialSavings.toFixed(2).replace(".", ",")}
+          {nextTierHint.byCartTotal ? (
+            nextTierHint.quantityNeeded === 1 ? (
+              <>Adicione mais 1 unidade no carrinho para preço de atacado em todos os itens</>
+            ) : (
+              <>Adicione mais {nextTierHint.quantityNeeded} unidades no carrinho para preço de atacado em todos os itens</>
+            )
+          ) : (
+            <>
+              {nextTierHint.quantityNeeded === 1
+                ? `Adicione mais 1 unidade para economizar R$ ${nextTierHint.potentialSavings.toFixed(2).replace(".", ",")}`
+                : `Adicione mais ${nextTierHint.quantityNeeded} unidades para economizar R$ ${nextTierHint.potentialSavings.toFixed(2).replace(".", ",")}`}
+            </>
+          )}
         </div>
       )}
     </div>

@@ -40,6 +40,7 @@ interface EnhancedCheckoutProps {
   storeId: string;
   storeName: string;
   storePhone?: string;
+  sellerName?: string;
   onClose: () => void;
 }
 
@@ -65,20 +66,13 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   storeId,
   storeName,
   storePhone,
+  sellerName,
   onClose,
 }) => {
   const { items, totalAmount, addItem, clearCart } = useCart();
   const { config, loading: configLoading } = useCheckoutConfig();
   const { toast } = useToast();
   const { createOrder, isCreatingOrder } = useOrders();
-
-  // Debug do config
-  // console.log("EnhancedCheckout: config carregado:", {
-  //   orderBumpProducts: config?.order_bump_products?.length || 0,
-  //   configCompleto: !!config,
-  // });
-  console.log("Shipping Methods:", config?.shipping_methods);
-  console.log("Payment Methods:", config?.payment_methods);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingCost, setShippingCost] = useState(0);
@@ -227,12 +221,8 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
         store_id: storeId,
       };
 
-      console.log("EnhancedCheckout: Criando pedido:", orderData);
-
       // Criar pedido no sistema
       const createdOrder = await createOrder(orderData);
-
-      console.log("EnhancedCheckout: Pedido criado:", createdOrder);
 
       // Gerar mensagem do WhatsApp
       if (storePhone) {
@@ -264,7 +254,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   };
 
   const generateWhatsAppMessage = (data: CheckoutForm, order?: any) => {
-    let message = `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
+    const headerTitle = sellerName
+      ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
+      : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
+    let message = headerTitle;
     message += `👤 *Cliente:* ${data.customerName}\n`;
     message += `📧 *Email:* ${data.customerEmail}\n`;
     message += `📱 *Telefone:* ${data.customerPhone}\n\n`;

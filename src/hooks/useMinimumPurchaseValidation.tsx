@@ -23,39 +23,9 @@ export const useMinimumPurchaseValidation = (storeIdOverride?: string): MinimumP
   const { priceModel } = useStorePriceModel(storeId);
   const { totalAmount, items } = useCart();
 
-  console.log("🔍 useMinimumPurchaseValidation - Inputs:", {
-    profile: profile?.store_id,
-    priceModel: priceModel ? "existe" : "null",
-    totalAmount,
-    itemsCount: items.length,
-  });
-
   return useMemo(() => {
-    console.log("🔍 useMinimumPurchaseValidation - Debug:", {
-      priceModel,
-      totalAmount,
-      items: items.length,
-      minimum_purchase_enabled: priceModel?.minimum_purchase_enabled,
-      minimum_purchase_amount: priceModel?.minimum_purchase_amount,
-      price_model: priceModel?.price_model,
-    });
-
-    // Debug específico para identificar o problema
-    console.log("🔍 useMinimumPurchaseValidation - Validação específica:", {
-      hasPriceModel: !!priceModel,
-      isEnabled: priceModel?.minimum_purchase_enabled,
-      isWholesaleMode:
-        priceModel?.price_model === "wholesale_only" ||
-        priceModel?.price_model === "simple_wholesale" ||
-        priceModel?.price_model === "gradual_wholesale",
-      minimumAmount: priceModel?.minimum_purchase_amount || 0,
-      currentAmount: totalAmount,
-      isMinimumMet: totalAmount >= (priceModel?.minimum_purchase_amount || 0),
-    });
-
     // Se não há modelo de preço ou não está habilitado, permitir prosseguir
     if (!priceModel || !priceModel.minimum_purchase_enabled) {
-      console.log("❌ Pedido mínimo não habilitado ou sem priceModel");
       return {
         isEnabled: false,
         isWholesaleMode: false,
@@ -92,13 +62,6 @@ export const useMinimumPurchaseValidation = (storeIdOverride?: string): MinimumP
     const minimumAmount = priceModel.minimum_purchase_amount || 0;
     const currentAmount = totalAmount;
     const isMinimumMet = currentAmount >= minimumAmount;
-
-    console.log("✅ Validação de pedido mínimo:", {
-      minimumAmount,
-      currentAmount,
-      isMinimumMet,
-      canProceed: isMinimumMet,
-    });
 
     // Formatar mensagem com o valor
     const formatCurrency = (value: number) => {
