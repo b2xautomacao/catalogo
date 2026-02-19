@@ -102,14 +102,14 @@ const CartItem: React.FC<{
             savings: (item.product.retail_price - item.product.wholesale_price) * quantity,
           };
         }
-      } else if (item.product?.min_wholesale_qty) {
-        const needed = item.product.min_wholesale_qty - quantity;
+      } else if (minQtyProduct > 0) {
+        const needed = minQtyProduct - quantity;
         if (needed > 0) {
           return {
             text: `Adicione mais ${needed} unidade${needed > 1 ? "s" : ""} para atacado`,
             buttonText: "Ativar Atacado",
             showSavings: true,
-            savings: (item.product.retail_price - item.product.wholesale_price) * item.product.min_wholesale_qty,
+            savings: (item.product.retail_price - item.product.wholesale_price) * minQtyProduct,
           };
         }
       }
@@ -319,23 +319,6 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
   const storeIdForValidation = storeIdProp ?? items[0]?.product?.store_id;
   const minimumPurchaseValidation = useMinimumPurchaseValidation(storeIdForValidation);
   const { priceModel } = useStorePriceModel(storeIdForValidation);
-  const [showDebug, setShowDebug] = useState(false);
-
-  // Debug dos valores do carrinho
-  useEffect(() => {
-    console.log("🛒 Debug FloatingCart:", {
-      itemsCount: items.length,
-      totalItems,
-      totalAmount,
-      isOpen,
-      items: items.map((item) => ({
-        id: item.id,
-        name: item.product?.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    });
-  }, [items, totalItems, totalAmount, isOpen]);
 
   useEffect(() => {
     const style = document.createElement("style");
