@@ -416,7 +416,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header com urgência */}
+      {/* Header com urgência
       {urgencyTime > 0 && (
         <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-4 rounded-lg">
           <div className="flex items-center justify-between">
@@ -435,7 +435,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
             Aproveite desccontos exclusivos válidos apenas nesta sessão!
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Social Proof em tempo real */}
       {true && (
