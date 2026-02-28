@@ -207,7 +207,10 @@ const CatalogSettingsNew = () => {
         return (
           <ProductPageSettings 
             settings={settings || {}}
-            onUpdate={(field, value) => console.log('Update:', field, value)}
+            onUpdate={(field, value) => {
+              console.log('ProductPage Config Update:', field, value);
+              updateSettings({ [field]: value });
+            }}
           />
         );
       case "mobile":
