@@ -24,7 +24,7 @@ import ImprovedGradeSelector from "@/components/catalog/ImprovedGradeSelector";
 import type { CustomGradeSelection } from "@/types/flexible-grade";
 import FloatingCart from "@/components/catalog/FloatingCart";
 import EnhancedCheckout from "@/components/catalog/checkout/EnhancedCheckout";
-import MultiVariationSelector from "@/components/catalog/MultiVariationSelector";
+import VariationPicker from "@/components/catalog/VariationPicker";
 // 🚀 Componentes de Conversão - FASE 1
 import UrgencyBadges from "@/components/catalog/conversion/UrgencyBadges";
 import EnhancedPriceDisplay from "@/components/catalog/conversion/EnhancedPriceDisplay";
@@ -631,30 +631,21 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     addedColors={addedColors}
                   />
                 ) : (
-                  /* Variações simples: seleção múltipla com quantidades */
-                  <MultiVariationSelector
+                  /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
+                  <VariationPicker
                     variations={product.variations || []}
                     basePrice={product.retail_price}
-                    onAddToCart={(items) => {
+                    onAddToCart={(variation, qty) => {
                       if (!product) return;
-                      let totalAdded = 0;
-                      items.forEach(({ variation, quantity: qty }) => {
-                        const cartItem = createCartItem(product, 'retail', qty, variation);
-                        addItem(cartItem);
-                        totalAdded += qty;
-                        trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
-                        // Registrar cor adicionada
-                        const color = variation.color || '';
-                        if (color && !addedColors.includes(color)) {
-                          setAddedColors(prev => [...prev, color]);
-                        }
-                      });
-                      toast({
-                        title: "✅ Adicionado ao carrinho!",
-                        description: `${totalAdded} item${totalAdded > 1 ? 's' : ''} de "${product.name}" adicionado${totalAdded > 1 ? 's' : ''}.`,
-                      });
-                      toggleCart();
+                      const cartItem = createCartItem(product, 'retail', qty, variation);
+                      addItem(cartItem);
+                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
+                      const color = variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
                     }}
+                    onViewCart={toggleCart}
                   />
                 )}
               </div>
