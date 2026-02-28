@@ -521,80 +521,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               )}
 
               <Separator className="my-4" />
-
-              {/* 🚀 BADGES DE URGÊNCIA - Gatilho Mental #1 */}
-              {storeSettings?.product_show_urgency_badges && (
-                <UrgencyBadges
-                  stock={storeSettings.product_show_low_stock_badge ? (product.stock || 0) : 999}
-                  lowStockThreshold={storeSettings.product_low_stock_threshold || 10}
-                  hasFreeShipping={storeSettings.product_show_free_shipping_badge !== false}
-                  isFastDelivery={storeSettings.product_show_fast_delivery_badge !== false}
-                  isNew={false}
-                  isBestSeller={storeSettings.product_show_best_seller_badge && product.is_featured}
-                  salesCount={storeSettings.product_show_sales_count ? 75 : undefined}
-                  viewsLast24h={storeSettings.product_show_views_count ? 42 : undefined}
-                />
-              )}
-
-              {/* 🚀 PROVA SOCIAL EM CARROSSEL - Gatilho Mental #2 (FASE 2: Melhorado) */}
-              {storeSettings?.product_show_social_proof_carousel && (
-                <SocialProofCarousel
-                  salesCount={75}
-                  viewsLast24h={42}
-                  viewsNow={3}
-                  stockStatus="in_stock"
-                  isBestSeller={product.is_featured}
-                  recentPurchases={[
-                    {
-                      customerName: "Maria S.",
-                      city: "São Paulo",
-                      timeAgo: "há 2 horas",
-                    },
-                    {
-                      customerName: "João P.",
-                      city: "Rio de Janeiro",
-                      timeAgo: "há 5 horas",
-                    },
-                  ]}
-                  autoRotateInterval={storeSettings.product_social_proof_autorotate ? (storeSettings.product_social_proof_interval || 4000) : undefined}
-                />
-              )}
-
-              {/* 🚀 RATING - Gatilho Mental #3 */}
-              {storeSettings?.product_show_ratings && (
-                <SimpleRating
-                  rating={4.8}
-                  reviewCount={127}
-                  showDistribution={storeSettings.product_show_rating_distribution !== false}
-                />
-              )}
-
-              <Separator className="my-6" />
-
-              {/* TODO: Implementar EnhancedPriceDisplay quando hooks tiverem campos necessários */}
-              <div className="space-y-2">
-                <div className="text-3xl md:text-4xl font-bold text-primary">
-                  {formatCurrency(priceInfo.displayPrice)}
-                </div>
-                {priceInfo.originalPrice > priceInfo.displayPrice && (
-                  <div className="text-lg text-gray-500 line-through">
-                    {formatCurrency(priceInfo.originalPrice)}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Descrição */}
-            {product.description && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="font-semibold text-lg mb-3">Descrição</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {product.description}
-                </p>
-              </div>
-            )}
-
-            {/* Seletor de Variações */}
+                          {/* Seletor de Variações */}
             {hasVariations && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
@@ -721,6 +648,81 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 )}
               </div>
             )}
+              <Separator className="my-4" />
+
+              {/* 🚀 BADGES DE URGÊNCIA - Gatilho Mental #1 */}
+              {storeSettings?.product_show_urgency_badges && (
+                <UrgencyBadges
+                  stock={storeSettings.product_show_low_stock_badge ? (product.stock || 0) : 999}
+                  lowStockThreshold={storeSettings.product_low_stock_threshold || 10}
+                  hasFreeShipping={storeSettings.product_show_free_shipping_badge !== false}
+                  isFastDelivery={storeSettings.product_show_fast_delivery_badge !== false}
+                  isNew={false}
+                  isBestSeller={storeSettings.product_show_best_seller_badge && product.is_featured}
+                  salesCount={storeSettings.product_show_sales_count ? 75 : undefined}
+                  viewsLast24h={storeSettings.product_show_views_count ? 42 : undefined}
+                />
+              )}
+
+              {/* 🚀 PROVA SOCIAL EM CARROSSEL - Gatilho Mental #2 (FASE 2: Melhorado) */}
+              {storeSettings?.product_show_social_proof_carousel && (
+                <SocialProofCarousel
+                  salesCount={75}
+                  viewsLast24h={42}
+                  viewsNow={3}
+                  stockStatus="in_stock"
+                  isBestSeller={product.is_featured}
+                  recentPurchases={[
+                    {
+                      customerName: "Maria S.",
+                      city: "São Paulo",
+                      timeAgo: "há 2 horas",
+                    },
+                    {
+                      customerName: "João P.",
+                      city: "Rio de Janeiro",
+                      timeAgo: "há 5 horas",
+                    },
+                  ]}
+                  autoRotateInterval={storeSettings.product_social_proof_autorotate ? (storeSettings.product_social_proof_interval || 4000) : undefined}
+                />
+              )}
+
+              {/* 🚀 RATING - Gatilho Mental #3 */}
+              {storeSettings?.product_show_ratings && (
+                <SimpleRating
+                  rating={4.8}
+                  reviewCount={127}
+                  showDistribution={storeSettings.product_show_rating_distribution !== false}
+                />
+              )}
+
+              <Separator className="my-6" />
+
+              {/* TODO: Implementar EnhancedPriceDisplay quando hooks tiverem campos necessários */}
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-bold text-primary">
+                  {formatCurrency(priceInfo.displayPrice)}
+                </div>
+                {priceInfo.originalPrice > priceInfo.displayPrice && (
+                  <div className="text-lg text-gray-500 line-through">
+                    {formatCurrency(priceInfo.originalPrice)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Descrição */}
+            {product.description && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="font-semibold text-lg mb-3">Descrição</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {product.description}
+                </p>
+              </div>
+            )}
+
+
 
             {/* Quantidade e Adicionar ao Carrinho */}
             <div className="bg-white rounded-lg shadow-lg p-6">
