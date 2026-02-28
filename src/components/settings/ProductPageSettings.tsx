@@ -19,6 +19,8 @@ import {
   MessageSquare,
   Ruler,
   Info,
+  ShoppingBag,
+  MapPin,
 } from 'lucide-react';
 
 interface ProductPageSettingsProps {
@@ -432,6 +434,62 @@ const ProductPageSettings: React.FC<ProductPageSettingsProps> = ({
                 onCheckedChange={(checked) => onUpdate('product_care_section_default_open', checked)}
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Configurações do Checkout ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5 text-indigo-500" />
+            Configurações do Checkout
+          </CardTitle>
+          <CardDescription>
+            Personalize o processo de finalização de compra
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Solicitar endereço */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="checkout-require-address" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                Solicitar endereço de entrega
+              </Label>
+              <p className="text-xs text-gray-500 mt-1">
+                Se ativado, o cliente deve preencher o endereço completo no checkout
+              </p>
+            </div>
+            <Switch
+              id="checkout-require-address"
+              checked={settings.checkout_require_address !== false}
+              onCheckedChange={(checked) =>
+                onUpdate('checkout_require_address', checked)
+              }
+            />
+          </div>
+
+          <Separator />
+
+          {/* Finalizar direto no WhatsApp */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="checkout-whatsapp-only" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-green-600" />
+                Finalizar pedido pelo WhatsApp
+              </Label>
+              <p className="text-xs text-gray-500 mt-1">
+                Se ativado, o resumo do pedido é enviado diretamente para o WhatsApp da loja (sem etapa de pagamento online)
+              </p>
+            </div>
+            <Switch
+              id="checkout-whatsapp-only"
+              checked={settings.checkout_whatsapp_only !== false}
+              onCheckedChange={(checked) =>
+                onUpdate('checkout_whatsapp_only', checked)
+              }
+            />
           </div>
         </CardContent>
       </Card>

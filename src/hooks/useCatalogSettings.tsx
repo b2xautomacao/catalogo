@@ -132,6 +132,9 @@ export interface CatalogSettingsData {
   tracking_auto_events?: boolean;
   tracking_debug_mode?: boolean;
   custom_events_config?: any;
+  // Configurações do Checkout
+  checkout_require_address?: boolean; // Se true, solicita endereço no checkout
+  checkout_whatsapp_only?: boolean; // Se true, finaliza direto no WhatsApp (sem etapa de pagamento online)
   // Domínios Customizados
   subdomain_enabled?: boolean;
   subdomain?: string;
@@ -391,6 +394,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           custom_domain_verified_at: (data as any).custom_domain_verified_at,
           domain_mode: (data as any).domain_mode,
           ssl_cert_status: (data as any).ssl_cert_status,
+          // Checkout
+          checkout_require_address: (data as any).checkout_require_address,
+          checkout_whatsapp_only: (data as any).checkout_whatsapp_only,
         });
       } else {
         console.log(

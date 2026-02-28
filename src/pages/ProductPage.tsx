@@ -24,6 +24,7 @@ import ImprovedGradeSelector from "@/components/catalog/ImprovedGradeSelector";
 import type { CustomGradeSelection } from "@/types/flexible-grade";
 import FloatingCart from "@/components/catalog/FloatingCart";
 import EnhancedCheckout from "@/components/catalog/checkout/EnhancedCheckout";
+import MultiVariationSelector from "@/components/catalog/MultiVariationSelector";
 // 🚀 Componentes de Conversão - FASE 1
 import UrgencyBadges from "@/components/catalog/conversion/UrgencyBadges";
 import EnhancedPriceDisplay from "@/components/catalog/conversion/EnhancedPriceDisplay";
@@ -521,134 +522,6 @@ const ProductPage: React.FC<ProductPageProps> = ({
               )}
 
               <Separator className="my-4" />
-                          {/* Seletor de Variações */}
-            {hasVariations && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
-                {hasGradeVariations ? (
-                  <ProductVariationSelector
-                    variations={product.variations || []}
-                    selectedVariation={selectedVariation}
-                    onVariationChange={setSelectedVariation}
-                    basePrice={product.retail_price}
-                    showPriceInCards={true}
-                    showStock={true}
-                    // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
-                    onAddToCart={(variation, gradeMode, customSel) => {
-                      if (!product) return;
-                      
-                      const finalQuantity = variation.is_grade ? 1 : quantity;
-                      const cartItem = createCartItem(
-                        product,
-                        'retail',
-                        finalQuantity,
-                        variation,
-                        gradeMode,
-                        customSel ? {
-                          items: customSel.items.map(item => ({
-                            color: item.color || '',
-                            size: item.size || '',
-                            quantity: item.quantity || 0,
-                          })),
-                          totalPairs: customSel.totalPairs || 0,
-                        } : undefined
-                      );
-                      
-                      addItem(cartItem);
-                      
-                      // Adicionar cor à lista de cores adicionadas
-                      const color = variation.grade_color || variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                      
-                      // 📊 Tracking: AddToCart
-                      trackAddToCart({
-                        id: product.id,
-                        name: product.name,
-                        price: cartItem.price,
-                        quantity: finalQuantity,
-                      });
-                      
-                      toast({
-                        title: "✅ Adicionado ao carrinho!",
-                        description: `${color} ${
-                          variation.is_grade 
-                            ? ` (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''})` 
-                            : ""
-                        } adicionado.`,
-                      });
-                      
-                      // Abrir FloatingCart automaticamente
-                      toggleCart();
-                    }}
-                    // 🔴 NOVO: Passar cores já adicionadas para sugestões
-                    addedColors={addedColors}
-                  />
-                ) : (
-                  <ProductVariationSelector
-                    variations={product.variations || []}
-                    selectedVariation={selectedVariation}
-                    onVariationChange={setSelectedVariation}
-                    basePrice={product.retail_price}
-                    showPriceInCards={true}
-                    showStock={true}
-                    // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
-                    onAddToCart={(variation, gradeMode, customSel) => {
-                      if (!product) return;
-                      
-                      const finalQuantity = variation.is_grade ? 1 : quantity;
-                      const cartItem = createCartItem(
-                        product,
-                        'retail',
-                        finalQuantity,
-                        variation,
-                        gradeMode,
-                        customSel ? {
-                          items: customSel.items.map(item => ({
-                            color: item.color || '',
-                            size: item.size || '',
-                            quantity: item.quantity || 0,
-                          })),
-                          totalPairs: customSel.totalPairs || 0,
-                        } : undefined
-                      );
-                      
-                      addItem(cartItem);
-                      
-                      // Adicionar cor à lista de cores adicionadas
-                      const color = variation.grade_color || variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                      
-                      // 📊 Tracking: AddToCart
-                      trackAddToCart({
-                        id: product.id,
-                        name: product.name,
-                        price: cartItem.price,
-                        quantity: finalQuantity,
-                      });
-                      
-                      toast({
-                        title: "✅ Adicionado ao carrinho!",
-                        description: `${color} ${
-                          variation.is_grade 
-                            ? ` (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''})` 
-                            : ""
-                        } adicionado.`,
-                      });
-                      
-                      // Abrir FloatingCart automaticamente
-                      toggleCart();
-                    }}
-                    // 🔴 NOVO: Passar cores já adicionadas para sugestões
-                    addedColors={addedColors}
-                  />
-                )}
-              </div>
-            )}
-              <Separator className="my-4" />
 
               {/* 🚀 BADGES DE URGÊNCIA - Gatilho Mental #1 */}
               {storeSettings?.product_show_urgency_badges && (
@@ -712,6 +585,81 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
+            {/* ── Seletor de Variações ─────────────────────────────────────── */}
+            {hasVariations && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
+
+                {hasGradeVariations ? (
+                  /* Grade: seletor original */
+                  <ProductVariationSelector
+                    variations={product.variations || []}
+                    selectedVariation={selectedVariation}
+                    onVariationChange={setSelectedVariation}
+                    basePrice={product.retail_price}
+                    showPriceInCards={true}
+                    showStock={true}
+                    onAddToCart={(variation, gradeMode, customSel) => {
+                      if (!product) return;
+                      const cartItem = createCartItem(
+                        product,
+                        'retail',
+                        1,
+                        variation,
+                        gradeMode,
+                        customSel ? {
+                          items: customSel.items.map(item => ({
+                            color: item.color || '',
+                            size: item.size || '',
+                            quantity: item.quantity || 0,
+                          })),
+                          totalPairs: customSel.totalPairs || 0,
+                        } : undefined
+                      );
+                      addItem(cartItem);
+                      const color = variation.grade_color || variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
+                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
+                      toast({
+                        title: "✅ Adicionado ao carrinho!",
+                        description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
+                      });
+                      toggleCart();
+                    }}
+                    addedColors={addedColors}
+                  />
+                ) : (
+                  /* Variações simples: seleção múltipla com quantidades */
+                  <MultiVariationSelector
+                    variations={product.variations || []}
+                    basePrice={product.retail_price}
+                    onAddToCart={(items) => {
+                      if (!product) return;
+                      let totalAdded = 0;
+                      items.forEach(({ variation, quantity: qty }) => {
+                        const cartItem = createCartItem(product, 'retail', qty, variation);
+                        addItem(cartItem);
+                        totalAdded += qty;
+                        trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
+                        // Registrar cor adicionada
+                        const color = variation.color || '';
+                        if (color && !addedColors.includes(color)) {
+                          setAddedColors(prev => [...prev, color]);
+                        }
+                      });
+                      toast({
+                        title: "✅ Adicionado ao carrinho!",
+                        description: `${totalAdded} item${totalAdded > 1 ? 's' : ''} de "${product.name}" adicionado${totalAdded > 1 ? 's' : ''}.`,
+                      });
+                      toggleCart();
+                    }}
+                  />
+                )}
+              </div>
+            )}
+
             {/* Descrição */}
             {product.description && (
               <div className="bg-white rounded-lg shadow-lg p-6">
@@ -722,57 +670,57 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
+            {/* Quantidade e Adicionar ao Carrinho — só para produtos SEM variações */}
+            {!hasVariations && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="space-y-6">
+                  {/* Quantidade */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Quantidade
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      >
+                        -
+                      </Button>
+                      <span className="text-xl font-semibold w-16 text-center">
+                        {quantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setQuantity(quantity + 1)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
 
+                  {/* 🚀 BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
+                  <OptimizedCTA
+                    onClick={handleAddToCart}
+                    disabled={false}
+                    isLoading={false}
+                    price={priceInfo.displayPrice}
+                    buttonText="🛒 COMPRAR AGORA"
+                    showSecurityBadge={true}
+                    isSticky={false}
+                  />
 
-            {/* Quantidade e Adicionar ao Carrinho */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="space-y-6">
-                {/* Quantidade */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Quantidade
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    >
-                      -
-                    </Button>
-                    <span className="text-xl font-semibold w-16 text-center">
-                      {quantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >
-                      +
-                    </Button>
+                  {/* Total */}
+                  <div className="text-center pt-2 border-t">
+                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(priceInfo.displayPrice * quantity)}
+                    </p>
                   </div>
                 </div>
-
-                {/* 🚀 BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
-                <OptimizedCTA
-                  onClick={handleAddToCart}
-                  disabled={false}
-                  isLoading={false}
-                  price={priceInfo.displayPrice}
-                  buttonText="🛒 COMPRAR AGORA"
-                  showSecurityBadge={true}
-                  isSticky={false}
-                />
-
-                {/* Total */}
-                <div className="text-center pt-2 border-t">
-                  <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(priceInfo.displayPrice * quantity)}
-                  </p>
-                </div>
               </div>
-            </div>
+            )}
 
             {/* 🚀 SEÇÃO DE CONFIANÇA - Gatilho Mental #6 */}
             {storeSettings?.product_show_trust_section && (

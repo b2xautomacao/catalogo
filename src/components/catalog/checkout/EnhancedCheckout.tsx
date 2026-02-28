@@ -30,6 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
 import { useCheckoutConfig } from "@/hooks/useCheckoutConfig";
+import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, CreateOrderData } from "@/hooks/useOrders";
 import OrderBump from "./OrderBump";
@@ -71,8 +72,15 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
 }) => {
   const { items, totalAmount, addItem, clearCart } = useCart();
   const { config, loading: configLoading } = useCheckoutConfig();
+  const { settings: storeSettings, loading: settingsLoading } = useCatalogSettings(storeId);
   const { toast } = useToast();
   const { createOrder, isCreatingOrder } = useOrders();
+
+  // ── Configurações de checkout vindas do admin ──────────────────────────────
+  // checkout_require_address: padrão true (solicita endereço se não configurado)
+  const checkoutRequireAddress = storeSettings?.checkout_require_address !== false;
+  // checkout_whatsapp_only: padrão true (finaliza no WhatsApp)
+  const checkoutWhatsappOnly = storeSettings?.checkout_whatsapp_only !== false;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingCost, setShippingCost] = useState(0);
@@ -99,8 +107,9 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     },
   });
 
-  // Verificar se o método de entrega requer endereço
-  const requiresAddress = form.watch("shippingMethod") !== "pickup";
+  // Endereço é exibido somente se: admin habilitou E método de entrega não é retirada
+  const requiresAddress =
+    checkoutRequireAddress && form.watch("shippingMethod") !== "pickup";
 
   // Função para buscar endereço pelo CEP
   const searchAddressByCep = async (cep: string) => {
@@ -255,8 +264,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
 
   const generateWhatsAppMessage = (data: CheckoutForm, order?: any) => {
     const headerTitle = sellerName
-      ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
-      : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
+      ? `🛒 *NOVO PEDIDO* - (Atendimento: ${sellerName})\n\n`
+      : `🛒 *NOVO PEDIDO*\n\n`;
+      // ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
+      // : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
     let message = headerTitle;
     message += `👤 *Cliente:* ${data.customerName}\n`;
     message += `📧 *Email:* ${data.customerEmail}\n`;
@@ -367,8 +378,19 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       "A Combinar"
     }\n`;
 
+    // Endereço de entrega (se fornecido)
+    if (data.shippingAddress && data.shippingAddress.street) {
+      const addr = data.shippingAddress;
+      message += `\n📍 *Endereço de Entrega:*\n`;
+      message += `${addr.street}, ${addr.number}`;
+      if (addr.complement) message += ` - ${addr.complement}`;
+      message += `\n${addr.neighborhood} - ${addr.city}/${addr.state}`;
+      if (addr.zipCode) message += `\nCEP: ${addr.zipCode}`;
+      message += `\n`;
+    }
+
     if (data.notes) {
-      message += `📝 *Observações:* ${data.notes}\n`;
+      message += `\n📝 *Observações:* ${data.notes}\n`;
     }
 
     return message;
@@ -378,13 +400,13 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     { id: 1, title: "Dados Pessoais", icon: <User className="h-4 w-4" /> },
     {
       id: 2,
-      title: "Entrega & Pagamento",
+      title: checkoutWhatsappOnly ? "Entrega" : "Entrega & Pagamento",
       icon: <Truck className="h-4 w-4" />,
     },
     { id: 3, title: "Confirmação", icon: <CheckCircle className="h-4 w-4" /> },
   ];
 
-  if (configLoading) {
+  if (configLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -744,59 +766,78 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                   </Card>
                 )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5" />
-                      Forma de Pagamento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FormField
-                      control={form.control}
-                      name="paymentMethod"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <RadioGroup
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              {config?.payment_methods.map((method) => (
-                                <div
-                                  key={method.id}
-                                  className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50"
-                                >
-                                  <RadioGroupItem
-                                    value={method.id}
-                                    id={method.id}
-                                  />
-                                  <div className="flex-1">
-                                    <label
-                                      htmlFor={method.id}
-                                      className="font-medium cursor-pointer flex items-center gap-2"
-                                    >
-                                      {method.type === "pix" && "💰"}
-                                      {method.type === "credit_card" && "💳"}
-                                      {method.type === "bank_transfer" && "🏦"}
-                                      {method.name}
-                                    </label>
-                                    {method.config?.instructions && (
-                                      <p className="text-sm text-gray-600 mt-1">
-                                        {method.config.instructions}
-                                      </p>
-                                    )}
+                {/* Forma de pagamento: só exibe se NÃO for WhatsApp-only */}
+                {!checkoutWhatsappOnly ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5" />
+                        Forma de Pagamento
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <RadioGroup
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                {config?.payment_methods.map((method) => (
+                                  <div
+                                    key={method.id}
+                                    className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50"
+                                  >
+                                    <RadioGroupItem
+                                      value={method.id}
+                                      id={method.id}
+                                    />
+                                    <div className="flex-1">
+                                      <label
+                                        htmlFor={method.id}
+                                        className="font-medium cursor-pointer flex items-center gap-2"
+                                      >
+                                        {method.type === "pix" && "💰"}
+                                        {method.type === "credit_card" && "💳"}
+                                        {method.type === "bank_transfer" && "🏦"}
+                                        {method.name}
+                                      </label>
+                                      {method.config?.instructions && (
+                                        <p className="text-sm text-gray-600 mt-1">
+                                          {method.config.instructions}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
+                                ))}
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  /* Modo WhatsApp-only: exibe aviso */
+                  <Card className="border-green-300 bg-green-50">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-3 text-green-800">
+                        <Smartphone className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold">Pedido via WhatsApp</p>
+                          <p className="text-sm text-green-700 mt-0.5">
+                            Ao finalizar, você será redirecionado para o WhatsApp da loja com o resumo do pedido. 
+                            O pagamento será combinado diretamente com o vendedor.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {currentStep === 2 && (
                   <div className="flex gap-3">
@@ -864,6 +905,11 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           Processando...
                         </div>
+                      ) : checkoutWhatsappOnly ? (
+                        <span className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4" />
+                          Enviar Pedido pelo WhatsApp — {formatCurrency(finalTotal)}
+                        </span>
                       ) : (
                         `🚀 Finalizar Pedido - ${formatCurrency(finalTotal)}`
                       )}
