@@ -59,9 +59,9 @@ interface ProductPageProps {
   };
 }
 
-const ProductPage: React.FC<ProductPageProps> = ({ 
+const ProductPage: React.FC<ProductPageProps> = ({
   isPublicContext = false,
-  storeContext = null 
+  storeContext = null
 }) => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
@@ -144,7 +144,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
         if (productError || !productData) {
           console.error("❌ Erro ao buscar produto:", productError);
-          
+
           if (!isPublicContext) {
             toast({
               title: "Produto não encontrado",
@@ -152,7 +152,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               variant: "destructive",
             });
           }
-          
+
           if (isPublicContext && storeContext) {
             window.location.href = `https://${storeContext.slug}.aoseudispor.com.br`;
           } else {
@@ -306,7 +306,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
     try {
       // ⚠️ createCartItem(product, catalogType, quantity, variation)
       const cartItem = createCartItem(product, 'retail', quantity, selectedVariation || undefined);
-      
+
       console.log("🛒 CartItem criado:", {
         id: cartItem.id,
         productName: cartItem.product.name,
@@ -316,7 +316,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
         hasGradeInfo: !!cartItem.gradeInfo,
         gradeInfo: cartItem.gradeInfo,
       });
-      
+
       addItem(cartItem);
 
       console.log("✅ addItem() chamado com sucesso");
@@ -338,7 +338,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       // Abrir FloatingCart automaticamente
       console.log("🛒 Abrindo FloatingCart...");
       toggleCart();
-      
+
     } catch (error) {
       console.error("❌ Erro ao adicionar ao carrinho:", error);
       toast({
@@ -351,7 +351,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
   const handleShare = async () => {
     const url = window.location.href;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -511,6 +511,71 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
           {/* Coluna Direita - Informações */}
           <div className="space-y-6">
+            {/* ── Seletor de Variações ─────────────────────────────────────── */}
+            {hasVariations && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
+
+                {hasGradeVariations ? (
+                  /* Grade: seletor original */
+                  <ProductVariationSelector
+                    variations={product.variations || []}
+                    selectedVariation={selectedVariation}
+                    onVariationChange={setSelectedVariation}
+                    basePrice={product.retail_price}
+                    showPriceInCards={true}
+                    showStock={true}
+                    onAddToCart={(variation, gradeMode, customSel) => {
+                      if (!product) return;
+                      const cartItem = createCartItem(
+                        product,
+                        'retail',
+                        1,
+                        variation,
+                        gradeMode,
+                        customSel ? {
+                          items: customSel.items.map(item => ({
+                            color: item.color || '',
+                            size: item.size || '',
+                            quantity: item.quantity || 0,
+                          })),
+                          totalPairs: customSel.totalPairs || 0,
+                        } : undefined
+                      );
+                      addItem(cartItem);
+                      const color = variation.grade_color || variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
+                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
+                      toast({
+                        title: "✅ Adicionado ao carrinho!",
+                        description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
+                      });
+                      toggleCart();
+                    }}
+                    addedColors={addedColors}
+                  />
+                ) : (
+                  /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
+                  <VariationPicker
+                    variations={product.variations || []}
+                    basePrice={product.retail_price}
+                    onAddToCart={(variation, qty) => {
+                      if (!product) return;
+                      const cartItem = createCartItem(product, 'retail', qty, variation);
+                      addItem(cartItem);
+                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
+                      const color = variation.color || '';
+                      if (color && !addedColors.includes(color)) {
+                        setAddedColors(prev => [...prev, color]);
+                      }
+                    }}
+                    onViewCart={toggleCart}
+                  />
+                )}
+              </div>
+            )}
             {/* Título */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -741,20 +806,20 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 🎯 FASE 2: Tabela de Medidas Automática - SÓ para calçado e roupa */}
             {storeSettings?.product_show_size_chart &&
-             product.product_gender && 
-             product.product_category_type && 
-             (product.product_category_type === 'calcado' || 
-              product.product_category_type === 'roupa_superior' || 
-              product.product_category_type === 'roupa_inferior') && (
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <AutoSizeChart
-                  gender={product.product_gender as any}
-                  category={product.product_category_type as any}
-                  isCollapsible={true}
-                  defaultOpen={storeSettings.product_size_chart_default_open || false}
-                />
-              </div>
-            )}
+              product.product_gender &&
+              product.product_category_type &&
+              (product.product_category_type === 'calcado' ||
+                product.product_category_type === 'roupa_superior' ||
+                product.product_category_type === 'roupa_inferior') && (
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <AutoSizeChart
+                    gender={product.product_gender as any}
+                    category={product.product_category_type as any}
+                    isCollapsible={true}
+                    defaultOpen={storeSettings.product_size_chart_default_open || false}
+                  />
+                </div>
+              )}
 
             {/* 💬 FASE 2: Depoimentos de Clientes */}
             {storeSettings?.product_show_testimonials && (
@@ -768,28 +833,28 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 🎯 FASE 2: Cuidados do Produto - Usa dados cadastrados ou auto-gera */}
             {storeSettings?.product_show_care_section &&
-             (product.product_category_type || product.material) && (
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <ProductCareSection
-                  productCategory={product.product_category_type || 'calcado'}
-                  material={product.material}
-                  isCollapsible={true}
-                  defaultOpen={storeSettings.product_care_section_default_open || false}
-                />
-              </div>
-            )}
+              (product.product_category_type || product.material) && (
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <ProductCareSection
+                    productCategory={product.product_category_type || 'calcado'}
+                    material={product.material}
+                    isCollapsible={true}
+                    defaultOpen={storeSettings.product_care_section_default_open || false}
+                  />
+                </div>
+              )}
           </div>
         </div>
       </div>
 
       {/* FloatingCart - Carrinho lateral flutuante */}
-      <FloatingCart 
+      <FloatingCart
         onCheckout={() => {
           console.log("🛒 Abrindo checkout...");
-          
+
           // 📊 Tracking: InitiateCheckout
           trackInitiateCheckout(totalAmount, cartItems.length);
-          
+
           setShowCheckout(true);
         }}
         storeId={product.store_id}
