@@ -19,10 +19,12 @@ import {
   Package2,
   Power,
   PowerOff,
+  Palette,
 } from "lucide-react";
 import { Product } from "@/types/product";
 import ProductStockBadge from "./ProductStockBadge";
 import ProductImageManagerModal from "./ProductImageManagerModal";
+import QuickColorImageModal from "./QuickColorImageModal";
 
 interface ProductGridCardProps {
   product: Product;
@@ -47,6 +49,12 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
 }) => {
   const { images } = useProductImages(product.id || "");
   const [showImageManager, setShowImageManager] = useState(false);
+  const [showColorImageModal, setShowColorImageModal] = useState(false);
+
+  // Verificar se produto tem variações com cor
+  const hasColorVariations = React.useMemo(() => {
+    return product.variations?.some((v) => v.color) || false;
+  }, [product.variations]);
 
   // 🎯 CORRIGIDO: Calcular estoque usando o mesmo método do ProductListCard
   const totalStock = React.useMemo(() => {
@@ -110,10 +118,16 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
     }
   };
 
-  // 🎯 NOVA FUNÇÃO: Abrir modal de gerenciamento de imagens
+  // 🎯 Abrir modal de gerenciamento de imagens
   const handleImageManagerOpen = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowImageManager(true);
+  };
+
+  // 🎨 Abrir modal de vinculação cor-imagem
+  const handleColorImageOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowColorImageModal(true);
   };
 
   // 🎯 NOVA FUNÇÃO: Callback quando imagens são atualizadas
@@ -129,11 +143,10 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
   return (
     <>
       <Card
-        className={`group hover:shadow-lg transition-all duration-200 border overflow-hidden cursor-pointer bg-white ${
-          product.is_featured
+        className={`group hover:shadow-lg transition-all duration-200 border overflow-hidden cursor-pointer bg-white ${product.is_featured
             ? "border-yellow-300 shadow-md ring-1 ring-yellow-200"
             : "border-border/50"
-        }`}
+          }`}
       >
         <div className="relative">
           {/* Product Image Container */}
@@ -162,12 +175,10 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
             <div className="absolute bottom-2 right-2 bg-white/90 text-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm border border-border/30">
               <Package className="h-3 w-3" />
               <span
-                className={`font-medium ${
-                  totalStock > 0 ? "text-green-600" : "text-red-600"
-                }`}
-                title={`${totalStock} unidades em estoque${
-                  totalVariations > 0 ? ` (${totalVariations} variações)` : ""
-                }`}
+                className={`font-medium ${totalStock > 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                title={`${totalStock} unidades em estoque${totalVariations > 0 ? ` (${totalVariations} variações)` : ""
+                  }`}
               >
                 {totalStock}
               </span>
@@ -179,9 +190,8 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
 
             {/* Status Indicator */}
             <div
-              className={`absolute top-2 left-2 w-3 h-3 rounded-full border-2 border-white shadow-sm ${
-                product.is_active ? "bg-green-500" : "bg-red-500"
-              }`}
+              className={`absolute top-2 left-2 w-3 h-3 rounded-full border-2 border-white shadow-sm ${product.is_active ? "bg-green-500" : "bg-red-500"
+                }`}
             />
           </div>
 
@@ -264,11 +274,10 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleToggleStatus}
-                className={`h-8 w-8 p-0 ${
-                  product.is_active
+                className={`h-8 w-8 p-0 ${product.is_active
                     ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     : "text-green-600 hover:text-green-700 hover:bg-green-50"
-                }`}
+                  }`}
                 title={
                   product.is_active ? "Desativar produto" : "Ativar produto"
                 }
@@ -299,6 +308,17 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
+              {hasColorVariations && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleColorImageOpen}
+                  className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  title="Vincular imagens às cores"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -311,7 +331,18 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
           onClose={() => setShowImageManager(false)}
           productId={product.id}
           productName={product.name}
-          onImagesUpdated={handleImagesUpdated} // 🎯 PASSAR CALLBACK PARA O MODAL
+          onImagesUpdated={handleImagesUpdated}
+        />
+      )}
+
+      {/* 🎨 Modal de Vinculação Cor-Imagem */}
+      {product.id && hasColorVariations && (
+        <QuickColorImageModal
+          isOpen={showColorImageModal}
+          onClose={() => setShowColorImageModal(false)}
+          productId={product.id}
+          productName={product.name}
+          onSaved={handleImagesUpdated}
         />
       )}
     </>
