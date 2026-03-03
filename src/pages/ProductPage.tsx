@@ -81,6 +81,8 @@ const ProductPage: React.FC<ProductPageProps> = ({
   const [showCheckout, setShowCheckout] = useState(false);
   // 🔴 NOVO: Rastrear cores adicionadas ao carrinho (para sugestões)
   const [addedColors, setAddedColors] = useState<string[]>([]);
+  // 🖼️ Imagem da cor selecionada (atualiza galeria ao selecionar cor, mesmo sem tamanho)
+  const [selectedColorImage, setSelectedColorImage] = useState<string | undefined>(undefined);
   const [storeName, setStoreName] = useState<string>('');
   const [storePhone, setStorePhone] = useState<string>('');
   const [catalogUrl, setCatalogUrl] = useState<string>('/');
@@ -470,7 +472,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
             <ProductImageGallery
               productId={product.id}
               productName={product.name}
-              selectedVariationImage={selectedVariation?.image_url || product.image_url}
+              selectedVariationImage={selectedVariation?.image_url || selectedColorImage || product.image_url}
             />
 
             {/* Badges */}
@@ -572,6 +574,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                       }
                     }}
                     onViewCart={toggleCart}
+                    onColorChange={(_color, imageUrl) => setSelectedColorImage(imageUrl)}
                   />
                 )}
               </div>
@@ -711,6 +714,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                       }
                     }}
                     onViewCart={toggleCart}
+                    onColorChange={(_color, imageUrl) => setSelectedColorImage(imageUrl)}
                   />
                 )}
               </div>

@@ -126,9 +126,8 @@ const CartItem: React.FC<{
       item.nextTierQuantityNeeded > 0
     ) {
       return {
-        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade${
-          item.nextTierQuantityNeeded > 1 ? "s" : ""
-        } para próximo nível`,
+        text: `Adicione mais ${item.nextTierQuantityNeeded} unidade${item.nextTierQuantityNeeded > 1 ? "s" : ""
+          } para próximo nível`,
         buttonText: `Próximo Nível`,
         showSavings: true,
         savings: item.nextTierPotentialSavings || 0,
@@ -141,17 +140,16 @@ const CartItem: React.FC<{
 
   return (
     <div
-      className={`cart-item-card rounded-xl p-4 border-2 ${
-        badgeInfo.text.includes("Atacado")
+      className={`cart-item-card rounded-xl p-4 border-2 ${badgeInfo.text.includes("Atacado")
           ? "border-green-400"
           : "border-gray-200"
-      } bg-white flex flex-col gap-2`}
+        } bg-white flex flex-col gap-2`}
     >
       <div className="flex flex-row gap-4 items-start">
-        {/* Imagem */}
+        {/* Imagem — prioriza imagem da variação (cor) sobre imagem do produto */}
         <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
           <CartItemThumbnail
-            imageUrl={item.product?.image_url}
+            imageUrl={item.variation?.image_url || item.product?.image_url}
             productName={item.product?.name || "Produto"}
             size="lg"
           />
@@ -502,11 +500,10 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
                         onCheckout?.();
                       }}
                       disabled={!minimumPurchaseValidation.canProceed}
-                      className={`cart-checkout-button w-full font-bold py-4 text-lg rounded-xl shadow-lg transition-all ${
-                        minimumPurchaseValidation.canProceed
+                      className={`cart-checkout-button w-full font-bold py-4 text-lg rounded-xl shadow-lg transition-all ${minimumPurchaseValidation.canProceed
                           ? "text-white"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
+                        }`}
                     >
                       <ShoppingCart className="h-5 w-5 mr-2" />
                       {minimumPurchaseValidation.canProceed

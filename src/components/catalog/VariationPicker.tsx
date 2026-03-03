@@ -25,6 +25,8 @@ interface VariationPickerProps {
   basePrice: number;
   onAddToCart: (variation: ProductVariation, quantity: number) => void;
   onViewCart: () => void;
+  /** Callback quando a cor selecionada muda. Propaga a image_url da variação para a galeria. */
+  onColorChange?: (color: string | null, imageUrl?: string) => void;
 }
 
 /** Converte nome de cor para hex aproximado */
@@ -80,6 +82,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
   basePrice,
   onAddToCart,
   onViewCart,
+  onColorChange,
 }) => {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -162,9 +165,14 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
     if (selectedColor === color) {
       setSelectedColor(null);
       setSelectedSize(null);
+      // Notificar que a cor foi deselecionada (volta à imagem padrão)
+      onColorChange?.(null, undefined);
     } else {
       setSelectedColor(color);
       setSelectedSize(null); // Reset size when color changes
+      // Encontrar a primeira variação dessa cor para obter a imagem
+      const colorVariation = activeVariations.find((v) => v.color === color);
+      onColorChange?.(color, colorVariation?.image_url || undefined);
     }
     setQuantity(1);
     setJustAdded(null);
@@ -329,9 +337,8 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
                   </div>
                   {/* Nome da cor */}
                   <span
-                    className={`text-xs leading-tight text-center max-w-[52px] truncate ${
-                      isSelected ? "font-semibold text-primary" : "text-gray-600"
-                    }`}
+                    className={`text-xs leading-tight text-center max-w-[52px] truncate ${isSelected ? "font-semibold text-primary" : "text-gray-600"
+                      }`}
                   >
                     {color}
                   </span>
