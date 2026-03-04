@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { Truck, MapPin, CreditCard, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import CartItemThumbnail from "./checkout/CartItemThumbnail";
 import {
   Form,
   FormControl,
@@ -170,7 +172,17 @@ const Checkout: React.FC<CheckoutProps> = ({ settings, onClose }) => {
 
     message += `📦 *Itens:*\n`;
     items.forEach((item) => {
-      message += `• ${item.product.name} (${item.quantity}x) - R$ ${(
+      let variationText = "";
+      if (item.gradeInfo) {
+        variationText = ` - Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})`;
+      } else if (item.variation) {
+        const parts = [];
+        if (item.variation.color) parts.push(`Cor: ${item.variation.color}`);
+        if (item.variation.size) parts.push(`Tamanho: ${item.variation.size}`);
+        if (parts.length > 0) variationText = ` - ${parts.join(", ")}`;
+      }
+
+      message += `• ${item.product.name}${variationText} (${item.quantity}x) - R$ ${(
         item.price * item.quantity
       ).toFixed(2)}\n`;
     });
@@ -548,15 +560,44 @@ const Checkout: React.FC<CheckoutProps> = ({ settings, onClose }) => {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-start"
+                    className="flex justify-between items-start gap-4 py-3 border-b last:border-0"
                   >
-                    <div className="flex-1">
+                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                      <CartItemThumbnail
+                        imageUrl={item.variation?.image_url || item.product?.image_url}
+                        productName={item.product?.name || "Produto"}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{item.product.name}</p>
-                      <p className="text-xs text-gray-600">
+
+                      {item.gradeInfo && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <span className="inline-block mt-0.5">
+                            <Badge className="bg-blue-600 font-semibold text-white px-1.5 py-0 text-[10px]">
+                              Grade: {item.gradeInfo.name}
+                            </Badge>
+                          </span>
+                          {item.gradeInfo.sizes && item.gradeInfo.sizes.length > 0 && (
+                            <span className="text-[10px] text-gray-500">
+                              Tamanhos: {item.gradeInfo.sizes.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {item.variation && (
+                        <p className="text-xs text-gray-500 truncate mt-0.5 font-medium">
+                          {[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-gray-600 mt-1">
                         {item.quantity}x R$ {item.price.toFixed(2)}
                       </p>
                     </div>
-                    <p className="font-bold">
+                    <p className="font-bold whitespace-nowrap">
                       R$ {(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
