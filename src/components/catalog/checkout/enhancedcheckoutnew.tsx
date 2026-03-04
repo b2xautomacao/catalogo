@@ -29,6 +29,7 @@ import { useCheckoutConfig } from "@/hooks/useCheckoutConfig";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, CreateOrderData } from "@/hooks/useOrders";
 import OrderBump from "./OrderBump";
+import CartItemThumbnail from "./CartItemThumbnail";
 import TrustBadges from "./TrustBadges";
 import { formatCurrency } from "@/lib/utils";
 
@@ -159,21 +160,21 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           variation_id: item.variation?.id || null,
           variation_details: item.variation
             ? {
-                color: item.variation.color,
-                size: item.variation.size,
-              }
+              color: item.variation.color,
+              size: item.variation.size,
+            }
             : null,
         })),
         shipping_address: data.shippingAddress
           ? {
-              street: data.shippingAddress.street,
-              number: data.shippingAddress.number,
-              complement: data.shippingAddress.complement,
-              neighborhood: data.shippingAddress.neighborhood,
-              city: data.shippingAddress.city,
-              state: data.shippingAddress.state,
-              zipCode: data.shippingAddress.zipCode,
-            }
+            street: data.shippingAddress.street,
+            number: data.shippingAddress.number,
+            complement: data.shippingAddress.complement,
+            neighborhood: data.shippingAddress.neighborhood,
+            city: data.shippingAddress.city,
+            state: data.shippingAddress.state,
+            zipCode: data.shippingAddress.zipCode,
+          }
           : undefined,
         shipping_method: data.shippingMethod,
         payment_method: data.paymentMethod,
@@ -198,9 +199,8 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       clearCart();
       toast({
         title: "Pedido finalizado!",
-        description: `Pedido #${
-          createdOrder?.data?.id?.slice(-8) || "N/A"
-        } criado com sucesso.`,
+        description: `Pedido #${createdOrder?.data?.id?.slice(-8) || "N/A"
+          } criado com sucesso.`,
       });
       onClose();
     } catch (error) {
@@ -230,10 +230,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       message += `${index + 1}. ${item.product.name}\n`;
       message += `   Qtd: ${item.quantity}x\n`;
       message += `   Preço: ${formatCurrency(item.price)}\n`;
-      if (item.variation) {
-        message += `   Variação: ${item.variation.color || ""} ${
-          item.variation.size || ""
-        }\n`;
+      if (item.gradeInfo) {
+        message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
+      } else if (item.variation) {
+        message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
       }
       message += `   Subtotal: ${formatCurrency(
         item.price * item.quantity
@@ -319,11 +319,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
         {steps.map((step, index) => (
           <div key={step.id} className="flex items-center">
             <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-                currentStep >= step.id
-                  ? "bg-primary text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full ${currentStep >= step.id
+                ? "bg-primary text-white"
+                : "bg-gray-200 text-gray-600"
+                }`}
             >
               {step.icon}
               <span className="font-medium text-sm hidden sm:block">
@@ -450,7 +449,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                             >
                               {/* Opções padrão quando não há métodos configurados */}
                               {!config?.shipping_methods ||
-                              config.shipping_methods.length === 0 ? (
+                                config.shipping_methods.length === 0 ? (
                                 <>
                                   <div
                                     key="pickup"
@@ -724,7 +723,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                             >
                               {/* Opções padrão quando não há métodos configurados */}
                               {!config?.payment_methods ||
-                              config.payment_methods.length === 0 ? (
+                                config.payment_methods.length === 0 ? (
                                 <>
                                   <div
                                     key="pix"
@@ -924,11 +923,40 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-start"
+                    className="flex justify-between items-start gap-4 py-3 border-b last:border-0"
                   >
-                    <div className="flex-1">
+                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                      <CartItemThumbnail
+                        imageUrl={item.variation?.image_url || item.product?.image_url}
+                        productName={item.product?.name || "Produto"}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{item.product.name}</p>
-                      <p className="text-xs text-gray-600">
+
+                      {item.gradeInfo && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <span className="inline-block mt-0.5">
+                            <Badge className="bg-blue-600 font-semibold text-white px-1.5 py-0 text-[10px]">
+                              Grade: {item.gradeInfo.name}
+                            </Badge>
+                          </span>
+                          {item.gradeInfo.sizes && item.gradeInfo.sizes.length > 0 && (
+                            <span className="text-[10px] text-gray-500">
+                              Tamanhos: {item.gradeInfo.sizes.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {item.variation && !item.gradeInfo && (
+                        <p className="text-xs text-gray-500 truncate mt-0.5 font-medium">
+                          {[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-gray-600 mt-1">
                         {item.quantity}x {formatCurrency(item.price)}
                         {item.id.includes("orderbump") && (
                           <Badge className="ml-2 text-xs bg-orange-500">
@@ -937,7 +965,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                         )}
                       </p>
                     </div>
-                    <p className="font-bold">
+                    <p className="font-bold whitespace-nowrap">
                       {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>

@@ -34,6 +34,7 @@ import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, CreateOrderData } from "@/hooks/useOrders";
 import OrderBump from "./OrderBump";
+import CartItemThumbnail from "./CartItemThumbnail";
 import TrustBadges from "./TrustBadges";
 import { formatCurrency } from "@/lib/utils";
 
@@ -213,9 +214,9 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           variation_id: item.variation?.id || null,
           variation_details: item.variation
             ? {
-                color: item.variation.color,
-                size: item.variation.size,
-              }
+              color: item.variation.color,
+              size: item.variation.size,
+            }
             : null,
           // Dados específicos do Order Bump
           is_order_bump: (item.product as any)?.isOrderBump || false,
@@ -246,9 +247,8 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       clearCart();
       toast({
         title: "Pedido finalizado!",
-        description: `Pedido #${
-          (createdOrder as any)?.data?.id?.slice(-8) || "N/A"
-        } criado com sucesso.`,
+        description: `Pedido #${(createdOrder as any)?.data?.id?.slice(-8) || "N/A"
+          } criado com sucesso.`,
       });
       onClose();
     } catch (error) {
@@ -266,8 +266,8 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     const headerTitle = sellerName
       ? `🛒 *NOVO PEDIDO* - (Atendimento: ${sellerName})\n\n`
       : `🛒 *NOVO PEDIDO*\n\n`;
-      // ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
-      // : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
+    // ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
+    // : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
     let message = headerTitle;
     message += `👤 *Cliente:* ${data.customerName}\n`;
     message += `📧 *Email:* ${data.customerEmail}\n`;
@@ -293,10 +293,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       message += `${index + 1}. ${item.product.name}\n`;
       message += `   Qtd: ${item.quantity}x\n`;
       message += `   Preço: ${formatCurrency(item.price)}\n`;
-      if (item.variation) {
-        message += `   Variação: ${item.variation.color || ""} ${
-          item.variation.size || ""
-        }\n`;
+      if (item.gradeInfo) {
+        message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
+      } else if (item.variation) {
+        message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
       }
       message += `   Subtotal: ${formatCurrency(
         item.price * item.quantity
@@ -321,10 +321,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
         } else {
           message += `   Preço: ${formatCurrency(item.price)}\n`;
         }
-        if (item.variation) {
-          message += `   Variação: ${item.variation.color || ""} ${
-            item.variation.size || ""
-          }\n`;
+        if (item.gradeInfo) {
+          message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
+        } else if (item.variation) {
+          message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
         }
         message += `   Subtotal: ${formatCurrency(
           item.price * item.quantity
@@ -369,14 +369,12 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     }
     message += `*TOTAL FINAL: ${formatCurrency(finalTotal)}*\n\n`;
 
-    message += `🚚 *Entrega:* ${
-      config?.shipping_methods.find((m) => m.id === data.shippingMethod)
-        ?.name || "A Combinar"
-    }\n`;
-    message += `💳 *Pagamento:* ${
-      config?.payment_methods.find((m) => m.id === data.paymentMethod)?.name ||
+    message += `🚚 *Entrega:* ${config?.shipping_methods.find((m) => m.id === data.shippingMethod)
+      ?.name || "A Combinar"
+      }\n`;
+    message += `💳 *Pagamento:* ${config?.payment_methods.find((m) => m.id === data.paymentMethod)?.name ||
       "A Combinar"
-    }\n`;
+      }\n`;
 
     // Endereço de entrega (se fornecido)
     if (data.shippingAddress && data.shippingAddress.street) {
@@ -455,11 +453,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
         {steps.map((step, index) => (
           <div key={step.id} className="flex items-center">
             <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-                currentStep >= step.id
-                  ? "bg-primary text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full ${currentStep >= step.id
+                ? "bg-primary text-white"
+                : "bg-gray-200 text-gray-600"
+                }`}
             >
               {step.icon}
               <span className="font-medium text-sm hidden sm:block">
@@ -830,7 +827,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                         <div>
                           <p className="font-semibold">Pedido via WhatsApp</p>
                           <p className="text-sm text-green-700 mt-0.5">
-                            Ao finalizar, você será redirecionado para o WhatsApp da loja com o resumo do pedido. 
+                            Ao finalizar, você será redirecionado para o WhatsApp da loja com o resumo do pedido.
                             O pagamento será combinado diretamente com o vendedor.
                           </p>
                         </div>
@@ -945,16 +942,44 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-start"
+                    className="flex justify-between items-start gap-4 py-3 border-b last:border-0"
                   >
-                    <div className="flex-1">
+                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                      <CartItemThumbnail
+                        imageUrl={item.variation?.image_url || item.product?.image_url}
+                        productName={item.product?.name || "Produto"}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{item.product.name}</p>
-                      <p className="text-xs text-gray-600">
+
+                      {item.gradeInfo && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <span className="inline-block mt-0.5">
+                            <Badge className="bg-blue-600 font-semibold text-white px-1.5 py-0 text-[10px]">
+                              Grade: {item.gradeInfo.name}
+                            </Badge>
+                          </span>
+                          {item.gradeInfo.sizes && item.gradeInfo.sizes.length > 0 && (
+                            <span className="text-[10px] text-gray-500">
+                              Tamanhos: {item.gradeInfo.sizes.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {item.variation && !item.gradeInfo && (
+                        <p className="text-xs text-gray-500 truncate mt-0.5 font-medium">
+                          {[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-gray-600 mt-1">
                         {item.quantity}x {formatCurrency(item.price)}
-                        {/* Badge removido para compatibilidade */}
                       </p>
                     </div>
-                    <p className="font-bold">
+                    <p className="font-bold whitespace-nowrap">
                       {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
