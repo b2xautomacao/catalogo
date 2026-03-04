@@ -122,17 +122,17 @@ const validateCartItem = (item: any): CartItem | null => {
       console.warn("⚠️ validateCartItem - Faltando id/product/quantity:", item);
       return null;
     }
-    
+
     if (typeof item.price !== "number" || isNaN(item.price)) {
       console.warn("⚠️ validateCartItem - Preço inválido:", item.price);
       return null;
     }
-    
+
     if (!item.product.id || !item.product.name) {
       console.warn("⚠️ validateCartItem - Faltando product.id/name:", item.product);
       return null;
     }
-    
+
     // ⭐ RELAXAR para grades: retail_price pode ser 0 se for grade
     const isGrade = item.variation?.is_grade || item.gradeInfo;
     if (!isGrade && (
@@ -175,10 +175,10 @@ const validateCartItem = (item: any): CartItem | null => {
         item.gradeInfo ||
         (item.variation?.grade_name
           ? {
-              name: item.variation.grade_name,
-              sizes: item.variation.grade_sizes || [],
-              pairs: item.variation.grade_pairs || [],
-            }
+            name: item.variation.grade_name,
+            sizes: item.variation.grade_sizes || [],
+            pairs: item.variation.grade_pairs || [],
+          }
           : undefined),
     };
 
@@ -210,9 +210,9 @@ function normalizeCartItemsStoreId(
     item.product?.store_id
       ? item
       : {
-          ...item,
-          product: { ...item.product, store_id: firstStoreId },
-        }
+        ...item,
+        product: { ...item.product, store_id: firstStoreId },
+      }
   );
 }
 
@@ -240,7 +240,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   // Função para buscar modelo de preço de uma loja
   const fetchStorePriceModel = async (storeId: string, skipCache = false) => {
     if (!storeId) return null;
-    
+
     if (!skipCache && priceModelCache[storeId]) {
       return priceModelCache[storeId];
     }
@@ -350,7 +350,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const product = item.product;
       const quantity = typeof item.quantity === "number" && !isNaN(item.quantity) ? item.quantity : 0;
       const storeId = product?.store_id ?? catalogStoreId ?? undefined;
-      
+
       // Usar modelo buscado nesta execução (não o cache do estado)
       const priceModel = storeId ? modelByStoreId[storeId] : null;
       const priceModelType = priceModel?.price_model || product.price_model;
@@ -389,7 +389,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             nextTierPotentialSavings: undefined,
           };
         }
-        
+
         // Para grade completa, também preservar o preço (já calculado corretamente)
         console.log(
           `📦 [recalculateItemPrices] ${product.name}: Mantendo preço da grade completa (R$${item.price})`
@@ -465,8 +465,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           );
           if (nextTier) {
             console.log(
-              `➡️ [recalculateItemPrices] ${product.name}: Faltam ${
-                nextTier.min_quantity - quantity
+              `➡️ [recalculateItemPrices] ${product.name}: Faltam ${nextTier.min_quantity - quantity
               } para '${nextTier.tier_name}' (R$${nextTier.price})`
             );
           }
@@ -658,7 +657,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsLoading(true); // Iniciar loading
         const savedItems = localStorage.getItem("cart-items");
         console.log("📦 [useCart] localStorage.getItem resultado:", savedItems ? `${savedItems.substring(0, 100)}...` : "NULL");
-        
+
         if (savedItems) {
           const parsedItems = JSON.parse(savedItems);
 
@@ -716,7 +715,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
                   variation: r.original.variation,
                 }))
               );
-              
+
               // NÃO mostrar toast se for apenas 1 item e for validação normal
               // Evita spam de mensagens
               if (removedCount > 1 || parsedItems.length > 2) {
@@ -794,7 +793,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       localStorage.setItem("cart-items", JSON.stringify(items));
       console.log("✅ [useCart] Items salvos no localStorage com sucesso!");
-      
+
       // Verificar imediatamente se salvou
       const verify = localStorage.getItem("cart-items");
       console.log("🔍 [useCart] Verificação: localStorage tem", verify ? JSON.parse(verify).length : 0, "itens");
@@ -949,16 +948,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         itemWithWholesalePrice.quantity;
       toast({
         title: "🎉 Preço de atacado ativado!",
-        description: `Você economizou R$ ${savings.toFixed(2)} com ${
-          itemWithWholesalePrice.product.name
-        }`,
+        description: `Você economizou R$ ${savings.toFixed(2)} com ${itemWithWholesalePrice.product.name
+          }`,
         duration: 4000,
       });
     } else {
       const variationText = item.variation
         ? ` (${[item.variation.color, item.variation.size]
-            .filter(Boolean)
-            .join(", ")})`
+          .filter(Boolean)
+          .join(", ")})`
         : "";
       toast({
         title: "Produto adicionado!",
@@ -1028,7 +1026,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const ret = it.product?.retail_price ?? it.originalPrice ?? 0;
       const whl = it.product?.wholesale_price;
       const minQ = it.product?.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
-      if (it.gradeInfo && it.variation?.is_grade) return (typeof it.price === "number" && !isNaN(it.price) ? it.price : ret) / Math.max(1, q);
+      if (it.gradeInfo && it.variation?.is_grade) return typeof it.price === "number" && !isNaN(it.price) ? it.price : ret;
       if (modelType === "wholesale_only" && whl) return whl;
       if (modelType === "retail_only") return ret;
       if (modelType === "simple_wholesale" && whl) {
@@ -1062,7 +1060,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         typeof item.quantity === "number" && !isNaN(item.quantity)
           ? item.quantity
           : 0;
-      
+
       // 🔴 CORREÇÃO: Para grades, o item.price já é o preço total da grade
       // Multiplicar pela quantidade de grades adicionadas
       let subtotal: number;
@@ -1070,20 +1068,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         // Para grades: item.price já é o total de uma grade, multiplicar pela quantidade de grades
         subtotal = itemPrice * itemQuantity;
         console.log(
-          `💰 [useCart] Grade ${
-            item.product?.name
+          `💰 [useCart] Grade ${item.product?.name
           }: ${itemQuantity} grade(s) x R$${itemPrice} (preço total da grade) = R$${subtotal}`
         );
       } else {
         // Para produtos normais: multiplicar preço unitário pela quantidade
         // O item.price já deve estar atualizado com o preço correto (varejo ou atacado)
         subtotal = itemPrice * itemQuantity;
-        
+
         // Verificar se o preço está correto comparando com o preço esperado
-        const expectedPrice = item.isWholesalePrice 
+        const expectedPrice = item.isWholesalePrice
           ? (item.product?.wholesale_price || item.originalPrice)
           : (item.originalPrice || item.product?.retail_price || 0);
-        
+
         if (Math.abs(itemPrice - expectedPrice) > 0.01) {
           console.warn(
             `⚠️ [useCart] PREÇO DESATUALIZADO para ${item.product?.name}:`,
@@ -1097,21 +1094,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           );
         }
-        
+
         console.log(
-          `💰 [useCart] Item ${
-            item.product?.name
-          }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${
-            item.currentTier?.tier_name || "-"
+          `💰 [useCart] Item ${item.product?.name
+          }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${item.currentTier?.tier_name || "-"
           } | isWholesale: ${item.isWholesalePrice || false} | expectedPrice: R$${expectedPrice}`
         );
       }
-      
+
       return total + subtotal;
     }, 0);
-    
+
     console.log(`🟩 [useCart] TOTAL calculado: R$${calculatedTotal}`);
-    
+
     return calculatedTotal;
   }, [items, priceModel]); // Recalcular quando items ou priceModel mudar
 
