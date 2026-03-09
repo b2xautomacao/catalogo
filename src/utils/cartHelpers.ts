@@ -217,6 +217,7 @@ export const createCartItem = (
     product: {
       id: product.id,
       name: product.name,
+      description: (product as any).description || undefined, // Descrição para o resumo de pedido
       retail_price: product.retail_price,
       wholesale_price: product.wholesale_price,
       min_wholesale_qty: product.min_wholesale_qty,
@@ -243,6 +244,7 @@ export const createCartItem = (
         price_adjustment: variation.price_adjustment || 0,
         is_active: variation.is_active,
         image_url: variation.image_url,
+        hex_color: variation.hex_color, // Cor personalizada do lojista
         created_at: variation.created_at,
         updated_at: variation.updated_at,
         // Incluir campos da grade

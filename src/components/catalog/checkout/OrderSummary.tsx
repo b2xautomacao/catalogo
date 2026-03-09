@@ -50,6 +50,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{item.product.name}</p>
 
+                  {/* Descrição do produto */}
+                  {item.product.description && (
+                    <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2 leading-snug">
+                      {item.product.description}
+                    </p>
+                  )}
+
+                  {/* Grade */}
                   {item.gradeInfo && (
                     <div className="flex flex-col gap-1 mt-1">
                       <span className="inline-block mt-0.5">
@@ -65,10 +73,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                     </div>
                   )}
 
-                  {item.variation && (
-                    <p className="text-xs text-gray-500 truncate mt-0.5 font-medium">
-                      {[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}
-                    </p>
+                  {/* Cor e Tamanho/Numeração selecionados */}
+                  {item.variation && (item.variation.color || item.variation.size) && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {item.variation.color && (
+                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 text-[10px] font-medium border border-gray-200">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full inline-block border border-gray-300 flex-shrink-0"
+                            style={{ backgroundColor: (item.variation as any).hex_color || undefined }}
+                          />
+                          {item.variation.color}
+                        </span>
+                      )}
+                      {item.variation.size && (
+                        <span className="inline-flex items-center bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[10px] font-semibold border border-primary/20">
+                          Tam: {item.variation.size}
+                        </span>
+                      )}
+                    </div>
                   )}
 
                   <p className="text-gray-600 mt-1">

@@ -60,6 +60,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newVariation, setNewVariation] = useState({
     color: "",
+    hex_color: "",
     size: "",
     material: "",
     sku: "",
@@ -120,6 +121,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
 
     setNewVariation({
       color: "",
+      hex_color: "",
       size: "",
       material: "",
       sku: "",
@@ -226,13 +228,13 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
       `⚠️ ATENÇÃO: Isso irá DELETAR todas as ${variations.length} variações existentes e criar novas do zero.\n\n` +
       `As variações atuais serão perdidas. Tem certeza?`
     );
-    
+
     if (!confirmRecreate) return;
-    
+
     // Limpar todas as variações antes de recriar
     console.log(`🗑️ Deletando ${variations.length} variações antes de recriar...`);
     onVariationsChange([]);
-    
+
     // Aguardar um pouco para garantir que state foi atualizado
     setTimeout(() => {
       console.log("✅ Variações limpas, abrindo wizard...");
@@ -272,7 +274,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
 
     // Criar prompt para nova cor
     const newColor = prompt("Digite a cor da nova grade:", "");
-    
+
     if (!newColor || newColor.trim() === "") {
       return;
     }
@@ -302,341 +304,356 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
     switch (viewMode) {
       case "wizard":
         return (
-        <div className="space-y-4">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              <strong>Atenção:</strong> Usar o wizard irá substituir todas as
-              variações existentes. As {variations.length} variações atuais
-              serão perdidas.
-            </AlertDescription>
-          </Alert>
+          <div className="space-y-4">
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                <strong>Atenção:</strong> Usar o wizard irá substituir todas as
+                variações existentes. As {variations.length} variações atuais
+                serão perdidas.
+              </AlertDescription>
+            </Alert>
 
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setViewMode("list")}>
-              Cancelar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setViewMode("list")}>
+                Cancelar
+              </Button>
+            </div>
+
+            <UnifiedVariationWizard
+              variations={[]} // Começar do zero
+              onVariationsChange={(newVariations) => {
+                onVariationsChange(newVariations);
+                setViewMode("list");
+              }}
+              productId={productId}
+              storeId={storeId}
+              category={category}
+              productName={productName}
+            />
           </div>
-
-          <UnifiedVariationWizard
-            variations={[]} // Começar do zero
-            onVariationsChange={(newVariations) => {
-              onVariationsChange(newVariations);
-              setViewMode("list");
-            }}
-            productId={productId}
-            storeId={storeId}
-            category={category}
-            productName={productName}
-          />
-        </div>
         );
 
       case "add_form":
         return (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Adicionar Nova Variação
-            </h3>
-            <Button variant="outline" onClick={() => setViewMode("list")}>
-              Voltar à Lista
-            </Button>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Adicionar Nova Variação
+              </h3>
+              <Button variant="outline" onClick={() => setViewMode("list")}>
+                Voltar à Lista
+              </Button>
+            </div>
+
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Cor</Label>
+                    <Input
+                      placeholder="Ex: Azul Petróleo"
+                      value={newVariation.color}
+                      onChange={(e) =>
+                        setNewVariation({
+                          ...newVariation,
+                          color: e.target.value,
+                        })
+                      }
+                    />
+                    {/* Color picker para cor exata */}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <input
+                        type="color"
+                        value={newVariation.hex_color || "#9CA3AF"}
+                        onChange={(e) =>
+                          setNewVariation({ ...newVariation, hex_color: e.target.value })
+                        }
+                        className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0.5 bg-white"
+                        title="Cor personalizada"
+                      />
+                      <span className="text-xs text-gray-400">
+                        {newVariation.hex_color || "Cor personalizada (opcional)"}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Tamanho</Label>
+                    <Input
+                      placeholder="Ex: M"
+                      value={newVariation.size}
+                      onChange={(e) =>
+                        setNewVariation({ ...newVariation, size: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Material</Label>
+                    <Input
+                      placeholder="Ex: Algodão"
+                      value={newVariation.material}
+                      onChange={(e) =>
+                        setNewVariation({
+                          ...newVariation,
+                          material: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>SKU</Label>
+                    <Input
+                      placeholder="Ex: PROD-001-AZ-M"
+                      value={newVariation.sku}
+                      onChange={(e) =>
+                        setNewVariation({ ...newVariation, sku: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Estoque</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={newVariation.stock}
+                      onChange={(e) =>
+                        setNewVariation({
+                          ...newVariation,
+                          stock: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Ajuste de Preço (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newVariation.price_adjustment}
+                      onChange={(e) =>
+                        setNewVariation({
+                          ...newVariation,
+                          price_adjustment: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={addSingleVariation}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Variação
+                  </Button>
+                  <Button variant="outline" onClick={() => setViewMode("list")}>
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        );
 
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      default: // 'list'
+        return (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <List className="w-6 h-6 text-blue-600" />
                 <div>
-                  <Label>Cor</Label>
-                  <Input
-                    placeholder="Ex: Azul"
-                    value={newVariation.color}
-                    onChange={(e) =>
-                      setNewVariation({
-                        ...newVariation,
-                        color: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Tamanho</Label>
-                  <Input
-                    placeholder="Ex: M"
-                    value={newVariation.size}
-                    onChange={(e) =>
-                      setNewVariation({ ...newVariation, size: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Material</Label>
-                  <Input
-                    placeholder="Ex: Algodão"
-                    value={newVariation.material}
-                    onChange={(e) =>
-                      setNewVariation({
-                        ...newVariation,
-                        material: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>SKU</Label>
-                  <Input
-                    placeholder="Ex: PROD-001-AZ-M"
-                    value={newVariation.sku}
-                    onChange={(e) =>
-                      setNewVariation({ ...newVariation, sku: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Estoque</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={newVariation.stock}
-                    onChange={(e) =>
-                      setNewVariation({
-                        ...newVariation,
-                        stock: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Ajuste de Preço (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newVariation.price_adjustment}
-                    onChange={(e) =>
-                      setNewVariation({
-                        ...newVariation,
-                        price_adjustment: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
+                  <h3 className="text-lg font-semibold">Variações do Produto</h3>
+                  <p className="text-sm text-gray-600">
+                    {variations.length} variação
+                    {variations.length !== 1 ? "ões" : ""} configurada
+                    {variations.length !== 1 ? "s" : ""}
+                  </p>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <Button
-                  onClick={addSingleVariation}
+                  variant="outline"
+                  onClick={() => setViewMode("add_form")}
                   className="flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  Adicionar Variação
+                  Adicionar
                 </Button>
-                <Button variant="outline" onClick={() => setViewMode("list")}>
-                  Cancelar
+                <Button
+                  variant="outline"
+                  onClick={recreateWithWizard}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Recriar com Wizard
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        );
-
-      default: // 'list'
-        return (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <List className="w-6 h-6 text-blue-600" />
-              <div>
-                <h3 className="text-lg font-semibold">Variações do Produto</h3>
-                <p className="text-sm text-gray-600">
-                  {variations.length} variação
-                  {variations.length !== 1 ? "ões" : ""} configurada
-                  {variations.length !== 1 ? "s" : ""}
-                </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setViewMode("add_form")}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar
-              </Button>
-              <Button
-                variant="outline"
-                onClick={recreateWithWizard}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Recriar com Wizard
-              </Button>
-            </div>
-          </div>
+            {/* Info sobre modos */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Modo Edição:</strong> Você pode adicionar novas variações
+                individuais ou recriar todas usando o wizard (substituirá as
+                existentes).
+              </AlertDescription>
+            </Alert>
 
-          {/* Info sobre modos */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Modo Edição:</strong> Você pode adicionar novas variações
-              individuais ou recriar todas usando o wizard (substituirá as
-              existentes).
-            </AlertDescription>
-          </Alert>
-
-          {/* Lista de variações */}
-          <div className="space-y-3">
-            {variations.map((variation, index) => (
-              <Card key={variation.id || index}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {getVariationIcon(variation)}
-                      <div>
-                        <div className="font-medium">
-                          {getVariationLabel(variation)}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          SKU: {variation.sku || "Não definido"} • Estoque:{" "}
-                          {variation.stock} •
-                          {variation.price_adjustment !== 0 && (
-                            <span
-                              className={
-                                variation.price_adjustment > 0
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              Ajuste:{" "}
-                              {variation.price_adjustment > 0 ? "+" : ""}R${" "}
-                              {variation.price_adjustment.toFixed(2)}
-                            </span>
-                          )}
-                          {variation.price_adjustment === 0 &&
-                            "Sem ajuste de preço"}
+            {/* Lista de variações */}
+            <div className="space-y-3">
+              {variations.map((variation, index) => (
+                <Card key={variation.id || index}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {getVariationIcon(variation)}
+                        <div>
+                          <div className="font-medium">
+                            {getVariationLabel(variation)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            SKU: {variation.sku || "Não definido"} • Estoque:{" "}
+                            {variation.stock} •
+                            {variation.price_adjustment !== 0 && (
+                              <span
+                                className={
+                                  variation.price_adjustment > 0
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                Ajuste:{" "}
+                                {variation.price_adjustment > 0 ? "+" : ""}R${" "}
+                                {variation.price_adjustment.toFixed(2)}
+                              </span>
+                            )}
+                            {variation.price_adjustment === 0 &&
+                              "Sem ajuste de preço"}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={variation.is_active ? "default" : "secondary"}
-                      >
-                        {variation.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-
-                      <div className="flex gap-1">
-                        {/* Copiar Variação */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyVariation(variation)}
-                          title="Copiar variação"
-                          className="text-blue-600 hover:text-blue-700"
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={variation.is_active ? "default" : "secondary"}
                         >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        
-                        {/* Adicionar Similar (só para grades) */}
-                        {variation.is_grade && (
+                          {variation.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+
+                        <div className="flex gap-1">
+                          {/* Copiar Variação */}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => addSimilarGrade(variation)}
-                            title="Adicionar grade similar (outra cor)"
-                            className="text-purple-600 hover:text-purple-700"
+                            onClick={() => copyVariation(variation)}
+                            title="Copiar variação"
+                            className="text-blue-600 hover:text-blue-700"
                           >
-                            <PlusCircle className="w-4 h-4" />
+                            <Copy className="w-4 h-4" />
                           </Button>
-                        )}
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(variation)}
-                          title="Editar variação"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            updateVariation(
-                              index,
-                              "is_active",
-                              !variation.is_active
-                            )
-                          }
-                          title={variation.is_active ? "Desativar" : "Ativar"}
-                        >
-                          {variation.is_active ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
+
+                          {/* Adicionar Similar (só para grades) */}
+                          {variation.is_grade && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addSimilarGrade(variation)}
+                              title="Adicionar grade similar (outra cor)"
+                              className="text-purple-600 hover:text-purple-700"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                            </Button>
                           )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeVariation(index)}
-                          className="text-red-500 hover:text-red-700"
-                          title="Excluir variação"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(variation)}
+                            title="Editar variação"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              updateVariation(
+                                index,
+                                "is_active",
+                                !variation.is_active
+                              )
+                            }
+                            title={variation.is_active ? "Desativar" : "Ativar"}
+                          >
+                            {variation.is_active ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVariation(index)}
+                            className="text-red-500 hover:text-red-700"
+                            title="Excluir variação"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Ações rápidas */}
+            <Card className="border-dashed border-2 border-gray-300">
+              <CardContent className="p-6 text-center">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-gray-600">
+                    <Plus className="w-5 h-5" />
+                    <span>Adicionar mais variações</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setViewMode("add_form")}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Variação Individual
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={recreateWithWizard}
+                      className="flex items-center gap-2"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                      Wizard Completo
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Use "Individual" para adicionar uma variação ou "Wizard" para
+                    recriar todas
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Ações rápidas */}
-          <Card className="border-dashed border-2 border-gray-300">
-            <CardContent className="p-6 text-center">
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2 text-gray-600">
-                  <Plus className="w-5 h-5" />
-                  <span>Adicionar mais variações</span>
-                </div>
-
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setViewMode("add_form")}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Variação Individual
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={recreateWithWizard}
-                    className="flex items-center gap-2"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    Wizard Completo
-                  </Button>
-                </div>
-
-                <p className="text-xs text-gray-500">
-                  Use "Individual" para adicionar uma variação ou "Wizard" para
-                  recriar todas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
         );
     }
   };
@@ -645,7 +662,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
   return (
     <>
       {renderContent()}
-      
+
       {/* Diálogo de edição */}
       <VariationEditDialog
         variation={editingVariation}

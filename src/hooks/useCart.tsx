@@ -10,6 +10,7 @@ export interface CartItem {
   product: {
     id: string;
     name: string;
+    description?: string; // Descrição para exibir no resumo de pedido
     retail_price: number;
     wholesale_price?: number;
     min_wholesale_qty?: number;

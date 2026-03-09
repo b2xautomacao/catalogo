@@ -29,42 +29,53 @@ interface VariationPickerProps {
   onColorChange?: (color: string | null, imageUrl?: string) => void;
 }
 
-/** Converte nome de cor para hex aproximado */
-function colorToHex(colorName?: string): string {
+/** Mapa de cores por nome aproximado (fallback quando não há hex_color definido) */
+const COLOR_NAME_MAP: Record<string, string> = {
+  preto: "#1a1a1a",
+  branco: "#f5f5f5",
+  vermelho: "#EF4444",
+  azul: "#3B82F6",
+  "azul marinho": "#1e3a8a",
+  navy: "#1e3a8a",
+  verde: "#22C55E",
+  amarelo: "#EAB308",
+  rosa: "#EC4899",
+  "rosa bebê": "#fbcfe8",
+  roxo: "#A855F7",
+  laranja: "#F97316",
+  cinza: "#6B7280",
+  "cinza claro": "#d1d5db",
+  marrom: "#92400E",
+  bege: "#D4B896",
+  caramelo: "#c48c3e",
+  dourado: "#FFD700",
+  prata: "#C0C0C0",
+  nude: "#E8C8A0",
+  vinho: "#7f1d1d",
+  bordô: "#7f1d1d",
+  turquesa: "#06b6d4",
+  lilás: "#c084fc",
+  creme: "#fef9c3",
+  off: "#f5f0e8",
+};
+
+/**
+ * Retorna o hex para uma cor, priorizando hex_color definido
+ * pelo lojista. Se não houver, usa o mapa de aproximação por nome.
+ */
+function resolveColorHex(colorName?: string, hexOverride?: string | null): string {
+  if (hexOverride && hexOverride !== "#9CA3AF") return hexOverride;
   if (!colorName) return "#9CA3AF";
-  const map: Record<string, string> = {
-    preto: "#1a1a1a",
-    branco: "#f5f5f5",
-    vermelho: "#EF4444",
-    azul: "#3B82F6",
-    "azul marinho": "#1e3a8a",
-    navy: "#1e3a8a",
-    verde: "#22C55E",
-    amarelo: "#EAB308",
-    rosa: "#EC4899",
-    "rosa bebê": "#fbcfe8",
-    roxo: "#A855F7",
-    laranja: "#F97316",
-    cinza: "#6B7280",
-    "cinza claro": "#d1d5db",
-    marrom: "#92400E",
-    bege: "#D4B896",
-    caramelo: "#c48c3e",
-    dourado: "#FFD700",
-    prata: "#C0C0C0",
-    nude: "#E8C8A0",
-    vinho: "#7f1d1d",
-    bordô: "#7f1d1d",
-    turquesa: "#06b6d4",
-    lilás: "#c084fc",
-    creme: "#fef9c3",
-    off: "#f5f0e8",
-  };
   const lower = colorName.toLowerCase();
-  for (const [key, hex] of Object.entries(map)) {
+  for (const [key, hex] of Object.entries(COLOR_NAME_MAP)) {
     if (lower.includes(key)) return hex;
   }
   return "#9CA3AF";
+}
+
+/** @deprecated usar resolveColorHex */
+function colorToHex(colorName?: string): string {
+  return resolveColorHex(colorName);
 }
 
 /** Determina se a cor de texto deve ser escura ou clara */
@@ -100,7 +111,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
   const hasColors = activeVariations.some((v) => v.color);
   const hasSizes = activeVariations.some((v) => v.size);
 
-  // Cores únicas
+  // Cores únicas — preserva hex_color personalizado por cor
   const uniqueColors = useMemo(() => {
     const seen = new Set<string>();
     return activeVariations
@@ -110,8 +121,17 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
         seen.add(v.color!);
         return true;
       })
-      .map((v) => v.color!);
+      .map((v) => ({ name: v.color!, hex: (v as any).hex_color as string | undefined }));
   }, [activeVariations]);
+
+  // Mapa colorName → hex personalizado (da primeira variação com essa cor)
+  const colorHexMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const c of uniqueColors) {
+      map[c.name] = c.hex;
+    }
+    return map;
+  }, [uniqueColors]);
 
   // Tamanhos disponíveis para a cor selecionada
   const availableSizes = useMemo(() => {
@@ -286,8 +306,9 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {uniqueColors.map((color) => {
-              const hex = colorToHex(color);
+            {uniqueColors.map(({ name: color }) => {
+              // Usar hex personalizado do lojista; fallback para o mapa de nomes
+              const hex = resolveColorHex(color, colorHexMap[color]);
               const isLight = isLightColor(hex);
               const isSelected = selectedColor === color;
               // Verificar se tem ao menos 1 variação disponível nessa cor
@@ -309,7 +330,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
                   `}
                   disabled={!hasStock}
                 >
-                  {/* Círculo de cor */}
+                  {/* Círculo de cor — usa hex exato do lojista quando disponível */}
                   <div
                     className={`
                       w-10 h-10 rounded-full border-2 shadow-sm flex items-center justify-center

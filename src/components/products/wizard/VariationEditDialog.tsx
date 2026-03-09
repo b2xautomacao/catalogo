@@ -136,8 +136,30 @@ const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
                         color: e.target.value,
                       })
                     }
-                    placeholder="Ex: Azul"
+                    placeholder="Ex: Azul Petróleo"
                   />
+                  {/* Cor personalizada (hex) */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      id="hex_color"
+                      value={(editedVariation as any).hex_color || "#9CA3AF"}
+                      onChange={(e) =>
+                        setEditedVariation({
+                          ...editedVariation,
+                          hex_color: e.target.value,
+                        } as any)
+                      }
+                      className="w-9 h-9 rounded cursor-pointer border border-gray-300 p-0.5 bg-white"
+                      title="Escolha a cor exata"
+                    />
+                    <span className="text-xs text-gray-500">
+                      Cor personalizada:{" "}
+                      <code className="font-mono bg-gray-100 px-1 rounded">
+                        {(editedVariation as any).hex_color || "#9CA3AF"}
+                      </code>
+                    </span>
+                  </div>
                 </div>
 
                 <div>
