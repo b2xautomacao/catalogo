@@ -63,86 +63,13 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     DEFAULT_FLEXIBLE_GRADE_CONFIG
   );
 
-  const commonColors = [
-    "Preto",
-    "Branco",
-    "Azul",
-    "Vermelho",
-    "Verde",
-    "Amarelo",
-    "Rosa",
-    "Roxo",
-    "Marrom",
-    "Cinza",
-  ];
-
   const commonSizes = [
-    "17/18",
-    "19/20",
-    "21/22",
-    "23/24",
-    "25/26",
-    "26/27",
-    "28/29",
-    "30/31",
-    "32/33",
-    "33",
-    "34",
-    "35",
-    "36",
-    "37",
-    "38",
-    "39",
-    "40",
-    "41",
-    "42",
-    "43",
-    "44",
-    "45",
+    "17/18", "19/20", "21/22", "23/24", "25/26", "26/27", "28/29", "30/31", "32/33",
+    "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "P", "M", "G", "GG"
   ];
 
-  const gradeTemplates = [
-    {
-      name: "Grade Baixa",
-      sizes: ["35", "36", "37", "38", "39"],
-      distribution: [1, 2, 2, 2, 1],
-    },
-    {
-      name: "Grade Média",
-      sizes: ["34", "35", "36", "37", "38", "39", "40"],
-      distribution: [1, 2, 2, 3, 2, 2, 1],
-    },
-    {
-      name: "Grade Alta",
-      sizes: ["36", "37", "38", "39", "40", "41", "42"],
-      distribution: [1, 2, 2, 3, 2, 2, 1],
-    },
-    {
-      name: "Grade Masculina",
-      sizes: ["38", "39", "40", "41", "42", "43", "44"],
-      distribution: [1, 2, 3, 3, 2, 1, 1],
-    },
-    {
-      name: "Grade Infantil Pequena",
-      sizes: ["17/18", "19/20", "21/22", "23/24"],
-      distribution: [3, 3, 3, 3],
-    },
-    {
-      name: "Grade Infantil Média",
-      sizes: ["21/22", "23/24", "25/26", "26/27"],
-      distribution: [3, 3, 3, 3],
-    },
-    {
-      name: "Grade Infantil Grande",
-      sizes: ["26/27", "28/29", "30/31", "32/33"],
-      distribution: [3, 3, 3, 3],
-    },
-  ];
-
-  // Combine store colors with common colors as fallback, avoiding duplicates
-  const availableColors = storeColors.length > 0
-    ? [...storeColors.map(c => c.name), ...commonColors].filter((v, i, a) => a.indexOf(v) === i)
-    : commonColors;
+  // Array de cores disponíveis limitado ao que o lojista cadastrou
+  const availableColors = storeColors.map(c => c.name).filter((v, i, a) => a.indexOf(v) === i);
 
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
@@ -426,30 +353,39 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               uma grade separada.
             </p>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {availableColors.map((color) => {
-                const storeColorOpt = storeColors.find(c => c.name.toLowerCase() === color.toLowerCase());
-                return (
-                  <Button
-                    key={color}
-                    variant={
-                      selectedColors.includes(color) ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => toggleColor(color)}
-                    className="text-xs flex items-center gap-1.5"
-                  >
-                    {storeColorOpt && (
-                      <span
-                        className="w-3 h-3 rounded-full border border-gray-300 shadow-sm block"
-                        style={{ backgroundColor: storeColorOpt.hex_color }}
-                      />
-                    )}
-                    {color}
-                  </Button>
-                );
-              })}
-            </div>
+            {availableColors.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {availableColors.map((color) => {
+                  const storeColorOpt = storeColors.find(c => c.name.toLowerCase() === color.toLowerCase());
+                  return (
+                    <Button
+                      key={color}
+                      variant={
+                        selectedColors.includes(color) ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => toggleColor(color)}
+                      className="text-xs flex items-center gap-1.5"
+                    >
+                      {storeColorOpt && (
+                        <span
+                          className="w-3 h-3 rounded-full border border-gray-300 shadow-sm block"
+                          style={{ backgroundColor: storeColorOpt.hex_color }}
+                        />
+                      )}
+                      {color}
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Você ainda não cadastrou nenhuma cor na sua loja. Adicione cores personalizadas no menu <strong>Configurações &gt; Cores do Catálogo</strong> para elas aparecerem aqui.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="flex gap-2">
               <Input
@@ -492,7 +428,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               quantidades
             </p>
 
-            {storeGrades && storeGrades.length > 0 && (
+            {storeGrades && storeGrades.length > 0 ? (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Suas Grades Personalizadas</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -513,26 +449,14 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   ))}
                 </div>
               </div>
+            ) : (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Você ainda não possui Grades Personalizadas. Vá ao menu <strong>Configurações &gt; Grades de Tamanho</strong> no admin para criar opções de preenchimento rápido.
+                </AlertDescription>
+              </Alert>
             )}
-
-            <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Templates Padrão</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-              {gradeTemplates.map((template) => (
-                <Button
-                  key={template.name}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => applyGradeTemplate(template)}
-                  className="justify-start"
-                >
-                  <Package className="w-4 h-4 mr-2" />
-                  <span className="truncate">{template.name}</span>
-                  <Badge variant="secondary" className="ml-auto">
-                    {template.sizes.length}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
 
             <div className="flex gap-2">
               <Button
@@ -565,7 +489,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={addSizePair}
-                disabled={sizePairConfigs.length >= commonSizes.length}
+                disabled={sizePairConfigs.length >= 30}
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Adicionar Tamanho
@@ -775,8 +699,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
             <Button
               onClick={generateVariations}
               className={`w-full h-12 text-lg ${showFlexibleConfig
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 }`}
               disabled={
                 selectedColors.length === 0 || sizePairConfigs.length === 0
