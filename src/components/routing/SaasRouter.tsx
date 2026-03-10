@@ -36,6 +36,8 @@ import Billing from '@/pages/Billing';
 import PlanManagement from '@/pages/PlanManagement';
 import Revenue from '@/pages/Revenue';
 import Monitoring from '@/pages/Monitoring';
+import StoreColors from '@/pages/StoreColors';
+import StoreGrades from '@/pages/StoreGrades';
 
 /**
  * Error component for subdomain store loading errors
@@ -50,16 +52,16 @@ const SubdomainError: React.FC<{ error: string; subdomain: string }> = ({ error,
           </svg>
         </div>
       </div>
-      
+
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja não encontrada</h1>
       <p className="text-gray-600 mb-4">{error}</p>
-      
+
       <div className="bg-gray-100 rounded-lg p-4 mb-6">
         <p className="text-sm text-gray-700">
           <strong>Subdomínio:</strong> <code>{subdomain}.aoseudispor.com.br</code>
         </p>
       </div>
-      
+
       <div className="space-y-2 text-sm text-gray-600">
         <p>Possíveis causas:</p>
         <ul className="list-disc list-inside space-y-1 text-left">
@@ -68,10 +70,10 @@ const SubdomainError: React.FC<{ error: string; subdomain: string }> = ({ error,
           <li>Configuração de DNS incorreta</li>
         </ul>
       </div>
-      
+
       <div className="mt-6">
-        <a 
-          href="https://app.aoseudispor.com.br" 
+        <a
+          href="https://app.aoseudispor.com.br"
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
         >
           Ir para Admin
@@ -89,7 +91,7 @@ const SubdomainCatalogRouter: React.FC = () => {
     <Routes>
       {/* Product page route */}
       <Route path="/produto/:productId" element={<SubdomainProductPage />} />
-      
+
       {/* Main catalog route - must be last */}
       <Route path="/*" element={<SubdomainCatalogPage />} />
     </Routes>
@@ -104,310 +106,336 @@ const MainAppRouter: React.FC = () => {
     <Routes>
       {/* Authentication Route */}
       <Route path="/auth" element={<Auth />} />
-      
+
       {/* Dashboard Routes */}
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <AppLayout title="Dashboard">
               <Index />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
       <Route path="/dashboard" element={<Navigate to="/" replace />} />
-      
+
       {/* Core Features */}
-      <Route 
-        path="/products" 
+      <Route
+        path="/products"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Produtos" 
+            <AppLayout
+              title="Produtos"
               subtitle="Gerencie o catálogo de produtos da sua loja"
             >
               <Products />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/products/:id" 
+      <Route
+        path="/products/:id"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Produto" 
+            <AppLayout
+              title="Produto"
               subtitle="Visualizar e editar produto"
             >
               <ProductPage />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/orders" 
+      <Route
+        path="/orders"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Pedidos" 
+            <AppLayout
+              title="Pedidos"
               subtitle="Gerencie os pedidos da sua loja"
             >
               <OrdersImproved />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/customers" 
+      <Route
+        path="/customers"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Clientes" 
+            <AppLayout
+              title="Clientes"
               subtitle="Visualize e gerencie seus clientes"
             >
               <Customers />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/categories" 
+      <Route
+        path="/categories"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Categorias" 
+            <AppLayout
+              title="Categorias"
               subtitle="Organize seus produtos em categorias"
             >
               <Categories />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/coupons" 
+      <Route
+        path="/coupons"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Cupons de Desconto" 
+            <AppLayout
+              title="Cupons de Desconto"
               subtitle="Gerencie cupons e promoções da sua loja"
             >
               <Coupons />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/deliveries" 
+      <Route
+        path="/deliveries"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Gestão de Entregas" 
+            <AppLayout
+              title="Gestão de Entregas"
               subtitle="Acompanhe e gerencie todas as entregas em andamento"
             >
               <Deliveries />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/reports" 
+      <Route
+        path="/reports"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Relatórios" 
+            <AppLayout
+              title="Relatórios"
               subtitle="Análise detalhada do desempenho da sua loja"
             >
               <Reports />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/analytics" 
+      <Route
+        path="/analytics"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Analytics Avançado" 
+            <AppLayout
+              title="Analytics Avançado"
               subtitle="Análises detalhadas do sistema"
             >
               <Analytics />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
       {/* Settings */}
-      <Route 
-        path="/settings" 
+      <Route
+        path="/settings"
         element={
           <ProtectedRoute>
-            <AppLayout 
-              title="Configurações" 
+            <AppLayout
+              title="Configurações"
               subtitle="Gerencie as configurações da sua loja"
             >
               <Settings />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+      <Route
+        path="/store-colors"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="Cores do Catálogo"
+              subtitle="Gire as cores personalizadas para os seus produtos"
+            >
+              <StoreColors />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/store-grades"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="Grades de Tamanho"
+              subtitle="Gerencie modelos de grade pré-configurados"
+            >
+              <StoreGrades />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Public Catalog Routes (for URL-based access) */}
       <Route path="/catalog/:storeSlug" element={<PublicCatalogPage />} />
       <Route path="/catalog/:storeSlug/*" element={<PublicCatalogPage />} />
-      
+
       {/* Order Tracking - Public */}
       <Route path="/track/:orderId" element={<OrderTracking />} />
-      
+
       {/* Super Admin Routes */}
-      <Route 
-        path="/admin" 
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Administração" 
+            <AppLayout
+              title="Administração"
               subtitle="Painel de controle administrativo"
             >
               <AdminSettings />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/users" 
+      <Route
+        path="/admin/users"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Gerenciamento de Usuários" 
+            <AppLayout
+              title="Gerenciamento de Usuários"
               subtitle="Administração de usuários do sistema"
             >
               <UserManagement />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/integrations" 
+      <Route
+        path="/admin/integrations"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Integrações Globais" 
+            <AppLayout
+              title="Integrações Globais"
               subtitle="Configurações de integrações do sistema"
             >
               <GlobalIntegrations />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/automations" 
+      <Route
+        path="/admin/automations"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Automações" 
+            <AppLayout
+              title="Automações"
               subtitle="Fluxos automatizados do sistema"
             >
               <Automations />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/ai" 
+      <Route
+        path="/admin/ai"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Configurações de IA" 
+            <AppLayout
+              title="Configurações de IA"
               subtitle="Configuração dos provedores de IA"
             >
               <AISettings />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/organizations" 
+      <Route
+        path="/admin/organizations"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Organizações" 
+            <AppLayout
+              title="Organizações"
               subtitle="Gerenciamento de organizações"
             >
               <Organizations />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/stores" 
+      <Route
+        path="/admin/stores"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Lojas" 
+            <AppLayout
+              title="Lojas"
               subtitle="Gerenciamento de lojas do sistema"
             >
               <Stores />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/billing" 
+      <Route
+        path="/admin/billing"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Faturamento" 
+            <AppLayout
+              title="Faturamento"
               subtitle="Controle de cobrança e assinaturas"
             >
               <Billing />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/plans" 
+      <Route
+        path="/admin/plans"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Planos" 
+            <AppLayout
+              title="Planos"
               subtitle="Gerenciamento de planos de assinatura"
             >
               <PlanManagement />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/revenue" 
+      <Route
+        path="/admin/revenue"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Receita" 
+            <AppLayout
+              title="Receita"
               subtitle="Análise de receita do sistema"
             >
               <Revenue />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/monitoring" 
+      <Route
+        path="/admin/monitoring"
         element={
           <ProtectedRoute allowedRoles={['superadmin']}>
-            <AppLayout 
-              title="Monitoramento" 
+            <AppLayout
+              title="Monitoramento"
               subtitle="Monitoramento do sistema"
             >
               <Monitoring />
             </AppLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
       {/* Legacy catalog routes for backward compatibility */}
       <Route path="/catalog/:storeSlug" element={<PublicCatalogPage />} />
       <Route path="/catalog/:storeSlug/produto/:productId" element={<PublicCatalogPage />} />
-      
+
       {/* Catch all - redirect to dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -437,7 +465,7 @@ export const SaasRouter: React.FC = () => {
   if (isSubdomain && subdomain) {
     return <SubdomainCatalogRouter />;
   }
-  
+
   if (isMainApp) {
     return <MainAppRouter />;
   }

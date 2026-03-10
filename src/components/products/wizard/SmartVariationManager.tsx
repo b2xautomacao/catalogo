@@ -30,6 +30,7 @@ import UnifiedVariationWizard from "./UnifiedVariationWizard";
 import VariationEditDialog from "./VariationEditDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useProductVariations } from "@/hooks/useProductVariations";
+import { useStoreColors } from "@/hooks/useStoreColors";
 
 interface SmartVariationManagerProps {
   variations: ProductVariation[];
@@ -58,6 +59,8 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
   const [editingVariation, setEditingVariation] =
     useState<ProductVariation | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { colors: storeColors } = useStoreColors(storeId);
+
   const [newVariation, setNewVariation] = useState({
     color: "",
     hex_color: "",
@@ -351,7 +354,23 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
               <CardContent className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label>Cor</Label>
+                    <Label className="flex justify-between items-center">
+                      Cor
+                      {storeColors.length > 0 && (
+                        <div className="flex gap-1">
+                          {storeColors.map(c => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => setNewVariation({ ...newVariation, color: c.name, hex_color: c.hex_color })}
+                              className="w-4 h-4 rounded-full border border-gray-300 shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                              style={{ backgroundColor: c.hex_color }}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </Label>
                     <Input
                       placeholder="Ex: Azul Petróleo"
                       value={newVariation.color}
@@ -370,7 +389,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
                         onChange={(e) =>
                           setNewVariation({ ...newVariation, hex_color: e.target.value })
                         }
-                        className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0.5 bg-white"
+                        className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0.5 bg-white shrink-0"
                         title="Cor personalizada"
                       />
                       <span className="text-xs text-gray-400">
@@ -672,7 +691,7 @@ const SmartVariationManager: React.FC<SmartVariationManagerProps> = ({
           setEditingVariation(null);
         }}
         onSave={handleSaveVariation}
-        productId={productId}
+        storeId={storeId}
       />
     </>
   );

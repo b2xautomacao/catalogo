@@ -24,13 +24,14 @@ import {
 } from "lucide-react";
 import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
+import { useStoreColors } from "@/hooks/useStoreColors";
 
 interface VariationEditDialogProps {
   variation: ProductVariation | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedVariation: ProductVariation) => void;
-  productId?: string;
+  storeId?: string;
 }
 
 const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
@@ -38,12 +39,14 @@ const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
   isOpen,
   onClose,
   onSave,
-  productId,
+  storeId,
 }) => {
   const { toast } = useToast();
   const [editedVariation, setEditedVariation] =
     useState<ProductVariation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const { colors: storeColors } = useStoreColors(storeId);
 
   // Inicializar dados quando a variação muda
   useEffect(() => {
@@ -123,9 +126,29 @@ const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="color" className="flex items-center gap-1">
-                    <Palette className="w-4 h-4" />
-                    Cor
+                  <Label htmlFor="color" className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <Palette className="w-4 h-4" />
+                      Cor
+                    </div>
+                    {storeColors.length > 0 && (
+                      <div className="flex gap-1 shrink-0">
+                        {storeColors.map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setEditedVariation({
+                              ...editedVariation,
+                              color: c.name,
+                              hex_color: c.hex_color
+                            })}
+                            className="w-4 h-4 rounded-full border border-gray-300 shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                            style={{ backgroundColor: c.hex_color }}
+                            title={c.name}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </Label>
                   <Input
                     id="color"
@@ -150,7 +173,7 @@ const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
                           hex_color: e.target.value,
                         } as any)
                       }
-                      className="w-9 h-9 rounded cursor-pointer border border-gray-300 p-0.5 bg-white"
+                      className="w-9 h-9 shrink-0 rounded cursor-pointer border border-gray-300 p-0.5 bg-white"
                       title="Escolha a cor exata"
                     />
                     <span className="text-xs text-gray-500">

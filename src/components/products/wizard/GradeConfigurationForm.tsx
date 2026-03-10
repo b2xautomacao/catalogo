@@ -25,6 +25,8 @@ import { generateUniqueProductSKU } from "@/utils/skuGenerator";
 import FlexibleGradeConfigForm from "./FlexibleGradeConfigForm";
 import type { FlexibleGradeConfig } from "@/types/flexible-grade";
 import { DEFAULT_FLEXIBLE_GRADE_CONFIG } from "@/types/flexible-grade";
+import { useStoreGrades } from "@/hooks/useStoreGrades";
+import { useStoreColors } from "@/hooks/useStoreColors";
 
 interface GradeConfigurationFormProps {
   variations: ProductVariation[];
@@ -51,7 +53,10 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   const [customColor, setCustomColor] = useState("");
   const [sizePairConfigs, setSizePairConfigs] = useState<SizePairConfig[]>([]);
   const [gradeName, setGradeName] = useState("Grade Personalizada");
-  
+
+  const { grades: storeGrades } = useStoreGrades(storeId);
+  const { colors: storeColors } = useStoreColors(storeId);
+
   // Estado para configuração de grade flexível
   const [showFlexibleConfig, setShowFlexibleConfig] = useState(false);
   const [flexibleGradeConfig, setFlexibleGradeConfig] = useState<FlexibleGradeConfig>(
@@ -134,6 +139,11 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     },
   ];
 
+  // Combine store colors with common colors as fallback, avoiding duplicates
+  const availableColors = storeColors.length > 0
+    ? [...storeColors.map(c => c.name), ...commonColors].filter((v, i, a) => a.indexOf(v) === i)
+    : commonColors;
+
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
@@ -141,16 +151,17 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   };
 
   const addCustomColor = () => {
-    if (customColor.trim() && !selectedColors.includes(customColor.trim())) {
-      setSelectedColors((prev) => [...prev, customColor.trim()]);
+    if (customColor && !selectedColors.includes(customColor)) {
+      setSelectedColors((prev) => [...prev, customColor]);
       setCustomColor("");
     }
   };
 
-  const applyGradeTemplate = (template: (typeof gradeTemplates)[0]) => {
+  const applyGradeTemplate = (template: { name: string, sizes: string[], distribution?: number[], default_quantities?: number[] }) => {
+    const templatePairs = template.distribution || template.default_quantities || [];
     const newConfigs: SizePairConfig[] = template.sizes.map((size, index) => ({
       size,
-      pairs: template.distribution[index] || 1,
+      pairs: templatePairs[index] || 1,
     }));
     setSizePairConfigs(newConfigs);
     setGradeName(`${template.name}`);
@@ -216,8 +227,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
           index === Math.floor(totalSizes / 2)
             ? 3
             : index === 0 || index === totalSizes - 1
-            ? 1
-            : 2;
+              ? 1
+              : 2;
       } else {
         const middle = Math.floor(totalSizes / 2);
         const distance = Math.abs(index - middle);
@@ -268,8 +279,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
         const color = selectedColors[colorIndex];
 
         console.log(
-          `🎨 [${colorIndex + 1}/${
-            selectedColors.length
+          `🎨 [${colorIndex + 1}/${selectedColors.length
           }] Processando cor: "${color}"`
         );
 
@@ -352,11 +362,9 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
 
       toast({
         title: "Grades criadas com sucesso!",
-        description: `${
-          newVariations.length
-        } grade(s) foram geradas com SKUs únicos, totalizando ${
-          totalPairsPerColor * selectedColors.length
-        } pares.`,
+        description: `${newVariations.length
+          } grade(s) foram geradas com SKUs únicos, totalizando ${totalPairsPerColor * selectedColors.length
+          } pares.`,
       });
     } catch (error) {
       console.error("❌ Erro ao gerar grades:", error);
@@ -418,20 +426,29 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               uma grade separada.
             </p>
 
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {commonColors.map((color) => (
-                <Button
-                  key={color}
-                  variant={
-                    selectedColors.includes(color) ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => toggleColor(color)}
-                  className="text-xs"
-                >
-                  {color}
-                </Button>
-              ))}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {availableColors.map((color) => {
+                const storeColorOpt = storeColors.find(c => c.name.toLowerCase() === color.toLowerCase());
+                return (
+                  <Button
+                    key={color}
+                    variant={
+                      selectedColors.includes(color) ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => toggleColor(color)}
+                    className="text-xs flex items-center gap-1.5"
+                  >
+                    {storeColorOpt && (
+                      <span
+                        className="w-3 h-3 rounded-full border border-gray-300 shadow-sm block"
+                        style={{ backgroundColor: storeColorOpt.hex_color }}
+                      />
+                    )}
+                    {color}
+                  </Button>
+                );
+              })}
             </div>
 
             <div className="flex gap-2">
@@ -475,6 +492,30 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               quantidades
             </p>
 
+            {storeGrades && storeGrades.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Suas Grades Personalizadas</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {storeGrades.map((template) => (
+                    <Button
+                      key={template.id}
+                      variant="default"
+                      size="sm"
+                      onClick={() => applyGradeTemplate(template)}
+                      className="justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      <span className="truncate">{template.name}</span>
+                      <Badge variant="secondary" className="ml-auto bg-white">
+                        {template.sizes.length}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Templates Padrão</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
               {gradeTemplates.map((template) => (
                 <Button
@@ -485,7 +526,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   className="justify-start"
                 >
                   <Package className="w-4 h-4 mr-2" />
-                  {template.name}
+                  <span className="truncate">{template.name}</span>
                   <Badge variant="secondary" className="ml-auto">
                     {template.sizes.length}
                   </Badge>
@@ -697,7 +738,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   </Button>
                 </div>
               </CardHeader>
-              
+
               {showFlexibleConfig && (
                 <CardContent className="border-t-2 border-purple-200 bg-gradient-to-b from-purple-50/30 to-white">
                   <Alert className="mb-4 border-purple-300 bg-purple-50">
@@ -706,7 +747,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                       <strong>Grade Flexível Ativa!</strong> Configure as opções de compra que seus clientes terão no catálogo.
                     </AlertDescription>
                   </Alert>
-                  
+
                   <FlexibleGradeConfigForm
                     config={flexibleGradeConfig}
                     onChange={(newConfig) => {
@@ -717,7 +758,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                     fullGradePairs={sizePairConfigs.map(c => c.pairs)}
                     simplified={true}
                   />
-                  
+
                   <Alert className="mt-4 border-green-300 bg-green-50">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-900">
@@ -733,11 +774,10 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
           <div className="pt-4">
             <Button
               onClick={generateVariations}
-              className={`w-full h-12 text-lg ${
-                showFlexibleConfig
+              className={`w-full h-12 text-lg ${showFlexibleConfig
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              }`}
+                }`}
               disabled={
                 selectedColors.length === 0 || sizePairConfigs.length === 0
               }

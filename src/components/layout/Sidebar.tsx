@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Activity,
   DollarSign,
+  LayoutGrid,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,6 +85,18 @@ const Sidebar = () => {
       label: "Pedidos",
       href: "/orders",
       isActive: location.pathname === "/orders",
+    },
+    {
+      icon: LayoutGrid,
+      label: "Grades de Tamanho",
+      href: "/store-grades",
+      isActive: location.pathname === "/store-grades",
+    },
+    {
+      icon: Palette,
+      label: "Cores da Loja",
+      href: "/store-colors",
+      isActive: location.pathname === "/store-colors",
     },
     {
       icon: Percent,
