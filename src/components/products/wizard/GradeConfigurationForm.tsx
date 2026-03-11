@@ -68,8 +68,58 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "P", "M", "G", "GG"
   ];
 
-  // Array de cores disponíveis limitado ao que o lojista cadastrou
-  const availableColors = storeColors.map(c => c.name).filter((v, i, a) => a.indexOf(v) === i);
+  const commonColors = [
+    "Preto", "Branco", "Azul", "Vermelho", "Verde",
+    "Amarelo", "Rosa", "Roxo", "Marrom", "Cinza"
+  ];
+
+  const gradeTemplates = [
+    {
+      name: "Grade Baixa",
+      sizes: ["35", "36", "37", "38", "39"],
+      distribution: [1, 2, 2, 2, 1],
+    },
+    {
+      name: "Grade Média",
+      sizes: ["34", "35", "36", "37", "38", "39", "40"],
+      distribution: [1, 2, 2, 3, 2, 2, 1],
+    },
+    {
+      name: "Grade Alta",
+      sizes: ["36", "37", "38", "39", "40", "41", "42"],
+      distribution: [1, 2, 2, 3, 2, 2, 1],
+    },
+    {
+      name: "Grade Masculina",
+      sizes: ["38", "39", "40", "41", "42", "43", "44"],
+      distribution: [1, 2, 3, 3, 2, 1, 1],
+    },
+    {
+      name: "Grade Infantil Pequena",
+      sizes: ["17/18", "19/20", "21/22", "23/24"],
+      distribution: [3, 3, 3, 3],
+    },
+    {
+      name: "Grade Infantil Média",
+      sizes: ["21/22", "23/24", "25/26", "26/27"],
+      distribution: [3, 3, 3, 3],
+    },
+    {
+      name: "Grade Infantil Grande",
+      sizes: ["26/27", "28/29", "30/31", "32/33"],
+      distribution: [3, 3, 3, 3],
+    },
+    {
+      name: "Grade Letras",
+      sizes: ["P", "M", "G", "GG"],
+      distribution: [2, 3, 3, 2],
+    }
+  ];
+
+  // Combina cores da loja com cores padrão como fallback visual
+  const availableColors = storeColors.length > 0
+    ? [...storeColors.map(c => c.name), ...commonColors].filter((v, i, a) => a.indexOf(v) === i)
+    : commonColors;
 
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
@@ -353,7 +403,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               uma grade separada.
             </p>
 
-            {availableColors.length > 0 ? (
+            {availableColors.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {availableColors.map((color) => {
                   const storeColorOpt = storeColors.find(c => c.name.toLowerCase() === color.toLowerCase());
@@ -378,13 +428,6 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   );
                 })}
               </div>
-            ) : (
-              <Alert className="mb-4">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Você ainda não cadastrou nenhuma cor na sua loja. Adicione cores personalizadas no menu <strong>Configurações &gt; Cores do Catálogo</strong> para elas aparecerem aqui.
-                </AlertDescription>
-              </Alert>
             )}
 
             <div className="flex gap-2">
@@ -428,9 +471,9 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               quantidades
             </p>
 
-            {storeGrades && storeGrades.length > 0 ? (
+            {storeGrades && storeGrades.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Suas Grades Personalizadas</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase mb-2">⭐️ Suas Grades Personalizadas</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   {storeGrades.map((template) => (
                     <Button
@@ -442,21 +485,33 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                     >
                       <Package className="w-4 h-4 mr-2" />
                       <span className="truncate">{template.name}</span>
-                      <Badge variant="secondary" className="ml-auto bg-white">
+                      <Badge variant="secondary" className="ml-auto bg-white text-blue-700">
                         {template.sizes.length}
                       </Badge>
                     </Button>
                   ))}
                 </div>
               </div>
-            ) : (
-              <Alert className="mb-4">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Você ainda não possui Grades Personalizadas. Vá ao menu <strong>Configurações &gt; Grades de Tamanho</strong> no admin para criar opções de preenchimento rápido.
-                </AlertDescription>
-              </Alert>
             )}
+
+            <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Templates Padrão</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+              {gradeTemplates.map((template) => (
+                <Button
+                  key={template.name}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyGradeTemplate(template)}
+                  className="justify-start text-gray-600"
+                >
+                  <Package className="w-4 h-4 mr-2 opacity-50" />
+                  <span className="truncate">{template.name}</span>
+                  <Badge variant="secondary" className="ml-auto opacity-75">
+                    {template.sizes.length}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
 
             <div className="flex gap-2">
               <Button

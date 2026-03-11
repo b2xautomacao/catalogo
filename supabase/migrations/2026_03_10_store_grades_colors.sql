@@ -19,7 +19,7 @@ CREATE POLICY "Users can view colors of their store"
   FOR SELECT
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -28,8 +28,7 @@ CREATE POLICY "Users can insert colors in their store"
   FOR INSERT
   WITH CHECK (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -38,8 +37,7 @@ CREATE POLICY "Users can update colors in their store"
   FOR UPDATE
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -48,8 +46,7 @@ CREATE POLICY "Users can delete colors in their store"
   FOR DELETE
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -76,7 +73,7 @@ CREATE POLICY "Users can view grades of their store"
   FOR SELECT
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -85,8 +82,7 @@ CREATE POLICY "Users can insert grades in their store"
   FOR INSERT
   WITH CHECK (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -95,8 +91,7 @@ CREATE POLICY "Users can update grades in their store"
   FOR UPDATE
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
 
@@ -105,7 +100,6 @@ CREATE POLICY "Users can delete grades in their store"
   FOR DELETE
   USING (
     store_id IN (
-      SELECT store_id FROM user_roles WHERE user_id = auth.uid()
-      AND role IN ('owner', 'admin', 'manager')
+      SELECT id FROM public.stores WHERE owner_id = auth.uid()
     )
   );
