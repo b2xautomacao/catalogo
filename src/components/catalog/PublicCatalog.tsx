@@ -18,6 +18,7 @@ import TemplateWrapper from "./TemplateWrapper";
 import ProductGrid from "./ProductGrid";
 import FilterSidebar, { FilterState } from "./FilterSidebar";
 import EnhancedCheckout from "./checkout/EnhancedCheckout";
+import CheckoutModalWrapper from "./checkout/CheckoutModalWrapper";
 import DynamicMetaTags from "@/components/seo/DynamicMetaTags";
 import { CurrentStoreIdProvider } from "@/contexts/CurrentStoreIdContext";
 import { useCatalogStoreId } from "@/contexts/CatalogStoreIdContext";
@@ -140,15 +141,15 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
       catalogType,
       variation: variation
         ? {
-            id: variation.id,
-            color: variation.color,
-            size: variation.size,
-            is_grade: variation.is_grade,
-            grade_name: variation.grade_name,
-            grade_sizes: variation.grade_sizes,
-            grade_pairs: variation.grade_pairs,
-            variation_type: variation.variation_type,
-          }
+          id: variation.id,
+          color: variation.color,
+          size: variation.size,
+          is_grade: variation.is_grade,
+          grade_name: variation.grade_name,
+          grade_sizes: variation.grade_sizes,
+          grade_pairs: variation.grade_pairs,
+          variation_type: variation.variation_type,
+        }
         : null,
     });
 
@@ -159,12 +160,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
         quantity,
         variation: variation
           ? {
-              id: variation.id,
-              is_grade: variation.is_grade,
-              grade_name: variation.grade_name,
-              grade_pairs: variation.grade_pairs,
-              grade_sizes: variation.grade_sizes,
-            }
+            id: variation.id,
+            is_grade: variation.is_grade,
+            grade_name: variation.grade_name,
+            grade_pairs: variation.grade_pairs,
+            grade_sizes: variation.grade_sizes,
+          }
           : null,
       });
 
@@ -330,137 +331,138 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     <CurrentStoreIdProvider storeId={store?.id}>
       {/* Meta tags dinâmicas para SEO e compartilhamento */}
       <DynamicMetaTags storeIdentifier={storeIdentifier} catalogType={catalogType} />
-      
+
       <div className="min-h-screen bg-gray-50">
         <TemplateWrapper
-        templateName={settings?.template_name || "modern"}
-        store={store}
-        catalogType={catalogType}
-        cartItemsCount={totalItems}
-        wishlistCount={wishlist.length}
-        whatsappNumber={effectivePhone}
-        sellerName={seller?.name}
-        storeSettings={settings}
-        onSearch={handleSearchChange}
-        onToggleFilters={() => setShowFilters(true)}
-        onCartClick={() => console.log("Cart clicked")}
-        products={filteredProducts}
-        onProductSelect={handleProductClick}
-      >
-        <div className="flex gap-6">
-          {/* Filtros Desktop */}
-          {!isMobile && (showCategoryFilter || showPriceFilter) && (
-            <div className="w-80 flex-shrink-0">
-              <FilterSidebar
-                onFilter={handleFilterChange}
-                isOpen={true}
-                onClose={() => {}}
-                products={products}
-                isMobile={false}
-              />
-            </div>
-          )}
-
-          {/* Grid de Produtos */}
-          <div className="flex-1">
-            {/* Botão de Filtros Mobile */}
-            {isMobile && (showCategoryFilter || showPriceFilter) && (
-              <div className="mb-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(true)}
-                  className="w-full"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
+          templateName={settings?.template_name || "modern"}
+          store={store}
+          catalogType={catalogType}
+          cartItemsCount={totalItems}
+          wishlistCount={wishlist.length}
+          whatsappNumber={effectivePhone}
+          sellerName={seller?.name}
+          storeSettings={settings}
+          onSearch={handleSearchChange}
+          onToggleFilters={() => setShowFilters(true)}
+          onCartClick={() => console.log("Cart clicked")}
+          products={filteredProducts}
+          onProductSelect={handleProductClick}
+        >
+          <div className="flex gap-6">
+            {/* Filtros Desktop */}
+            {!isMobile && (showCategoryFilter || showPriceFilter) && (
+              <div className="w-80 flex-shrink-0">
+                <FilterSidebar
+                  onFilter={handleFilterChange}
+                  isOpen={true}
+                  onClose={() => { }}
+                  products={products}
+                  isMobile={false}
+                />
               </div>
             )}
 
-            <ProductGrid
-              products={filteredProducts}
-              catalogType={catalogType}
-              loading={loading}
-              onAddToWishlist={handleAddToWishlist}
-              onQuickView={handleProductClick}
-              wishlist={wishlist}
-              storeIdentifier={storeIdentifier}
-              templateName={settings?.template_name || "modern"}
-              showPrices={showPrices}
-              showStock={showStock}
-              onAddToCart={handleAddToCart}
-            />
+            {/* Grid de Produtos */}
+            <div className="flex-1">
+              {/* Botão de Filtros Mobile */}
+              {isMobile && (showCategoryFilter || showPriceFilter) && (
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(true)}
+                    className="w-full"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filtros
+                  </Button>
+                </div>
+              )}
+
+              <ProductGrid
+                products={filteredProducts}
+                catalogType={catalogType}
+                loading={loading}
+                onAddToWishlist={handleAddToWishlist}
+                onQuickView={handleProductClick}
+                wishlist={wishlist}
+                storeIdentifier={storeIdentifier}
+                templateName={settings?.template_name || "modern"}
+                showPrices={showPrices}
+                showStock={showStock}
+                onAddToCart={handleAddToCart}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Filtros Mobile */}
-        {isMobile && (showCategoryFilter || showPriceFilter) && (
-          <FilterSidebar
-            onFilter={handleFilterChange}
-            isOpen={showFilters}
-            onClose={() => setShowFilters(false)}
-            products={products}
-            isMobile={true}
-          />
+          {/* Filtros Mobile */}
+          {isMobile && (showCategoryFilter || showPriceFilter) && (
+            <FilterSidebar
+              onFilter={handleFilterChange}
+              isOpen={showFilters}
+              onClose={() => setShowFilters(false)}
+              products={products}
+              isMobile={true}
+            />
+          )}
+        </TemplateWrapper>
+
+        {/* Modal de Detalhes do Produto */}
+        {selectedProduct && (
+          useOptimizedComponents ? (
+            <ProductDetailsModalOptimized
+              product={selectedProduct}
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              onAddToCart={handleAddToCart}
+              catalogType={catalogType}
+              showStock={showStock}
+              showPrices={showPrices}
+              storeName={store.name}
+              storePhone={effectivePhone}
+              storeId={store?.id}
+              relatedProducts={products.filter(
+                (p) =>
+                  p.id !== selectedProduct.id &&
+                  p.category === selectedProduct.category
+              )}
+              showConversionElements={true}
+              cartTotal={cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)}
+            />
+          ) : (
+            <ProductDetailsModal
+              product={selectedProduct}
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              onAddToCart={handleAddToCart}
+              catalogType={catalogType}
+              showStock={showStock}
+              showPrices={showPrices}
+              storeName={store.name}
+              storePhone={store.phone}
+              relatedProducts={products.filter(
+                (p) =>
+                  p.id !== selectedProduct.id &&
+                  p.category === selectedProduct.category
+              )}
+            />
+          )
         )}
-      </TemplateWrapper>
 
-      {/* Modal de Detalhes do Produto */}
-      {selectedProduct && (
-        useOptimizedComponents ? (
-          <ProductDetailsModalOptimized
-            product={selectedProduct}
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onAddToCart={handleAddToCart}
-            catalogType={catalogType}
-            showStock={showStock}
-            showPrices={showPrices}
-            storeName={store.name}
-            storePhone={effectivePhone}
-            storeId={store?.id}
-            relatedProducts={products.filter(
-              (p) =>
-                p.id !== selectedProduct.id &&
-                p.category === selectedProduct.category
-            )}
-            showConversionElements={true}
-            cartTotal={cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)}
-          />
-        ) : (
-          <ProductDetailsModal
-            product={selectedProduct}
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onAddToCart={handleAddToCart}
-            catalogType={catalogType}
-            showStock={showStock}
-            showPrices={showPrices}
-            storeName={store.name}
-            storePhone={store.phone}
-            relatedProducts={products.filter(
-              (p) =>
-                p.id !== selectedProduct.id &&
-                p.category === selectedProduct.category
-            )}
-          />
-        )
-      )}
+        {/* Carrinho Flutuante */}
+        <FloatingCart onCheckout={handleOpenCheckout} storeId={store?.id} />
 
-      {/* Carrinho Flutuante */}
-      <FloatingCart onCheckout={handleOpenCheckout} storeId={store?.id} />
+        {/* WhatsApp Flutuante */}
+        <FloatingWhatsApp
+          phoneNumber={effectivePhone}
+          storeName={store.name}
+          isVisible={!!effectivePhone}
+        />
 
-      {/* WhatsApp Flutuante */}
-      <FloatingWhatsApp
-        phoneNumber={effectivePhone}
-        storeName={store.name}
-        isVisible={!!effectivePhone}
-      />
-
-      {/* Checkout Modal */}
-      {showCheckout && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto">
+        {/* Checkout Modal */}
+        {showCheckout && (
+          <CheckoutModalWrapper
+            onClose={() => setShowCheckout(false)}
+          >
             <EnhancedCheckout
               storeId={store.id}
               storeName={store.name}
@@ -468,9 +470,8 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
               sellerName={seller?.name}
               onClose={() => setShowCheckout(false)}
             />
-          </div>
-        </div>
-      )}
+          </CheckoutModalWrapper>
+        )}
       </div>
     </CurrentStoreIdProvider>
   );

@@ -24,6 +24,7 @@ import ImprovedGradeSelector from "@/components/catalog/ImprovedGradeSelector";
 import type { CustomGradeSelection } from "@/types/flexible-grade";
 import FloatingCart from "@/components/catalog/FloatingCart";
 import EnhancedCheckout from "@/components/catalog/checkout/EnhancedCheckout";
+import CheckoutModalWrapper from "@/components/catalog/checkout/CheckoutModalWrapper";
 import VariationPicker from "@/components/catalog/VariationPicker";
 // 🚀 Componentes de Conversão - FASE 1
 import UrgencyBadges from "@/components/catalog/conversion/UrgencyBadges";
@@ -866,19 +867,22 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
       {/* Checkout Modal */}
       {showCheckout && product && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-y-auto">
-            <EnhancedCheckout
-              storeId={product.store_id}
-              storeName={storeName}
-              storePhone={storePhone}
-              onClose={() => {
-                console.log("❌ Fechando checkout");
-                setShowCheckout(false);
-              }}
-            />
-          </div>
-        </div>
+        <CheckoutModalWrapper
+          onClose={() => {
+            console.log("❌ Fechando checkout");
+            setShowCheckout(false);
+          }}
+        >
+          <EnhancedCheckout
+            storeId={product.store_id}
+            storeName={storeName}
+            storePhone={storePhone}
+            onClose={() => {
+              console.log("❌ Fechando checkout");
+              setShowCheckout(false);
+            }}
+          />
+        </CheckoutModalWrapper>
       )}
     </div>
   );
