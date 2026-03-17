@@ -24,7 +24,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
   trigger,
 }) => {
   const { toast } = useToast();
-  const { colors: storeColors, addColor } = useStoreColors(storeId);
+  const { colors: storeColors, createColor } = useStoreColors(storeId);
   const [name, setName] = useState("");
   const [hex, setHex] = useState("#000000");
   const [saveGlobal, setSaveGlobal] = useState(false);
@@ -54,7 +54,7 @@ const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
     try {
       let saved = false;
       if (saveGlobal && storeId) {
-        await addColor({
+        await createColor({
           name: name.trim(),
           hex_color: hex,
           store_id: storeId,

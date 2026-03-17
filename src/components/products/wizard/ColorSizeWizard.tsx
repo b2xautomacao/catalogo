@@ -19,6 +19,9 @@ import {
   Ruler,
   Grid3X3,
 } from "lucide-react";
+import { ProductVariation } from "@/types/product";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ColorPickerPopover from "./ColorPickerPopover";
 
 interface ColorSizeWizardProps {
