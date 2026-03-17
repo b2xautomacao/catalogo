@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductVariation } from "@/types/variation";
+import { resolveColorHex } from "@/lib/colors";
 import { Package, Palette } from "lucide-react";
 import GradeVariationCard from "./GradeVariationCard";
 import VariationInfoPanel from "./VariationInfoPanel";
@@ -381,7 +382,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                       {displayColor?.hex_color && (
                         <div 
                           className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                          style={{ backgroundColor: displayColor.hex_color }}
+                          style={{ backgroundColor: resolveColorHex(displayColor.color || (color as string), displayColor.hex_color) }}
                         />
                       )}
                       <span className={`font-semibold ${isSelected ? "text-white" : "text-gray-900"}`}>

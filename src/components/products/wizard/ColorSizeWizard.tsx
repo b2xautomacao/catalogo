@@ -23,6 +23,7 @@ import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ColorPickerPopover from "./ColorPickerPopover";
+import { resolveColorHex } from "@/lib/colors";
 
 interface ColorSizeWizardProps {
   variations: ProductVariation[];
@@ -283,7 +284,7 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
           id: `color-size-${Date.now()}-${index}`,
           product_id: "",
           color: config.color,
-          hex_color: colorConfig?.hex || "#CCCCCC",
+          hex_color: resolveColorHex(config.color, colorConfig?.hex),
           size: config.size,
           sku: `${config.color.toLowerCase()}-${config.size.toLowerCase()}`.replace(
             /\s+/g,
@@ -372,9 +373,9 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
                       <div
                         className="w-6 h-6 rounded-full border mx-auto mb-2"
                         style={{
-                          backgroundColor: color.hex,
+                          backgroundColor: resolveColorHex(color.name, color.hex),
                           borderColor:
-                            color.hex === "#FFFFFF" ? "#e5e7eb" : color.hex,
+                            color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
                         }}
                       />
                       <p className="text-xs text-center font-medium">

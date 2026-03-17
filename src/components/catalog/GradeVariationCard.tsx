@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ProductVariation } from "@/types/variation";
 import { formatCurrency } from "@/lib/utils";
 import { Package, AlertTriangle, Sparkles } from "lucide-react";
+import { resolveColorHex } from "@/lib/colors";
 import { hasFlexibleConfig, allowsMultiplePurchaseOptions } from "@/types/flexible-grade";
 
 export interface GradeVariationCardProps {
@@ -82,12 +83,10 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
 
               {variation.color && (
                 <Badge variant="outline" className="text-sm font-medium border-gray-300 bg-white">
-                  {variation.hex_color && (
-                    <div
-                      className="w-4 h-4 rounded-full mr-1.5 border-2 border-gray-300"
-                      style={{ backgroundColor: variation.hex_color }}
-                    />
-                  )}
+                  <div
+                    className="w-4 h-4 rounded-full mr-1.5 border-2 border-gray-300"
+                    style={{ backgroundColor: resolveColorHex(variation.color || undefined, variation.hex_color) }}
+                  />
                   <span className="text-gray-800">{variation.color}</span>
                 </Badge>
               )}

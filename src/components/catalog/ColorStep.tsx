@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { ProductVariation } from '@/types/product';
+import { resolveColorHex } from '@/lib/colors';
 
 interface ColorGroup {
   color: string;
@@ -55,7 +56,7 @@ const ColorStep: React.FC<ColorStepProps> = ({
               <div className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
-                  style={{ backgroundColor: colorGroup.variations[0]?.hex_color || '#666' }}
+                  style={{ backgroundColor: resolveColorHex(colorGroup.color, colorGroup.variations[0]?.hex_color) }}
                 />
                 <div>
                   <div className="font-medium">{colorGroup.color}</div>

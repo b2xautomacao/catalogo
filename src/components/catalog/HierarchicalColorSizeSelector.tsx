@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Product, ProductVariation } from "@/types/product";
+import { resolveColorHex } from "@/lib/colors";
 import { CatalogType } from "@/hooks/useCatalog";
 import ColorStep from "./ColorStep";
 import SizeStep from "./SizeStep";
@@ -413,7 +414,7 @@ const HierarchicalColorSizeSelector: React.FC<
                 <div
                   className="w-6 h-6 rounded-full border-2 border-background shadow-sm"
                   style={{
-                    backgroundColor: selectedVariation.hex_color || "#666",
+                    backgroundColor: resolveColorHex(selectedColor || undefined, selectedVariation.hex_color),
                   }}
                 />
                 <div>
@@ -553,7 +554,7 @@ const HierarchicalColorSizeSelector: React.FC<
                     <div
                       className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
                       style={{
-                        backgroundColor: item.variation.hex_color || "#666",
+                        backgroundColor: resolveColorHex(item.variation.color || undefined, item.variation.hex_color),
                       }}
                     />
                     <div>

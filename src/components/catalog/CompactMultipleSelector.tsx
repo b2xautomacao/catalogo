@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProductVariation } from "@/types/variation";
 import { Product } from "@/types/product";
 import { ShoppingCart, Plus, Minus, Package } from "lucide-react";
+import { resolveColorHex } from "@/lib/colors";
 
 interface VariationSelection {
   variation: ProductVariation;
@@ -91,10 +92,10 @@ const CompactMultipleSelector: React.FC<CompactMultipleSelectorProps> = ({
                 {/* Color Header */}
                 <div className="flex items-center gap-2 pb-2 border-b">
                   <div className="flex items-center gap-2">
-                    {color !== "Sem cor" && colorVariations[0]?.hex_color && (
+                    {color !== "Sem cor" && (
                       <div 
                         className="w-4 h-4 rounded-full border border-border shadow-sm"
-                        style={{ backgroundColor: colorVariations[0].hex_color }}
+                        style={{ backgroundColor: resolveColorHex(color, colorVariations[0]?.hex_color) }}
                       />
                     )}
                     <h4 className="font-medium text-sm">{color}</h4>

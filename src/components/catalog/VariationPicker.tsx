@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ProductVariation } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
+import { resolveColorHex, isLightColor } from "@/lib/colors";
 
 interface VariationPickerProps {
   variations: ProductVariation[];
@@ -29,64 +30,6 @@ interface VariationPickerProps {
   onColorChange?: (color: string | null, imageUrl?: string) => void;
 }
 
-/** Mapa de cores por nome aproximado (fallback quando não há hex_color definido) */
-const COLOR_NAME_MAP: Record<string, string> = {
-  preto: "#1a1a1a",
-  branco: "#f5f5f5",
-  vermelho: "#EF4444",
-  azul: "#3B82F6",
-  "azul marinho": "#1e3a8a",
-  navy: "#1e3a8a",
-  verde: "#22C55E",
-  amarelo: "#EAB308",
-  rosa: "#EC4899",
-  "rosa bebê": "#fbcfe8",
-  roxo: "#A855F7",
-  laranja: "#F97316",
-  cinza: "#6B7280",
-  "cinza claro": "#d1d5db",
-  marrom: "#92400E",
-  bege: "#D4B896",
-  caramelo: "#c48c3e",
-  dourado: "#FFD700",
-  prata: "#C0C0C0",
-  nude: "#E8C8A0",
-  vinho: "#7f1d1d",
-  bordô: "#7f1d1d",
-  turquesa: "#06b6d4",
-  lilás: "#c084fc",
-  creme: "#fef9c3",
-  off: "#f5f0e8",
-};
-
-/**
- * Retorna o hex para uma cor, priorizando hex_color definido
- * pelo lojista. Se não houver, usa o mapa de aproximação por nome.
- */
-function resolveColorHex(colorName?: string, hexOverride?: string | null): string {
-  if (hexOverride && hexOverride !== "#9CA3AF") return hexOverride;
-  if (!colorName) return "#9CA3AF";
-  const lower = colorName.toLowerCase();
-  for (const [key, hex] of Object.entries(COLOR_NAME_MAP)) {
-    if (lower.includes(key)) return hex;
-  }
-  return "#9CA3AF";
-}
-
-/** @deprecated usar resolveColorHex */
-function colorToHex(colorName?: string): string {
-  return resolveColorHex(colorName);
-}
-
-/** Determina se a cor de texto deve ser escura ou clara */
-function isLightColor(hex: string): boolean {
-  const c = hex.replace("#", "");
-  const r = parseInt(c.substring(0, 2), 16);
-  const g = parseInt(c.substring(2, 4), 16);
-  const b = parseInt(c.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6;
-}
 
 const VariationPicker: React.FC<VariationPickerProps> = ({
   variations,

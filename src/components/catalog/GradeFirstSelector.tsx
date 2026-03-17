@@ -36,7 +36,9 @@ import {
   hasFlexibleConfig,
 } from "@/types/flexible-grade";
 import { formatCurrency } from "@/lib/utils";
+import { resolveColorHex } from "@/lib/colors";
 import CustomGradeBuilder from "./CustomGradeBuilder";
+
 
 interface GradeFirstSelectorProps {
   /** Todas as variações de grade do produto */
@@ -404,12 +406,10 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
                         {isSelected && (
                           <CheckCircle className="w-5 h-5 text-primary" />
                         )}
-                        {variation?.hex_color && (
-                          <div 
-                            className="w-5 h-5 rounded-full border border-gray-300 shadow-sm"
-                            style={{ backgroundColor: variation.hex_color }}
-                          />
-                        )}
+                        <div 
+                          className="w-5 h-5 rounded-full border border-gray-300 shadow-sm"
+                          style={{ backgroundColor: resolveColorHex(color, variation?.hex_color) }}
+                        />
                         <h5 className="font-semibold text-base">{color}</h5>
                       </div>
                       {isAdded && (

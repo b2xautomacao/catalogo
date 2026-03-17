@@ -20,6 +20,7 @@ import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ColorPickerPopover from "./ColorPickerPopover";
+import { resolveColorHex } from "@/lib/colors";
 
 interface ColorOnlyWizardProps {
   variations: ProductVariation[];
@@ -153,7 +154,7 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
         id: `color-${Date.now()}-${index}`,
         product_id: "",
         color: color.name,
-        hex_color: color.hex || "#CCCCCC",
+        hex_color: resolveColorHex(color.name, color.hex),
         sku: `${color.name.toLowerCase().replace(/\s+/g, "-")}`,
         stock: color.stock,
         price_adjustment: color.priceAdjustment,
@@ -236,9 +237,9 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
                       <div
                         className="w-6 h-6 rounded-full border mx-auto mb-2"
                         style={{
-                          backgroundColor: color.hex,
+                          backgroundColor: resolveColorHex(color.name, color.hex),
                           borderColor:
-                            color.hex === "#FFFFFF" ? "#e5e7eb" : color.hex,
+                            color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
                         }}
                       />
                       <p className="text-xs text-center font-medium">

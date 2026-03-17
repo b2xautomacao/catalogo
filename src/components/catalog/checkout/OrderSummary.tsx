@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CartItem } from '@/hooks/useCart';
 import CartItemThumbnail from './CartItemThumbnail';
 import { Badge } from '@/components/ui/badge';
+import { resolveColorHex } from '@/lib/colors';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -80,7 +81,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 text-[10px] font-medium border border-gray-200">
                           <span
                             className="w-2.5 h-2.5 rounded-full inline-block border border-gray-300 flex-shrink-0"
-                            style={{ backgroundColor: (item.variation as any).hex_color || undefined }}
+                            style={{ backgroundColor: resolveColorHex(item.variation.color || undefined, (item.variation as any).hex_color) }}
                           />
                           {item.variation.color}
                         </span>

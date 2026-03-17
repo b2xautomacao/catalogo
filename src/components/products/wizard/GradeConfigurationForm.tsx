@@ -23,10 +23,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateUniqueProductSKU } from "@/utils/skuGenerator";
 import FlexibleGradeConfigForm from "./FlexibleGradeConfigForm";
+import ColorPickerPopover from "./ColorPickerPopover";
 import type { FlexibleGradeConfig } from "@/types/flexible-grade";
 import { DEFAULT_FLEXIBLE_GRADE_CONFIG } from "@/types/flexible-grade";
 import { useStoreGrades } from "@/hooks/useStoreGrades";
 import { useStoreColors } from "@/hooks/useStoreColors";
+import { resolveColorHex } from "@/lib/colors";
 
 interface GradeConfigurationFormProps {
   variations: ProductVariation[];
@@ -278,6 +280,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
             .substr(2, 9)}`,
           product_id: productId || "",
           color,
+          hex_color: resolveColorHex(color, storeColors.find(c => c.name.toLowerCase() === color.toLowerCase())?.hex_color),
           size: null,
           stock: totalPairsPerColor,
           price_adjustment: 0,
@@ -417,12 +420,10 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                       onClick={() => toggleColor(color)}
                       className="text-xs flex items-center gap-1.5"
                     >
-                      {storeColorOpt && (
-                        <span
-                          className="w-3 h-3 rounded-full border border-gray-300 shadow-sm block"
-                          style={{ backgroundColor: storeColorOpt.hex_color }}
-                        />
-                      )}
+                      <span
+                        className="w-3 h-3 rounded-full border border-gray-300 shadow-sm block"
+                        style={{ backgroundColor: resolveColorHex(color, storeColorOpt?.hex_color) }}
+                      />
                       {color}
                     </Button>
                   );
@@ -430,16 +431,28 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Input
-                placeholder="Cor personalizada"
-                value={customColor}
-                onChange={(e) => setCustomColor(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && addCustomColor()}
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block text-gray-700">
+                Personalizar Cores
+              </Label>
+              <ColorPickerPopover 
+                storeId={storeId}
+                onColorSelect={(colorObj) => {
+                  if (!selectedColors.includes(colorObj.name)) {
+                    setSelectedColors(prev => [...prev, colorObj.name]);
+                  }
+                  toast({
+                    title: colorObj.saved ? "Cor salva e selecionada!" : "Cor selecionada!",
+                    description: `A cor "${colorObj.name}" foi adicionada.`,
+                  });
+                }}
+                trigger={
+                  <Button variant="outline" className="w-full flex items-center gap-2 border-dashed border-2 py-6 text-gray-500 hover:text-gray-700 hover:border-gray-400">
+                    <Plus className="w-4 h-4" />
+                    Adicionar Cor Personalizada ou da Loja
+                  </Button>
+                }
               />
-              <Button onClick={addCustomColor} size="sm">
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
 
             {selectedColors.length > 0 && (
