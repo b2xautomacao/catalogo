@@ -36,7 +36,17 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   storeIdentifier,
 }) => {
   const [quantity] = useState(1);
-  const { variations } = useProductVariations(product.id);
+  
+  // Passar as variações que já temos no objeto product para o hook
+  // Isso evita o flicker pois o hook usará esses dados imediatamente
+  const { variations: hookVariations } = useProductVariations(product.id, product.variations);
+  
+  // Priorizar variações do hook, mas cair para product.variations se necessário
+  const variations = useMemo(() => {
+    if (hookVariations.length > 0) return hookVariations;
+    return product.variations || [];
+  }, [hookVariations, product.variations]);
+
   const { tiers } = useProductPriceTiers(product.id, {
     wholesale_price: product.wholesale_price,
     min_wholesale_qty: product.min_wholesale_qty,
@@ -63,10 +73,14 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 
   // Informações sobre variações
   const variationInfo = useMemo(() => {
-    if (variations.length === 0) return null;
+    // Se o produto explicitamente diz que tem variações via flag has_variations ou array
+    const hasVariationsArray = variations.length > 0;
+    const hasVariationsFlag = (product as any).has_variations === true;
+
+    if (!hasVariationsArray && !hasVariationsFlag) return null;
 
     const colors = [
-      ...new Set(variations.filter((v) => v.color).map((v) => v.color)),
+      ...new Set(variations.filter((v) => v.color || v.hex_color).map((v) => v.color || v.hex_color)),
     ];
     const sizes = [
       ...new Set(variations.filter((v) => v.size).map((v) => v.size)),
@@ -84,7 +98,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
       gradeCount: grades.length,
       totalVariations: variations.length,
     };
-  }, [variations]);
+  }, [variations, product]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();

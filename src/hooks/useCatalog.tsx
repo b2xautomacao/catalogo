@@ -153,7 +153,8 @@ export const useCatalog = (storeSlug?: string) => {
             .select("*")
             .eq("store_id", storeId)
             .eq("is_active", true)
-            .order("name", { ascending: true }),
+            .order("name", { ascending: true })
+            .limit(10000), // Aumentar limite para lojas grandes
           
           // 🚀 NOVA: Buscar todas as imagens dos produtos de uma vez
           supabase
@@ -161,6 +162,7 @@ export const useCatalog = (storeSlug?: string) => {
             .select("*")
             .order("is_primary", { ascending: false })
             .order("image_order", { ascending: true })
+            .limit(10000) // Aumentar limite para imagens
         ]);
 
         const { data: productsData, error: productsError } = productsResult;
@@ -187,7 +189,8 @@ export const useCatalog = (storeSlug?: string) => {
             .select("*")
             .in("product_id", productIds)
             .eq("is_active", true)
-            .order("display_order", { ascending: true });
+            .order("display_order", { ascending: true })
+            .limit(10000); // Aumentar limite para variações (crucial para evitar produtos parecerem simples)
 
           if (variationsError) {
             console.error("❌ Erro ao buscar variações:", variationsError);

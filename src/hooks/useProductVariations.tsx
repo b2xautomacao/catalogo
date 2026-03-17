@@ -3,13 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/product";
 
-export const useProductVariations = (productId?: string) => {
-  const [variations, setVariations] = useState<ProductVariation[]>([]);
+export const useProductVariations = (productId?: string, initialData?: ProductVariation[]) => {
+  const [variations, setVariations] = useState<ProductVariation[]>(initialData || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchVariations = async (id: string) => {
+    // Se já temos dados iniciais e o ID coincide, não buscamos novamente
+    if (initialData && initialData.length > 0 && initialData.every(v => v.product_id === id)) {
+      console.log("🎨 VARIAÇÕES - Usando dados iniciais para:", id);
+      setVariations(initialData);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -310,6 +317,7 @@ export const useProductVariations = (productId?: string) => {
         title: "Erro ao salvar variações",
         description: errorMessage,
         variant: "destructive",
+        duration: 3000,
       });
 
       return { success: false, error: errorMessage };
@@ -341,6 +349,15 @@ export const useProductVariations = (productId?: string) => {
   };
 
   useEffect(() => {
+    // Se temos initialData e o ID coincide, usamos o que temos
+    if (initialData && initialData.length > 0 && initialData.every(v => v.product_id === productId)) {
+      console.log("🎨 VARIAÇÕES - useEffect: Usando dados iniciais para:", productId);
+      setVariations(initialData);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     if (productId && productId.trim() !== "") {
       fetchVariations(productId);
     } else {
@@ -348,7 +365,7 @@ export const useProductVariations = (productId?: string) => {
       setLoading(false);
       setError(null);
     }
-  }, [productId]);
+  }, [productId, initialData]); // Incluir initialData como dependência
 
   return {
     variations,
