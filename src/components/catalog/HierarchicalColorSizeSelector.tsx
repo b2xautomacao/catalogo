@@ -161,7 +161,7 @@ const HierarchicalColorSizeSelector: React.FC<
   const colorGroups = useMemo<ColorGroup[]>(() => {
     const groups = variations.reduce<Record<string, ColorGroup>>(
       (acc, variation) => {
-        const color = variation.color || "Sem cor";
+        const color = variation.color || variation.hex_color || "Sem cor";
 
         if (!acc[color]) {
           acc[color] = {

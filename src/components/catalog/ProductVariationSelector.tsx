@@ -112,8 +112,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   const colors = [
     ...new Set(
       variations
-        .filter((v) => v.color || v.hex_color)
-        .map((v) => v.color || v.hex_color || "Sem Cor") // Prioriza color, depois hex_color, fallback para "Sem Cor"
+        .map((v) => v.color || v.hex_color || "Sem Cor")
     ),
   ];
   const sizes = [
@@ -355,7 +354,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                 selectedVariation?.size || undefined
               );
               const isAvailable = stock > 0;
-              const displayColor = variations.find(v => v.color === color || v.hex_color === color);
+              const displayColor = variations.find(v => (v.color || v.hex_color || "Sem Cor") === color);
 
               return (
                 <Button

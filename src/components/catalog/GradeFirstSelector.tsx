@@ -83,7 +83,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
   const colorGroups = useMemo(() => {
     const groups = new Map<string, ProductVariation[]>();
     variations.forEach((v) => {
-      const color = v.grade_color || v.color || v.hex_color || 'Sem Cor';
+      const color = v.color || v.hex_color || v.grade_color || 'Sem Cor';
       if (!groups.has(color)) {
         groups.set(color, []);
       }

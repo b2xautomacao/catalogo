@@ -108,20 +108,28 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
     [variations]
   );
 
-  const hasColors = activeVariations.some((v) => v.color);
+  const hasColors = activeVariations.some((v) => v.color || v.hex_color);
   const hasSizes = activeVariations.some((v) => v.size);
 
   // Cores únicas — preserva hex_color personalizado por cor
   const uniqueColors = useMemo(() => {
     const seen = new Set<string>();
-    return activeVariations
-      .filter((v) => v.color)
-      .filter((v) => {
-        if (seen.has(v.color!)) return false;
-        seen.add(v.color!);
-        return true;
-      })
-      .map((v) => ({ name: v.color!, hex: (v as any).hex_color as string | undefined }));
+    const colors: { name: string; hex?: string }[] = [];
+    
+    activeVariations.forEach((v) => {
+      // Prioriza nome da cor, se não houver, usa o hex_color como nome/identificador
+      const colorIdentifier = v.color || (v as any).hex_color || "Sem Cor";
+      
+      if (!seen.has(colorIdentifier)) {
+        seen.add(colorIdentifier);
+        colors.push({ 
+          name: colorIdentifier, 
+          hex: (v as any).hex_color as string | undefined 
+        });
+      }
+    });
+
+    return colors;
   }, [activeVariations]);
 
   // Mapa colorName → hex personalizado (da primeira variação com essa cor)
@@ -136,7 +144,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
   // Tamanhos disponíveis para a cor selecionada
   const availableSizes = useMemo(() => {
     const filtered = selectedColor
-      ? activeVariations.filter((v) => v.color === selectedColor)
+      ? activeVariations.filter((v) => (v.color || v.hex_color || "Sem Cor") === selectedColor)
       : activeVariations;
     const seen = new Set<string>();
     return filtered
@@ -155,13 +163,13 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
       if (!selectedColor || !selectedSize) return null;
       return (
         activeVariations.find(
-          (v) => v.color === selectedColor && v.size === selectedSize
+          (v) => (v.color || v.hex_color || "Sem Cor") === selectedColor && v.size === selectedSize
         ) || null
       );
     }
     if (hasColors && !hasSizes) {
       if (!selectedColor) return null;
-      return activeVariations.find((v) => v.color === selectedColor) || null;
+      return activeVariations.find((v) => (v.color || v.hex_color || "Sem Cor") === selectedColor) || null;
     }
     if (!hasColors && hasSizes) {
       if (!selectedSize) return null;
@@ -191,7 +199,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
       setSelectedColor(color);
       setSelectedSize(null); // Reset size when color changes
       // Encontrar a primeira variação dessa cor para obter a imagem
-      const colorVariation = activeVariations.find((v) => v.color === color);
+      const colorVariation = activeVariations.find((v) => (v.color || v.hex_color || "Sem Cor") === color);
       onColorChange?.(color, colorVariation?.image_url || undefined);
     }
     setQuantity(1);
