@@ -83,7 +83,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
   const colorGroups = useMemo(() => {
     const groups = new Map<string, ProductVariation[]>();
     variations.forEach((v) => {
-      const color = v.grade_color || v.color || 'Sem Cor';
+      const color = v.grade_color || v.color || v.hex_color || 'Sem Cor';
       if (!groups.has(color)) {
         groups.set(color, []);
       }
@@ -400,16 +400,24 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      {isSelected && (
-                        <CheckCircle className="w-5 h-5 text-primary" />
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isSelected && (
+                          <CheckCircle className="w-5 h-5 text-primary" />
+                        )}
+                        {variation?.hex_color && (
+                          <div 
+                            className="w-5 h-5 rounded-full border border-gray-300 shadow-sm"
+                            style={{ backgroundColor: variation.hex_color }}
+                          />
+                        )}
+                        <h5 className="font-semibold text-base">{color}</h5>
+                      </div>
                       {isAdded && (
                         <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
                           No carrinho
                         </Badge>
                       )}
                     </div>
-                    <h5 className="font-semibold text-base mb-2">{color}</h5>
                     {showStock && (
                       <p className="text-xs text-muted-foreground">
                         {isAvailable ? `${stock} disponível` : 'Indisponível'}

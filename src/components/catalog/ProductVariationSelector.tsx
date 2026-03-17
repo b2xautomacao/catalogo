@@ -103,15 +103,18 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       is_grade: v.is_grade,
       variation_type: v.variation_type,
       grade_name: v.grade_name,
-      color: v.color,
-      grade_color: v.grade_color,
+      color: v.grade_color || v.color || (v.hex_color ? `Cor ${v.hex_color}` : 'Sem Cor'),
     })),
     hasOnAddToCart: !!onAddToCart,
   });
 
   // Calcular informações sobre tipos de variação
   const colors = [
-    ...new Set(variations.filter((v) => v.color).map((v) => v.color)),
+    ...new Set(
+      variations
+        .filter((v) => v.color || v.hex_color)
+        .map((v) => v.color || v.hex_color || "Sem Cor") // Prioriza color, depois hex_color, fallback para "Sem Cor"
+    ),
   ];
   const sizes = [
     ...new Set(variations.filter((v) => v.size).map((v) => v.size)),
@@ -276,7 +279,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   // Renderizar seletor tradicional para variações normais
   const getVariationsForAttributes = (color?: string, size?: string) => {
     return variations.filter(
-      (v) => (!color || v.color === color) && (!size || v.size === size)
+      (v) => (!color || (v.color === color || v.hex_color === color)) && (!size || v.size === size)
     );
   };
 
@@ -346,12 +349,13 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           </h5>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {colors.map((color) => {
-              const isSelected = selectedVariation?.color === color;
+              const isSelected = selectedVariation?.color === color || selectedVariation?.hex_color === color;
               const stock = getAvailableStock(
                 color as string,
                 selectedVariation?.size || undefined
               );
               const isAvailable = stock > 0;
+              const displayColor = variations.find(v => v.color === color || v.hex_color === color);
 
               return (
                 <Button
@@ -373,10 +377,18 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
                       : "hover:border-primary/70 hover:bg-primary/5 border-gray-300 bg-white text-gray-900"
                   }`}
                 >
-                  <div className="flex flex-col items-center">
-                    <span className={`font-semibold ${isSelected ? "text-white" : "text-gray-900"}`}>
-                      {color}
-                    </span>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      {displayColor?.hex_color && (
+                        <div 
+                          className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                          style={{ backgroundColor: displayColor.hex_color }}
+                        />
+                      )}
+                      <span className={`font-semibold ${isSelected ? "text-white" : "text-gray-900"}`}>
+                        {displayColor?.color || displayColor?.hex_color || color}
+                      </span>
+                    </div>
                     {showStock && (
                       <span className={`text-xs ${isSelected ? "text-primary-foreground/80" : "text-gray-600"}`}>
                         {isAvailable ? "Disponível" : "Indisponível"}

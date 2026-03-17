@@ -19,15 +19,14 @@ import {
   Ruler,
   Grid3X3,
 } from "lucide-react";
-import { ProductVariation } from "@/types/product";
-import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import ColorPickerPopover from "./ColorPickerPopover";
 
 interface ColorSizeWizardProps {
   variations: ProductVariation[];
   onVariationsChange: (variations: ProductVariation[]) => void;
   onBack: () => void;
   productName?: string;
+  storeId?: string;
 }
 
 interface ColorConfig {
@@ -53,6 +52,7 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
   onVariationsChange,
   onBack,
   productName = "Produto",
+  storeId,
 }) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
@@ -178,12 +178,10 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
     );
   };
 
-  const addCustomColor = () => {
-    if (!customColorInput.trim()) return;
-
+  const handleAddCustomColor = (colorObj: { name: string; hex: string; saved?: boolean }) => {
     if (
       colorConfigs.find(
-        (c) => c.name.toLowerCase() === customColorInput.toLowerCase()
+        (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
       )
     ) {
       toast({
@@ -197,16 +195,11 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
     setColorConfigs((prev) => [
       ...prev,
       {
-        name: customColorInput.trim(),
+        name: colorObj.name,
+        hex: colorObj.hex,
         selected: true,
       },
     ]);
-
-    setCustomColorInput("");
-    toast({
-      title: "Cor adicionada!",
-      description: `A cor "${customColorInput}" foi adicionada.`,
-    });
   };
 
   const addCustomSize = () => {
@@ -281,23 +274,27 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
 
   const generateVariations = useCallback(() => {
     const newVariations: ProductVariation[] = variationConfigs.map(
-      (config, index) => ({
-        id: `color-size-${Date.now()}-${index}`,
-        product_id: "",
-        color: config.color,
-        size: config.size,
-        sku: `${config.color.toLowerCase()}-${config.size.toLowerCase()}`.replace(
-          /\s+/g,
-          "-"
-        ),
-        stock: config.stock,
-        price_adjustment: config.priceAdjustment,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        display_order: index + 1,
-        variation_type: "color_size",
-      })
+      (config, index) => {
+        const colorConfig = colorConfigs.find(c => c.name === config.color);
+        return {
+          id: `color-size-${Date.now()}-${index}`,
+          product_id: "",
+          color: config.color,
+          hex_color: colorConfig?.hex || "#CCCCCC",
+          size: config.size,
+          sku: `${config.color.toLowerCase()}-${config.size.toLowerCase()}`.replace(
+            /\s+/g,
+            "-"
+          ),
+          stock: config.stock,
+          price_adjustment: config.priceAdjustment,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          display_order: index + 1,
+          variation_type: "color_size",
+        };
+      }
     );
 
     onVariationsChange(newVariations);
@@ -393,20 +390,19 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
 
             {/* Adicionar cor customizada */}
             <div>
-              <Label className="text-sm font-medium">
-                Adicionar Cor Personalizada
+              <Label className="text-sm font-medium mb-2 block">
+                Personalizar Cores
               </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Ex: Azul Bebê, Verde Limão"
-                  value={customColorInput}
-                  onChange={(e) => setCustomColorInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && addCustomColor()}
-                />
-                <Button onClick={addCustomColor} variant="outline" size="icon">
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
+              <ColorPickerPopover 
+                storeId={storeId}
+                onColorSelect={handleAddCustomColor}
+                trigger={
+                  <Button variant="outline" className="w-full flex items-center gap-2 border-dashed border-2 py-6">
+                    <Plus className="w-4 h-4" />
+                    Adicionar Cor Personalizada ou da Loja
+                  </Button>
+                }
+              />
             </div>
 
             {/* Cores selecionadas */}
