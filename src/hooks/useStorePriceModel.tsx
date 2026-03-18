@@ -48,89 +48,25 @@ export const useStorePriceModel = (storeId: string | undefined) => {
 
   const fetchPriceModel = async () => {
     if (!storeId) {
-      console.log("🔍 useStorePriceModel: storeId não fornecido");
       setPriceModel(null);
       return;
     }
-
-    console.log(
-      "🔍 useStorePriceModel: Iniciando busca para storeId:",
-      storeId
-    );
 
     setLoading(true);
     setError(null);
 
     try {
-      // Primeiro, vamos verificar se existem registros na tabela
-      const { data: allData, error: allError } = await supabase
-        .from("store_price_models")
-        .select("*");
-
-      console.log(
-        "🔍 useStorePriceModel: Todos os registros na tabela:",
-        allData
-      );
-      console.log("🔍 useStorePriceModel: Erro na consulta geral:", allError);
-
       const { data, error } = await supabase
         .from("store_price_models")
         .select("*")
         .eq("store_id", storeId)
-        .single();
-
-      console.log("🔍 useStorePriceModel: Resultado da consulta específica:", {
-        storeId,
-        data,
-        error,
-        errorCode: error?.code,
-      });
+        .maybeSingle();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          // Not found - criar modelo padrão automaticamente
-          console.warn(
-            "⚠️ useStorePriceModel: Nenhum modelo encontrado para storeId:",
-            storeId
-          );
-          console.log(
-            "🔧 useStorePriceModel: Criando modelo padrão automaticamente..."
-          );
+        throw error;
+      }
 
-          // Mostrar toast de configuração
-          toast({
-            title: "Configurando modelo de preços...",
-            description:
-              "Estamos configurando automaticamente o modelo padrão para sua loja.",
-            duration: 3000,
-          });
-
-          // Criar modelo padrão automaticamente
-          await createDefaultPriceModel();
-        } else if (error.code === "406" || error.message?.includes("406")) {
-          // Erro 406 - tentar criar modelo padrão
-          console.warn(
-            "⚠️ useStorePriceModel: Erro 406 detectado, criando modelo padrão..."
-          );
-
-          toast({
-            title: "Configurando modelo de preços...",
-            description:
-              "Estamos configurando automaticamente o modelo padrão para sua loja.",
-            duration: 3000,
-          });
-
-          await createDefaultPriceModel();
-        } else {
-          throw error;
-        }
-      } else if (data) {
-        console.log("✅ useStorePriceModel: Modelo encontrado:", data);
-        console.log("🔍 useStorePriceModel: Campos de pedido mínimo:", {
-          minimum_purchase_enabled: (data as any).minimum_purchase_enabled,
-          minimum_purchase_amount: (data as any).minimum_purchase_amount,
-          minimum_purchase_message: (data as any).minimum_purchase_message,
-        });
+      if (data) {
         const row = data as Record<string, unknown>;
         setPriceModel({
           ...data,
@@ -144,24 +80,8 @@ export const useStorePriceModel = (storeId: string | undefined) => {
             (data as any).minimum_purchase_message || "",
         });
       } else {
-        // Dados vazios - criar modelo padrão automaticamente
-        console.warn(
-          "⚠️ useStorePriceModel: Dados vazios retornados para storeId:",
-          storeId
-        );
-        console.log(
-          "🔧 useStorePriceModel: Criando modelo padrão automaticamente..."
-        );
-
-        // Mostrar toast de configuração
-        toast({
-          title: "Configurando modelo de preços...",
-          description:
-            "Estamos configurando automaticamente o modelo padrão para sua loja.",
-          duration: 3000,
-        });
-
-        // Criar modelo padrão automaticamente
+        // Not found - criar modelo padrão automaticamente
+        console.log("🔧 useStorePriceModel: Criando modelo padrão para loja:", storeId);
         await createDefaultPriceModel();
       }
     } catch (error: any) {
@@ -350,28 +270,13 @@ export const useStorePriceModel = (storeId: string | undefined) => {
   };
 
   useEffect(() => {
-    console.log(
-      "🔍 useStorePriceModel: useEffect disparado com storeId:",
-      storeId
-    );
     if (storeId) {
       fetchPriceModel();
     } else {
-      console.log(
-        "🔍 useStorePriceModel: storeId não fornecido, limpando estado"
-      );
       setPriceModel(null);
       setError(null);
     }
   }, [storeId]);
-
-  // Log para verificar o valor que está sendo retornado
-  console.log("🔍 useStorePriceModel: Retornando valor:", {
-    priceModel,
-    loading,
-    error,
-    storeId,
-  });
 
   return {
     priceModel: priceModel,
