@@ -70,44 +70,60 @@ export const useColorImageLinker = () => {
         async (productId: string, map: ColorImageMap): Promise<boolean> => {
             setIsSaving(true);
             try {
-                // Buscar todas variações com cor
-                const { data: variations, error: fetchError } = await supabase
-                    .from("product_variations")
-                    .select("id, color")
-                    .eq("product_id", productId)
-                    .not("color", "is", null);
+                const colorEntries = Object.entries(map);
+                
+                if (colorEntries.length === 0) {
+                  return true;
+                }
 
-                if (fetchError) throw fetchError;
+                console.log(`🚀 Iniciando salvamento de vinculações para ${colorEntries.length} cores...`);
 
-                // Atualizar cada variação baseado na cor
-                const updates = (variations as VariationRow[])
-                    ?.filter((v) => v.color)
-                    .map((v) => {
-                        const colorKey = v.color!.toLowerCase();
-                        const imageUrl = map[colorKey] ?? null;
-                        return supabase
-                            .from("product_variations")
-                            .update({ image_url: imageUrl })
-                            .eq("id", v.id);
+                // Atualizar variações em batch por cor (uma query por cor ao invés de uma por variação)
+                const updatePromises = colorEntries.map(([color, imageUrl]) => {
+                    return supabase
+                        .from("product_variations")
+                        .update({ image_url: imageUrl })
+                        .eq("product_id", productId)
+                        .ilike("color", color);
+                });
+
+                const results = await Promise.all(updatePromises);
+                const errors = results.filter((r) => r.error);
+
+                if (errors.length > 0) {
+                    console.error("❌ Erros detalhados ao salvar mapa cor-imagem:");
+                    errors.forEach((res, index) => {
+                        const err = res.error;
+                        console.error(`Erro ${index + 1}:`, {
+                            code: err?.code,
+                            message: err?.message,
+                            details: err?.details,
+                            hint: err?.hint,
+                            // Incluir contexto se possível
+                        });
                     });
-
-                if (updates && updates.length > 0) {
-                    const results = await Promise.all(updates);
-                    const errors = results.filter((r) => r.error);
-                    if (errors.length > 0) {
-                        console.error("❌ Erros ao salvar:", errors);
-                        throw new Error(`Falha ao salvar ${errors.length} variações`);
-                    }
+                    throw new Error(`Falha ao salvar vinculações para ${errors.length} cores.`);
                 }
 
                 toast({
                     title: "✅ Imagens vinculadas!",
-                    description: `Imagens de ${Object.keys(map).length} cores atualizadas com sucesso.`,
+                    description: `Imagens de ${colorEntries.length} cores atualizadas com sucesso.`,
                 });
 
                 return true;
-            } catch (error) {
-                console.error("❌ Erro ao salvar mapa cor-imagem:", error);
+            } catch (error: any) {
+                console.error("❌ Erro fatal ao salvar mapa cor-imagem:", error);
+                
+                // Se o erro veio do Supabase mas não passou pelo filter de errors acima
+                if (error.code || error.message) {
+                  console.error("Detalhes do erro:", {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                  });
+                }
+
                 toast({
                     title: "Erro ao salvar",
                     description:
