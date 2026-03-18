@@ -20,6 +20,7 @@ interface ResponsiveProductGridProps {
   templateName: string;
   showPrices: boolean;
   showStock: boolean;
+  hasFetched?: boolean;
 }
 
 const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
@@ -32,17 +33,19 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
   wishlist,
   templateName,
   showPrices,
-  showStock
+  showStock,
+  hasFetched = true
 }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, index) => (
-          <Card key={index} className="animate-pulse">
-            <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
+          <Card key={index} className="overflow-hidden border-border/50">
+            <div className="aspect-square bg-muted/20 animate-pulse"></div>
             <CardContent className="p-3">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-muted/20 rounded animate-pulse mb-2"></div>
+              <div className="h-3 bg-muted/10 rounded w-3/4 animate-pulse mb-4"></div>
+              <div className="h-8 bg-muted/20 rounded-md animate-pulse"></div>
             </CardContent>
           </Card>
         ))}
@@ -50,7 +53,8 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
     );
   }
 
-  if (products.length === 0) {
+  // Só mostrar se já terminou a busca inicial e não tem nada
+  if (!loading && products.length === 0 && hasFetched) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Package className="h-16 w-16 text-gray-300 mb-4" />
@@ -61,6 +65,24 @@ const ResponsiveProductGrid: React.FC<ResponsiveProductGridProps> = ({
           Não encontramos produtos que correspondam aos seus filtros. 
           Tente ajustar os critérios de busca.
         </p>
+      </div>
+    );
+  }
+
+  // Se não está carregando, mas não tem produtos e ainda não buscou (gap inicial)
+  if (!loading && products.length === 0 && !hasFetched) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Card key={index} className="overflow-hidden border-border/50">
+            <div className="aspect-square bg-muted/20 animate-pulse"></div>
+            <CardContent className="p-3">
+              <div className="h-4 bg-muted/20 rounded animate-pulse mb-2"></div>
+              <div className="h-3 bg-muted/10 rounded w-3/4 animate-pulse mb-4"></div>
+              <div className="h-8 bg-muted/20 rounded-md animate-pulse"></div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }

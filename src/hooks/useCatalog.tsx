@@ -40,8 +40,9 @@ export const useCatalog = (storeSlug?: string) => {
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!storeSlug);
   const [storeError, setStoreError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
   const [catalogType, setCatalogType] = useState<CatalogType>("retail");
 
   const { resolveStoreId } = useStoreResolver();
@@ -52,7 +53,6 @@ export const useCatalog = (storeSlug?: string) => {
 
   const loadStore = useCallback(async (slug: string) => {
     console.log("🏪 CATÁLOGO - Iniciando carregamento da loja:", slug);
-    setLoading(true);
     setStoreError(null);
 
     try {
@@ -133,8 +133,6 @@ export const useCatalog = (storeSlug?: string) => {
       setStoreError("Erro crítico ao carregar loja.");
       setStore(null);
       return false;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -208,6 +206,7 @@ export const useCatalog = (storeSlug?: string) => {
           setCatalogType(cached.store.price_model === "wholesale_only" ? "wholesale" : "retail");
           loadedStoreRef.current = slug;
           setLoading(false);
+          setHasFetched(true);
           return true;
         }
 
@@ -227,11 +226,13 @@ export const useCatalog = (storeSlug?: string) => {
           });
 
           loadedStoreRef.current = slug;
+          setHasFetched(true);
           return true;
         }
         return false;
       } catch (error) {
         console.error("❌ CATÁLOGO - Erro na inicialização:", error);
+        setHasFetched(true);
         return false;
       } finally {
         setLoading(false);
@@ -356,6 +357,7 @@ export const useCatalog = (storeSlug?: string) => {
     products,
     filteredProducts,
     loading,
+    hasFetched,
     catalogType, // Agora retorna o catalogType determinado automaticamente
     initializeCatalog,
     searchProducts,

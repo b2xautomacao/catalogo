@@ -18,6 +18,7 @@ interface ProductGridProps {
   templateName: string;
   showPrices: boolean;
   showStock: boolean;
+  hasFetched?: boolean;
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({
@@ -31,7 +32,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   storeIdentifier,
   templateName,
   showPrices,
-  showStock
+  showStock,
+  hasFetched = true // Default true para compatibilidade
 }) => {
   const { getMobileGridClasses } = useMobileLayout(storeIdentifier);
 
@@ -39,17 +41,21 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     return (
       <div className={getMobileGridClasses()}>
         {Array.from({ length: 8 }).map((_, index) => (
-          <div key={index} className="animate-pulse">
-            <div className="bg-gray-200 h-64 rounded-lg mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div key={index} className="overflow-hidden border border-border/50 rounded-xl bg-white">
+            <div className="aspect-square bg-muted/20 animate-pulse"></div>
+            <div className="p-4 space-y-3">
+              <div className="h-4 bg-muted/20 rounded animate-pulse w-3/4"></div>
+              <div className="h-4 bg-muted/10 rounded animate-pulse w-1/2"></div>
+              <div className="h-10 bg-muted/20 rounded-lg animate-pulse"></div>
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
-  if (products.length === 0) {
+  // Só mostrar "nenhum encontrado" se já tentamos carregar e realmente não veio nada
+  if (!loading && products.length === 0 && hasFetched) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="text-gray-400 text-6xl mb-4">📦</div>
@@ -57,6 +63,24 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         <p className="text-gray-500 text-center max-w-md">
           Não encontramos produtos que correspondam aos seus filtros. Tente ajustar os critérios de busca.
         </p>
+      </div>
+    );
+  }
+
+  // Se não está carregando e não tem produtos e ainda não buscou (gap inicial), mostrar skeleton
+  if (!loading && products.length === 0 && !hasFetched) {
+    return (
+      <div className={getMobileGridClasses()}>
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="overflow-hidden border border-border/50 rounded-xl bg-white">
+            <div className="aspect-square bg-muted/20 animate-pulse"></div>
+            <div className="p-4 space-y-3">
+              <div className="h-4 bg-muted/20 rounded animate-pulse w-3/4"></div>
+              <div className="h-4 bg-muted/10 rounded animate-pulse w-1/2"></div>
+              <div className="h-10 bg-muted/20 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

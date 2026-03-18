@@ -64,6 +64,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     products,
     filteredProducts,
     loading,
+    hasFetched,
     storeError,
     catalogType,
     searchProducts,
@@ -289,16 +290,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     });
   }, [cartItems, totalItems, catalogType]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando catálogo...</p>
-        </div>
-      </div>
-    );
-  }
+  // Não mostrado spinner aqui para deixar o TemplateWrapper lidar com skeletons e estados parciais
 
   if (storeError) {
     return (
@@ -382,6 +374,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
                 products={filteredProducts}
                 catalogType={catalogType}
                 loading={loading}
+                hasFetched={hasFetched}
                 onAddToWishlist={handleAddToWishlist}
                 onQuickView={handleProductClick}
                 wishlist={wishlist}
