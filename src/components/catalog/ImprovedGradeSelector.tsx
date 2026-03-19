@@ -111,17 +111,7 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
                     <div 
                       className="w-8 h-8 rounded-full border-2 border-gray-300"
                       style={{ 
-                        backgroundColor: color.toLowerCase() === 'preto' ? '#000' :
-                                       color.toLowerCase() === 'branco' ? '#fff' :
-                                       color.toLowerCase() === 'azul' ? '#0066cc' :
-                                       color.toLowerCase() === 'vermelho' ? '#cc0000' :
-                                       color.toLowerCase() === 'verde' ? '#00cc00' :
-                                       color.toLowerCase() === 'amarelo' ? '#ffcc00' :
-                                       color.toLowerCase() === 'rosa' ? '#ff69b4' :
-                                       color.toLowerCase() === 'marrom' ? '#8b4513' :
-                                       color.toLowerCase() === 'nude' ? '#e4c5a0' :
-                                       color.toLowerCase() === 'off white' ? '#faf9f6' :
-                                       '#ccc'
+                        backgroundColor: resolveColorHex(color)
                       }}
                     />
 

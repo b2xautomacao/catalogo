@@ -21,7 +21,7 @@ export const COLOR_NAME_MAP: Record<string, string> = {
   marrom: "#92400E",
   bege: "#D4B896",
   caramelo: "#c48c3e",
-  dourado: "#FFD700",
+  dourado: "#DAA520",
   prata: "#C0C0C0",
   nude: "#E8C8A0",
   vinho: "#7f1d1d",
@@ -44,6 +44,7 @@ export const COLOR_NAME_MAP: Record<string, string> = {
 
 /** Normaliza string removendo acentos e convertendo para lowercase */
 function normalizeString(str: string): string {
+  if (!str) return "";
   return str
     .toLowerCase()
     .normalize("NFD")
@@ -62,23 +63,39 @@ export function resolveColorHex(colorName?: string, hexOverride?: string | null)
       hexOverride !== "transparent" && 
       hexOverride !== "" && 
       hexOverride !== "#666" &&
-      hexOverride !== "#CCCCCC") {
+      hexOverride !== "#CCCCCC" &&
+      hexOverride !== "#ccc") {
     return hexOverride;
   }
   
-  if (!colorName) return "#9CA3AF";
+  if (!colorName) return hexOverride || "#9CA3AF";
   
   const normalizedInput = normalizeString(colorName);
   
-  // Busca exata no mapa normalizado
+  // 1. Busca exata no mapa normalizado (Prioridade máxima)
   for (const [key, hex] of Object.entries(COLOR_NAME_MAP)) {
     if (normalizeString(key) === normalizedInput) return hex;
   }
   
-  // Busca por inclusão no mapa normalizado
-  for (const [key, hex] of Object.entries(COLOR_NAME_MAP)) {
-    if (normalizedInput.includes(normalizeString(key))) return hex;
+  // 2. Busca por inclusão, mas priorizando nomes mais longos (mais específicos)
+  // Ex: "azul marinho" deve ser encontrado antes de "azul"
+  const sortedKeys = Object.keys(COLOR_NAME_MAP).sort((a, b) => b.length - a.length);
+  
+  for (const key of sortedKeys) {
+    const normalizedKey = normalizeString(key);
+    // Se o input contém a palavra inteira ou é parte de uma composição
+    if (normalizedInput.includes(normalizedKey)) {
+      return COLOR_NAME_MAP[key];
+    }
   }
+  
+  // Caso não encontre no mapa, mas tenha um override (mesmo que seja o genérico), usa o override
+  if (hexOverride && hexOverride !== "transparent" && hexOverride !== "") {
+    return hexOverride;
+  }
+  
+  return "#9CA3AF";
+}
   
   // Caso não encontre no mapa, mas tenha um override (mesmo que seja o genérico), usa o override
   if (hexOverride && hexOverride !== "transparent" && hexOverride !== "") {

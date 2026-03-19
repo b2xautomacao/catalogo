@@ -38,7 +38,7 @@ const ColorSelector: React.FC<{
     { name: "Laranja", hex: "#FFA500" },
     { name: "Cinza", hex: "#808080" },
     { name: "Marrom", hex: "#A52A2A" },
-    { name: "Dourado", hex: "#FFD700" },
+    { name: "Dourado", hex: "#DAA520" },
   ];
 
   const toggleColor = (colorName: string, hexColor: string) => {
