@@ -22,6 +22,7 @@ import {
 import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ColorPickerPopover from "./ColorPickerPopover";
 import { resolveColorHex } from "@/lib/colors";
 import { useStoreColors } from "@/hooks/useStoreColors";
 
