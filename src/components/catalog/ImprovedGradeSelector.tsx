@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductVariation } from "@/types/product";
 import { Package, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { resolveColorHex } from "@/lib/colors";
 import FlexibleGradeSelector from "./FlexibleGradeSelector";
 import { hasFlexibleConfig, allowsMultiplePurchaseOptions } from "@/types/flexible-grade";
 
