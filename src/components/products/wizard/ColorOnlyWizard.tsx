@@ -68,17 +68,10 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
     { name: "Azul Claro", hex: "#0EA5E9" },
   ];
 
-  // Inicializar configurações de cores se não existirem
+  // Inicializar configurações de cores
   React.useEffect(() => {
-    if (colorConfigs.length === 0 || (storeColors.length > 0 && colorConfigs.length <= predefinedColors.length)) {
-      const storeConfigs = storeColors.map(color => ({
-        name: color.name,
-        selected: false,
-        stock: 10,
-        priceAdjustment: 0,
-        hex: color.hex_color,
-      }));
-
+    // Inicializar cores populares se vazio
+    if (colorConfigs.length === 0) {
       const popularConfigs = predefinedColors.map((color) => ({
         name: color.name,
         selected: false,
@@ -86,18 +79,32 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
         priceAdjustment: 0,
         hex: color.hex,
       }));
-
-      // Mesclar evitando duplicados por nome
-      const combined = [...popularConfigs];
-      storeConfigs.forEach(storeCol => {
-        if (!combined.some(c => c.name.toLowerCase() === storeCol.name.toLowerCase())) {
-          combined.push(storeCol);
-        }
-      });
-
-      setColorConfigs(combined);
+      setColorConfigs(popularConfigs);
     }
-  }, [storeColors]);
+
+    // Adicionar cores da loja se carregadas e ainda não presentes
+    if (storeColors.length > 0) {
+      setColorConfigs((prev) => {
+        const newStoreColors = storeColors
+          .filter(
+            (sc) =>
+              !prev.some(
+                (cc) => cc.name.toLowerCase() === sc.name.toLowerCase()
+              )
+          )
+          .map((sc) => ({
+            name: sc.name,
+            selected: false,
+            stock: 10,
+            priceAdjustment: 0,
+            hex: sc.hex_color,
+          }));
+
+        if (newStoreColors.length === 0) return prev;
+        return [...prev, ...newStoreColors];
+      });
+    }
+  }, [storeColors.length]);
 
   const steps = [
     {

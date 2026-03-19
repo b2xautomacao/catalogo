@@ -143,125 +143,95 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
           `🎯 PROCESSANDO ${variations.length} variações para salvamento...`
         );
 
-        const variationsToInsert: any[] = []; // 🎯 DEFINIR ARRAY PARA INSERÇÃO
+        // 🚀 OTIMIZAÇÃO: Processar uploads em paralelo
+        const variationsToInsert = await Promise.all(
+          variations.map(async (variation, i) => {
+            let imageUrl = variation.image_url;
 
-        for (let i = 0; i < variations.length; i++) {
-          const variation = variations[i];
-          let imageUrl = variation.image_url;
-
-          console.log(
-            `🔄 [${i + 1}/${variations.length}] Processando variação:`,
-            {
-              id: variation.id,
-              color: variation.color,
-              is_grade: variation.is_grade,
-              variation_type: variation.variation_type,
+            // Upload da imagem se houver arquivo
+            if (variation.image_file) {
+              const uploadedUrl = await uploadVariationImage(
+                variation.image_file,
+                i,
+                productId
+              );
+              if (uploadedUrl) {
+                imageUrl = uploadedUrl;
+              }
             }
-          );
 
-          // Upload da imagem se houver arquivo
-          if (variation.image_file) {
-            const uploadedUrl = await uploadVariationImage(
-              variation.image_file,
-              i,
-              productId
-            );
-            if (uploadedUrl) {
-              imageUrl = uploadedUrl;
+            // Determinar o tipo da variação
+            const variationType =
+              variation.variation_type === "grade" || variation.is_grade
+                ? "grade"
+                : variation.variation_type || "simple";
+
+            // Verificar se é uma variação de grade
+            const isGradeVariation =
+              !!variation.is_grade || variationType === "grade";
+
+            // Preparar dados da variação
+            const variationData: any = {
+              product_id: productId,
+              variation_type: variationType,
+              variation_value:
+                variation.name ||
+                variation.color ||
+                variation.size ||
+                `Variação ${i + 1}`,
+              color: variation.color || null,
+              size: variation.size || null,
+              sku: variation.sku || null,
+              stock: typeof variation.stock === "number" ? variation.stock : 0,
+              price_adjustment:
+                typeof variation.price_adjustment === "number"
+                  ? variation.price_adjustment
+                  : 0,
+              is_active:
+                typeof variation.is_active === "boolean"
+                  ? variation.is_active
+                  : true,
+              image_url: imageUrl || null,
+              display_order: i,
+              name: variation.name || null,
+              is_grade: isGradeVariation,
+            };
+
+            // Incluir campos de grade sempre que for uma variação de grade
+            if (isGradeVariation) {
+              variationData.grade_name =
+                variation.grade_name && variation.grade_name !== ""
+                  ? variation.grade_name
+                  : null;
+              variationData.grade_color =
+                variation.grade_color && variation.grade_color !== ""
+                  ? variation.grade_color
+                  : variation.color || null;
+              variationData.grade_quantity =
+                typeof variation.grade_quantity === "number"
+                  ? variation.grade_quantity
+                  : null;
+              variationData.grade_sizes =
+                Array.isArray(variation.grade_sizes) &&
+                variation.grade_sizes.length > 0
+                  ? variation.grade_sizes
+                  : null;
+              variationData.grade_pairs =
+                Array.isArray(variation.grade_pairs) &&
+                variation.grade_pairs.length > 0
+                  ? variation.grade_pairs
+                  : null;
+            } else {
+              variationData.grade_name = null;
+              variationData.grade_color = null;
+              variationData.grade_quantity = null;
+              variationData.grade_sizes = null;
+              variationData.grade_pairs = null;
             }
-          }
 
-          // Determinar o tipo da variação
-          const variationType =
-            variation.variation_type === "grade" || variation.is_grade
-              ? "grade"
-              : variation.variation_type || "simple";
-
-          // Verificar se é uma variação de grade
-          const isGradeVariation =
-            !!variation.is_grade || variationType === "grade";
-
-          console.log(`📋 [${i + 1}] Tipo de variação determinado:`, {
-            variationType,
-            isGradeVariation,
-            original_is_grade: variation.is_grade,
-            original_variation_type: variation.variation_type,
-          });
-
-          // Preparar dados da variação
-          const variationData: any = {
-            product_id: productId,
-            variation_type: variationType,
-            variation_value:
-              variation.name ||
-              variation.color ||
-              variation.size ||
-              `Variação ${i + 1}`,
-            color: variation.color || null,
-            size: variation.size || null,
-            sku: variation.sku || null,
-            stock: typeof variation.stock === "number" ? variation.stock : 0,
-            price_adjustment:
-              typeof variation.price_adjustment === "number"
-                ? variation.price_adjustment
-                : 0,
-            is_active:
-              typeof variation.is_active === "boolean"
-                ? variation.is_active
-                : true,
-            image_url: imageUrl || null,
-            display_order: i,
-            name: variation.name || null,
-            is_grade: isGradeVariation, // 🎯 IMPORTANTE: Definir explicitamente is_grade
-          };
-
-          // Incluir campos de grade sempre que for uma variação de grade
-          if (isGradeVariation) {
-            variationData.grade_name =
-              variation.grade_name && variation.grade_name !== ""
-                ? variation.grade_name
-                : null;
-            variationData.grade_color =
-              variation.grade_color && variation.grade_color !== ""
-                ? variation.grade_color
-                : variation.color || null; // 🎯 FALLBACK: Usar color se grade_color estiver vazio
-            variationData.grade_quantity =
-              typeof variation.grade_quantity === "number"
-                ? variation.grade_quantity
-                : null;
-            variationData.grade_sizes =
-              Array.isArray(variation.grade_sizes) &&
-              variation.grade_sizes.length > 0
-                ? variation.grade_sizes
-                : null;
-            variationData.grade_pairs =
-              Array.isArray(variation.grade_pairs) &&
-              variation.grade_pairs.length > 0
-                ? variation.grade_pairs
-                : null;
-
-            console.log(`🎯 GRADE [${i + 1}] - Salvando campos de grade:`, {
-              grade_name: variationData.grade_name,
-              grade_color: variationData.grade_color,
-              grade_quantity: variationData.grade_quantity,
-              grade_sizes: variationData.grade_sizes,
-              grade_pairs: variationData.grade_pairs,
-            });
-          } else {
-            // Se não for grade, garantir que campos de grade sejam null
-            variationData.grade_name = null;
-            variationData.grade_color = null;
-            variationData.grade_quantity = null;
-            variationData.grade_sizes = null;
-            variationData.grade_pairs = null;
-          }
-
-          console.log(
-            `🔍 DEBUG [${i + 1}] - Dados da variação a serem salvos:`,
-            JSON.stringify(variationData, null, 2)
-          );
-          variationsToInsert.push(variationData);
-        }
+            return variationData;
+          })
+        );
 
         console.log(
           `💾 INSERINDO ${variationsToInsert.length} variações no banco de dados...`

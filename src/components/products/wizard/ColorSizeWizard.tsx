@@ -93,20 +93,44 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
 
   // Inicializar configurações
   React.useEffect(() => {
-    if (colorConfigs.length === 0 || (storeColors.length > 0 && colorConfigs.length <= predefinedColors.length)) {
+    // Inicializar tamanhos apenas uma vez
+    if (sizeConfigs.length === 0) {
+      setSizeConfigs(
+        sizeTemplates.roupas.map((size) => ({
+          name: size,
+          selected: false,
+        }))
+      );
+    }
+
+    // Inicializar cores populares e mesclar com as da loja
+    const popularConfigs = predefinedColors.map((color) => ({
+      name: color.name,
+      hex: color.hex,
+      selected: false,
+    }));
+
+    // Se já temos configurações, vamos apenas adicionar as novas cores da loja que ainda não existem
+    if (colorConfigs.length > 0) {
+      const newStoreColors = storeColors.filter(
+        sc => !colorConfigs.some(cc => cc.name.toLowerCase() === sc.name.toLowerCase())
+      ).map(sc => ({
+        name: sc.name,
+        hex: sc.hex_color,
+        selected: false,
+      }));
+
+      if (newStoreColors.length > 0) {
+        setColorConfigs(prev => [...prev, ...newStoreColors]);
+      }
+    } else {
+      // Primeira inicialização
       const storeConfigs = storeColors.map(color => ({
         name: color.name,
         hex: color.hex_color,
         selected: false,
       }));
 
-      const popularConfigs = predefinedColors.map((color) => ({
-        name: color.name,
-        hex: color.hex,
-        selected: false,
-      }));
-
-      // Mesclar evitando duplicados por nome
       const combined = [...popularConfigs];
       storeConfigs.forEach(storeCol => {
         if (!combined.some(c => c.name.toLowerCase() === storeCol.name.toLowerCase())) {
@@ -116,16 +140,7 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
 
       setColorConfigs(combined);
     }
-
-    if (sizeConfigs.length === 0) {
-      setSizeConfigs(
-        sizeTemplates.roupas.map((size) => ({
-          name: size,
-          selected: false,
-        }))
-      );
-    }
-  }, []);
+  }, [storeColors.length]); // Re-executa apenas quando a quantidade de cores da loja mudar
 
   const steps = [
     {
