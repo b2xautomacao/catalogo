@@ -96,14 +96,6 @@ export function resolveColorHex(colorName?: string, hexOverride?: string | null)
   
   return "#9CA3AF";
 }
-  
-  // Caso não encontre no mapa, mas tenha um override (mesmo que seja o genérico), usa o override
-  if (hexOverride && hexOverride !== "transparent" && hexOverride !== "") {
-    return hexOverride;
-  }
-  
-  return "#9CA3AF";
-}
 
 /** Determina se a cor de texto deve ser escura ou clara com base na luminância */
 export function isLightColor(hex: string): boolean {
