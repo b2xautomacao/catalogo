@@ -22,8 +22,8 @@ import {
 import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import ColorPickerPopover from "./ColorPickerPopover";
 import { resolveColorHex } from "@/lib/colors";
+import { useStoreColors } from "@/hooks/useStoreColors";
 
 interface ColorSizeWizardProps {
   variations: ProductVariation[];
@@ -59,6 +59,7 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
   storeId,
 }) => {
   const { toast } = useToast();
+  const { colors: storeColors, loading: loadingColors } = useStoreColors(storeId);
   const [currentStep, setCurrentStep] = useState(0);
   const [customColorInput, setCustomColorInput] = useState("");
   const [customSizeInput, setCustomSizeInput] = useState("");
@@ -91,14 +92,28 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
 
   // Inicializar configurações
   React.useEffect(() => {
-    if (colorConfigs.length === 0) {
-      setColorConfigs(
-        predefinedColors.map((color) => ({
-          name: color.name,
-          hex: color.hex,
-          selected: false,
-        }))
-      );
+    if (colorConfigs.length === 0 || (storeColors.length > 0 && colorConfigs.length <= predefinedColors.length)) {
+      const storeConfigs = storeColors.map(color => ({
+        name: color.name,
+        hex: color.hex_color,
+        selected: false,
+      }));
+
+      const popularConfigs = predefinedColors.map((color) => ({
+        name: color.name,
+        hex: color.hex,
+        selected: false,
+      }));
+
+      // Mesclar evitando duplicados por nome
+      const combined = [...popularConfigs];
+      storeConfigs.forEach(storeCol => {
+        if (!combined.some(c => c.name.toLowerCase() === storeCol.name.toLowerCase())) {
+          combined.push(storeCol);
+        }
+      });
+
+      setColorConfigs(combined);
     }
 
     if (sizeConfigs.length === 0) {
@@ -350,45 +365,91 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
               </p>
             </div>
 
-            {/* Cores pré-definidas */}
+            {/* Cores da Loja */}
+            {storeColors.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Cores da sua Loja</Label>
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-2">
+                  {storeColors.map((color) => {
+                    const config = colorConfigs.find(
+                      (c) => c.name === color.name
+                    );
+                    const isSelected = config?.selected || false;
+
+                    return (
+                      <div
+                        key={color.id}
+                        onClick={() => toggleColor(color.name)}
+                        className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full border mx-auto mb-2"
+                          style={{
+                            backgroundColor: color.hex_color,
+                            borderColor:
+                              color.hex_color.toUpperCase() === "#FFFFFF" ? "#e5e7eb" : "transparent",
+                          }}
+                        />
+                        <p className="text-xs text-center font-medium truncate">
+                          {color.name}
+                        </p>
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1">
+                            <Check className="w-4 h-4 text-blue-600 bg-white rounded-full shadow-sm" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Cores populares (pre-definidas que não estão nas cores da loja) */}
             <div>
               <Label className="text-sm font-medium">Cores Populares</Label>
               <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-2">
-                {predefinedColors.map((color) => {
-                  const config = colorConfigs.find(
-                    (c) => c.name === color.name
-                  );
-                  const isSelected = config?.selected || false;
+                {predefinedColors
+                  .filter(pc => !storeColors.some(sc => sc.name.toLowerCase() === pc.name.toLowerCase()))
+                  .map((color) => {
+                    const config = colorConfigs.find(
+                      (c) => c.name === color.name
+                    );
+                    const isSelected = config?.selected || false;
 
-                  return (
-                    <div
-                      key={color.name}
-                      onClick={() => toggleColor(color.name)}
-                      className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
+                    return (
                       <div
-                        className="w-6 h-6 rounded-full border mx-auto mb-2"
-                        style={{
-                          backgroundColor: resolveColorHex(color.name, color.hex),
-                          borderColor:
-                            color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
-                        }}
-                      />
-                      <p className="text-xs text-center font-medium">
-                        {color.name}
-                      </p>
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1">
-                          <Check className="w-4 h-4 text-blue-600 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        key={color.name}
+                        onClick={() => toggleColor(color.name)}
+                        className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full border mx-auto mb-2"
+                          style={{
+                            backgroundColor: resolveColorHex(color.name, color.hex),
+                            borderColor:
+                              color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
+                          }}
+                        />
+                        <p className="text-xs text-center font-medium">
+                          {color.name}
+                        </p>
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1">
+                            <Check className="w-4 h-4 text-blue-600 bg-white rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             </div>
 

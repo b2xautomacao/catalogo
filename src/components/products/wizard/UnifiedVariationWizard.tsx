@@ -357,6 +357,7 @@ const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
             onVariationsChange={onVariationsChange}
             onBack={goBack}
             productName={productName}
+            storeId={storeId}
           />
         );
 
@@ -387,6 +388,7 @@ const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
             onVariationsChange={onVariationsChange}
             onBack={goBack}
             productName={productName}
+            storeId={storeId}
           />
         );
 

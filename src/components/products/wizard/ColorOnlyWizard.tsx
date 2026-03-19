@@ -19,8 +19,8 @@ import {
 import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import ColorPickerPopover from "./ColorPickerPopover";
 import { resolveColorHex } from "@/lib/colors";
+import { useStoreColors } from "@/hooks/useStoreColors";
 
 interface ColorOnlyWizardProps {
   variations: ProductVariation[];
@@ -46,6 +46,7 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
   storeId,
 }) => {
   const { toast } = useToast();
+  const { colors: storeColors, loading: loadingColors } = useStoreColors(storeId);
   const [currentStep, setCurrentStep] = useState(0);
   const [customColorInput, setCustomColorInput] = useState("");
   const [colorConfigs, setColorConfigs] = useState<ColorConfig[]>([]);
@@ -68,17 +69,34 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
 
   // Inicializar configurações de cores se não existirem
   React.useEffect(() => {
-    if (colorConfigs.length === 0) {
-      const initialConfigs = predefinedColors.map((color) => ({
+    if (colorConfigs.length === 0 || (storeColors.length > 0 && colorConfigs.length <= predefinedColors.length)) {
+      const storeConfigs = storeColors.map(color => ({
+        name: color.name,
+        selected: false,
+        stock: 10,
+        priceAdjustment: 0,
+        hex: color.hex_color,
+      }));
+
+      const popularConfigs = predefinedColors.map((color) => ({
         name: color.name,
         selected: false,
         stock: 10,
         priceAdjustment: 0,
         hex: color.hex,
       }));
-      setColorConfigs(initialConfigs);
+
+      // Mesclar evitando duplicados por nome
+      const combined = [...popularConfigs];
+      storeConfigs.forEach(storeCol => {
+        if (!combined.some(c => c.name.toLowerCase() === storeCol.name.toLowerCase())) {
+          combined.push(storeCol);
+        }
+      });
+
+      setColorConfigs(combined);
     }
-  }, []);
+  }, [storeColors]);
 
   const steps = [
     {
@@ -214,47 +232,95 @@ const ColorOnlyWizard: React.FC<ColorOnlyWizardProps> = ({
               </p>
             </div>
 
-            {/* Cores pré-definidas */}
+            {/* Cores da Loja */}
+            {storeColors.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Cores da sua Loja</Label>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-2">
+                  {storeColors.map((color) => {
+                    const config = colorConfigs.find(
+                      (c) => c.name === color.name
+                    );
+                    const isSelected = config?.selected || false;
+
+                    return (
+                      <div
+                        key={color.id}
+                        onClick={() => toggleColor(color.name)}
+                        className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full border mx-auto mb-2"
+                          style={{
+                            backgroundColor: color.hex_color,
+                            borderColor:
+                              color.hex_color.toUpperCase() === "#FFFFFF" ? "#e5e7eb" : "transparent",
+                          }}
+                        />
+                        <p className="text-xs text-center font-medium truncate">
+                          {color.name}
+                        </p>
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1">
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Cores populares (pre-definidas que não estão nas cores da loja) */}
             <div>
               <Label className="text-sm font-medium">Cores Populares</Label>
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-2">
-                {predefinedColors.map((color) => {
-                  const config = colorConfigs.find(
-                    (c) => c.name === color.name
-                  );
-                  const isSelected = config?.selected || false;
+                {predefinedColors
+                  .filter(pc => !storeColors.some(sc => sc.name.toLowerCase() === pc.name.toLowerCase()))
+                  .map((color) => {
+                    const config = colorConfigs.find(
+                      (c) => c.name === color.name
+                    );
+                    const isSelected = config?.selected || false;
 
-                  return (
-                    <div
-                      key={color.name}
-                      onClick={() => toggleColor(color.name)}
-                      className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
+                    return (
                       <div
-                        className="w-6 h-6 rounded-full border mx-auto mb-2"
-                        style={{
-                          backgroundColor: resolveColorHex(color.name, color.hex),
-                          borderColor:
-                            color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
-                        }}
-                      />
-                      <p className="text-xs text-center font-medium">
-                        {color.name}
-                      </p>
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1">
-                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                        key={color.name}
+                        onClick={() => toggleColor(color.name)}
+                        className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full border mx-auto mb-2"
+                          style={{
+                            backgroundColor: resolveColorHex(color.name, color.hex),
+                            borderColor:
+                              color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
+                          }}
+                        />
+                        <p className="text-xs text-center font-medium">
+                          {color.name}
+                        </p>
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1">
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             </div>
 
