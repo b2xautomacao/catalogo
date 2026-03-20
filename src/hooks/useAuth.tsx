@@ -73,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loadProfile = async () => {
       if (!sessionLoading) {
         if (user) {
+          setLoading(true); // Re-ativar loading enquanto busca o perfil
           console.log('Usuário autenticado, carregando perfil...');
           const userProfile = await fetchProfile(user.id);
           setProfile(userProfile);
