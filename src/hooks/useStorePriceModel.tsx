@@ -46,52 +46,6 @@ export const useStorePriceModel = (storeId: string | undefined) => {
   // Log para verificar quando o hook é chamado
   console.log("🔍 useStorePriceModel: Hook chamado com storeId:", storeId);
 
-  const fetchPriceModel = useCallback(async () => {
-    if (!storeId) {
-      setPriceModel(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data, error } = await supabase
-        .from("store_price_models")
-        .select("*")
-        .eq("store_id", storeId)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        const row = data as Record<string, unknown>;
-        setPriceModel({
-          ...data,
-          price_model: data.price_model as PriceModelType,
-          simple_wholesale_by_cart_total: row.simple_wholesale_by_cart_total === true,
-          simple_wholesale_cart_min_qty: typeof row.simple_wholesale_cart_min_qty === "number" ? row.simple_wholesale_cart_min_qty : 10,
-          minimum_purchase_enabled:
-            (data as any).minimum_purchase_enabled || false,
-          minimum_purchase_amount: (data as any).minimum_purchase_amount || 0,
-          minimum_purchase_message:
-            (data as any).minimum_purchase_message || "",
-        });
-      } else {
-        // Not found - criar modelo padrão automaticamente
-        console.log("🔧 useStorePriceModel: Criando modelo padrão para loja:", storeId);
-        await createDefaultPriceModel();
-      }
-    } catch (error: any) {
-      console.error("❌ useStorePriceModel: Erro na busca:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [storeId, createDefaultPriceModel]);
-
   const updatePriceModel = useCallback(async (updates: Partial<StorePriceModel>) => {
     if (!storeId) return;
 
@@ -107,10 +61,7 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         .single();
 
       if (updateError) {
-        console.log(
-          "⚠️ useStorePriceModel: Erro no update, tentando insert:",
-          updateError
-        );
+        console.log("⚠️ useStorePriceModel: Erro no update, tentando insert:", updateError);
 
         // Se não existe, criar um novo registro
         const { data: insertData, error: insertError } = await supabase
@@ -127,52 +78,27 @@ export const useStorePriceModel = (storeId: string | undefined) => {
           throw insertError;
         }
 
-        console.log(
-          "✅ useStorePriceModel: Modelo criado com sucesso:",
-          insertData
-        );
+        console.log("✅ useStorePriceModel: Modelo criado com sucesso:", insertData);
         setPriceModel({
           ...insertData,
           price_model: insertData.price_model as PriceModelType,
-          minimum_purchase_enabled:
-            (insertData as any).minimum_purchase_enabled || false,
-          minimum_purchase_amount:
-            (insertData as any).minimum_purchase_amount || 0,
-          minimum_purchase_message:
-            (insertData as any).minimum_purchase_message || "",
+          minimum_purchase_enabled: (insertData as any).minimum_purchase_enabled || false,
+          minimum_purchase_amount: (insertData as any).minimum_purchase_amount || 0,
+          minimum_purchase_message: (insertData as any).minimum_purchase_message || "",
         });
       } else {
         const row = updateData as Record<string, unknown>;
-        console.log(
-          "✅ useStorePriceModel: Modelo atualizado com sucesso:",
-          updateData,
-          "simple_wholesale_by_cart_total:",
-          row.simple_wholesale_by_cart_total
-        );
+        console.log("✅ useStorePriceModel: Modelo atualizado com sucesso:", updateData);
         setPriceModel({
           ...updateData,
           price_model: updateData.price_model as PriceModelType,
           simple_wholesale_by_cart_total: row.simple_wholesale_by_cart_total === true,
           simple_wholesale_cart_min_qty: typeof row.simple_wholesale_cart_min_qty === "number" ? row.simple_wholesale_cart_min_qty : 10,
-          minimum_purchase_enabled:
-            (updateData as any).minimum_purchase_enabled || false,
-          minimum_purchase_amount:
-            (updateData as any).minimum_purchase_amount || 0,
-          minimum_purchase_message:
-            (updateData as any).minimum_purchase_message || "",
+          minimum_purchase_enabled: (updateData as any).minimum_purchase_enabled || false,
+          minimum_purchase_amount: (updateData as any).minimum_purchase_amount || 0,
+          minimum_purchase_message: (updateData as any).minimum_purchase_message || "",
         });
       }
-
-      console.log(
-        "🔍 useStorePriceModel: Campos de pedido mínimo após operação:",
-        {
-          minimum_purchase_enabled: (updateData as any)
-            ?.minimum_purchase_enabled,
-          minimum_purchase_amount: (updateData as any)?.minimum_purchase_amount,
-          minimum_purchase_message: (updateData as any)
-            ?.minimum_purchase_message,
-        }
-      );
 
       toast({
         title: "Modelo de preço atualizado",
@@ -215,34 +141,70 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         show_next_tier_hint: true,
         minimum_purchase_enabled: false,
         minimum_purchase_amount: 0,
-        minimum_purchase_message:
-          "Pedido mínimo de R$ {amount} para finalizar a compra",
+        minimum_purchase_message: "Pedido mínimo de R$ {amount} para finalizar a compra",
       };
 
       await updatePriceModel(defaultModel);
 
-      // Mostrar toast de sucesso
       toast({
         title: "Modelo de preços configurado!",
-        description:
-          "Configuramos automaticamente o modelo padrão para sua loja.",
+        description: "Configuramos automaticamente o modelo padrão para sua loja.",
         duration: 4000,
       });
 
       console.log("✅ useStorePriceModel: Modelo padrão criado com sucesso");
     } catch (error) {
-      console.error(
-        "❌ useStorePriceModel: Erro ao criar modelo padrão:",
-        error
-      );
+      console.error("❌ useStorePriceModel: Erro ao criar modelo padrão:", error);
       toast({
         title: "Erro ao configurar modelo padrão",
-        description:
-          "Não foi possível criar o modelo de preços automaticamente.",
+        description: "Não foi possível criar o modelo de preços automaticamente.",
         variant: "destructive",
       });
     }
   }, [storeId, updatePriceModel, toast]);
+
+  const fetchPriceModel = useCallback(async () => {
+    if (!storeId) {
+      setPriceModel(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from("store_price_models")
+        .select("*")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const row = data as Record<string, unknown>;
+        setPriceModel({
+          ...data,
+          price_model: data.price_model as PriceModelType,
+          simple_wholesale_by_cart_total: row.simple_wholesale_by_cart_total === true,
+          simple_wholesale_cart_min_qty: typeof row.simple_wholesale_cart_min_qty === "number" ? row.simple_wholesale_cart_min_qty : 10,
+          minimum_purchase_enabled: (data as any).minimum_purchase_enabled || false,
+          minimum_purchase_amount: (data as any).minimum_purchase_amount || 0,
+          minimum_purchase_message: (data as any).minimum_purchase_message || "",
+        });
+      } else {
+        console.log("🔧 useStorePriceModel: Criando modelo padrão para loja:", storeId);
+        await createDefaultPriceModel();
+      }
+    } catch (error: any) {
+      console.error("❌ useStorePriceModel: Erro na busca:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId, createDefaultPriceModel]);
 
   const isModelActive = useCallback((modelType: string) => {
     if (!priceModel) return false;
@@ -276,7 +238,7 @@ export const useStorePriceModel = (storeId: string | undefined) => {
       setPriceModel(null);
       setError(null);
     }
-  }, [storeId]);
+  }, [storeId, fetchPriceModel]);
 
   return useMemo(() => ({
     priceModel: priceModel,
