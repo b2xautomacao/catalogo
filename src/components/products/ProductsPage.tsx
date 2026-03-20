@@ -7,6 +7,7 @@ import ProductFormModal from "./ProductFormModal";
 import ProductStockManagerModal from "./ProductStockManagerModal";
 import PricingModeSelector from "./PricingModeSelector";
 import ExpandableProductForm from "./ExpandableProductForm";
+import PremiumProductWizard from "./PremiumProductWizard";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
 import ProductList from "./ProductList";
@@ -27,6 +28,9 @@ const ProductsPage = () => {
   // Estados para ExpandableProductForm
   const [isExpandableFormOpen, setIsExpandableFormOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | undefined>(undefined);
+  
+  // Estado para Premium Wizard
+  const [isPremiumWizardOpen, setIsPremiumWizardOpen] = useState(false);
   
   const { profile } = useAuth();
   const currentStore = profile?.store_id;
@@ -170,6 +174,14 @@ const ProductsPage = () => {
           </Button>
 
           <Button
+            onClick={() => setIsPremiumWizardOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg shadow-amber-500/20 border-none"
+          >
+            <Sparkles className="h-4 w-4" />
+            Wizard Premium
+          </Button>
+
+          <Button
             onClick={handleNewProduct}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
           >
@@ -200,6 +212,15 @@ const ProductsPage = () => {
             title: "✅ Sucesso!",
             description: editingProductId ? "Produto atualizado" : "Produto criado",
           });
+        }}
+      />
+
+      {/* Wizard Premium */}
+      <PremiumProductWizard 
+        open={isPremiumWizardOpen}
+        onOpenChange={setIsPremiumWizardOpen}
+        onSuccess={async () => {
+          await fetchProducts();
         }}
       />
 
