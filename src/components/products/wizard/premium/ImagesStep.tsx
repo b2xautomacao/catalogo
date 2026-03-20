@@ -16,10 +16,10 @@ const ImagesStep: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="text-center space-y-2">
          <h3 className="text-xl font-bold text-slate-900">Fotos do Produto</h3>
-         <p className="text-sm text-slate-500">Adicione imagens de alta qualidade para atrair mais clientes.</p>
+         <p className="text-sm text-slate-500 font-medium">As fotos são o principal fator de conversão do seu catálogo.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

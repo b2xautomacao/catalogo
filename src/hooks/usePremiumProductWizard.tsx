@@ -25,6 +25,8 @@ export interface PremiumWizardFormData {
   product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil';
   product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio';
   material?: string;
+  video_url?: string;
+  video_type?: 'youtube' | 'vimeo' | 'upload';
   seo_slug?: string;
   meta_title?: string;
   meta_description?: string;
@@ -57,6 +59,8 @@ export const usePremiumProductWizard = (
     store_id: profile?.store_id || "",
     variations: [],
     material: "",
+    video_url: "",
+    video_type: "youtube",
     seo_slug: "",
     meta_title: "",
     meta_description: "",
@@ -83,6 +87,8 @@ export const usePremiumProductWizard = (
       store_id: profile?.store_id || "",
       variations: [],
       material: "",
+      video_url: "",
+      video_type: "youtube",
       seo_slug: "",
       meta_title: "",
       meta_description: "",
@@ -111,6 +117,8 @@ export const usePremiumProductWizard = (
         stock_alert_threshold: formData.stock_alert_threshold,
         store_id: formData.store_id || profile?.store_id,
         material: formData.material,
+        video_url: formData.video_url,
+        video_type: formData.video_type,
         product_gender: formData.product_gender,
         product_category_type: formData.product_category_type,
         seo_slug: formData.seo_slug,

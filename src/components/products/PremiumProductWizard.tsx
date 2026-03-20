@@ -11,6 +11,7 @@ import BasicInfoStep from "./wizard/premium/BasicInfoStep";
 import PricingStep from "./wizard/premium/PricingStep";
 import ImagesStep from "./wizard/premium/ImagesStep";
 import VariationsStep from "./wizard/premium/VariationsStep";
+import SEOStep from "./wizard/premium/SEOStep";
 
 interface PremiumProductWizardProps {
   open: boolean;
@@ -45,8 +46,9 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
   const steps = [
     { title: "Definição", description: "O que vamos vender?", icon: "📌" },
     { title: "Precificação", description: "Valores e Atacado", icon: "💰" },
-    { title: "Visual", description: "Fotos do Produto", icon: "📸" },
+    { title: "Visual", description: "Fotos e Vídeo", icon: "📸" },
     { title: "Oferta", description: "Cores e Tamanhos", icon: "🎨" },
+    { title: "SEO", description: "Busca e Visibilidade", icon: "🌐" },
   ];
 
   const handleNext = () => {
@@ -76,7 +78,7 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
   }, [open, editingProduct, resetForm]);
 
   return (
-    <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-slate-50/98 backdrop-blur-xl border-slate-200 shadow-2xl rounded-3xl">
+    <DialogContent className="max-w-6xl h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-white border-slate-200 shadow-2xl rounded-3xl !dark:bg-white">
       {/* Header Customizado */}
       <div className="p-6 bg-white border-b flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -141,6 +143,7 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
             {currentStep === 1 && <PricingStep formData={formData} updateFormData={updateFormData} priceModel={priceModel} />}
             {currentStep === 2 && <ImagesStep />}
             {currentStep === 3 && <VariationsStep formData={formData} updateFormData={updateFormData} productId={editingProduct?.id} />}
+            {currentStep === 4 && <SEOStep formData={formData} updateFormData={updateFormData} />}
           </div>
         </main>
       </div>

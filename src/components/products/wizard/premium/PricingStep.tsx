@@ -27,8 +27,8 @@ const PricingStep: React.FC<PricingStepProps> = ({ formData, updateFormData, pri
                 <Tag className="w-5 h-5" />
               </div>
               <div>
-                <Label className="text-lg font-bold">Varejo</Label>
-                <p className="text-xs text-slate-500">Preço para venda individual</p>
+                <Label className="text-lg font-bold text-slate-900">Varejo</Label>
+                <p className="text-xs text-slate-500 font-medium">Preço para venda individual</p>
               </div>
             </div>
             
@@ -56,8 +56,8 @@ const PricingStep: React.FC<PricingStepProps> = ({ formData, updateFormData, pri
                 <TrendingDown className="w-5 h-5" />
               </div>
               <div>
-                <Label className="text-lg font-bold">Atacado</Label>
-                <p className="text-xs text-slate-500">Preço para revendedores e lotes</p>
+                <Label className="text-lg font-bold text-slate-900">Atacado</Label>
+                <p className="text-xs text-slate-500 font-medium">Preço para revendedores e lotes</p>
               </div>
             </div>
 
@@ -117,29 +117,29 @@ const PricingStep: React.FC<PricingStepProps> = ({ formData, updateFormData, pri
            Controle de Estoque e Regras
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 flex items-center justify-between">
+            <div className="p-4 rounded-xl border border-slate-200 bg-white flex items-center justify-between shadow-sm">
               <div>
-                 <Label className="text-xs font-bold text-slate-700">Estoque Inicial Total</Label>
-                 <p className="text-[10px] text-slate-400">Pode ser ajustado por variação depois</p>
+                 <Label className="text-xs font-bold text-slate-900">Estoque Inicial Total</Label>
+                 <p className="text-[10px] text-slate-500 font-medium">Pode ser ajustado por variação depois</p>
               </div>
               <Input
                 type="number"
                 value={formData.stock}
                 onChange={(e) => updateFormData({ stock: parseInt(e.target.value) || 0 })}
-                className="w-24 text-center font-bold"
+                className="w-24 text-center font-bold bg-slate-50"
               />
            </div>
 
-           <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/30 flex items-center justify-between">
+           <div className="p-4 rounded-xl border border-slate-200 bg-white flex items-center justify-between shadow-sm">
               <div>
-                 <Label className="text-xs font-bold text-slate-700">Alerta de Estoque Baixo</Label>
-                 <p className="text-[10px] text-slate-400">Notificar quando atingir este valor</p>
+                 <Label className="text-xs font-bold text-slate-900">Alerta de Estoque Baixo</Label>
+                 <p className="text-[10px] text-slate-500 font-medium">Notificar quando atingir este valor</p>
               </div>
               <Input
                 type="number"
                 value={formData.stock_alert_threshold}
                 onChange={(e) => updateFormData({ stock_alert_threshold: parseInt(e.target.value) || 5 })}
-                className="w-20 text-center font-bold"
+                className="w-20 text-center font-bold bg-slate-50"
               />
            </div>
         </div>
