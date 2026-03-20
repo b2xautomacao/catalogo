@@ -12,16 +12,31 @@ export interface FeatureUsageData {
   canUse: boolean;
 }
 
+// Cache global para evitar chamadas duplicadas entre diferentes instâncias do hook
+let globalUsageCache: Record<string, FeatureUsageData> | null = null;
+let lastUsageFetchTime = 0;
+const USAGE_CACHE_DURATION = 30000; // 30 segundos
+
 export const useFeatureUsageMonitor = () => {
-  const [usageData, setUsageData] = useState<Record<string, FeatureUsageData>>({});
-  const [loading, setLoading] = useState(true);
+  const [usageData, setUsageData] = useState<Record<string, FeatureUsageData>>(globalUsageCache || {});
+  const [loading, setLoading] = useState(!globalUsageCache);
   const { profile } = useAuth();
   const { subscription, getFeatureLimit, hasFeature } = useSubscription();
 
-  const fetchUsageData = useCallback(async () => {
+  const fetchUsageData = useCallback(async (force = false) => {
     if (!profile?.store_id || !subscription) return;
 
+    // Verificar se o cache ainda é válido (30 segundos)
+    const now = Date.now();
+    if (!force && globalUsageCache && (now - lastUsageFetchTime < USAGE_CACHE_DURATION)) {
+      console.log("🛡️ MONITOR - Usando cache GLOBAL de uso de features");
+      setUsageData(globalUsageCache);
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log("🔍 MONITOR - Buscando dados de uso:", profile.store_id);
       const { data: usage, error } = await supabase
         .from("feature_usage")
         .select("*")
@@ -53,6 +68,8 @@ export const useFeatureUsageMonitor = () => {
         };
       });
 
+      globalUsageCache = usageMap;
+      lastUsageFetchTime = now;
       setUsageData(usageMap);
     } catch (error) {
       console.error("Erro ao buscar dados de uso:", error);
@@ -84,7 +101,7 @@ export const useFeatureUsageMonitor = () => {
       );
 
       if (error) throw error;
-      await fetchUsageData();
+      await fetchUsageData(true);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || "Erro desconhecido" };
