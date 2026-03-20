@@ -54,11 +54,11 @@ export const useRealtimeBenefits = (
   useEffect(() => {
     // Only subscribe when profile id is stable
     const userId = profile?.id || 'anonymous';
-    const timestamp = Date.now();
+    const uniqueId = Math.random().toString(36).substring(2, 9);
 
-    // Criar IDs consistentes
-    const systemChannelId = `system-benefits-${userId}`;
-    const planChannelId = `plan-benefits-${userId}`;
+    // Criar IDs consistentes mas únicos por montagem
+    const systemChannelId = `system-benefits-${userId}-${uniqueId}`;
+    const planChannelId = `plan-benefits-${userId}-${uniqueId}`;
 
     console.log(`📡 Initializing stable realtime subscriptions for ${userId}`);
 
@@ -68,7 +68,7 @@ export const useRealtimeBenefits = (
 
     // Subscription para mudanças em system_benefits
     const systemBenefitsChannel = supabase
-      .channel(`${systemChannelId}-${timestamp}`)
+      .channel(systemChannelId)
       .on(
         'postgres_changes',
         {
@@ -82,7 +82,7 @@ export const useRealtimeBenefits = (
 
     // Subscription para mudanças em plan_benefits
     const planBenefitsChannel = supabase
-      .channel(`${planChannelId}-${timestamp}`)
+      .channel(planChannelId)
       .on(
         'postgres_changes',
         {

@@ -27,8 +27,9 @@ export const useRealtimeAnalytics = (storeId?: string) => {
   }, []);
 
   useEffect(() => {
-    const timestamp = Date.now();
-    const channelName = storeId ? `analytics-${storeId}-${timestamp}` : `analytics-global-${timestamp}`;
+    // Gerar um sufixo aleatório único para evitar colisões em re-renderizações rápidas
+    const uniqueId = Math.random().toString(36).substring(2, 9);
+    const channelName = storeId ? `analytics-${storeId}-${uniqueId}` : `analytics-global-${uniqueId}`;
     
     console.log("📡 ANALYTICS - Iniciando assinatura em tempo real:", channelName);
 
