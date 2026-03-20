@@ -19,7 +19,7 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
     setError(null);
 
     try {
-      const { data, fetchError } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("product_variations")
         .select("*")
         .eq("product_id", id)
