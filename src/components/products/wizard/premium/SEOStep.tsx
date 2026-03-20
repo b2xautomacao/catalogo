@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
-import { Search, Globe, Key, Sparkles, Loader2, Link2 } from "lucide-react";
+import { Globe, Key, Sparkles, Loader2, Link2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SEOStepProps {
@@ -24,49 +24,64 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
     setIsGenerating(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error } = await supabase.functions.invoke("ai-content-generator", {
-        body: { 
-            productName: formData.name, 
-            description: formData.description,
-            category: formData.category, 
-            contentType: "seo",
-            storeId: "global"
-        },
+      
+      // Padronizando conforme AIContentGenerator.tsx (múltiplas chamadas)
+      const commonBody = {
+        productName: formData.name,
+        category: formData.category || "produto",
+        storeId: "global"
+      };
+
+      toast({ title: "IA em ação", description: "Otimizando título, descrição e keywords..." });
+
+      // 1. Título
+      const { data: titleData } = await supabase.functions.invoke("ai-content-generator", {
+        body: { ...commonBody, contentType: "title" }
       });
-      if (error) throw error;
-      if (data?.content) {
-          const seo = data.content;
-          updateFormData({
-              meta_title: seo.title || formData.name,
-              meta_description: seo.description || formData.description?.substring(0, 160),
-              keywords: seo.keywords?.join(", ") || "",
-          });
-          toast({ title: "SEO Otimizado!", description: "Tags geradas com sucesso." });
-      }
+
+      // 2. Keywords
+      const { data: keyData } = await supabase.functions.invoke("ai-content-generator", {
+        body: { ...commonBody, contentType: "keywords" }
+      });
+
+      // 3. Descrição SEO
+      const { data: descData } = await supabase.functions.invoke("ai-content-generator", {
+        body: { ...commonBody, contentType: "description" }
+      });
+
+      updateFormData({
+        meta_title: titleData?.content || formData.name,
+        meta_description: descData?.content?.substring(0, 160) || formData.description?.substring(0, 160),
+        keywords: Array.isArray(keyData?.content) ? keyData.content.join(", ") : (keyData?.content || ""),
+        seo_slug: formData.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '')
+      });
+
+      toast({ title: "Pronto!", description: "SEO otimizado com sucesso pela IA." });
+
     } catch (e) {
       console.error(e);
-      toast({ title: "Erro na IA", description: "Não consegui gerar o SEO agora.", variant: "destructive" });
+      toast({ title: "Falha na IA", description: "Não conseguimos gerar todo o SEO agora.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
          <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
                <Globe className="w-5 h-5" />
             </div>
             <div>
-               <h3 className="text-lg font-bold text-slate-900">Otimização para Buscadores (SEO)</h3>
-               <p className="text-xs text-slate-500">Como seu produto aparece no Google e redes sociais</p>
+               <h3 className="text-lg font-bold text-slate-900">SEO de Alta Performance</h3>
+               <p className="text-xs text-slate-500">Apareça no topo das buscas do Google</p>
             </div>
          </div>
          <Button 
             variant="outline" 
             size="sm" 
-            className="text-blue-600 border-blue-200 hover:bg-blue-50 gap-2 font-bold"
+            className="text-blue-600 border-blue-200 hover:bg-blue-50 gap-2 font-bold shadow-sm"
             onClick={handleGenerateSEO}
             disabled={isGenerating}
          >
@@ -80,72 +95,72 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
         <div className="space-y-2">
           <Label className="text-sm font-bold text-slate-800 flex items-center gap-2">
              <Link2 className="w-4 h-4 text-slate-400" />
-             Slug da URL (Link)
+             Slug Amigável (Link)
           </Label>
-          <div className="flex items-center gap-2 bg-slate-100/50 p-3 rounded-lg border border-slate-200">
-             <span className="text-xs text-slate-400">meucatalogo.com/p/</span>
+          <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 group focus-within:border-blue-300 transition-all">
+             <span className="text-[10px] text-slate-400 font-bold uppercase">/p/</span>
              <Input
                 value={formData.seo_slug}
                 onChange={(e) => updateFormData({ seo_slug: e.target.value.toLowerCase().replace(/ /g, "-") })}
-                placeholder="nome-do-produto-aqui"
-                className="h-8 border-none bg-transparent shadow-none p-0 focus-visible:ring-0 text-blue-600 font-medium"
+                placeholder="nome-do-produto"
+                className="h-7 border-none bg-transparent shadow-none p-0 focus-visible:ring-0 text-blue-600 font-bold text-sm"
               />
           </div>
         </div>
 
         {/* Preview do Google */}
-        <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm space-y-2">
-           <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Preview no Google</Label>
+        <div className="p-6 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-2">
+           <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <AlertCircle className="w-3 h-3" /> Preview de Busca
+           </Label>
            <div className="space-y-1">
               <h4 className="text-lg text-[#1a0dab] hover:underline cursor-pointer font-medium truncate">
                   {formData.meta_title || formData.name || "Título do Produto"}
               </h4>
-              <p className="text-sm text-[#006621] truncate">meucatalogo.com/p/{formData.seo_slug || "..."}</p>
-              <p className="text-sm text-[#545454] line-clamp-2">
-                  {formData.meta_description || "Sua descrição aparecerá aqui. Certifique-se de incluir palavras-chave importantes."}
+              <p className="text-sm text-[#006621] truncate">https://meucatalogo.com/p/{formData.seo_slug || "..."}</p>
+              <p className="text-sm text-[#545454] line-clamp-2 leading-relaxed">
+                  {formData.meta_description || "Uma descrição matadora ajudará seu produto a ser encontrado mais facilmente pelos seus clientes."}
               </p>
            </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            <div className="space-y-2">
-              <Label className="text-sm font-bold text-slate-800">Meta Título</Label>
+              <Label className="text-sm font-bold text-slate-800">SEO Title</Label>
               <Input
                 value={formData.meta_title}
                 onChange={(e) => updateFormData({ meta_title: e.target.value })}
-                placeholder="Título para o Google"
+                placeholder="Título otimizado"
                 className="h-11 bg-white"
               />
-              <p className="text-[10px] text-slate-400">Recomendado: até 60 caracteres</p>
            </div>
            
            <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-800 flex items-center gap-2">
                  <Key className="w-4 h-4 text-slate-400" />
-                 Palavras-chave
+                 Keywords
               </Label>
               <Input
                 value={formData.keywords}
                 onChange={(e) => updateFormData({ keywords: e.target.value })}
-                placeholder="camisa, cotton, moda, verao"
+                placeholder="Ex: verao, moda, premium"
                 className="h-11 bg-white"
               />
-              <p className="text-[10px] text-slate-400">Separe por vírgulas</p>
            </div>
         </div>
 
         <div className="space-y-2">
-           <Label className="text-sm font-bold text-slate-800">Meta Descrição</Label>
+           <Label className="text-sm font-bold text-slate-800">Meta Description</Label>
            <Textarea
              value={formData.meta_description}
              onChange={(e) => updateFormData({ meta_description: e.target.value })}
-             placeholder="Descrição curta para os resultados de busca..."
-             className="min-h-[100px] bg-white text-slate-700 resize-none p-4"
+             placeholder="Descrição curta e chamativa..."
+             className="min-h-[100px] bg-white text-slate-700 resize-none p-4 rounded-xl"
              maxLength={160}
            />
-           <div className="flex justify-between items-center">
-              <p className="text-[10px] text-slate-400">Recomendado: 150 a 160 caracteres</p>
-              <span className={`text-[10px] font-bold ${formData.meta_description?.length > 160 ? "text-red-500" : "text-emerald-500"}`}>
+           <div className="flex justify-between items-center px-1">
+              <p className="text-[10px] text-slate-400 font-medium italic">Máx 160 caracteres para não truncar no Google.</p>
+              <span className={`text-[10px] font-bold ${formData.meta_description?.length > 160 ? "text-red-500" : "text-blue-500"}`}>
                  {formData.meta_description?.length || 0}/160
               </span>
            </div>

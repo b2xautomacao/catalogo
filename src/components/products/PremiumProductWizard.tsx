@@ -44,16 +44,20 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
   const { toast } = useToast();
 
   const steps = [
-    { title: "Definição", description: "O que vamos vender?", icon: "📌" },
-    { title: "Precificação", description: "Valores e Atacado", icon: "💰" },
-    { title: "Visual", description: "Fotos e Vídeo", icon: "📸" },
-    { title: "Oferta", description: "Cores e Tamanhos", icon: "🎨" },
-    { title: "SEO", description: "Busca e Visibilidade", icon: "🌐" },
+    { title: "Oferta", description: "Cores, Tamanhos e Grade", icon: "🎨" },
+    { title: "Imagens & Vídeo", description: "Identidade Visual (Máx 10 f/2 v)", icon: "📸" },
+    { title: "Informações", description: "Dados e Medidas", icon: "📌" },
+    { title: "Precificação", description: "Varejo e Atacado", icon: "💰" },
+    { title: "Search (SEO)", description: "Busca e Meta Tags", icon: "🌐" },
   ];
 
   const handleNext = () => {
     // Validação simples
-    if (currentStep === 0 && !formData.name) {
+    if (currentStep === 0 && formData.variations.length === 0) {
+      toast({ title: "Ei!", description: "Gere pelo menos uma variação (cor/tamanho) antes de seguir.", variant: "destructive" });
+      return;
+    }
+    if (currentStep === 2 && !formData.name) {
       toast({ title: "Ei!", description: "Dê um nome para o produto primeiro.", variant: "destructive" });
       return;
     }
@@ -139,10 +143,10 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
         {/* Formulário Interativo */}
         <main className="flex-1 overflow-y-auto p-8 lg:p-12 scroll-smooth">
           <div className="max-w-3xl mx-auto h-full">
-            {currentStep === 0 && <BasicInfoStep formData={formData} updateFormData={updateFormData} />}
-            {currentStep === 1 && <PricingStep formData={formData} updateFormData={updateFormData} priceModel={priceModel} />}
-            {currentStep === 2 && <ImagesStep />}
-            {currentStep === 3 && <VariationsStep formData={formData} updateFormData={updateFormData} productId={editingProduct?.id} />}
+            {currentStep === 0 && <VariationsStep formData={formData} updateFormData={updateFormData} productId={editingProduct?.id} />}
+            {currentStep === 1 && <ImagesStep formData={formData} updateFormData={updateFormData} />}
+            {currentStep === 2 && <BasicInfoStep formData={formData} updateFormData={updateFormData} />}
+            {currentStep === 3 && <PricingStep formData={formData} updateFormData={updateFormData} priceModel={priceModel} />}
             {currentStep === 4 && <SEOStep formData={formData} updateFormData={updateFormData} />}
           </div>
         </main>

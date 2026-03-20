@@ -11,6 +11,7 @@ export interface DraftImage {
   isExisting: boolean;
   isPrimary: boolean;
   displayOrder: number;
+  color_association?: string;
 }
 
 export const useDraftImages = () => {
@@ -145,6 +146,12 @@ export const useDraftImages = () => {
     },
     [toast]
   );
+
+  const setColorAssociation = useCallback((imageId: string, color: string | undefined) => {
+    setDraftImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, color_association: color } : img
+    ));
+  }, []);
 
   const reorderImages = useCallback((imageId: string, newIndex: number) => {
     setDraftImages((prev) => {
@@ -523,6 +530,7 @@ export const useDraftImages = () => {
     addDraftImages,
     removeDraftImage,
     setPrimaryImage,
+    setColorAssociation,
     reorderImages,
     loadExistingImages,
     uploadAllImages,

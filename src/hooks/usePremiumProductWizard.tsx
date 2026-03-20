@@ -31,6 +31,8 @@ export interface PremiumWizardFormData {
   meta_title?: string;
   meta_description?: string;
   keywords?: string;
+  measurements?: string;
+  care_instructions?: string;
 }
 
 export const usePremiumProductWizard = (
@@ -65,6 +67,8 @@ export const usePremiumProductWizard = (
     meta_title: "",
     meta_description: "",
     keywords: "",
+    measurements: "",
+    care_instructions: "",
   });
 
   const updateFormData = useCallback((updates: Partial<PremiumWizardFormData>) => {
@@ -93,6 +97,8 @@ export const usePremiumProductWizard = (
       meta_title: "",
       meta_description: "",
       keywords: "",
+      measurements: "",
+      care_instructions: "",
     });
     setCurrentStep(0);
   }, [profile?.store_id]);
@@ -125,6 +131,8 @@ export const usePremiumProductWizard = (
         meta_title: formData.meta_title,
         meta_description: formData.meta_description,
         keywords: formData.keywords,
+        // measurements: formData.measurements, // Não existe no banco ainda
+        // care_instructions: formData.care_instructions, // Não existe no banco ainda
       };
 
       let productId = editingProductId;

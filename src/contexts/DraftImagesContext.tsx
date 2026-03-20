@@ -10,6 +10,7 @@ interface DraftImagesContextType {
   addDraftImages: (files: File[]) => void;
   removeDraftImage: (imageId: string) => void;
   setPrimaryImage: (imageId: string) => void;
+  setColorAssociation: (imageId: string, color: string | undefined) => void;
   reorderImages: (imageId: string, newIndex: number) => void;
   loadExistingImages: (productId: string) => Promise<void>;
   uploadAllImages: (productId: string) => Promise<string[]>;
@@ -29,7 +30,9 @@ export const DraftImagesProvider: React.FC<DraftImagesProviderProps> = ({
   const draftImagesHook = useDraftImages();
 
   return (
-    <DraftImagesContext.Provider value={draftImagesHook}>
+    <DraftImagesContext.Provider value={{
+      ...draftImagesHook
+    }}>
       {children}
     </DraftImagesContext.Provider>
   );
