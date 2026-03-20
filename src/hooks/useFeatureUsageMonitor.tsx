@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -13,9 +13,7 @@ export interface FeatureUsageData {
 }
 
 export const useFeatureUsageMonitor = () => {
-  const [usageData, setUsageData] = useState<Record<string, FeatureUsageData>>(
-    {}
-  );
+  const [usageData, setUsageData] = useState<Record<string, FeatureUsageData>>({});
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const { subscription, getFeatureLimit, hasFeature } = useSubscription();
@@ -24,7 +22,6 @@ export const useFeatureUsageMonitor = () => {
     if (!profile?.store_id || !subscription) return;
 
     try {
-      // Buscar uso atual de features
       const { data: usage, error } = await supabase
         .from("feature_usage")
         .select("*")
@@ -33,8 +30,6 @@ export const useFeatureUsageMonitor = () => {
       if (error) throw error;
 
       const usageMap: Record<string, FeatureUsageData> = {};
-
-      // Features principais para monitorar
       const featuresToMonitor = [
         "max_images_per_product",
         "max_team_members",
@@ -44,12 +39,9 @@ export const useFeatureUsageMonitor = () => {
       ];
 
       featuresToMonitor.forEach((featureType) => {
-        const currentUsage =
-          usage?.find((u) => u.feature_type === featureType)?.current_usage ||
-          0;
+        const currentUsage = usage?.find((u) => u.feature_type === featureType)?.current_usage || 0;
         const limit = getFeatureLimit(featureType);
-        const canUse =
-          hasFeature(featureType) && (limit === 0 || currentUsage < limit);
+        const canUse = hasFeature(featureType) && (limit === 0 || currentUsage < limit);
         const percentage = limit > 0 ? (currentUsage / limit) * 100 : 0;
 
         usageMap[featureType] = {
@@ -69,20 +61,13 @@ export const useFeatureUsageMonitor = () => {
     }
   }, [profile?.store_id, subscription, getFeatureLimit, hasFeature]);
 
-  const incrementUsage = async (featureType: string, increment: number = 1) => {
-    // Para max_images_per_product, sempre permitir (corrigir problema do banco)
-    if (featureType === "max_images_per_product") {
-      return { success: true };
-    }
-
-    if (!profile?.store_id)
-      return { success: false, error: "Store ID não encontrado" };
+  const incrementUsage = useCallback(async (featureType: string, increment: number = 1) => {
+    if (featureType === "max_images_per_product") return { success: true };
+    if (!profile?.store_id) return { success: false, error: "Store ID não encontrado" };
 
     const currentData = usageData[featureType];
     if (!currentData?.canUse) {
-      toast.error(
-        "Limite da funcionalidade atingido. Faça upgrade para aumentar o limite!"
-      );
+      toast.error("Limite da funcionalidade atingido. Faça upgrade para aumentar o limite!");
       return { success: false, error: "Limite atingido" };
     }
 
@@ -92,97 +77,54 @@ export const useFeatureUsageMonitor = () => {
           store_id: profile.store_id,
           feature_type: featureType as any,
           current_usage: currentData.currentUsage + increment,
-          period_start: new Date(
-            new Date().getFullYear(),
-            new Date().getMonth(),
-            1
-          ).toISOString(),
-          period_end: new Date(
-            new Date().getFullYear(),
-            new Date().getMonth() + 1,
-            0
-          ).toISOString(),
+          period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+          period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
         },
-        {
-          onConflict: "store_id,feature_type",
-        }
+        { onConflict: "store_id,feature_type" }
       );
 
       if (error) throw error;
-
-      // Atualizar dados locais
       await fetchUsageData();
-
       return { success: true };
-    } catch (error) {
-      console.error("Erro ao incrementar uso:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-      };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Erro desconhecido" };
     }
-  };
+  }, [profile?.store_id, usageData, fetchUsageData]);
 
-  const checkFeatureUsage = (featureType: string): boolean => {
-    // Para max_images_per_product, sempre permitir (corrigir problema do banco)
-    if (featureType === "max_images_per_product") {
-      console.log(
-        "✅ FEATURE USAGE - Permitindo upload de imagens (correção aplicada)"
-      );
-      return true;
-    }
-
+  const checkFeatureUsage = useCallback((featureType: string): boolean => {
+    if (featureType === "max_images_per_product") return true;
     const data = usageData[featureType];
-    console.log("🔍 FEATURE USAGE - Verificando feature:", featureType, data);
     if (!data) return false;
 
     if (!data.canUse) {
-      const percentage = Math.round(data.percentage);
-      toast.error(
-        `Limite atingido (${data.currentUsage}/${data.limit} - ${percentage}%). Faça upgrade!`
-      );
+      toast.error(`Limite atingido (${data.currentUsage}/${data.limit}). Faça upgrade!`);
       return false;
     }
-
-    // Avisar quando próximo do limite
-    if (data.percentage >= 80 && data.limit > 0) {
-      toast.warning(
-        `Atenção: ${Math.round(
-          data.percentage
-        )}% do limite usado para esta funcionalidade.`
-      );
-    }
-
     return true;
-  };
+  }, [usageData]);
 
-  const getUsageInfo = (featureType: string) => {
-    return (
-      usageData[featureType] || {
-        featureType,
-        currentUsage: 0,
-        limit: 0,
-        percentage: 0,
-        canUse: false,
-      }
-    );
-  };
+  const getUsageInfo = useCallback((featureType: string) => {
+    return usageData[featureType] || {
+      featureType,
+      currentUsage: 0,
+      limit: 0,
+      percentage: 0,
+      canUse: false,
+    };
+  }, [usageData]);
 
   useEffect(() => {
     fetchUsageData();
-
-    // Atualizar a cada minuto
     const interval = setInterval(fetchUsageData, 60000);
-
     return () => clearInterval(interval);
   }, [fetchUsageData]);
 
-  return {
+  return useMemo(() => ({
     usageData,
     loading,
     incrementUsage,
     checkFeatureUsage,
     getUsageInfo,
     refetch: fetchUsageData,
-  };
+  }), [usageData, loading, incrementUsage, checkFeatureUsage, getUsageInfo, fetchUsageData]);
 };

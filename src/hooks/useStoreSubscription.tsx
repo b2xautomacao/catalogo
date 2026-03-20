@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -35,7 +34,6 @@ export const useStoreSubscription = (storeId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Usar storeId fornecido ou o do perfil
   const targetStoreId = storeId || profile?.store_id;
 
   const fetchSubscription = useCallback(async () => {
@@ -45,7 +43,6 @@ export const useStoreSubscription = (storeId?: string) => {
     }
 
     try {
-      // Buscar assinatura ativa OU em trial
       const { data, error } = await supabase
         .from('store_subscriptions')
         .select(`
@@ -83,7 +80,6 @@ export const useStoreSubscription = (storeId?: string) => {
     }
   }, [targetStoreId]);
 
-  // Calcular dias restantes do trial
   const getTrialDaysLeft = useCallback((): number => {
     if (!subscription?.trial_ends_at || subscription.status !== 'trialing') return 0;
     
@@ -99,11 +95,11 @@ export const useStoreSubscription = (storeId?: string) => {
     fetchSubscription();
   }, [fetchSubscription]);
 
-  return {
+  return useMemo(() => ({
     subscription,
     loading,
     error,
     refetch: fetchSubscription,
     getTrialDaysLeft
-  };
+  }), [subscription, loading, error, fetchSubscription, getTrialDaysLeft]);
 };
