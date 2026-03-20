@@ -336,6 +336,7 @@ const UnifiedVariationWizard: React.FC<UnifiedVariationWizardProps> = ({
             onVariationsGenerated={handleQuickVariationsGenerated}
             onAdvancedMode={() => navigateTo("advanced")}
             productName={productName}
+            storeId={storeId}
           />
         );
 

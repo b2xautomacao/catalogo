@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +14,14 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { ProductVariation } from "@/types/product";
+import { useStoreColors } from "@/hooks/useStoreColors";
 import { useToast } from "@/hooks/use-toast";
 
 interface QuickVariationSetupProps {
   onVariationsGenerated: (variations: ProductVariation[]) => void;
   onAdvancedMode: () => void;
   productName?: string;
+  storeId?: string;
 }
 
 interface QuickTemplate {
@@ -37,8 +39,28 @@ const QuickVariationSetup: React.FC<QuickVariationSetupProps> = ({
   onVariationsGenerated,
   onAdvancedMode,
   productName = "Produto",
+  storeId,
 }) => {
   const { toast } = useToast();
+  const { colors: storeColors, syncDefaultColors } = useStoreColors(storeId);
+  const [syncingDefaults, setSyncingDefaults] = useState(false);
+
+  const handleSyncDefaults = async () => {
+    setSyncingDefaults(true);
+    try {
+      const result = await syncDefaultColors();
+      if ('count' in result && typeof result.count === 'number' && result.count > 0) {
+        toast({
+          title: "Cores importadas!",
+          description: `${result.count} cores sugeridas foram adicionadas à sua loja.`,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar cores:", error);
+    } finally {
+      setSyncingDefaults(false);
+    }
+  };
 
   // Templates rápidos pré-configurados
   const quickTemplates: QuickTemplate[] = [

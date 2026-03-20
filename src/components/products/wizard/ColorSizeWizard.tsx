@@ -23,8 +23,9 @@ import { ProductVariation } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ColorPickerPopover from "./ColorPickerPopover";
-import { resolveColorHex } from "@/lib/colors";
+import { resolveColorHex, DEFAULT_STORE_COLORS } from "@/lib/colors";
 import { useStoreColors } from "@/hooks/useStoreColors";
+import { Loader2 } from "lucide-react";
 
 interface ColorSizeWizardProps {
   variations: ProductVariation[];
@@ -60,7 +61,11 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
   storeId,
 }) => {
   const { toast } = useToast();
-  const { colors: storeColors, loading: loadingColors } = useStoreColors(storeId);
+  const { 
+    colors: storeColors, 
+    loading: loadingColors,
+    syncDefaultColors 
+  } = useStoreColors(storeId);
   const [currentStep, setCurrentStep] = useState(0);
   const [customColorInput, setCustomColorInput] = useState("");
   const [customSizeInput, setCustomSizeInput] = useState("");
@@ -71,18 +76,7 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
   );
   const [bulkStock, setBulkStock] = useState(10);
   const [bulkPriceAdjustment, setBulkPriceAdjustment] = useState(0);
-
-  // Cores pré-definidas
-  const predefinedColors = [
-    { name: "Preto", hex: "#000000" },
-    { name: "Branco", hex: "#FFFFFF" },
-    { name: "Azul", hex: "#2563EB" },
-    { name: "Vermelho", hex: "#DC2626" },
-    { name: "Verde", hex: "#16A34A" },
-    { name: "Rosa", hex: "#EC4899" },
-    { name: "Amarelo", hex: "#EAB308" },
-    { name: "Roxo", hex: "#9333EA" },
-  ];
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Tamanhos pré-definidos por categoria
   const sizeTemplates = {
@@ -103,44 +97,36 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
       );
     }
 
-    // Inicializar cores populares e mesclar com as da loja
-    const popularConfigs = predefinedColors.map((color) => ({
-      name: color.name,
-      hex: color.hex,
-      selected: false,
-    }));
-
-    // Se já temos configurações, vamos apenas adicionar as novas cores da loja que ainda não existem
-    if (colorConfigs.length > 0) {
-      const newStoreColors = storeColors.filter(
-        sc => !colorConfigs.some(cc => cc.name.toLowerCase() === sc.name.toLowerCase())
-      ).map(sc => ({
+    // Inicializar configurações de cores com base nas cores da loja
+    if (!loadingColors && storeColors.length > 0) {
+      setColorConfigs(storeColors.map(sc => ({
         name: sc.name,
         hex: sc.hex_color,
         selected: false,
-      }));
-
-      if (newStoreColors.length > 0) {
-        setColorConfigs(prev => [...prev, ...newStoreColors]);
-      }
-    } else {
-      // Primeira inicialização
-      const storeConfigs = storeColors.map(color => ({
-        name: color.name,
-        hex: color.hex_color,
-        selected: false,
-      }));
-
-      const combined = [...popularConfigs];
-      storeConfigs.forEach(storeCol => {
-        if (!combined.some(c => c.name.toLowerCase() === storeCol.name.toLowerCase())) {
-          combined.push(storeCol);
-        }
-      });
-
-      setColorConfigs(combined);
+      })));
     }
-  }, [storeColors.length]); // Re-executa apenas quando a quantidade de cores da loja mudar
+  }, [storeColors, loadingColors]);
+
+  const handleSyncDefaults = async () => {
+    try {
+      setIsSyncing(true);
+      const result = await syncDefaultColors();
+      if ('count' in result && typeof result.count === 'number' && result.count > 0) {
+        toast({
+          title: "Cores importadas!",
+          description: `${result.count} cores sugeridas foram adicionadas à sua loja.`,
+        });
+      } else { }
+    } catch (error) {
+      toast({
+        title: "Erro ao sincronizar",
+        description: "Não foi possível carregar as cores padrão.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const steps = [
     {
@@ -381,21 +367,44 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
               </p>
             </div>
 
-            {/* Cores da Loja */}
-            {storeColors.length > 0 && (
-              <div>
-                <Label className="text-sm font-medium">Cores da sua Loja</Label>
-                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-2">
+            {/* Seção de Cores da Loja (ou vazio) */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-sm font-semibold">Cores da sua Loja</Label>
+                {storeColors.length < DEFAULT_STORE_COLORS.length && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleSyncDefaults}
+                    disabled={isSyncing}
+                    className="text-blue-600 hover:text-blue-700 h-8 gap-2"
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    Importar Cores Sugeridas
+                  </Button>
+                )}
+              </div>
+
+              {loadingColors ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                </div>
+              ) : storeColors.length > 0 ? (
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                   {storeColors.map((color) => {
                     const config = colorConfigs.find(
-                      (c) => c.name === color.name
+                      (c) => c.name.toLowerCase() === color.name.toLowerCase()
                     );
                     const isSelected = config?.selected || false;
 
                     return (
                       <div
                         key={color.id}
-                        onClick={() => toggleColor(color.name)}
+                        onClick={() => toggleColor(config?.name || color.name)}
                         className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
                           isSelected
                             ? "border-blue-500 bg-blue-50"
@@ -403,70 +412,35 @@ const ColorSizeWizard: React.FC<ColorSizeWizardProps> = ({
                         }`}
                       >
                         <div
-                          className="w-6 h-6 rounded-full border mx-auto mb-2"
+                          className="w-8 h-8 rounded-full border mx-auto mb-2 shadow-sm"
                           style={{
                             backgroundColor: color.hex_color,
                             borderColor:
-                              color.hex_color.toUpperCase() === "#FFFFFF" ? "#e5e7eb" : "transparent",
+                              color.hex_color.toUpperCase() === "#FFFFFF" ? "#e5e7eb" : "rgba(0,0,0,0.1)",
                           }}
                         />
-                        <p className="text-xs text-center font-medium truncate">
+                        <p className="text-xs text-center font-medium truncate px-1">
                           {color.name}
                         </p>
                         {isSelected && (
                           <div className="absolute -top-1 -right-1">
-                            <Check className="w-4 h-4 text-blue-600 bg-white rounded-full shadow-sm" />
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
                           </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {/* Cores populares (pre-definidas que não estão nas cores da loja) */}
-            <div>
-              <Label className="text-sm font-medium">Cores Populares</Label>
-              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mt-2">
-                {predefinedColors
-                  .filter(pc => !storeColors.some(sc => sc.name.toLowerCase() === pc.name.toLowerCase()))
-                  .map((color) => {
-                    const config = colorConfigs.find(
-                      (c) => c.name === color.name
-                    );
-                    const isSelected = config?.selected || false;
-
-                    return (
-                      <div
-                        key={color.name}
-                        onClick={() => toggleColor(color.name)}
-                        className={`relative cursor-pointer p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
-                          isSelected
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-full border mx-auto mb-2"
-                          style={{
-                            backgroundColor: resolveColorHex(color.name, color.hex),
-                            borderColor:
-                              color.hex === "#FFFFFF" ? "#e5e7eb" : "transparent",
-                          }}
-                        />
-                        <p className="text-xs text-center font-medium">
-                          {color.name}
-                        </p>
-                        {isSelected && (
-                          <div className="absolute -top-1 -right-1">
-                            <Check className="w-4 h-4 text-blue-600 bg-white rounded-full" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
+              ) : (
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Palette className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-700">
+                    Sua loja ainda não tem cores cadastradas. Use o botão acima para importar as cores mais comuns ou adicione uma cor personalizada abaixo.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             {/* Adicionar cor customizada */}

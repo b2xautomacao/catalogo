@@ -11,13 +11,21 @@ export const COLOR_NAME_MAP: Record<string, string> = {
   "azul marinho": "#1e3a8a",
   navy: "#1e3a8a",
   verde: "#22C55E",
+  "verde agua": "#7FFFD4",
+  "verde água": "#7FFFD4",
+  "verde militar": "#4b5320",
+  "verde musgo": "#4a5d23",
+  "verde lima": "#32cd32",
+  "verde limao": "#32cd32",
   amarelo: "#EAB308",
   rosa: "#EC4899",
   "rosa bebê": "#fbcfe8",
+  "rosa choque": "#ff1493",
   roxo: "#A855F7",
   laranja: "#F97316",
   cinza: "#6B7280",
   "cinza claro": "#d1d5db",
+  "cinza chumbo": "#374151",
   marrom: "#92400E",
   bege: "#D4B896",
   caramelo: "#c48c3e",
@@ -30,6 +38,7 @@ export const COLOR_NAME_MAP: Record<string, string> = {
   lilás: "#c084fc",
   creme: "#fef9c3",
   off: "#f5f0e8",
+  "off white": "#fafaf9",
   rosê: "#E5B0A3",
   rosé: "#E5B0A3",
   rose: "#E5B0A3",
@@ -41,6 +50,26 @@ export const COLOR_NAME_MAP: Record<string, string> = {
   rodio: "#E5E4E2",
   grafite: "#41424C",
 };
+
+/** Cores padrão para seed inicial da loja */
+export const DEFAULT_STORE_COLORS = [
+  { name: "Preto", hex: "#000000" },
+  { name: "Branco", hex: "#FFFFFF" },
+  { name: "Azul", hex: "#2563EB" },
+  { name: "Vermelho", hex: "#DC2626" },
+  { name: "Verde", hex: "#16A34A" },
+  { name: "Amarelo", hex: "#EAB308" },
+  { name: "Rosa", hex: "#EC4899" },
+  { name: "Roxo", hex: "#9333EA" },
+  { name: "Marrom", hex: "#A16207" },
+  { name: "Cinza", hex: "#6B7280" },
+  { name: "Laranja", hex: "#EA580C" },
+  { name: "Azul Claro", hex: "#0EA5E9" },
+  { name: "Dourado", hex: "#DAA520" },
+  { name: "Prata", hex: "#C0C0C0" },
+  { name: "Vinho", hex: "#7F1D1D" },
+  { name: "Nude", hex: "#E8C8A0" },
+];
 
 /** Normaliza string removendo acentos e convertendo para lowercase */
 function normalizeString(str: string): string {

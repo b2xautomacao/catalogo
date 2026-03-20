@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DEFAULT_STORE_COLORS } from '@/lib/colors';
 
 export interface StoreColor {
     id: string;
@@ -102,6 +103,43 @@ export const useStoreColors = (storeId?: string) => {
         }
     };
 
+    /**
+     * Sincroniza as cores padrão com a loja, adicionando as que faltam.
+     */
+    const syncDefaultColors = async (defaultColors: { name: string, hex: string }[] = DEFAULT_STORE_COLORS) => {
+        try {
+            const targetStoreId = storeId || profile?.store_id;
+            if (!targetStoreId) return { error: 'Store ID não encontrado' };
+
+            // Filtrar cores que já existem (por nome insensível a maiúsculas)
+            const existingNames = colors.map(c => c.name.toLowerCase());
+            const missingColors = defaultColors.filter(
+                dc => !existingNames.includes(dc.name.toLowerCase())
+            );
+
+            if (missingColors.length === 0) return { success: true, count: 0 };
+
+            const insertData = missingColors.map(dc => ({
+                store_id: targetStoreId,
+                name: dc.name,
+                hex_color: dc.hex,
+                is_active: true
+            }));
+
+            const { error } = await supabase
+                .from('store_colors')
+                .insert(insertData);
+
+            if (error) throw error;
+            
+            await fetchColors();
+            return { success: true, count: missingColors.length };
+        } catch (error) {
+            console.error('Erro ao sincronizar cores padrão:', error);
+            return { error };
+        }
+    };
+
     useEffect(() => {
         if (profile?.store_id || storeId) {
             fetchColors();
@@ -115,5 +153,6 @@ export const useStoreColors = (storeId?: string) => {
         createColor,
         updateColor,
         deleteColor,
+        syncDefaultColors,
     };
 };

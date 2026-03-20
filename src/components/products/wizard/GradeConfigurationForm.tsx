@@ -57,7 +57,35 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   const [gradeName, setGradeName] = useState("Grade Personalizada");
 
   const { grades: storeGrades } = useStoreGrades(storeId);
-  const { colors: storeColors } = useStoreColors(storeId);
+  const { colors: storeColors, syncDefaultColors } = useStoreColors(storeId);
+  const [syncingDefaults, setSyncingDefaults] = useState(false);
+
+  const handleSyncDefaults = async () => {
+    setSyncingDefaults(true);
+    try {
+      const result = await syncDefaultColors();
+      if ('count' in result && typeof result.count === 'number' && result.count > 0) {
+        toast({
+          title: "Cores importadas!",
+          description: `${result.count} cores sugeridas foram adicionadas à sua loja.`,
+        });
+      } else {
+        toast({
+          title: "Sua loja já possui as cores sugeridas",
+          description: "Nenhuma cor nova precisou ser adicionada.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar cores:", error);
+      toast({
+        title: "Erro ao importar cores",
+        description: "Não foi possível carregar as cores sugeridas.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingDefaults(false);
+    }
+  };
 
   // Estado para configuração de grade flexível
   const [showFlexibleConfig, setShowFlexibleConfig] = useState(false);
@@ -70,10 +98,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "P", "M", "G", "GG"
   ];
 
-  const commonColors = [
-    "Preto", "Branco", "Azul", "Vermelho", "Verde",
-    "Amarelo", "Rosa", "Roxo", "Marrom", "Cinza"
-  ];
+
 
   const gradeTemplates = [
     {
@@ -118,10 +143,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     }
   ];
 
-  // Combina cores da loja com cores padrão como fallback visual
-  const availableColors = storeColors.length > 0
-    ? [...storeColors.map(c => c.name), ...commonColors].filter((v, i, a) => a.indexOf(v) === i)
-    : commonColors;
+  // Cores da loja são as únicas disponíveis
+  const availableColors = storeColors.map(c => c.name);
 
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
@@ -406,7 +429,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               uma grade separada.
             </p>
 
-            {availableColors.length > 0 && (
+            {availableColors.length > 0 ? (
               <div className="flex flex-wrap gap-2 mb-4">
                 {availableColors.map((color) => {
                   const storeColorOpt = storeColors.find(c => c.name.toLowerCase() === color.toLowerCase());
@@ -428,6 +451,22 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                     </Button>
                   );
                 })}
+              </div>
+            ) : (
+              <div className="bg-blue-50 p-4 rounded-lg mb-4 text-center">
+                <p className="text-sm text-blue-700 mb-3">
+                  Sua loja ainda não possui cores cadastradas.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSyncDefaults}
+                  disabled={syncingDefaults}
+                  className="bg-white"
+                >
+                  <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                  {syncingDefaults ? "Importando..." : "Importar Cores Sugeridas"}
+                </Button>
               </div>
             )}
 
