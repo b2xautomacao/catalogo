@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Upload, Package, Settings } from "lucide-react";
+import { Plus, Upload, Package, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BulkImportModal from "./BulkImportModal";
 import BulkStockModal from "./BulkStockModal";
