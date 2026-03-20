@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,7 +46,7 @@ export const useStorePriceModel = (storeId: string | undefined) => {
   // Log para verificar quando o hook é chamado
   console.log("🔍 useStorePriceModel: Hook chamado com storeId:", storeId);
 
-  const fetchPriceModel = async () => {
+  const fetchPriceModel = useCallback(async () => {
     if (!storeId) {
       setPriceModel(null);
       return;
@@ -90,9 +90,9 @@ export const useStorePriceModel = (storeId: string | undefined) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId, createDefaultPriceModel]);
 
-  const updatePriceModel = async (updates: Partial<StorePriceModel>) => {
+  const updatePriceModel = useCallback(async (updates: Partial<StorePriceModel>) => {
     if (!storeId) return;
 
     console.log("🔄 useStorePriceModel: Atualizando modelo com:", updates);
@@ -186,9 +186,9 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         variant: "destructive",
       });
     }
-  };
+  }, [storeId, toast]);
 
-  const createDefaultPriceModel = async () => {
+  const createDefaultPriceModel = useCallback(async () => {
     if (!storeId) return;
 
     try {
@@ -242,9 +242,9 @@ export const useStorePriceModel = (storeId: string | undefined) => {
         variant: "destructive",
       });
     }
-  };
+  }, [storeId, updatePriceModel, toast]);
 
-  const isModelActive = (modelType: string) => {
+  const isModelActive = useCallback((modelType: string) => {
     if (!priceModel) return false;
 
     switch (modelType) {
@@ -259,15 +259,15 @@ export const useStorePriceModel = (storeId: string | undefined) => {
       default:
         return false;
     }
-  };
+  }, [priceModel]);
 
-  const changePriceModel = async (newModel: PriceModelType) => {
+  const changePriceModel = useCallback(async (newModel: PriceModelType) => {
     await updatePriceModel({ price_model: newModel });
-  };
+  }, [updatePriceModel]);
 
-  const getSettings = () => {
+  const getSettings = useCallback(() => {
     return priceModel;
-  };
+  }, [priceModel]);
 
   useEffect(() => {
     if (storeId) {
@@ -278,7 +278,7 @@ export const useStorePriceModel = (storeId: string | undefined) => {
     }
   }, [storeId]);
 
-  return {
+  return useMemo(() => ({
     priceModel: priceModel,
     loading,
     error,
@@ -288,5 +288,15 @@ export const useStorePriceModel = (storeId: string | undefined) => {
     isModelActive,
     changePriceModel,
     getSettings,
-  };
+  }), [
+    priceModel,
+    loading,
+    error,
+    updatePriceModel,
+    createDefaultPriceModel,
+    fetchPriceModel,
+    isModelActive,
+    changePriceModel,
+    getSettings
+  ]);
 };

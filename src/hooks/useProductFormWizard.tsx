@@ -44,43 +44,43 @@ export interface WizardStep {
   description: string;
 }
 
+const initialFormData: ProductFormData = {
+  name: "",
+  description: "",
+  retail_price: 0,
+  wholesale_price: undefined,
+  min_wholesale_qty: 1,
+  stock: 0,
+  category: "",
+  keywords: "",
+  meta_title: "",
+  meta_description: "",
+  seo_slug: "",
+  is_featured: false,
+  allow_negative_stock: false,
+  stock_alert_threshold: 5,
+  is_active: true,
+  variations: [],
+  price_tiers: [],
+  store_id: "",
+  // Adicionar valores padrão para as novas propriedades
+  price_model: "wholesale_only",
+  simple_wholesale_enabled: true,
+  gradual_wholesale_enabled: false,
+  // 🎯 FASE 2: Novos campos
+  product_gender: undefined,
+  product_category_type: undefined,
+  material: "",
+  video_url: "",
+  video_type: "youtube",
+  video_thumbnail: "",
+};
+
 export const useProductFormWizard = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [productId, setProductId] = useState<string | null>(null);
-
-  const initialFormData: ProductFormData = {
-    name: "",
-    description: "",
-    retail_price: 0,
-    wholesale_price: undefined,
-    min_wholesale_qty: 1,
-    stock: 0,
-    category: "",
-    keywords: "",
-    meta_title: "",
-    meta_description: "",
-    seo_slug: "",
-    is_featured: false,
-    allow_negative_stock: false,
-    stock_alert_threshold: 5,
-    is_active: true,
-    variations: [],
-    price_tiers: [],
-    store_id: "",
-    // Adicionar valores padrão para as novas propriedades
-    price_model: "wholesale_only",
-    simple_wholesale_enabled: true,
-    gradual_wholesale_enabled: false,
-    // 🎯 FASE 2: Novos campos
-    product_gender: undefined,
-    product_category_type: undefined,
-    material: "",
-    video_url: "",
-    video_type: "youtube",
-    video_thumbnail: "",
-  };
 
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
 

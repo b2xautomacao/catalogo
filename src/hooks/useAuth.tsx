@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadProfile();
   }, [user, sessionLoading]);
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!profile) return { data: null, error: 'Perfil não encontrado' };
 
     try {
@@ -106,9 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Erro ao atualizar perfil:', error);
       return { data: null, error };
     }
-  };
+  }, [profile?.id]);
 
-  const createStoreForUser = async (userId: string, storeName: string, storeDescription?: string) => {
+  const createStoreForUser = useCallback(async (userId: string, storeName: string, storeDescription?: string) => {
     try {
       console.log('Criando loja para usuário:', userId, storeName);
       
@@ -150,26 +150,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Erro inesperado ao criar loja:', error);
       return { data: null, error };
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       const userProfile = await fetchProfile(user.id);
       setProfile(userProfile);
     }
-  };
+  }, [user]);
 
-  const refetchProfile = async () => {
+  const refetchProfile = useCallback(async () => {
     if (user) {
       const userProfile = await fetchProfile(user.id);
       setProfile(userProfile);
     }
-  };
+  }, [user]);
 
   const isSuperadmin = profile?.role === 'superadmin';
   const isStoreAdmin = profile?.role === 'store_admin';
 
-  const value: AuthContextType = {
+  const value = useMemo(() => ({
     user,
     session,
     profile,
@@ -181,7 +181,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isSuperadmin,
     isStoreAdmin,
     refetchProfile
-  };
+  }), [
+    user, 
+    session, 
+    profile, 
+    loading, 
+    signOut, 
+    updateProfile, 
+    createStoreForUser, 
+    refreshProfile, 
+    isSuperadmin, 
+    isStoreAdmin, 
+    refetchProfile
+  ]);
 
   return (
     <AuthContext.Provider value={value}>
