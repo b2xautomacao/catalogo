@@ -159,14 +159,18 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     }
   };
 
-  const applyGradeTemplate = (template: { name: string, sizes: string[], distribution?: number[], default_quantities?: number[] }) => {
+  const applyGradeTemplate = (template: any) => {
     const templatePairs = template.distribution || template.default_quantities || [];
     const newConfigs: SizePairConfig[] = template.sizes.map((size, index) => ({
       size,
       pairs: templatePairs[index] || 1,
     }));
     setSizePairConfigs(newConfigs);
-    setGradeName(`${template.name}`);
+    setGradeName(template.name);
+    toast({ 
+      title: "Template Aplicado", 
+      description: `${template.name} com ${newConfigs.reduce((s, c) => s + c.pairs, 0)} pares selecionada.` 
+    });
   };
 
   const addSizePair = () => {
@@ -537,8 +541,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                     >
                       <Package className="w-4 h-4 mr-2" />
                       <span className="truncate">{template.name}</span>
-                      <Badge variant="secondary" className="ml-auto bg-white text-blue-700">
-                        {template.sizes.length}
+                      <Badge variant="secondary" className="ml-auto bg-emerald-500 text-white font-bold">
+                        {template.distribution.reduce((a, b) => a + b, 0)} P
                       </Badge>
                     </Button>
                   ))}
@@ -558,8 +562,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 >
                   <Package className="w-4 h-4 mr-2 opacity-50" />
                   <span className="truncate">{template.name}</span>
-                  <Badge variant="secondary" className="ml-auto opacity-75">
-                    {template.sizes.length}
+                  <Badge variant="secondary" className="ml-auto opacity-75 font-bold">
+                    {template.distribution?.reduce((a, b) => a + b, 0) || template.sizes.length} P
                   </Badge>
                 </Button>
               ))}

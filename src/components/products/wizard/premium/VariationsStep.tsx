@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Palette, Plus, X, Check, Box, User, Layers, Info } from "lucide-react";
+import { Package, Plus, Trash2, Layers, Grid, ChevronRight, Check, Palette, X, Box, User, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useStoreColors } from "@/hooks/useStoreColors";
 import { resolveColorHex, isLightColor } from "@/lib/colors";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +25,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [bulkStock, setBulkStock] = useState("");
+  const [baseQuantity, setBaseQuantity] = useState("1");
   const [showGradeManager, setShowGradeManager] = useState(false);
   const { toast } = useToast();
 
@@ -61,6 +63,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
 
   const generateVariations = (mode: 'standard' | 'half' | 'merged' = 'standard') => {
     const newVariations: ProductVariation[] = [];
+    const stockVal = parseInt(baseQuantity) || 0;
     
     selectedColors.forEach(colorName => {
       const storeColor = storeColors.find(c => c.name === colorName);
@@ -69,7 +72,6 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
       let finalSizes = [...selectedSizes];
       
       if (mode === 'half' && formData.product_category_type === 'calcado') {
-        // Exemplo de meia grade: adiciona .5 para cada tamanho selecionado
         const extra = selectedSizes.map(s => `${s}.5`);
         finalSizes = [...new Set([...finalSizes, ...extra])].sort();
       }
@@ -82,7 +84,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
             color: colorName,
             size: size,
             hex_color: hex,
-            stock: 0,
+            stock: stockVal,
             price_adjustment: 0,
             is_active: true,
             created_at: new Date().toISOString(),
@@ -95,7 +97,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
           product_id: productId || "",
           color: colorName,
           hex_color: hex,
-          stock: 0,
+          stock: stockVal,
           price_adjustment: 0,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -107,6 +109,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     updateFormData({ variations: [...formData.variations, ...newVariations] });
     setSelectedColors([]);
     setSelectedSizes([]);
+    toast({ title: "Variações geradas!", description: `${newVariations.length} novas variações foram criadas.` });
   };
 
   const applyBulkStock = () => {
@@ -214,32 +217,47 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-blue-100 mb-2">
+                  <div className="flex flex-col">
+                    <Label className="text-[10px] font-bold text-blue-700 uppercase">Qtd base por item</Label>
+                    <p className="text-[9px] text-blue-500">Pares iniciais</p>
+                  </div>
+                  <Input 
+                    type="number" 
+                    value={baseQuantity} 
+                    onChange={e => setBaseQuantity(e.target.value)}
+                    className="w-16 h-8 text-center font-bold bg-white"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
                       variant="outline"
-                      className="h-12 rounded-xl border-dashed border-slate-300 text-slate-600 font-bold text-xs gap-2"
+                      className="h-12 rounded-xl border-dashed border-slate-300 text-slate-600 font-bold text-xs gap-2 flex-col"
                       onClick={() => generateVariations('standard')}
                       disabled={selectedColors.length === 0}
                   >
-                      Gerar Padrão
+                      <Layers className="w-3 h-3" />
+                      Grade Padrão
                   </Button>
                   {formData.product_category_type === 'calcado' && (
                       <Button 
                           variant="outline"
-                          className="h-12 rounded-xl border-dashed border-blue-200 text-blue-600 bg-blue-50/30 font-bold text-xs gap-2"
+                          className="h-12 rounded-xl border-dashed border-blue-200 text-blue-600 bg-blue-50/30 font-bold text-xs gap-2 flex-col"
                           onClick={() => generateVariations('half')}
                           disabled={selectedColors.length === 0 || selectedSizes.length === 0}
                       >
+                          <Plus className="w-3 h-3" />
                           Meia Grade (.5)
                       </Button>
                   )}
                   <Button 
-                      className="col-span-2 bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2"
+                      className="col-span-2 bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2 shadow-lg"
                       disabled={selectedColors.length === 0}
                       onClick={() => generateVariations('merged')}
                   >
-                      Mesclar e Gerar
                       <Plus className="w-4 h-4" />
+                      Mesclar e Gerar Variações
                   </Button>
                 </div>
               </div>
@@ -307,8 +325,13 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                                )}
                             </div>
                             <div className="flex flex-col">
-                               <span className="text-[11px] font-bold text-slate-800">{v.color}</span>
-                               <span className="text-[9px] text-slate-500 font-bold uppercase">Estoque: {v.stock}</span>
+                               <div className="flex items-center gap-2">
+                                 <span className="text-[11px] font-bold text-slate-800">{v.color}</span>
+                                 <Badge variant="outline" className="h-4 px-1 text-[8px] border-slate-200 text-slate-500 font-bold uppercase">
+                                   {v.size || "Único"}
+                                 </Badge>
+                               </div>
+                               <span className="text-[10px] text-emerald-600 font-bold">{v.stock} pares</span>
                             </div>
                          </div>
                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-200 hover:text-red-500 rounded-full" onClick={() => updateFormData({ variations: formData.variations.filter(varI => varI.id !== v.id) })}>
