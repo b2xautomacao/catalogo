@@ -179,7 +179,9 @@ const VariationEditDialog: React.FC<VariationEditDialogProps> = ({
                     <span className="text-xs text-gray-500">
                       Cor personalizada:{" "}
                       <code className="font-mono bg-gray-100 px-1 rounded">
-                        {(editedVariation as any).hex_color || "#9CA3AF"}
+                        {(editedVariation as any).hex_color && (editedVariation as any).hex_color !== "#9CA3AF" 
+                          ? (editedVariation as any).hex_color 
+                          : "Padrão"}
                       </code>
                     </span>
                   </div>

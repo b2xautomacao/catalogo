@@ -112,7 +112,7 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
                     <div 
                       className="w-8 h-8 rounded-full border-2 border-gray-300"
                       style={{ 
-                        backgroundColor: resolveColorHex(color)
+                        backgroundColor: resolveColorHex(color, grades[0]?.hex_color)
                       }}
                     />
 

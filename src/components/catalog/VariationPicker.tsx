@@ -61,7 +61,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
     
     activeVariations.forEach((v) => {
       // Prioriza nome da cor, se não houver, usa o hex_color como nome/identificador
-      const colorIdentifier = v.color || (v as any).hex_color || "Sem Cor";
+      const colorIdentifier = v.color || v.grade_color || (v as any).hex_color || "Sem Cor";
       
       if (!seen.has(colorIdentifier)) {
         seen.add(colorIdentifier);

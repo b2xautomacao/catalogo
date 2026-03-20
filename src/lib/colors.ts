@@ -87,17 +87,24 @@ function normalizeString(str: string): string {
  */
 export function resolveColorHex(colorName?: string, hexOverride?: string | null): string {
   // Se houver um hex customizado que não seja o cinza genérico do fallback ou transparente, use-o
+  // Adicionado suporte a formatos comuns de ignore
+  const isGenericGray = (hex: string) => {
+    const h = hex.toUpperCase();
+    return h === "#9CA3AF" || h === "#666" || h === "#666666" || 
+           h === "#CCCCCC" || h === "#CCC" || h === "#999" || h === "#999999";
+  };
+
   if (hexOverride && 
-      hexOverride !== "#9CA3AF" && 
+      !isGenericGray(hexOverride) && 
       hexOverride !== "transparent" && 
-      hexOverride !== "" && 
-      hexOverride !== "#666" &&
-      hexOverride !== "#CCCCCC" &&
-      hexOverride !== "#ccc") {
+      hexOverride !== "") {
     return hexOverride;
   }
   
-  if (!colorName) return hexOverride || "#9CA3AF";
+  if (!colorName || colorName === "Sem Cor") {
+    // Se não tem nome, mas tem um override (mesmo que cinza), usa o override
+    return hexOverride || "#9CA3AF";
+  }
   
   const normalizedInput = normalizeString(colorName);
   
@@ -107,15 +114,18 @@ export function resolveColorHex(colorName?: string, hexOverride?: string | null)
   }
   
   // 2. Busca por inclusão, mas priorizando nomes mais longos (mais específicos)
-  // Ex: "azul marinho" deve ser encontrado antes de "azul"
   const sortedKeys = Object.keys(COLOR_NAME_MAP).sort((a, b) => b.length - a.length);
   
   for (const key of sortedKeys) {
     const normalizedKey = normalizeString(key);
-    // Se o input contém a palavra inteira ou é parte de uma composição
     if (normalizedInput.includes(normalizedKey)) {
       return COLOR_NAME_MAP[key];
     }
+  }
+  
+  // 3. Se o nome da cor parece ser um código hexadecimal
+  if (colorName.startsWith("#") && (colorName.length === 4 || colorName.length === 7)) {
+    return colorName;
   }
   
   // Caso não encontre no mapa, mas tenha um override (mesmo que seja o genérico), usa o override

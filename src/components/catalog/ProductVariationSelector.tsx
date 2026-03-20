@@ -113,7 +113,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   const colors = [
     ...new Set(
       variations
-        .map((v) => v.color || v.hex_color || "Sem Cor")
+        .map((v) => v.grade_color || v.color || v.hex_color || "Sem Cor")
     ),
   ];
   const sizes = [
@@ -349,13 +349,15 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           </h5>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {colors.map((color) => {
-              const isSelected = selectedVariation?.color === color || selectedVariation?.hex_color === color;
+              const isSelected = selectedVariation?.color === color || 
+                                 selectedVariation?.grade_color === color || 
+                                 selectedVariation?.hex_color === color;
               const stock = getAvailableStock(
                 color as string,
                 selectedVariation?.size || undefined
               );
               const isAvailable = stock > 0;
-              const displayColor = variations.find(v => (v.color || v.hex_color || "Sem Cor") === color);
+              const displayColor = variations.find(v => (v.grade_color || v.color || v.hex_color || "Sem Cor") === color);
 
               return (
                 <Button
