@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import { SystemBenefit } from '@/hooks/useSystemBenefits';
 import { PlanBenefit } from '@/hooks/usePlanBenefits';
 
@@ -18,12 +18,14 @@ interface BenefitsCache {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 const VALIDATION_CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
 
+// 🔥 CACHE GLOBAL Compartilhado entre todas as instâncias do hook
+let globalCache: BenefitsCache = {
+  systemBenefits: null,
+  planBenefits: {},
+  benefitValidation: {}
+};
+
 export const useBenefitsCache = () => {
-  const cacheRef = useRef<BenefitsCache>({
-    systemBenefits: null,
-    planBenefits: {},
-    benefitValidation: {}
-  });
 
   const isExpired = useCallback((entry: CacheEntry<any>) => {
     return Date.now() > entry.expiresAt;
@@ -31,7 +33,7 @@ export const useBenefitsCache = () => {
 
   const setSystemBenefits = useCallback((benefits: SystemBenefit[]) => {
     const now = Date.now();
-    cacheRef.current.systemBenefits = {
+    globalCache.systemBenefits = {
       data: benefits,
       timestamp: now,
       expiresAt: now + CACHE_DURATION
@@ -40,7 +42,7 @@ export const useBenefitsCache = () => {
   }, []);
 
   const getSystemBenefits = useCallback((): SystemBenefit[] | null => {
-    const cached = cacheRef.current.systemBenefits;
+    const cached = globalCache.systemBenefits;
     if (!cached || isExpired(cached)) {
       console.log('💾 System benefits cache miss or expired');
       return null;
@@ -51,7 +53,7 @@ export const useBenefitsCache = () => {
 
   const setPlanBenefits = useCallback((planId: string, benefits: PlanBenefit[]) => {
     const now = Date.now();
-    cacheRef.current.planBenefits[planId] = {
+    globalCache.planBenefits[planId] = {
       data: benefits,
       timestamp: now,
       expiresAt: now + CACHE_DURATION
@@ -60,7 +62,7 @@ export const useBenefitsCache = () => {
   }, []);
 
   const getPlanBenefits = useCallback((planId: string): PlanBenefit[] | null => {
-    const cached = cacheRef.current.planBenefits[planId];
+    const cached = globalCache.planBenefits[planId];
     if (!cached || isExpired(cached)) {
       console.log(`💾 Plan benefits cache miss or expired for ${planId}`);
       return null;
@@ -71,7 +73,7 @@ export const useBenefitsCache = () => {
 
   const setBenefitValidation = useCallback((key: string, isValid: boolean) => {
     const now = Date.now();
-    cacheRef.current.benefitValidation[key] = {
+    globalCache.benefitValidation[key] = {
       data: isValid,
       timestamp: now,
       expiresAt: now + VALIDATION_CACHE_DURATION
@@ -79,7 +81,7 @@ export const useBenefitsCache = () => {
   }, []);
 
   const getBenefitValidation = useCallback((key: string): boolean | null => {
-    const cached = cacheRef.current.benefitValidation[key];
+    const cached = globalCache.benefitValidation[key];
     if (!cached || isExpired(cached)) {
       return null;
     }
@@ -88,7 +90,7 @@ export const useBenefitsCache = () => {
 
   const invalidateAll = useCallback(() => {
     console.log('💾 Invalidating all benefits cache');
-    cacheRef.current = {
+    globalCache = {
       systemBenefits: null,
       planBenefits: {},
       benefitValidation: {}
@@ -97,23 +99,23 @@ export const useBenefitsCache = () => {
 
   const invalidatePlan = useCallback((planId: string) => {
     console.log(`💾 Invalidating cache for plan ${planId}`);
-    delete cacheRef.current.planBenefits[planId];
+    delete globalCache.planBenefits[planId];
   }, []);
 
   const getCacheStats = useCallback(() => {
     const now = Date.now();
     return {
       systemBenefits: {
-        cached: !!cacheRef.current.systemBenefits,
-        expired: cacheRef.current.systemBenefits ? isExpired(cacheRef.current.systemBenefits) : true,
-        age: cacheRef.current.systemBenefits ? now - cacheRef.current.systemBenefits.timestamp : 0
+        cached: !!globalCache.systemBenefits,
+        expired: globalCache.systemBenefits ? isExpired(globalCache.systemBenefits) : true,
+        age: globalCache.systemBenefits ? now - globalCache.systemBenefits.timestamp : 0
       },
-      planBenefits: Object.keys(cacheRef.current.planBenefits).length,
-      validationCache: Object.keys(cacheRef.current.benefitValidation).length
+      planBenefits: Object.keys(globalCache.planBenefits).length,
+      validationCache: Object.keys(globalCache.benefitValidation).length
     };
   }, [isExpired]);
 
-  return {
+  return useMemo(() => ({
     setSystemBenefits,
     getSystemBenefits,
     setPlanBenefits,
@@ -123,5 +125,15 @@ export const useBenefitsCache = () => {
     invalidateAll,
     invalidatePlan,
     getCacheStats
-  };
+  }), [
+    setSystemBenefits,
+    getSystemBenefits,
+    setPlanBenefits,
+    getPlanBenefits,
+    setBenefitValidation,
+    getBenefitValidation,
+    invalidateAll,
+    invalidatePlan,
+    getCacheStats
+  ]);
 };

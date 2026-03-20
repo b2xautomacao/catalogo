@@ -152,6 +152,27 @@ export const useProducts = () => {
         throw imagesError;
       }
 
+      // Deletar tiers de preço
+      const { error: tiersError } = await supabase
+        .from("product_price_tiers")
+        .delete()
+        .eq("product_id", id);
+
+      if (tiersError) {
+        console.error("Erro ao deletar price tiers:", tiersError);
+        // Não lançar erro se a tabela não existir ou estiver vazia
+      }
+
+      // Deletar histórico de estoque
+      const { error: stockError } = await supabase
+        .from("stock_movements")
+        .delete()
+        .eq("product_id", id);
+
+      if (stockError) {
+        console.error("Erro ao deletar stock movements:", stockError);
+      }
+
       // Deletar produto
       const { error: productError } = await supabase
         .from("products")

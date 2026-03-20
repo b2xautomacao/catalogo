@@ -10,6 +10,17 @@ export const useRealtimeBenefits = (
 ) => {
   const { profile } = useAuth();
   const channelsRef = useRef<{ system: any; plan: any }>({ system: null, plan: null });
+  const onBenefitsChangeRef = useRef(onBenefitsChange);
+  const onPlanBenefitsChangeRef = useRef(onPlanBenefitsChange);
+
+  // Keep refs updated without triggering resubscriptions
+  useEffect(() => {
+    onBenefitsChangeRef.current = onBenefitsChange;
+  }, [onBenefitsChange]);
+
+  useEffect(() => {
+    onPlanBenefitsChangeRef.current = onPlanBenefitsChange;
+  }, [onPlanBenefitsChange]);
 
   const handleSystemBenefitsChange = useCallback((payload: any) => {
     console.log('🔄 System benefits changed:', payload);
@@ -22,8 +33,8 @@ export const useRealtimeBenefits = (
       toast.success(`Novo benefício "${benefit.name}" disponível no sistema`);
     }
     
-    onBenefitsChange?.();
-  }, [onBenefitsChange]);
+    onBenefitsChangeRef.current?.();
+  }, []);
 
   const handlePlanBenefitsChange = useCallback((payload: any) => {
     console.log('🔄 Plan benefits changed:', payload);
@@ -37,27 +48,27 @@ export const useRealtimeBenefits = (
       }
     }
     
-    onPlanBenefitsChange?.();
-  }, [onPlanBenefitsChange]);
+    onPlanBenefitsChangeRef.current?.();
+  }, []);
 
   useEffect(() => {
-    // Limpar canais existentes se houver
-    if (channelsRef.current.system) {
-      supabase.removeChannel(channelsRef.current.system);
-      channelsRef.current.system = null;
-    }
-    if (channelsRef.current.plan) {
-      supabase.removeChannel(channelsRef.current.plan);
-      channelsRef.current.plan = null;
-    }
+    // Only subscribe when profile id is stable
+    const userId = profile?.id || 'anonymous';
+    const timestamp = Date.now();
 
-    // Criar novos canais com IDs únicos
-    const systemChannelId = `system-benefits-${Date.now()}-${Math.random()}`;
-    const planChannelId = `plan-benefits-${Date.now()}-${Math.random()}`;
+    // Criar IDs consistentes
+    const systemChannelId = `system-benefits-${userId}`;
+    const planChannelId = `plan-benefits-${userId}`;
+
+    console.log(`📡 Initializing stable realtime subscriptions for ${userId}`);
+
+    // Limpar canais existentes antes de criar novos
+    if (channelsRef.current.system) supabase.removeChannel(channelsRef.current.system);
+    if (channelsRef.current.plan) supabase.removeChannel(channelsRef.current.plan);
 
     // Subscription para mudanças em system_benefits
     const systemBenefitsChannel = supabase
-      .channel(systemChannelId)
+      .channel(`${systemChannelId}-${timestamp}`)
       .on(
         'postgres_changes',
         {
@@ -71,7 +82,7 @@ export const useRealtimeBenefits = (
 
     // Subscription para mudanças em plan_benefits
     const planBenefitsChannel = supabase
-      .channel(planChannelId)
+      .channel(`${planChannelId}-${timestamp}`)
       .on(
         'postgres_changes',
         {
@@ -86,24 +97,17 @@ export const useRealtimeBenefits = (
     channelsRef.current.system = systemBenefitsChannel;
     channelsRef.current.plan = planBenefitsChannel;
 
-    console.log('📡 Realtime subscriptions initialized with unique IDs');
-
     return () => {
       console.log('📡 Cleaning up realtime subscriptions');
-      if (channelsRef.current.system) {
-        supabase.removeChannel(channelsRef.current.system);
-      }
-      if (channelsRef.current.plan) {
-        supabase.removeChannel(channelsRef.current.plan);
-      }
+      if (channelsRef.current.system) supabase.removeChannel(channelsRef.current.system);
+      if (channelsRef.current.plan) supabase.removeChannel(channelsRef.current.plan);
     };
-  }, [handleSystemBenefitsChange, handlePlanBenefitsChange]);
+  }, [profile?.id, handleSystemBenefitsChange, handlePlanBenefitsChange]);
 
   return {
-    // Método para forçar atualização manual se necessário
     forceRefresh: useCallback(() => {
-      onBenefitsChange?.();
-      onPlanBenefitsChange?.();
-    }, [onBenefitsChange, onPlanBenefitsChange])
+      onBenefitsChangeRef.current?.();
+      onPlanBenefitsChangeRef.current?.();
+    }, [])
   };
 };
