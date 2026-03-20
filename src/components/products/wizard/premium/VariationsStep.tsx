@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Palette, Plus, X, Check } from "lucide-react";
 import { useStoreColors } from "@/hooks/useStoreColors";
@@ -173,7 +174,35 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
         </div>
 
         <div className="space-y-4">
-           <div className="flex items-center justify-between px-1">
+            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center justify-between gap-4">
+               <div>
+                  <Label className="text-xs font-bold text-blue-800">Estoque Rápido</Label>
+                  <p className="text-[10px] text-blue-600 font-medium">Define o mesmo valor para todas</p>
+               </div>
+               <div className="flex items-center gap-2">
+                  <Input 
+                    type="number"
+                    placeholder="Qtd"
+                    className="w-20 h-9 text-center font-bold bg-white"
+                    id="bulk-stock-input"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
+                    onClick={() => {
+                        const input = document.getElementById('bulk-stock-input') as HTMLInputElement;
+                        const val = parseInt(input?.value) || 0;
+                        updateFormData({
+                            variations: formData.variations.map(v => ({ ...v, stock: val }))
+                        });
+                    }}
+                  >
+                    Aplicar
+                  </Button>
+               </div>
+            </div>
+
+           <div className="flex items-center justify-between px-1 pt-4">
               <Label className="text-sm font-bold text-slate-800">Grade Gerada ({formData.variations.length})</Label>
               <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold text-slate-400 hover:text-red-500" onClick={() => updateFormData({ variations: [] })}>
                  Limpar Tudo

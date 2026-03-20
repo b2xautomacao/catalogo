@@ -29,7 +29,8 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
             productName: formData.name, 
             description: formData.description,
             category: formData.category, 
-            contentType: "seo" 
+            contentType: "seo",
+            storeId: "global"
         },
       });
       if (error) throw error;

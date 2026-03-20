@@ -30,7 +30,12 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.functions.invoke("ai-content-generator", {
-        body: { productName: formData.name, category: formData.category, contentType: "description" },
+        body: { 
+          productName: formData.name, 
+          category: formData.category, 
+          contentType: "description",
+          storeId: "global" 
+        },
       });
       if (error) throw error;
       if (data?.content) updateFormData({ description: data.content });
