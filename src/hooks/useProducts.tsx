@@ -44,26 +44,32 @@ export const useProducts = () => {
           throw productsError;
         }
 
-        // Buscar todas as variações dos produtos em uma query separada
+        // Buscar todas as variações dos produtos em LOTES para evitar timeout
         const productIds = productsData?.map((p) => p.id) || [];
         let variationsData: any[] = [];
 
         if (productIds.length > 0) {
-          const { data: variations, error: variationsError } = await supabase
-            .from("product_variations")
-            .select("*")
-            .in("product_id", productIds)
-            .eq("is_active", true)
-            .order("display_order", { ascending: true });
+          console.log(`useProducts: Buscando variações para ${productIds.length} produtos em lotes...`);
+          
+          // Dividir em lotes de 20 produtos
+          const batchSize = 20;
+          for (let i = 0; i < productIds.length; i += batchSize) {
+            const batchIds = productIds.slice(i, i + batchSize);
+            const { data: variations, error: variationsError } = await supabase
+              .from("product_variations")
+              .select("*")
+              .in("product_id", batchIds)
+              .eq("is_active", true)
+              .order("display_order", { ascending: true });
 
-          if (variationsError) {
-            console.error("Erro ao buscar variações:", variationsError);
-          } else {
-            variationsData = variations || [];
-            console.log(
-              `useProducts: ${variationsData.length} variações carregadas`
-            );
+            if (variationsError) {
+              console.error(`Erro ao buscar lote ${i / batchSize} de variações:`, variationsError);
+            } else if (variations) {
+              variationsData = [...variationsData, ...variations];
+            }
           }
+          
+          console.log(`useProducts: Total de ${variationsData.length} variações carregadas (consolidadas)`);
         }
 
         // Mapear produtos e suas variações
@@ -161,6 +167,26 @@ export const useProducts = () => {
       if (tiersError) {
         console.error("Erro ao deletar price tiers:", tiersError);
         // Não lançar erro se a tabela não existir ou estiver vazia
+      }
+
+      // Deletar banners associados
+      const { error: bannersError } = await supabase
+        .from("catalog_banners")
+        .delete()
+        .eq("product_id", id);
+
+      if (bannersError) {
+        console.error("Erro ao deletar banners:", bannersError);
+      }
+
+      // Deletar grupos de variação associados
+      const { error: variationGroupsError } = await supabase
+        .from("variation_groups")
+        .delete()
+        .eq("product_id", id);
+
+      if (variationGroupsError) {
+        console.error("Erro ao deletar variation groups:", variationGroupsError);
       }
 
       // Deletar histórico de estoque
