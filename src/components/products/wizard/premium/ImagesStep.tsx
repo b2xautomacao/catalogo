@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
 
 interface ImagesStepProps {
@@ -17,15 +18,23 @@ interface ImagesStepProps {
 const ImagesStep: React.FC<ImagesStepProps> = ({ formData, updateFormData }) => {
   const { draftImages, addDraftImages, removeDraftImage, setPrimaryImage, setColorAssociation } = useDraftImagesContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const remaining = 10 - draftImages.length;
-      if (remaining <= 0) return;
+      if (remaining <= 0) {
+        toast({ title: "Limite atingido", description: "Você pode enviar no máximo 10 fotos.", variant: "destructive" });
+        return;
+      }
       
       const filesToAdd = Array.from(e.target.files).slice(0, remaining);
       addDraftImages(filesToAdd);
     }
+  };
+
+  const handleVideoUrlChange = (value: string) => {
+    updateFormData({ video_url: value });
   };
 
   // Cores únicas das variações para associar
@@ -106,7 +115,19 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formData, updateFormData }) => 
                 {/* Associação de Cor */}
                 <Select 
                     value={image.color_association || "none"} 
-                    onValueChange={(v) => setColorAssociation(image.id, v === "none" ? undefined : v)}
+                    onValueChange={(v) => {
+                      const color = v === "none" ? undefined : v;
+                      // Verificar se a cor já está associada a outra imagem
+                      if (color && draftImages.some(img => img.id !== image.id && img.color_association === color)) {
+                        toast({ 
+                          title: "Cor já vinculada", 
+                          description: `A cor ${color} já está associada a outra foto.`, 
+                          variant: "destructive" 
+                        });
+                        return;
+                      }
+                      setColorAssociation(image.id, color);
+                    }}
                 >
                     <SelectTrigger className="h-7 bg-white/90 backdrop-blur-sm text-[9px] font-bold border-none shadow-lg">
                         <SelectValue placeholder="Vincular Cor" />

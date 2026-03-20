@@ -122,17 +122,17 @@ export const usePremiumProductWizard = (
         allow_negative_stock: formData.allow_negative_stock,
         stock_alert_threshold: formData.stock_alert_threshold,
         store_id: formData.store_id || profile?.store_id,
-        // material: formData.material, // Não existe no banco ainda
-        // video_url: formData.video_url, // Não existe no banco ainda
-        // video_type: formData.video_type, // Não existe no banco ainda
-        // product_gender: formData.product_gender, // Não existe no banco ainda
-        // product_category_type: formData.product_category_type, // Não existe no banco ainda
+        material: formData.material,
+        video_url: formData.video_url,
+        video_type: formData.video_type,
+        product_gender: formData.product_gender,
+        product_category_type: formData.product_category_type,
         seo_slug: formData.seo_slug,
         meta_title: formData.meta_title,
         meta_description: formData.meta_description,
         keywords: formData.keywords,
-        // measurements: formData.measurements, // Não existe no banco ainda
-        // care_instructions: formData.care_instructions, // Não existe no banco ainda
+        measurements: formData.measurements,
+        care_instructions: formData.care_instructions,
       };
 
       let productId = editingProductId;

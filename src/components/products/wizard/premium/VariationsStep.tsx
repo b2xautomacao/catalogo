@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Palette, Plus, X, Check, Box, User, Layers } from "lucide-react";
+import { Palette, Plus, X, Check, Box, User, Layers, Info } from "lucide-react";
 import { useStoreColors } from "@/hooks/useStoreColors";
 import { resolveColorHex, isLightColor } from "@/lib/colors";
 import { Card, CardContent } from "@/components/ui/card";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
 import { ProductVariation } from "@/types/product";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import UnifiedGradeManager from "../UnifiedGradeManager";
+import ColorPickerPopover from "../ColorPickerPopover";
+import { useToast } from "@/hooks/use-toast";
 
 interface VariationsStepProps {
   formData: PremiumWizardFormData;
@@ -21,6 +24,8 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [bulkStock, setBulkStock] = useState("");
+  const [showGradeManager, setShowGradeManager] = useState(false);
+  const { toast } = useToast();
 
   const sizeGrades = {
     calcado: ["33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44"],
@@ -115,116 +120,131 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          {/* Gênero e Material (Agora no Step 1) */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4">
-             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                   <User className="w-3 h-3" /> Gênero
-                </Label>
-                <Select value={formData.product_gender} onValueChange={(v) => updateFormData({ product_gender: v as any })}>
-                  <SelectTrigger className="h-9 bg-white text-xs">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                    <SelectItem value="unissex">Unissex</SelectItem>
-                    <SelectItem value="infantil">Infantil</SelectItem>
-                  </SelectContent>
-                </Select>
-             </div>
-             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                   <Layers className="w-3 h-3" /> Material
-                </Label>
-                <Input 
-                   value={formData.material} 
-                   onChange={(e) => updateFormData({ material: e.target.value })}
-                   placeholder="Ex: Couro"
-                   className="h-9 bg-white text-xs"
-                />
-             </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-sm font-bold flex items-center gap-2 text-slate-800">
-               <Palette className="w-4 h-4 text-rose-500" />
-               1. Cores da Grade
-            </Label>
-            <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-              {storeColors.map(color => (
-                <button
-                  key={color.id}
-                  onClick={() => toggleColor(color.name)}
-                  className={`group relative p-1 rounded-full border-2 transition-all ${
-                    selectedColors.includes(color.name) 
-                      ? "border-blue-500 scale-110 shadow-md bg-white" 
-                      : "border-transparent hover:border-slate-300"
-                  }`}
-                  title={color.name}
-                >
-                  <div 
-                    className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center"
-                    style={{ backgroundColor: color.hex_color }}
-                  >
-                    {selectedColors.includes(color.name) && (
-                      <Check className="w-5 h-5 drop-shadow-md" style={{ color: isLightColor(color.hex_color) ? '#000' : '#FFF' }} />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-sm font-bold text-slate-800">2. Tamanhos</Label>
-            <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-              {sizes.map(size => (
-                <button
-                  key={size}
-                  onClick={() => toggleSize(size)}
-                  className={`w-12 h-12 rounded-xl border-2 font-bold text-xs transition-all ${
-                    selectedSizes.includes(size)
-                      ? "border-blue-500 bg-white text-blue-700 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button 
-                variant="outline"
-                className="h-12 rounded-xl border-dashed border-slate-300 text-slate-600 font-bold text-xs gap-2"
-                onClick={() => generateVariations('standard')}
-                disabled={selectedColors.length === 0}
-            >
-                Grade Padrão
-            </Button>
-            {formData.product_category_type === 'calcado' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                 <Palette className="w-4 h-4 text-rose-500" />
+                 1. Cores e Grade
+              </Label>
+              <div className="flex gap-2">
                 <Button 
-                    variant="outline"
-                    className="h-12 rounded-xl border-dashed border-blue-200 text-blue-600 bg-blue-50/30 font-bold text-xs gap-2"
-                    onClick={() => generateVariations('half')}
-                    disabled={selectedColors.length === 0 || selectedSizes.length === 0}
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 text-[10px] font-bold border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                  onClick={() => setShowGradeManager(!showGradeManager)}
                 >
-                    Meia Grade (.5)
+                  {showGradeManager ? "Voltar ao Manual" : "Usar Sistema de Grade"}
                 </Button>
+              </div>
+            </div>
+
+            {showGradeManager ? (
+              <div className="animate-in fade-in zoom-in-95 duration-300">
+                <UnifiedGradeManager
+                  variations={formData.variations}
+                  onVariationsChange={(vars) => updateFormData({ variations: vars })}
+                  productId={productId}
+                  storeId={formData.store_id}
+                  productName={formData.name}
+                  showPreview={false}
+                />
+              </div>
+            ) : (
+              <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Seleção de Cores da Loja */}
+                <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                  {storeColors.map(color => (
+                    <button
+                      key={color.id}
+                      onClick={() => toggleColor(color.name)}
+                      className={`group relative p-1 rounded-full border-2 transition-all ${
+                        selectedColors.includes(color.name) 
+                          ? "border-blue-500 scale-110 shadow-md bg-white" 
+                          : "border-transparent hover:border-slate-300"
+                      }`}
+                      title={color.name}
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center"
+                        style={{ backgroundColor: color.hex_color }}
+                      >
+                        {selectedColors.includes(color.name) && (
+                          <Check className="w-5 h-5 drop-shadow-md" style={{ color: isLightColor(color.hex_color) ? '#000' : '#FFF' }} />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  
+                  {/* Botão Adicionar Cor Customizada */}
+                  <ColorPickerPopover 
+                    storeId={formData.store_id}
+                    onColorSelect={(colorObj) => {
+                      if (!selectedColors.includes(colorObj.name)) {
+                        setSelectedColors(prev => [...prev, colorObj.name]);
+                      }
+                      toast({
+                        title: colorObj.saved ? "Cor salva e selecionada!" : "Cor selecionada!",
+                        description: `A cor "${colorObj.name}" foi adicionada.`,
+                      });
+                    }}
+                    trigger={
+                      <Button variant="outline" className="w-12 h-12 rounded-full border-dashed border-2 p-0 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:border-blue-200">
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    }
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold text-slate-800">2. Tamanhos</Label>
+                  <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                    {sizes.map(size => (
+                      <button
+                        key={size}
+                        onClick={() => toggleSize(size)}
+                        className={`w-12 h-12 rounded-xl border-2 font-bold text-xs transition-all ${
+                          selectedSizes.includes(size)
+                            ? "border-blue-500 bg-white text-blue-700 shadow-sm"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                      variant="outline"
+                      className="h-12 rounded-xl border-dashed border-slate-300 text-slate-600 font-bold text-xs gap-2"
+                      onClick={() => generateVariations('standard')}
+                      disabled={selectedColors.length === 0}
+                  >
+                      Gerar Padrão
+                  </Button>
+                  {formData.product_category_type === 'calcado' && (
+                      <Button 
+                          variant="outline"
+                          className="h-12 rounded-xl border-dashed border-blue-200 text-blue-600 bg-blue-50/30 font-bold text-xs gap-2"
+                          onClick={() => generateVariations('half')}
+                          disabled={selectedColors.length === 0 || selectedSizes.length === 0}
+                      >
+                          Meia Grade (.5)
+                      </Button>
+                  )}
+                  <Button 
+                      className="col-span-2 bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2"
+                      disabled={selectedColors.length === 0}
+                      onClick={() => generateVariations('merged')}
+                  >
+                      Mesclar e Gerar
+                      <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             )}
-            <Button 
-                className="col-span-2 bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2"
-                disabled={selectedColors.length === 0}
-                onClick={() => generateVariations('merged')}
-            >
-                Mesclar e Gerar Variações
-                <Plus className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
 
         <div className="space-y-4">
             <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
