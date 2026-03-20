@@ -17,7 +17,6 @@ export const useRealtimeAnalytics = (storeId?: string) => {
     lastUpdate: new Date(),
   });
   const [isConnected, setIsConnected] = useState(false);
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   const updateMetrics = useCallback((newData: Partial<RealtimeData>) => {
     setRealtimeData((prev) => ({
@@ -28,8 +27,11 @@ export const useRealtimeAnalytics = (storeId?: string) => {
   }, []);
 
   useEffect(() => {
-    // Criar canal de tempo real para superadmin (todos os dados)
-    const channelName = storeId ? `analytics-${storeId}` : "analytics-global";
+    const timestamp = Date.now();
+    const channelName = storeId ? `analytics-${storeId}-${timestamp}` : `analytics-global-${timestamp}`;
+    
+    console.log("📡 ANALYTICS - Iniciando assinatura em tempo real:", channelName);
+
     const realtimeChannel = supabase
       .channel(channelName)
       .on(
@@ -42,24 +44,12 @@ export const useRealtimeAnalytics = (storeId?: string) => {
         },
         (payload) => {
           console.log("Novo pedido em tempo real:", payload);
-          updateMetrics({
-            orders: realtimeData.orders + 1,
-            revenue: realtimeData.revenue + (payload.new.total_amount || 0),
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          ...(storeId && { filter: `store_id=eq.${storeId}` }),
-        },
-        (payload) => {
-          console.log("Pedido atualizado em tempo real:", payload);
-          // Aqui você pode implementar lógica para atualizar métricas
-          // baseada em mudanças de status, por exemplo
+          setRealtimeData((prev) => ({
+            ...prev,
+            orders: prev.orders + 1,
+            revenue: prev.revenue + (payload.new.total_amount || 0),
+            lastUpdate: new Date(),
+          }));
         }
       )
       .on(
@@ -72,9 +62,11 @@ export const useRealtimeAnalytics = (storeId?: string) => {
         },
         (payload) => {
           console.log("Nova visualização em tempo real:", payload);
-          updateMetrics({
-            views: realtimeData.views + (payload.new.view_count || 1),
-          });
+          setRealtimeData((prev) => ({
+            ...prev,
+            views: prev.views + (payload.new.view_count || 1),
+            lastUpdate: new Date(),
+          }));
         }
       )
       .on(
@@ -86,37 +78,29 @@ export const useRealtimeAnalytics = (storeId?: string) => {
           ...(storeId && { filter: `store_id=eq.${storeId}` }),
         },
         (payload) => {
-          console.log("Nova métrica em tempo real:", payload);
-          // Atualizar métricas baseadas no tipo
           if (payload.new.metric_type === "purchase") {
-            updateMetrics({
-              revenue: realtimeData.revenue + (payload.new.metric_value || 0),
-            });
+            setRealtimeData((prev) => ({
+              ...prev,
+              revenue: prev.revenue + (payload.new.metric_value || 0),
+              lastUpdate: new Date(),
+            }));
           }
         }
       )
       .subscribe((status) => {
-        console.log("Status da conexão WebSocket:", status);
+        console.log("Status da conexão WebSocket (Analytics):", status);
         setIsConnected(status === "SUBSCRIBED");
       });
 
-    setChannel(realtimeChannel);
 
-    // Cleanup
     return () => {
-      realtimeChannel.unsubscribe();
+      console.log("📡 ANALYTICS - Removendo assinatura:", channelName);
+      supabase.removeChannel(realtimeChannel);
     };
-  }, [
-    storeId,
-    realtimeData.orders,
-    realtimeData.revenue,
-    realtimeData.views,
-    updateMetrics,
-  ]);
+  }, [storeId]); // Apenas storeId importa para recriar o canal
 
   const refreshData = useCallback(async () => {
     try {
-      // Buscar dados atuais
       let ordersQuery = supabase
         .from("orders")
         .select("total_amount")
@@ -131,28 +115,13 @@ export const useRealtimeAnalytics = (storeId?: string) => {
 
       const { data: ordersData } = await ordersQuery;
 
-      // Temporariamente desabilitado - tabela não existe
-      // let viewsQuery = supabase
-      //   .from("analytics_views")
-      //   .select("view_count")
-      //   .gte(
-      //     "created_at",
-      //     new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      //   );
-
-      // if (storeId) {
-      //   viewsQuery = viewsQuery.eq("store_id", storeId);
-      // }
-
-      // const { data: viewsData } = await viewsQuery;
-
       const orders = ordersData?.length || 0;
       const revenue =
         ordersData?.reduce(
           (sum, order) => sum + (order.total_amount || 0),
           0
         ) || 0;
-      const views = 0; // Temporariamente retornar 0
+      const views = 0; 
 
       updateMetrics({ orders, revenue, views });
     } catch (error) {
@@ -160,7 +129,6 @@ export const useRealtimeAnalytics = (storeId?: string) => {
     }
   }, [storeId, updateMetrics]);
 
-  // Atualizar dados a cada 30 segundos como fallback
   useEffect(() => {
     const interval = setInterval(refreshData, 30000);
     return () => clearInterval(interval);
