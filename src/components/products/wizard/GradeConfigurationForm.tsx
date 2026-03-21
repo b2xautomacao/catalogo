@@ -19,6 +19,7 @@ import {
   Info,
   CheckCircle,
   Box,
+  Layers,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,7 +54,9 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [customColor, setCustomColor] = useState("");
+  const [customMaterial, setCustomMaterial] = useState("");
   const [sizePairConfigs, setSizePairConfigs] = useState<SizePairConfig[]>([]);
   const [gradeName, setGradeName] = useState("Grade Personalizada");
 
@@ -153,10 +156,23 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     );
   };
 
+  const toggleMaterial = (material: string) => {
+    setSelectedMaterials((prev) =>
+      prev.includes(material) ? prev.filter((m) => m !== material) : [...prev, material]
+    );
+  };
+
   const addCustomColor = () => {
     if (customColor && !selectedColors.includes(customColor)) {
       setSelectedColors((prev) => [...prev, customColor]);
       setCustomColor("");
+    }
+  };
+
+  const addCustomMaterial = () => {
+    if (customMaterial && !selectedMaterials.includes(customMaterial)) {
+      setSelectedMaterials((prev) => [...prev, customMaterial]);
+      setCustomMaterial("");
     }
   };
 
@@ -254,98 +270,60 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   }, [sizePairConfigs, toast]);
 
   const generateVariations = async () => {
-    if (selectedColors.length === 0 || sizePairConfigs.length === 0) {
-      toast({
-        title: "Configuração incompleta",
-        description: "Selecione pelo menos uma cor e configure os tamanhos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     console.log("🎨 GRADE - Gerando variações...");
     console.log("📋 Cores selecionadas:", selectedColors);
+    console.log("🛠️ Materiais selecionados:", selectedMaterials);
     console.log("📐 Configuração de pares:", sizePairConfigs);
-    console.log("🔢 Total de cores para processar:", selectedColors.length);
 
+    const materialsToProcess = selectedMaterials.length > 0 ? selectedMaterials : [null];
     const newVariations: ProductVariation[] = [];
-    const totalPairsPerColor = sizePairConfigs.reduce(
+    const totalPairsPerGrade = sizePairConfigs.reduce(
       (sum, config) => sum + config.pairs,
       0
     );
 
     try {
-      // 🎯 DEBUGGING: Verificar se o loop está sendo executado corretamente
-      console.log("🔄 INICIANDO LOOP DE CORES...");
+      console.log("🔄 INICIANDO LOOP DE COMBINAÇÕES...");
 
-      for (
-        let colorIndex = 0;
-        colorIndex < selectedColors.length;
-        colorIndex++
-      ) {
-        const color = selectedColors[colorIndex];
+      for (const color of selectedColors) {
+        for (const material of materialsToProcess) {
+          console.log(`🔄 Gerando SKU para: ${productName}-${color}${material ? `-${material}` : ""}`);
+          const uniqueSKU = await generateUniqueProductSKU(
+            `${productName}-${color}${material ? `-${material}` : ""}`,
+            productId
+          );
 
-        console.log(
-          `🎨 [${colorIndex + 1}/${selectedColors.length
-          }] Processando cor: "${color}"`
-        );
+          const gradeVariation: ProductVariation = {
+            id: `grade-${Date.now()}-${color}-${material || "default"}-${Math.random().toString(36).substr(2, 9)}`,
+            product_id: productId || "",
+            color,
+            material: material || undefined,
+            hex_color: resolveColorHex(color, storeColors.find(c => c.name.toLowerCase() === color.toLowerCase())?.hex_color),
+            size: null,
+            stock: totalPairsPerGrade,
+            price_adjustment: 0,
+            is_active: true,
+            sku: uniqueSKU,
+            image_url: "",
+            variation_type: "grade",
+            is_grade: true,
+            grade_name: `${gradeName}${material ? ` (${material})` : ""} - ${color}`,
+            grade_color: color,
+            grade_sizes: sizePairConfigs.map((c) => c.size),
+            grade_pairs: sizePairConfigs.map((c) => c.pairs),
+            grade_quantity: totalPairsPerGrade,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            display_order: newVariations.length,
+            flexible_grade_config: showFlexibleConfig ? flexibleGradeConfig : undefined,
+            grade_sale_mode: 'full',
+          };
 
-        // Gerar SKU único para esta grade - corrigido para 2 argumentos
-        console.log(`🔄 Gerando SKU para: ${productName}-${color}`);
-        const uniqueSKU = await generateUniqueProductSKU(
-          `${productName}-${color}`,
-          productId
-        );
-        console.log(`✅ SKU gerado: ${uniqueSKU}`);
-
-        console.log(
-          `🎨 Criando grade para cor: ${color} com SKU: ${uniqueSKU}`
-        );
-
-        const gradeVariation: ProductVariation = {
-          id: `grade-${Date.now()}-${colorIndex}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-          product_id: productId || "",
-          color,
-          hex_color: resolveColorHex(color, storeColors.find(c => c.name.toLowerCase() === color.toLowerCase())?.hex_color),
-          size: null,
-          stock: totalPairsPerColor,
-          price_adjustment: 0,
-          is_active: true,
-          sku: uniqueSKU,
-          image_url: "",
-          variation_type: "grade",
-          is_grade: true,
-          grade_name: `${gradeName} - ${color}`,
-          grade_color: color,
-          grade_sizes: sizePairConfigs.map((c) => c.size),
-          grade_pairs: sizePairConfigs.map((c) => c.pairs),
-          grade_quantity: totalPairsPerColor,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          display_order: colorIndex,
-          // Adicionar configuração de grade flexível (se configurada)
-          flexible_grade_config: showFlexibleConfig ? flexibleGradeConfig : undefined,
-          grade_sale_mode: 'full',
-        };
-
-        console.log(`✅ Grade criada [${colorIndex + 1}]:`, {
-          id: gradeVariation.id,
-          color: gradeVariation.color,
-          sku: gradeVariation.sku,
-          totalStock: gradeVariation.stock,
-          sizes: gradeVariation.grade_sizes,
-          pairs: gradeVariation.grade_pairs,
-        });
-
-        newVariations.push(gradeVariation);
-        console.log(`📊 Total de variações até agora: ${newVariations.length}`);
+          newVariations.push(gradeVariation);
+        }
       }
 
-      console.log(
-        `🎯 RESULTADO FINAL: ${newVariations.length} grades criadas (uma por cor)`
-      );
+      console.log(`🎯 RESULTADO FINAL: ${newVariations.length} grades criadas`);
       console.log(
         `📋 Lista de variações criadas:`,
         newVariations.map((v) => ({ color: v.color, sku: v.sku }))
@@ -367,12 +345,9 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
         `🚀 CHAMANDO CALLBACK com ${newVariations.length} variações...`
       );
       onVariationsGenerated(newVariations);
-
       toast({
         title: "Grades criadas com sucesso!",
-        description: `${newVariations.length
-          } grade(s) foram geradas com SKUs únicos, totalizando ${totalPairsPerColor * selectedColors.length
-          } pares.`,
+        description: `${newVariations.length} grade(s) foram geradas com SKUs únicos, totalizando ${totalPairsAllCombinations} pares.`,
       });
     } catch (error) {
       console.error("❌ Erro ao gerar grades:", error);
@@ -393,17 +368,16 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     }
   };
 
-  const totalVariations = selectedColors.length;
+  const totalVariations = selectedColors.length * (selectedMaterials.length || 1);
   const totalPairs = sizePairConfigs.reduce(
     (sum, config) => sum + config.pairs,
     0
   );
-  const totalPairsAllColors = totalPairs * selectedColors.length;
+  const totalPairsAllCombinations = totalPairs * totalVariations;
 
   return (
     <div className="space-y-6 p-6">
       {/* Nome da Grade */}
-          {/* Nome da Grade */}
           <div>
             <Label htmlFor="grade-name" className="text-base font-semibold">
               Nome da Grade
@@ -511,14 +485,62 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
             )}
           </div>
 
-          {/* Templates de Grade */}
-          <div>
-            <Label className="text-base font-semibold">
-              2. Templates de Grade
+          {/* Seleção de Materiais */}
+          <div className="pt-6 border-t border-slate-100">
+            <Label className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-blue-500" />
+              2. Escolha os Materiais
             </Label>
-            <p className="text-sm text-gray-600 mb-3">
-              Use um template pronto ou configure manualmente os tamanhos e
-              quantidades
+            <p className="text-sm text-gray-500 mb-4">
+              Opcional: Selecione materiais se este produto possuir variações de composição (ex: Couro, Lona).
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Couro", "Lona", "Sintético", "Tecido", "Camurça", "Verniz"].map((mat) => (
+                <Button
+                  key={mat}
+                  variant={selectedMaterials.includes(mat) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleMaterial(mat)}
+                  className="rounded-full px-4"
+                >
+                  {mat}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="Adicionar material personalizado..."
+                value={customMaterial}
+                onChange={(e) => setCustomMaterial(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCustomMaterial()}
+                className="max-w-[250px]"
+              />
+              <Button variant="secondary" onClick={addCustomMaterial}>
+                <Plus className="w-4 h-4 mr-2" /> Adicionar
+              </Button>
+            </div>
+
+            {selectedMaterials.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedMaterials.map((mat) => (
+                  <Badge key={mat} variant="secondary" className="px-3 py-1">
+                    {mat} <span className="ml-2 cursor-pointer opacity-50 hover:opacity-100" onClick={() => toggleMaterial(mat)}>×</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Templates de Grade */}
+          <div className="pt-6 border-t border-slate-100">
+            <Label className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-500" />
+              3. Templates de Grade
+            </Label>
+            <p className="text-sm text-gray-500 mb-3">
+              Use um template pronto ou configure manualmente os tamanhos e quantidades
             </p>
 
             {storeGrades && storeGrades.length > 0 && (
@@ -588,7 +610,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
             <div className="flex items-center justify-between mb-3">
               <Label className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <Box className="w-4 h-4 text-blue-500" />
-                3. Pares por Tamanho
+                4. Pares por Tamanho
               </Label>
               <Button
                 variant="outline"
@@ -694,21 +716,27 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               </h4>
 
               <div className="space-y-3">
-                {selectedColors.map((color, index) => (
-                  <div key={color} className="bg-white p-3 rounded border">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium text-gray-900">
-                        Grade {index + 1}: {gradeName} - {color}
-                      </h5>
-                      <Badge variant="secondary">{totalPairs} pares</Badge>
+                {selectedColors.map((color) => (
+                  (selectedMaterials.length > 0 ? selectedMaterials : [null]).map((material, mIdx) => (
+                    <div key={`${color}-${material || 'default'}`} className="bg-white p-3 rounded border shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-gray-900 flex items-center gap-2">
+                          <span 
+                            className="w-3 h-3 rounded-full border border-gray-200"
+                            style={{ backgroundColor: resolveColorHex(color, storeColors.find(c => c.name === color)?.hex_color) }}
+                          />
+                          {gradeName} {material ? `(${material})` : ""} - {color}
+                        </h5>
+                        <Badge variant="secondary" className="bg-slate-100">{totalPairs} pares</Badge>
+                      </div>
+                      <div className="text-xs text-gray-500 italic">
+                        <strong>Tamanhos:</strong>{" "}
+                        {sizePairConfigs
+                          .map((c) => `${c.size} (${c.pairs})`)
+                          .join(", ")}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Tamanhos:</strong>{" "}
-                      {sizePairConfigs
-                        .map((c) => `${c.size} (${c.pairs})`)
-                        .join(", ")}
-                    </div>
-                  </div>
+                  ))
                 ))}
               </div>
 
@@ -716,7 +744,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-green-700">Grades: </span>
-                    <span className="font-medium">{selectedColors.length}</span>
+                    <span className="font-medium">{totalVariations}</span>
                   </div>
                   <div>
                     <span className="text-green-700">Tamanhos por grade: </span>
@@ -731,7 +759,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   <div>
                     <span className="text-green-700">Total geral: </span>
                     <span className="font-bold text-green-900 text-lg">
-                      {totalPairsAllColors} pares
+                      {totalPairsAllCombinations} pares
                     </span>
                   </div>
                 </div>

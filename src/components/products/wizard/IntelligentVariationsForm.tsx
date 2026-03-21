@@ -125,6 +125,8 @@ const IntelligentVariationsForm: React.FC<IntelligentVariationsFormProps> = ({
     </TabsTrigger>
   );
 
+  const isTabDisabled = stats.total === 0;
+
   return (
     <ErrorBoundary>
       <div className="max-w-6xl mx-auto space-y-6">

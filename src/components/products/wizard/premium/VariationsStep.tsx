@@ -271,7 +271,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                 : "bg-slate-50 border-slate-100 opacity-50 grayscale"
             }`}>
                <div>
-                  <Label className={`text-xs font-bold ${formData.variations.length > 0 ? "text-emerald-800" : "text-slate-400"}`}>Estoque em Massa</Label>
+                  <Label className={`text-xs font-bold ${formData.variations.length > 0 ? "text-emerald-800" : "text-slate-400"}`}>Estoque Rápido</Label>
                   <p className={`text-[10px] font-medium ${formData.variations.length > 0 ? "text-emerald-600" : "text-slate-400"}`}>Ajusta todas as variações de uma vez</p>
                </div>
                <div className="flex items-center gap-2">
