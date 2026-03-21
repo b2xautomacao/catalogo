@@ -542,7 +542,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                       <Package className="w-4 h-4 mr-2" />
                       <span className="truncate">{template.name}</span>
                       <Badge variant="secondary" className="ml-auto bg-emerald-500 text-white font-bold">
-                        {(template.distribution || template.default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
+                        {((template as any).distribution || (template as any).default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
                       </Badge>
                     </Button>
                   ))}
@@ -563,7 +563,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                   <Package className="w-4 h-4 mr-2 opacity-50" />
                   <span className="truncate">{template.name}</span>
                   <Badge variant="secondary" className="ml-auto opacity-75 font-bold">
-                    {(template.distribution || template.default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
+                    {((template as any).distribution || (template as any).default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
                   </Badge>
                 </Button>
               ))}
