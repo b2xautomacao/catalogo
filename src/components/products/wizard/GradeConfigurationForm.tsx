@@ -18,6 +18,7 @@ import {
   Settings,
   Info,
   CheckCircle,
+  Box,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -400,15 +401,8 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   const totalPairsAllColors = totalPairs * selectedColors.length;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            Configuração Avançada de Grades
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="space-y-6 p-6">
+      {/* Nome da Grade */}
           {/* Nome da Grade */}
           <div>
             <Label htmlFor="grade-name" className="text-base font-semibold">
@@ -589,11 +583,11 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               </Button>
             </div>
           </div>
-
           {/* Configuração Individual de Pares */}
-          <div>
+          <div className="pt-6 border-t border-slate-100">
             <div className="flex items-center justify-between mb-3">
-              <Label className="text-base font-semibold">
+              <Label className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Box className="w-4 h-4 text-blue-500" />
                 3. Pares por Tamanho
               </Label>
               <Button
@@ -601,23 +595,22 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 size="sm"
                 onClick={addSizePair}
                 disabled={sizePairConfigs.length >= 30}
+                className="h-8 text-[10px] font-bold border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100"
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-3 h-3 mr-1" />
                 Adicionar Tamanho
               </Button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">
-              Configure individualmente quantos pares de cada tamanho estarão na
-              grade
+            <p className="text-sm text-gray-500 mb-4">
+              Configure individualmente quantos pares de cada tamanho estarão na grade
             </p>
 
             {sizePairConfigs.length === 0 ? (
-              <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertDescription>
-                  Use um template acima ou adicione tamanhos manualmente para
-                  começar.
+              <Alert className="bg-slate-50 border-slate-100">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-slate-500 text-xs">
+                  Use um template acima ou adicione tamanhos manualmente para começar.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -625,7 +618,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 {sizePairConfigs.map((config, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50"
+                    className="flex items-center gap-4 p-3 border border-slate-100 rounded-xl bg-slate-50/50"
                   >
                     <div className="flex-1">
                       <Label className="text-sm font-medium">Tamanho</Label>
@@ -827,9 +820,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                 </>
               )}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 };

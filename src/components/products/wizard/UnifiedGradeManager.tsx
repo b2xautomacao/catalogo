@@ -114,55 +114,26 @@ const UnifiedGradeManager: React.FC<UnifiedGradeManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-blue-600" />
-            Sistema Unificado de Grades
-          </h2>
-          <p className="text-gray-600 text-sm">
-            Configure e gerencie grades de produtos de forma consistente
-          </p>
-        </div>
-
-        {existingGradeVariations.length > 0 && (
-          <Badge variant="secondary" className="text-sm">
-            {existingGradeVariations.length} grade(s) pronta(s)
-          </Badge>
-        )}
-      </div>
-
       {/* Alertas informativos */}
       {existingGradeVariations.length > 0 && (
-        <Alert className="border-yellow-200 bg-yellow-50">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            <strong>Atenção:</strong> Este produto já possui{" "}
-            {existingGradeVariations.length} variação(ões) de grade. Gerar novas
-            grades irá substituir as existentes.
+        <Alert className="border-amber-200 bg-amber-50 rounded-xl">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 text-xs font-medium">
+            O produto já possui {existingGradeVariations.length} grade(s). Gerar novas irá substituir as existentes.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Configuração de Grades */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            Configuração de Grades
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <GradeConfigurationForm
-            variations={variations}
-            onVariationsGenerated={handleGradeGenerated}
-            productId={productId}
-            storeId={storeId}
-            productName={productName}
-          />
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <GradeConfigurationForm
+          variations={variations}
+          onVariationsGenerated={handleGradeGenerated}
+          productId={productId}
+          storeId={storeId}
+          productName={productName}
+        />
+      </div>
 
       {/* Preview das Grades Geradas */}
       {showPreview && existingGradeVariations.length > 0 && (
