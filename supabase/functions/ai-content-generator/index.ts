@@ -20,13 +20,17 @@ serve(async (req) => {
       features,
       targetAudience,
       contentType,
-      storeId = "global", // Usar configuração global por padrão
+      material,
+      productType,
+      storeId = "global",
     } = await req.json();
 
     console.log("🤖 AI Content Generator - Request:", {
       productName,
       category,
       contentType,
+      material,
+      productType,
       storeId,
     });
 
@@ -125,14 +129,16 @@ serve(async (req) => {
 
       case "measurements":
         systemPrompt =
-          "Você é um assistente técnico de moda e calçados. Crie tabelas de medidas realistas e precisas baseadas no tipo de produto.";
-        userPrompt = `Crie uma tabela de medidas detalhada em formato de texto para o produto "${productName}" (Tipo: ${category}). Os tamanhos devem ser compatíveis com o padrão brasileiro. Retorne no formato "P: Altura X, Largura Y | M: Altura Z..." ou similar para calçados.`;
+          "Você é um assistente técnico de moda e calçados. Crie tabelas de medidas realistas e precisas. RESPONDA APENAS A TABELA.";
+        userPrompt = `Crie uma tabela de medidas resumida para o produto "${productName}". 
+        Contexto de Tipo: ${productType || category}. 
+        Formatos sugeridos: "P: Altura 70cm, Largura 50cm" ou "33: 22.5cm, 34: 23cm".`;
         break;
 
       case "care_instructions":
         systemPrompt =
-          "Você é um especialista em conservação de têxteis e calçados.";
-        userPrompt = `Crie instruções de cuidado e lavagem para o produto "${productName}" feito de "${category}". Inclua dicas para aumentar a durabilidade e o que evitar.`;
+          "Você é um especialista em conservação de têxteis e calçados. RESPONDA APENAS O TEXTO DE CUIDADOS.";
+        userPrompt = `Crie instruções de cuidado curtas para o produto "${productName}" feito de "${material || category}".`;
         break;
 
       default:

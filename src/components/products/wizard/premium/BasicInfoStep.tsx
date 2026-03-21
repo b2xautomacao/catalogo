@@ -31,6 +31,8 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
         body: { 
            productName: formData.name, 
            category: formData.category, 
+           material: formData.material,
+           productType: formData.product_category_type,
            contentType: "description",
            storeId: "global"
         },

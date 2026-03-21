@@ -29,6 +29,8 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
       const commonBody = {
         productName: formData.name,
         category: formData.category || "produto",
+        material: formData.material,
+        productType: formData.product_category_type,
         storeId: "global"
       };
 
