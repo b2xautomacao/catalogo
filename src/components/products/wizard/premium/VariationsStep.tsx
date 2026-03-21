@@ -20,13 +20,23 @@ interface VariationsStepProps {
   productId?: string;
 }
 
+type VariationType = 
+  | "none" 
+  | "color_only" 
+  | "size_only" 
+  | "material_only" 
+  | "color_size" 
+  | "color_material" 
+  | "grade_system";
+
 const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormData, productId }) => {
   const { colors: storeColors } = useStoreColors(formData.store_id);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [bulkStock, setBulkStock] = useState("");
   const [baseQuantity, setBaseQuantity] = useState("1");
-  const [showGradeManager, setShowGradeManager] = useState(false);
+  const [variationType, setVariationType] = useState<VariationType>("none");
   const { toast } = useToast();
 
   const sizeGrades = {
@@ -61,28 +71,46 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     );
   };
 
+  const toggleMaterial = (mat: string) => {
+    setSelectedMaterials(prev => 
+      prev.includes(mat) 
+        ? prev.filter(m => m !== mat) 
+        : [...prev, mat]
+    );
+  };
+
   const generateVariations = (mode: 'standard' | 'half' | 'merged' = 'standard') => {
     const newVariations: ProductVariation[] = [];
     const stockVal = parseInt(baseQuantity) || 0;
     
-    selectedColors.forEach(colorName => {
-      const storeColor = storeColors.find(c => c.name === colorName);
-      const hex = storeColor?.hex_color || resolveColorHex(colorName);
+    // Auxiliar para gerar combinações
+    const colors = selectedColors.length > 0 ? selectedColors : [null];
+    const materials = selectedMaterials.length > 0 ? selectedMaterials : [null];
+    const sizesList = selectedSizes.length > 0 ? selectedSizes : [null];
 
-      let finalSizes = [...selectedSizes];
-      
-      if (mode === 'half' && formData.product_category_type === 'calcado') {
-        const extra = selectedSizes.map(s => `${s}.5`);
-        finalSizes = [...new Set([...finalSizes, ...extra])].sort();
-      }
+    colors.forEach(colorName => {
+      const storeColor = colorName ? storeColors.find(c => c.name === colorName) : null;
+      const hex = colorName ? (storeColor?.hex_color || resolveColorHex(colorName)) : "#9CA3AF";
 
-      if (finalSizes.length > 0) {
-        finalSizes.forEach(size => {
+      materials.forEach(materialName => {
+        let finalSizes = [...selectedSizes];
+        
+        if (mode === 'half' && formData.product_category_type === 'calcado' && selectedSizes.length > 0) {
+          const extra = selectedSizes.map(s => `${s}.5`);
+          finalSizes = [...new Set([...finalSizes, ...extra])].sort();
+        }
+
+        const effectiveSizes = finalSizes.length > 0 ? finalSizes : [null];
+
+        effectiveSizes.forEach(size => {
+          const id = `new-${colorName || 'any'}-${size || 'any'}-${materialName || 'any'}-${Date.now()}-${Math.random()}`;
+          
           newVariations.push({
-            id: `new-${colorName}-${size}-${Date.now()}-${Math.random()}`,
+            id,
             product_id: productId || "",
-            color: colorName,
-            size: size,
+            color: colorName || "",
+            size: size || "",
+            material: materialName || "",
             hex_color: hex,
             stock: stockVal,
             price_adjustment: 0,
@@ -91,24 +119,13 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
             updated_at: new Date().toISOString(),
           });
         });
-      } else {
-        newVariations.push({
-          id: `new-${colorName}-${Date.now()}`,
-          product_id: productId || "",
-          color: colorName,
-          hex_color: hex,
-          stock: stockVal,
-          price_adjustment: 0,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
+      });
     });
 
     updateFormData({ variations: [...formData.variations, ...newVariations] });
     setSelectedColors([]);
     setSelectedSizes([]);
+    setSelectedMaterials([]);
     toast({ title: "Variações geradas!", description: `${newVariations.length} novas variações foram criadas.` });
   };
 
@@ -120,6 +137,50 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     setBulkStock("");
   };
 
+  const renderTypeSelection = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {[
+        { id: "color_only", title: "Apenas Cor", desc: "Produtos que variam apenas na cor", icon: <Palette className="w-8 h-8 text-rose-500" /> },
+        { id: "size_only", title: "Apenas Tamanho", desc: "Produtos com tamanhos diferentes", icon: <Layers className="w-8 h-8 text-blue-500" /> },
+        { id: "material_only", title: "Apenas Material", desc: "Ex: Couro, Sintético, Lona", icon: <Box className="w-8 h-8 text-amber-500" /> },
+        { id: "color_size", title: "Cor e Tamanho", desc: "Combinação de cores e tamanhos", icon: <Grid className="w-8 h-8 text-purple-500" /> },
+        { id: "color_material", title: "Cor e Material", desc: "Variações de cor por material", icon: <Palette className="w-8 h-8 text-indigo-500" /> },
+        { id: "grade_system", title: "Sistema de Grades", desc: "Ideal para Calçados (Atacado)", icon: <Plus className="w-8 h-8 text-emerald-500" /> },
+      ].map((type) => (
+        <Card 
+          key={type.id} 
+          className="cursor-pointer hover:border-blue-500 hover:shadow-md transition-all group overflow-hidden"
+          onClick={() => setVariationType(type.id as VariationType)}
+        >
+          <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
+            <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
+              {type.icon}
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">{type.title}</h3>
+              <p className="text-xs text-slate-500 mt-1">{type.desc}</p>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+              Escolher <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  if (variationType === "none" && formData.variations.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-slate-800">Como seu produto varia?</h2>
+          <p className="text-sm text-slate-500">Escolha a melhor estratégia para as variações do seu produto</p>
+        </div>
+        {renderTypeSelection()}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -127,21 +188,19 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
             <div className="flex items-center justify-between">
               <Label className="text-sm font-bold flex items-center gap-2 text-slate-800">
                  <Palette className="w-4 h-4 text-rose-500" />
-                 1. Cores e Grade
+                 1. Configurações de Variação
               </Label>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 text-[10px] font-bold border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100"
-                  onClick={() => setShowGradeManager(!showGradeManager)}
-                >
-                  {showGradeManager ? "Voltar ao Manual" : "Usar Sistema de Grade"}
-                </Button>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-[10px] font-bold text-slate-400 hover:text-blue-600"
+                onClick={() => setVariationType("none")}
+              >
+                Mudar Estratégia
+              </Button>
             </div>
 
-            {showGradeManager ? (
+            {variationType === "grade_system" ? (
               <div className="animate-in fade-in zoom-in-95 duration-300">
                 <UnifiedGradeManager
                   variations={formData.variations}
@@ -154,68 +213,90 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
               </div>
             ) : (
               <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                {/* Seleção de Cores da Loja */}
-                <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-                  {storeColors.map(color => (
-                    <button
-                      key={color.id}
-                      onClick={() => toggleColor(color.name)}
-                      className={`group relative p-1 rounded-full border-2 transition-all ${
-                        selectedColors.includes(color.name) 
-                          ? "border-blue-500 scale-110 shadow-md bg-white" 
-                          : "border-transparent hover:border-slate-300"
-                      }`}
-                      title={color.name}
-                    >
-                      <div 
-                        className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center"
-                        style={{ backgroundColor: color.hex_color }}
-                      >
-                        {selectedColors.includes(color.name) && (
-                          <Check className="w-5 h-5 drop-shadow-md" style={{ color: isLightColor(color.hex_color) ? '#000' : '#FFF' }} />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                  
-                  {/* Botão Adicionar Cor Customizada */}
-                  <ColorPickerPopover 
-                    storeId={formData.store_id}
-                    onColorSelect={(colorObj) => {
-                      if (!selectedColors.includes(colorObj.name)) {
-                        setSelectedColors(prev => [...prev, colorObj.name]);
-                      }
-                      toast({
-                        title: colorObj.saved ? "Cor salva e selecionada!" : "Cor selecionada!",
-                        description: `A cor "${colorObj.name}" foi adicionada.`,
-                      });
-                    }}
-                    trigger={
-                      <Button variant="outline" className="w-12 h-12 rounded-full border-dashed border-2 p-0 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:border-blue-200">
-                        <Plus className="w-5 h-5" />
-                      </Button>
-                    }
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-bold text-slate-800">2. Tamanhos</Label>
-                  <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-                    {sizes.map(size => (
-                      <button
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={`w-12 h-12 rounded-xl border-2 font-bold text-xs transition-all ${
-                          selectedSizes.includes(size)
-                            ? "border-blue-500 bg-white text-blue-700 shadow-sm"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                {(variationType.includes("color")) && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-700">Escolha as Cores</Label>
+                    <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                      {storeColors.map(color => (
+                        <button
+                          key={color.id}
+                          onClick={() => toggleColor(color.name)}
+                          className={`group relative p-1 rounded-full border-2 transition-all ${
+                            selectedColors.includes(color.name) 
+                              ? "border-blue-500 scale-110 shadow-md bg-white" 
+                              : "border-transparent hover:border-slate-300"
+                          }`}
+                          title={color.name}
+                        >
+                          <div 
+                            className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center"
+                            style={{ backgroundColor: color.hex_color }}
+                          >
+                            {selectedColors.includes(color.name) && (
+                              <Check className="w-5 h-5 drop-shadow-md" style={{ color: isLightColor(color.hex_color) ? '#000' : '#FFF' }} />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                      
+                      <ColorPickerPopover 
+                        storeId={formData.store_id}
+                        onColorSelect={(colorObj) => {
+                          if (!selectedColors.includes(colorObj.name)) {
+                            setSelectedColors(prev => [...prev, colorObj.name]);
+                          }
+                        }}
+                        trigger={
+                          <Button variant="outline" className="w-12 h-12 rounded-full border-dashed border-2 p-0 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:border-blue-200">
+                            <Plus className="w-5 h-5" />
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {(variationType.includes("size")) && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-700">Escolha os Tamanhos</Label>
+                    <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                      {sizes.map(size => (
+                        <button
+                          key={size}
+                          onClick={() => toggleSize(size)}
+                          className={`w-12 h-12 rounded-xl border-2 font-bold text-xs transition-all ${
+                            selectedSizes.includes(size)
+                              ? "border-blue-500 bg-white text-blue-700 shadow-sm"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(variationType.includes("material")) && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-700">Escolha os Materiais</Label>
+                    <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                      {["Couro", "Sintético", "Lona", "Camurça", "Verniz", "Tecido"].map(mat => (
+                        <button
+                          key={mat}
+                          onClick={() => toggleMaterial(mat)}
+                          className={`px-4 py-2 rounded-xl border-2 font-bold text-xs transition-all ${
+                            selectedMaterials.includes(mat)
+                              ? "border-blue-500 bg-white text-blue-700 shadow-sm"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          {mat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-blue-100 mb-2">
                   <div className="flex flex-col">
@@ -230,35 +311,31 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <Button 
-                      variant="outline"
-                      className="h-12 rounded-xl border-dashed border-slate-300 text-slate-600 font-bold text-xs gap-2 flex-col"
-                      onClick={() => generateVariations('standard')}
-                      disabled={selectedColors.length === 0}
-                  >
-                      <Layers className="w-3 h-3" />
-                      Grade Padrão
-                  </Button>
-                  {formData.product_category_type === 'calcado' && (
-                      <Button 
-                          variant="outline"
-                          className="h-12 rounded-xl border-dashed border-blue-200 text-blue-600 bg-blue-50/30 font-bold text-xs gap-2 flex-col"
-                          onClick={() => generateVariations('half')}
-                          disabled={selectedColors.length === 0 || selectedSizes.length === 0}
-                      >
-                          <Plus className="w-3 h-3" />
-                          Meia Grade (.5)
-                      </Button>
-                  )}
-                  <Button 
-                      className="col-span-2 bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2 shadow-lg"
-                      disabled={selectedColors.length === 0}
-                      onClick={() => generateVariations('merged')}
+                      className="bg-slate-900 hover:bg-black text-white h-12 rounded-xl font-bold gap-2 shadow-lg"
+                      disabled={
+                        (variationType.includes("color") && selectedColors.length === 0) ||
+                        (variationType.includes("size") && selectedSizes.length === 0) ||
+                        (variationType.includes("material") && selectedMaterials.length === 0)
+                      }
+                      onClick={() => generateVariations()}
                   >
                       <Plus className="w-4 h-4" />
-                      Mesclar e Gerar Variações
+                      Gerar Variações do Produto
                   </Button>
+                  
+                  {variationType === "color_size" && formData.product_category_type === 'calcado' && (
+                    <Button 
+                        variant="outline"
+                        className="h-10 rounded-xl border-dashed border-blue-200 text-blue-600 font-bold text-[10px] gap-2"
+                        onClick={() => generateVariations('half')}
+                        disabled={selectedColors.length === 0 || selectedSizes.length === 0}
+                    >
+                        <Plus className="w-3 h-3" />
+                        Gerar com Meia Grade (.5)
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
