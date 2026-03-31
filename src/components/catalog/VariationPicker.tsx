@@ -160,6 +160,13 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
     setJustAdded(null);
   };
 
+  // Auto-seleção se houver apenas uma cor
+  React.useEffect(() => {
+    if (uniqueColors.length === 1 && !selectedColor) {
+      handleColorSelect(uniqueColors[0].name);
+    }
+  }, [uniqueColors, selectedColor, handleColorSelect]);
+
   const handleAdd = () => {
     if (!selectedVariation || !canAdd) return;
     onAddToCart(selectedVariation, quantity);
@@ -231,7 +238,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
   return (
     <div className="space-y-5">
       {/* ETAPA 1 — Cor */}
-      {hasColors && (
+      {hasColors && uniqueColors.length > 1 && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-gray-700">
@@ -242,7 +249,7 @@ const VariationPicker: React.FC<VariationPickerProps> = ({
                 </span>
               )}
             </span>
-            {selectedColor && (
+            {selectedColor && uniqueColors.length > 1 && (
               <button
                 onClick={() => {
                   setSelectedColor(null);

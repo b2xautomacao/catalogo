@@ -62,6 +62,19 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
     return groups.sort((a, b) => a.color.localeCompare(b.color));
   }, [variations]);
 
+  // Auto-seleção se houver apenas uma cor
+  React.useEffect(() => {
+    if (colorGroups.length === 1 && !selectedColor) {
+      const { color, grades } = colorGroups[0];
+      setSelectedColor(color);
+      setExpandedColors(new Set([color]));
+      // Se houver apenas uma grade nessa cor, auto-seleciona ela também
+      if (grades.length === 1 && (!selectedVariation || selectedVariation.id !== grades[0].id)) {
+        onVariationChange(grades[0]);
+      }
+    }
+  }, [colorGroups, selectedColor, selectedVariation, onVariationChange]);
+
   const toggleColor = (color: string) => {
     const newExpanded = new Set(expandedColors);
     if (newExpanded.has(color)) {
@@ -84,7 +97,7 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
         <Package className="w-4 h-4" />
-        Selecione a Cor e Grade
+        {colorGroups.length > 1 ? "Selecione a Cor e Grade" : "Selecione a Grade"}
       </h3>
 
       {/* Lista de Cores */}
@@ -101,46 +114,48 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
             <Card key={color} className={`border-2 transition-all ${
               isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200'
             }`}>
-              {/* Header da Cor */}
-              <div
-                className="p-4 cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleColor(color)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {/* Amostra de Cor */}
-                    <div 
-                      className="w-8 h-8 rounded-full border-2 border-gray-300"
-                      style={{ 
-                        backgroundColor: resolveColorHex(color, grades[0]?.hex_color)
-                      }}
-                    />
+              {/* Header da Cor - Ocultar se houver apenas uma cor para simplificar */}
+              {colorGroups.length > 1 && (
+                <div
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleColor(color)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {/* Amostra de Cor */}
+                      <div 
+                        className="w-8 h-8 rounded-full border-2 border-gray-300"
+                        style={{ 
+                          backgroundColor: resolveColorHex(color, grades[0]?.hex_color)
+                        }}
+                      />
 
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{color}</h4>
-                      <p className="text-sm text-gray-600">
-                        {gradeCount} opç{gradeCount > 1 ? 'ões' : 'ão'} de grade
-                        {hasFlexible && (
-                          <span className="ml-2">
-                            <Sparkles className="w-3 h-3 inline text-purple-600" />
-                          </span>
-                        )}
-                      </p>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{color}</h4>
+                        <p className="text-sm text-gray-600">
+                          {gradeCount} opç{gradeCount > 1 ? 'ões' : 'ão'} de grade
+                          {hasFlexible && (
+                            <span className="ml-2">
+                              <Sparkles className="w-3 h-3 inline text-purple-600" />
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isSelected && (
+                        <Badge className="bg-blue-600">Selecionado</Badge>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    {isSelected && (
-                      <Badge className="bg-blue-600">Selecionado</Badge>
-                    )}
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Opções de Grade (expandível) */}
               {isExpanded && (
