@@ -72,9 +72,16 @@ export const useCartPriceCalculation = (
     }
 
     const quantity = item.quantity;
-    const retailPrice = item.product.retail_price;
-    const wholesalePrice = item.product.wholesale_price;
+    const adjustment = item.variation?.price_adjustment || 0;
+    const baseRetail = item.product.retail_price || 0;
+    const baseWholesale = item.product.wholesale_price || baseRetail;
     const minWholesaleQty = item.product.min_wholesale_qty || 1;
+
+    // Preços ajustados proporcionais para a variação
+    const retailPrice = Math.max(0, baseRetail + adjustment);
+    const wholesalePrice = (baseRetail > 0)
+      ? Math.max(0, retailPrice * (baseWholesale / baseRetail))
+      : Math.max(0, baseWholesale + adjustment);
 
     let finalPrice = retailPrice;
     let currentTierName = "Varejo";

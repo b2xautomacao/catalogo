@@ -1031,98 +1031,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Total SEMPRE com base em item.price (preço já recalculado por recalculateItemPrices)
   const totalAmount = useMemo(() => {
-    const totalUnitsInCart = items.reduce((s, i) => s + (typeof i.quantity === "number" && !isNaN(i.quantity) ? i.quantity : 0), 0);
-    const modelType = priceModel?.price_model;
-    const isByCartTotal = priceModel?.simple_wholesale_by_cart_total === true;
-    const cartMinQty = priceModel?.simple_wholesale_cart_min_qty ?? 10;
-    const getEffectiveUnitPrice = (it: CartItem): number => {
-      const q = typeof it.quantity === "number" && !isNaN(it.quantity) ? it.quantity : 0;
-      const ret = it.product?.retail_price ?? it.originalPrice ?? 0;
-      const whl = it.product?.wholesale_price;
-      const minQ = it.product?.min_wholesale_qty ?? priceModel?.simple_wholesale_min_qty ?? 10;
-      if (it.gradeInfo && it.variation?.is_grade) return typeof it.price === "number" && !isNaN(it.price) ? it.price : ret;
-      if (modelType === "wholesale_only" && whl) return whl;
-      if (modelType === "retail_only") return ret;
-      if (modelType === "simple_wholesale" && whl) {
-        if (isByCartTotal && totalUnitsInCart >= cartMinQty) return whl;
-        if (!isByCartTotal && q >= minQ) return whl;
-      }
-      if (modelType === "gradual_wholesale" && it.currentTier?.price != null) return it.currentTier.price;
-      return typeof it.price === "number" && !isNaN(it.price) ? it.price : ret;
-    };
-    // LOG: Total do carrinho e detalhes dos itens
-    console.log("🛒 [useCart] DEBUG - Itens antes do cálculo:", {
-      itemsCount: items.length,
-      items: items.map((item) => ({
-        id: item.id,
-        name: item.product?.name,
-        price: item.price,
-        quantity: item.quantity,
-        catalogType: item.catalogType,
-        isWholesalePrice: item.isWholesalePrice,
-        originalPrice: item.originalPrice,
-        productWholesalePrice: item.product?.wholesale_price,
-        productRetailPrice: item.product?.retail_price,
-        hasGradeInfo: !!item.gradeInfo,
-        currentTier: item.currentTier?.tier_name,
-      })),
-    });
-
     const calculatedTotal = items.reduce((total, item) => {
-      const itemPrice = getEffectiveUnitPrice(item);
-      const itemQuantity =
-        typeof item.quantity === "number" && !isNaN(item.quantity)
-          ? item.quantity
-          : 0;
-
-      // 🔴 CORREÇÃO: Para grades, o item.price já é o preço total da grade
-      // Multiplicar pela quantidade de grades adicionadas
-      let subtotal: number;
-      if (item.gradeInfo && item.variation?.is_grade) {
-        // Para grades: item.price já é o total de uma grade, multiplicar pela quantidade de grades
-        subtotal = itemPrice * itemQuantity;
-        console.log(
-          `💰 [useCart] Grade ${item.product?.name
-          }: ${itemQuantity} grade(s) x R$${itemPrice} (preço total da grade) = R$${subtotal}`
-        );
-      } else {
-        // Para produtos normais: multiplicar preço unitário pela quantidade
-        // O item.price já deve estar atualizado com o preço correto (varejo ou atacado)
-        subtotal = itemPrice * itemQuantity;
-
-        // Verificar se o preço está correto comparando com o preço esperado
-        const expectedPrice = item.isWholesalePrice
-          ? (item.product?.wholesale_price || item.originalPrice)
-          : (item.originalPrice || item.product?.retail_price || 0);
-
-        if (Math.abs(itemPrice - expectedPrice) > 0.01) {
-          console.warn(
-            `⚠️ [useCart] PREÇO DESATUALIZADO para ${item.product?.name}:`,
-            {
-              itemPrice,
-              expectedPrice,
-              isWholesalePrice: item.isWholesalePrice,
-              catalogType: item.catalogType,
-              quantity: itemQuantity,
-              minWholesaleQty: item.product?.min_wholesale_qty,
-            }
-          );
-        }
-
-        console.log(
-          `💰 [useCart] Item ${item.product?.name
-          }: ${itemQuantity} x R$${itemPrice} = R$${subtotal} | Tier: ${item.currentTier?.tier_name || "-"
-          } | isWholesale: ${item.isWholesalePrice || false} | expectedPrice: R$${expectedPrice}`
-        );
-      }
-
-      return total + subtotal;
+      const itemPrice = typeof item.price === "number" && !isNaN(item.price) ? item.price : 0;
+      const itemQuantity = typeof item.quantity === "number" && !isNaN(item.quantity) ? item.quantity : 0;
+      return total + (itemPrice * itemQuantity);
     }, 0);
 
-    console.log(`🟩 [useCart] TOTAL calculado: R$${calculatedTotal}`);
-
+    console.log(`🛒 [useCart] TOTAL calculado: R$${calculatedTotal}`);
     return calculatedTotal;
-  }, [items, priceModel]); // Recalcular quando items ou priceModel mudar
+  }, [items]); // Recalcular quando items mudar
 
   const totalItems = items.reduce((total, item) => {
     const itemQuantity =
@@ -1136,15 +1053,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Calcular economia potencial se todos os itens fossem comprados no atacado
   const potentialSavings = items.reduce((total, item) => {
+    // Só calcula economia se item NÃO estiver no atacado e produto tiver preço de atacado
     if (item.product.wholesale_price && !item.isWholesalePrice) {
-      const originalPrice =
-        typeof item.originalPrice === "number" ? item.originalPrice : 0;
-      const wholesalePrice =
-        typeof item.product.wholesale_price === "number"
-          ? item.product.wholesale_price
-          : 0;
       const quantity = typeof item.quantity === "number" ? item.quantity : 0;
-      const possibleSavings = (originalPrice - wholesalePrice) * quantity;
+      const adjustment = item.variation?.price_adjustment || 0;
+      const baseRetail = item.product.retail_price || 0;
+      const baseWholesale = item.product.wholesale_price || baseRetail;
+
+      const retailPrice = Math.max(0, baseRetail + adjustment);
+      const wholesalePrice = (baseRetail > 0)
+        ? Math.max(0, retailPrice * (baseWholesale / baseRetail))
+        : Math.max(0, baseWholesale + adjustment);
+
+      const possibleSavings = (retailPrice - wholesalePrice) * quantity;
       return total + Math.max(0, possibleSavings);
     }
     return total;

@@ -50,15 +50,9 @@ const CartItemPriceDisplay: React.FC<CartItemPriceDisplayProps> = ({
               <div className="text-xs text-gray-500">{item.gradeInfo.name}</div>
             </div>
           ) : priceCalculation.priceModel === "wholesale_only" ? (
-            product.wholesale_price && product.wholesale_price > 0 ? (
-              <span className="font-semibold text-green-700">
-                R$ {product.wholesale_price.toFixed(2).replace(".", ",")}
-              </span>
-            ) : (
-              <span className="text-red-500 text-xs">
-                Preço não configurado
-              </span>
-            )
+            <span className="font-semibold text-green-700">
+              R$ {priceCalculation.currentTier.price.toFixed(2).replace(".", ",")}
+            </span>
           ) : (
             <span className="font-semibold text-gray-900">
               R${" "}

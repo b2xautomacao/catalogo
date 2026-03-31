@@ -40,6 +40,16 @@ const CartItem: React.FC<{
 
   const { priceModel } = useStorePriceModel(item.product?.store_id);
   const modelKey = priceModel?.price_model || "retail_only";
+  
+  // Preços ajustados para a variação
+  const adjustment = item.variation?.price_adjustment || 0;
+  const baseRetail = item.product?.retail_price || 0;
+  const baseWholesale = item.product?.wholesale_price || baseRetail;
+  const retailPrice = Math.max(0, baseRetail + adjustment);
+  const wholesalePrice = (baseRetail > 0)
+    ? Math.max(0, retailPrice * (baseWholesale / baseRetail))
+    : Math.max(0, baseWholesale + adjustment);
+
   const minQty =
     modelKey === "wholesale_only" ? item.product?.min_wholesale_qty || 1 : 1;
 
@@ -107,7 +117,7 @@ const CartItem: React.FC<{
               : `Adicione mais ${needed} unidades no carrinho para atacado em todos os itens`,
             buttonText: "Adicionar Unidades",
             showSavings: true,
-            savings: (item.product.retail_price - item.product.wholesale_price) * quantity,
+            savings: (retailPrice - wholesalePrice) * quantity,
           };
         }
       } else if (minQtyProduct > 0) {
@@ -117,7 +127,7 @@ const CartItem: React.FC<{
             text: `Adicione mais ${needed} unidade${needed > 1 ? "s" : ""} para atacado`,
             buttonText: "Ativar Atacado",
             showSavings: true,
-            savings: (item.product.retail_price - item.product.wholesale_price) * minQtyProduct,
+            savings: (retailPrice - wholesalePrice) * minQtyProduct,
           };
         }
       }
