@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   const [customSizeInput, setCustomSizeInput] = useState("");
   const [customSizes, setCustomSizes] = useState<string[]>([]);
   const { toast } = useToast();
+  const [initialized, setInitialized] = useState(false);
 
   const sizeGrades = {
     calcado: ["33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44"],
@@ -47,6 +48,36 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     infantil: ["RN", "1", "2", "4", "6", "8", "10", "12"],
     acessorio: ["Tamanho Único", "P", "M", "G"],
   };
+
+  // Inicializar tamanhos e cores a partir das variações existentes (para edição)
+  useEffect(() => {
+    if (formData.variations.length > 0 && !initialized) {
+      const existingSizes = [...new Set(formData.variations.map(v => v.size).filter(Boolean))];
+      const existingColors = [...new Set(formData.variations.map(v => v.color).filter(Boolean))];
+      const existingMaterials = [...new Set(formData.variations.map(v => v.material).filter(Boolean))];
+
+      // Identificar quais tamanhos são "customizados" (não estão nos grades padrão)
+      const allStandardSizes = Object.values(sizeGrades).flat();
+      const newCustomSizes = existingSizes.filter(s => !allStandardSizes.includes(s));
+
+      if (newCustomSizes.length > 0) {
+        setCustomSizes(prev => [...new Set([...prev, ...newCustomSizes])]);
+      }
+
+      setSelectedSizes(prev => [...new Set([...prev, ...existingSizes])]);
+      setSelectedColors(prev => [...new Set([...prev, ...existingColors])]);
+      setSelectedMaterials(prev => [...new Set([...prev, ...existingMaterials])]);
+      
+      // Tentar adivinhar a estratégia de variação
+      if (existingColors.length > 0 && existingSizes.length > 0) setVariationType("color_size");
+      else if (existingColors.length > 0 && existingMaterials.length > 0) setVariationType("color_material");
+      else if (existingColors.length > 0) setVariationType("color_only");
+      else if (existingSizes.length > 0) setVariationType("size_only");
+      else if (existingMaterials.length > 0) setVariationType("material_only");
+      
+      setInitialized(true);
+    }
+  }, [formData.variations, sizeGrades, initialized]);
 
   const getSizes = () => {
     let baseSizes: string[] = [];

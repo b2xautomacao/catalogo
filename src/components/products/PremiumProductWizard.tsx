@@ -57,10 +57,6 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
       toast({ title: "Ei!", description: "Dê um nome para o produto primeiro.", variant: "destructive" });
       return;
     }
-    if (currentStep === 2 && formData.variations.length === 0) {
-      toast({ title: "Ei!", description: "Gere pelo menos uma variação (cor/tamanho) antes de seguir.", variant: "destructive" });
-      return;
-    }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
