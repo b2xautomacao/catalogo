@@ -108,11 +108,6 @@ const ProductsPage = () => {
     setStockManagerProduct(null);
   };
 
-  // Função para fechar modal de edição
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingProduct(null);
-  };
 
   return (
     <div className="container mx-auto p-6">
