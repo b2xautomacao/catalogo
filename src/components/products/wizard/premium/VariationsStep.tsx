@@ -517,15 +517,58 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                                  </div>
                                )}
                             </div>
-                            <div className="flex flex-col">
-                               <div className="flex items-center gap-2">
-                                 <span className="text-[11px] font-bold text-slate-800">{v.color}</span>
-                                 <Badge variant="outline" className="h-4 px-1 text-[8px] border-slate-200 text-slate-500 font-bold uppercase">
-                                   {v.size || "Único"}
-                                 </Badge>
-                               </div>
-                               <span className="text-[10px] text-emerald-600 font-bold">{v.stock} pares</span>
-                            </div>
+                             <div className="flex-1 flex items-center justify-between ml-4">
+                                <div className="flex flex-col">
+                                   <div className="flex items-center gap-2">
+                                     <span className="text-[11px] font-bold text-slate-800">{v.color || "Geral"}</span>
+                                     <Badge variant="outline" className="h-4 px-1 text-[8px] border-slate-200 text-slate-500 font-bold uppercase">
+                                       {v.size || "Único"}
+                                     </Badge>
+                                   </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 mr-2">
+                                   {/* Estoque Individual */}
+                                   <div className="flex flex-col items-center">
+                                      <span className="text-[8px] uppercase text-slate-400 font-bold mb-1">Estoque</span>
+                                      <Input 
+                                        type="number"
+                                        value={v.stock}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value) || 0;
+                                          updateFormData({
+                                            variations: formData.variations.map(varI => 
+                                              varI.id === v.id ? { ...varI, stock: val } : varI
+                                            )
+                                          });
+                                        }}
+                                        className="w-16 h-8 text-[11px] text-center font-bold bg-slate-50 border-slate-100 focus:bg-white"
+                                      />
+                                   </div>
+
+                                   {/* Ajuste de Preço */}
+                                   <div className="flex flex-col items-center">
+                                      <span className="text-[8px] uppercase text-blue-400 font-bold mb-1">Preço (+/-)</span>
+                                      <div className="relative">
+                                        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-blue-500">R$</span>
+                                        <Input 
+                                          type="number"
+                                          placeholder="0.00"
+                                          value={v.price_adjustment || ""}
+                                          onChange={(e) => {
+                                            const val = parseFloat(e.target.value) || 0;
+                                            updateFormData({
+                                              variations: formData.variations.map(varI => 
+                                                varI.id === v.id ? { ...varI, price_adjustment: val } : varI
+                                              )
+                                            });
+                                          }}
+                                          className="w-20 h-8 pl-4 text-[11px] text-center font-bold bg-blue-50/20 border-blue-50 text-blue-700 focus:bg-white placeholder:text-blue-300"
+                                        />
+                                      </div>
+                                   </div>
+                                </div>
+                             </div>
                          </div>
                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-200 hover:text-red-500 rounded-full" onClick={() => updateFormData({ variations: formData.variations.filter(varI => varI.id !== v.id) })}>
                             <X className="w-3 h-3" />

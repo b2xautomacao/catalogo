@@ -188,9 +188,9 @@ const ImprovedGradeSelector: React.FC<ImprovedGradeSelectorProps> = ({
                             <div className="text-xs text-gray-600 flex items-center justify-between">
                               <span>{totalPairs} pares</span>
                               {showPrices && basePrice > 0 && (
-                                <span className="font-semibold text-blue-600">
-                                  {formatCurrency(basePrice * totalPairs)}
-                                </span>
+                                  <span className="font-semibold text-blue-600">
+                                    {formatCurrency((basePrice + (grade.price_adjustment || 0)) * totalPairs)}
+                                  </span>
                               )}
                             </div>
 

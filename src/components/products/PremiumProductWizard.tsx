@@ -40,7 +40,7 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
     onOpenChange(false);
   });
 
-  const { uploadAllImages } = useDraftImagesContext();
+  const { uploadAllImages, loadExistingImages, clearDraftImages } = useDraftImagesContext();
   const { toast } = useToast();
 
   const steps = [
@@ -70,12 +70,19 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
     await saveProduct(editingProduct?.id, uploadAllImages);
   };
 
-  // Resetar ao abrir
+  // Resetar ao abrir ou carregar existentes
   useEffect(() => {
-    if (open && !editingProduct) {
-      resetForm();
+    if (open) {
+      if (editingProduct?.id) {
+        console.log("📂 PremiumWizard - Carregando imagens para edição:", editingProduct.id);
+        loadExistingImages(editingProduct.id);
+      } else {
+        console.log("📂 PremiumWizard - Novo produto, limpando rascunhos.");
+        resetForm();
+        clearDraftImages();
+      }
     }
-  }, [open, editingProduct, resetForm]);
+  }, [open, editingProduct?.id, resetForm, loadExistingImages, clearDraftImages]);
 
   return (
     <DialogContent className="max-w-6xl h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-white border-slate-200 shadow-2xl rounded-3xl !dark:bg-white">

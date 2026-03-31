@@ -113,23 +113,26 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
   // Calcular preços para cada modo
   const prices = useMemo(() => {
     const fullGradeTotalPairs = firstVariation?.grade_quantity || 0;
-    const fullGradePrice = basePrice * fullGradeTotalPairs;
+    const currentAdjustment = firstVariation?.price_adjustment || 0;
+    const adjustedBasePrice = basePrice + currentAdjustment;
+    const fullGradePrice = adjustedBasePrice * fullGradeTotalPairs;
 
     let halfGradePrice = 0;
-    let halfGradeUnitPrice = basePrice;
+    let halfGradeUnitPrice = adjustedBasePrice;
+
     if (halfGradeInfo && config?.allow_half_grade) {
       const discount = (config.half_grade_discount_percentage || 0) / 100;
-      halfGradeUnitPrice = basePrice * (1 - discount);
+      halfGradeUnitPrice = adjustedBasePrice * (1 - discount);
       halfGradePrice = halfGradeUnitPrice * halfGradeInfo.totalPairs;
     }
 
     const customMixAdjustment = config?.custom_mix_price_adjustment || 0;
-    const customMixUnitPrice = basePrice + customMixAdjustment;
+    const customMixUnitPrice = adjustedBasePrice + customMixAdjustment;
 
     return {
       full: {
         total: fullGradePrice,
-        unit: basePrice,
+        unit: adjustedBasePrice,
         pairs: fullGradeTotalPairs,
       },
       half: halfGradeInfo && config?.allow_half_grade ? {
