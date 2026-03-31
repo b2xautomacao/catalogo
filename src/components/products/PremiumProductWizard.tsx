@@ -89,9 +89,13 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
               <Sparkles className="w-6 h-6" />
            </div>
-           <div>
-             <DialogTitle className="text-xl font-bold text-slate-900">Wizard Premium</DialogTitle>
-             <p className="text-xs text-slate-500 font-medium italic">Novo fluxo de cadastro de alta performance</p>
+            <div>
+             <DialogTitle className="text-xl font-bold text-slate-900">
+               {editingProduct ? `Editar ${editingProduct.name}` : "Novo Produto Premium"}
+             </DialogTitle>
+             <p className="text-xs text-slate-500 font-medium italic">
+               {editingProduct ? "Aprimore os detalhes deste produto" : "Novo fluxo de cadastro de alta performance"}
+             </p>
            </div>
         </div>
         

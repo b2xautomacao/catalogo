@@ -3,10 +3,8 @@ import { Plus, Upload, Package, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BulkImportModal from "./BulkImportModal";
 import BulkStockModal from "./BulkStockModal";
-import ProductFormModal from "./ProductFormModal";
 import ProductStockManagerModal from "./ProductStockManagerModal";
 import PricingModeSelector from "./PricingModeSelector";
-import ExpandableProductForm from "./ExpandableProductForm";
 import PremiumProductWizard from "./PremiumProductWizard";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
@@ -17,20 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 const ProductsPage = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBulkStockModalOpen, setIsBulkStockModalOpen] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [stockManagerProduct, setStockManagerProduct] =
-    useState<Product | null>(null);
-  const [isStockManagerOpen, setIsStockManagerOpen] = useState(false);
-  const [showPriceModeSelector, setShowPriceModeSelector] = useState(false);
-  
-  // Estados para ExpandableProductForm
-  const [isExpandableFormOpen, setIsExpandableFormOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<string | undefined>(undefined);
-  
   // Estado para Premium Wizard
   const [isPremiumWizardOpen, setIsPremiumWizardOpen] = useState(false);
+  const [editingProductForWizard, setEditingProductForWizard] = useState<Product | null>(null);
+  
+  const [stockManagerProduct, setStockManagerProduct] = useState<Product | null>(null);
+  const [isStockManagerOpen, setIsStockManagerOpen] = useState(false);
+  const [showPriceModeSelector, setShowPriceModeSelector] = useState(false);
   
   const { profile } = useAuth();
   const currentStore = profile?.store_id;
@@ -44,30 +35,16 @@ const ProductsPage = () => {
     toggleProductStatus,
   } = useProducts();
 
-  // Função para editar produto (usando div expansível)
+  // Função para editar produto usando o Wizard Premium
   const handleEdit = (product: Product) => {
-    console.log("🔧 ProductsPage - handleEdit chamado para:", {
-      productId: product.id,
-      productName: product.name,
-    });
-    setEditingProductId(product.id);
-    setIsExpandableFormOpen(true);
-    // Scroll suave para o topo
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setEditingProductForWizard(product);
+    setIsPremiumWizardOpen(true);
   };
   
-  // Função para novo produto (usando div expansível)
+  // Função para novo produto usando o Wizard Premium
   const handleNewProduct = () => {
-    setEditingProductId(undefined);
-    setIsExpandableFormOpen(true);
-    // Scroll suave para o topo
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  
-  // Função para fechar form expansível
-  const handleCloseExpandableForm = () => {
-    setIsExpandableFormOpen(false);
-    setEditingProductId(undefined);
+    setEditingProductForWizard(null);
+    setIsPremiumWizardOpen(true);
   };
 
   // Função para deletar produto
@@ -174,18 +151,10 @@ const ProductsPage = () => {
           </Button>
 
           <Button
-            onClick={() => setIsPremiumWizardOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg shadow-amber-500/20 border-none"
+            onClick={handleNewProduct}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-lg shadow-amber-500/20 border-none px-6"
           >
             <Sparkles className="h-4 w-4" />
-            Wizard Premium
-          </Button>
-
-          <Button
-            onClick={handleNewProduct}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            <Plus className="h-4 w-4" />
             Novo Produto
           </Button>
         </div>
@@ -201,26 +170,14 @@ const ProductsPage = () => {
         />
       </div>
 
-      {/* Formulário Expansível de Produto */}
-      <ExpandableProductForm
-        isOpen={isExpandableFormOpen}
-        onClose={handleCloseExpandableForm}
-        productId={editingProductId}
-        onSaved={async (productId) => {
-          await fetchProducts();
-          toast({
-            title: "✅ Sucesso!",
-            description: editingProductId ? "Produto atualizado" : "Produto criado",
-          });
-        }}
-      />
-
-      {/* Wizard Premium */}
+      {/* Wizard Premium para Cadastro e Edição */}
       <PremiumProductWizard 
         open={isPremiumWizardOpen}
         onOpenChange={setIsPremiumWizardOpen}
+        editingProduct={editingProductForWizard}
         onSuccess={async () => {
           await fetchProducts();
+          setEditingProductForWizard(null);
         }}
       />
 
@@ -239,28 +196,7 @@ const ProductsPage = () => {
         onStockUpdated={fetchProducts}
       />
 
-      {/* Modal de Novo Produto */}
-      <ProductFormModal
-        open={showProductModal}
-        onOpenChange={setShowProductModal}
-        onSubmit={async () => {
-          // Recarregar lista de produtos após criar
-          await fetchProducts();
-        }}
-        mode="create"
-      />
-
-      {/* Modal de Editar Produto */}
-      <ProductFormModal
-        open={isEditModalOpen}
-        onOpenChange={handleCloseEditModal}
-        initialData={editingProduct}
-        onSubmit={async () => {
-          // Recarregar lista de produtos após editar
-          await fetchProducts();
-        }}
-        mode="edit"
-      />
+      {/* Lista de produtos */}
 
       {/* Lista de produtos */}
       <ProductList

@@ -103,6 +103,39 @@ export const usePremiumProductWizard = (
     setCurrentStep(0);
   }, [profile?.store_id]);
 
+  // Efeito para carregar dados ao editar
+  useEffect(() => {
+    if (editingProduct) {
+      console.log("📝 usePremiumProductWizard - Populando formulário para edição:", editingProduct.name);
+      setFormData({
+        name: editingProduct.name || "",
+        description: editingProduct.description || "",
+        category: editingProduct.category || "",
+        retail_price: editingProduct.retail_price || 0,
+        wholesale_price: editingProduct.wholesale_price || 0,
+        stock: editingProduct.stock || 0,
+        min_wholesale_qty: editingProduct.min_wholesale_qty || 1,
+        is_featured: !!editingProduct.is_featured,
+        is_active: editingProduct.is_active !== false,
+        allow_negative_stock: !!editingProduct.allow_negative_stock,
+        stock_alert_threshold: editingProduct.stock_alert_threshold || 5,
+        store_id: editingProduct.store_id || profile?.store_id || "",
+        variations: editingProduct.variations || [],
+        material: editingProduct.material || "",
+        video_url: editingProduct.video_url || "",
+        video_type: editingProduct.video_type || "youtube",
+        product_gender: editingProduct.product_gender,
+        product_category_type: editingProduct.product_category_type,
+        seo_slug: editingProduct.seo_slug || "",
+        meta_title: editingProduct.meta_title || "",
+        meta_description: editingProduct.meta_description || "",
+        keywords: editingProduct.keywords || "",
+        measurements: editingProduct.measurements || "",
+        care_instructions: editingProduct.care_instructions || "",
+      });
+    }
+  }, [editingProduct, profile?.store_id]);
+
   const saveProduct = async (
     editingProductId?: string,
     uploadAllImages?: (productId: string) => Promise<string[]>

@@ -37,6 +37,8 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   const [bulkStock, setBulkStock] = useState("");
   const [baseQuantity, setBaseQuantity] = useState("1");
   const [variationType, setVariationType] = useState<VariationType>("none");
+  const [customSizeInput, setCustomSizeInput] = useState("");
+  const [customSizes, setCustomSizes] = useState<string[]>([]);
   const { toast } = useToast();
 
   const sizeGrades = {
@@ -47,10 +49,13 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   };
 
   const getSizes = () => {
-    if (formData.product_category_type === "calcado") return sizeGrades.calcado;
-    if (formData.product_gender === "infantil") return sizeGrades.infantil;
-    if (formData.product_category_type === "acessorio") return sizeGrades.acessorio;
-    return sizeGrades.roupa;
+    let baseSizes: string[] = [];
+    if (formData.product_category_type === "calcado") baseSizes = sizeGrades.calcado;
+    else if (formData.product_gender === "infantil") baseSizes = sizeGrades.infantil;
+    else if (formData.product_category_type === "acessorio") baseSizes = sizeGrades.acessorio;
+    else baseSizes = sizeGrades.roupa;
+    
+    return [...baseSizes, ...customSizes];
   };
 
   const sizes = getSizes();
@@ -77,6 +82,24 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
         ? prev.filter(m => m !== mat) 
         : [...prev, mat]
     );
+  };
+
+  const handleAddCustomSize = () => {
+    if (!customSizeInput.trim()) return;
+    
+    const newSize = customSizeInput.trim();
+    if (!customSizes.includes(newSize)) {
+      setCustomSizes(prev => [...prev, newSize]);
+      if (!selectedSizes.includes(newSize)) {
+        setSelectedSizes(prev => [...prev, newSize]);
+      }
+    }
+    setCustomSizeInput("");
+  };
+
+  const removeCustomSize = (size: string) => {
+    setCustomSizes(prev => prev.filter(s => s !== size));
+    setSelectedSizes(prev => prev.filter(s => s !== size));
   };
 
   const generateVariations = (mode: 'standard' | 'half' | 'merged' = 'standard') => {
@@ -261,18 +284,53 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                     <Label className="text-xs font-bold text-slate-700">Escolha os Tamanhos</Label>
                     <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
                       {sizes.map(size => (
-                        <button
-                          key={size}
-                          onClick={() => toggleSize(size)}
-                          className={`w-12 h-12 rounded-xl border-2 font-bold text-xs transition-all ${
-                            selectedSizes.includes(size)
-                              ? "border-blue-500 bg-white text-blue-700 shadow-sm"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                          }`}
-                        >
-                          {size}
-                        </button>
+                        <div key={size} className="relative group">
+                          <button
+                            onClick={() => toggleSize(size)}
+                            className={`w-12 h-12 rounded-xl border-2 font-bold text-[10px] transition-all flex items-center justify-center text-center px-1 overflow-hidden break-words ${
+                              selectedSizes.includes(size)
+                                ? "border-blue-500 bg-white text-blue-700 shadow-sm"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            }`}
+                          >
+                            {size}
+                          </button>
+                          {customSizes.includes(size) && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeCustomSize(size);
+                              }}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
                       ))}
+
+                      <div className="flex items-center gap-2 w-full mt-2 pt-2 border-t border-slate-100">
+                         <Input 
+                           placeholder="Ex: 30 cáps, 800g, 15ml..." 
+                           value={customSizeInput}
+                           onChange={(e) => setCustomSizeInput(e.target.value)}
+                           onKeyDown={(e) => {
+                             if (e.key === 'Enter') {
+                               e.preventDefault();
+                               handleAddCustomSize();
+                             }
+                           }}
+                           className="flex-1 h-9 text-[11px] bg-white border-slate-200"
+                         />
+                         <Button 
+                           type="button" 
+                           size="sm" 
+                           onClick={handleAddCustomSize}
+                           className="h-9 px-3 bg-slate-900 hover:bg-black text-white rounded-xl"
+                         >
+                           <Plus className="w-4 h-4" />
+                         </Button>
+                      </div>
                     </div>
                   </div>
                 )}
