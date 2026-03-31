@@ -643,7 +643,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               <Separator className="my-6" />
 
               {/* TODO: Implementar EnhancedPriceDisplay quando hooks tiverem campos necessários */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="text-3xl md:text-4xl font-bold text-primary">
                   {formatCurrency(priceInfo.displayPrice)}
                 </div>
@@ -653,241 +653,241 @@ const ProductPage: React.FC<ProductPageProps> = ({
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
-            {/* ── Seletor de Variações ─────────────────────────────────────── */}
-            {hasVariations && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
+              {/* ── Seletor de Variações ─────────────────────────────────────── */}
+              {hasVariations && (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
 
-                {hasGradeVariations ? (
-                  /* Grade: seletor original */
-                  <ProductVariationSelector
-                    variations={product.variations || []}
-                    selectedVariation={selectedVariation}
-                    onVariationChange={setSelectedVariation}
-                    basePrice={product.retail_price}
-                    showPriceInCards={true}
-                    showStock={true}
-                    onAddToCart={(variation, gradeMode, customSel) => {
-                      if (!product) return;
-                      const cartItem = createCartItem(
-                        product,
-                        'retail',
-                        1,
-                        variation,
-                        gradeMode,
-                        customSel ? {
-                          items: customSel.items.map(item => ({
-                            color: item.color || '',
-                            size: item.size || '',
-                            quantity: item.quantity || 0,
-                          })),
-                          totalPairs: customSel.totalPairs || 0,
-                        } : undefined
-                      );
-                      addItem(cartItem);
-                      const color = variation.grade_color || variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
-                      toast({
-                        title: "✅ Adicionado ao carrinho!",
-                        description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
-                      });
-                      toggleCart();
-                    }}
-                    addedColors={addedColors}
-                  />
-                ) : (
-                  /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
-                  <VariationPicker
-                    variations={product.variations || []}
-                    basePrice={product.retail_price}
-                    onAddToCart={(variation, qty) => {
-                      if (!product) return;
-                      const cartItem = createCartItem(product, 'retail', qty, variation);
-                      addItem(cartItem);
-                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
-                      const color = variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                    }}
-                    onViewCart={toggleCart}
-                    onColorChange={(_color, imageUrl) => setSelectedColorImage(imageUrl)}
-                  />
-                )}
-              </div>
-            )}
+                  {hasGradeVariations ? (
+                    /* Grade: seletor original */
+                    <ProductVariationSelector
+                      variations={product.variations || []}
+                      selectedVariation={selectedVariation}
+                      onVariationChange={setSelectedVariation}
+                      basePrice={product.retail_price}
+                      showPriceInCards={true}
+                      showStock={true}
+                      onAddToCart={(variation, gradeMode, customSel) => {
+                        if (!product) return;
+                        const cartItem = createCartItem(
+                          product,
+                          'retail',
+                          1,
+                          variation,
+                          gradeMode,
+                          customSel ? {
+                            items: customSel.items.map(item => ({
+                              color: item.color || '',
+                              size: item.size || '',
+                              quantity: item.quantity || 0,
+                            })),
+                            totalPairs: customSel.totalPairs || 0,
+                          } : undefined
+                        );
+                        addItem(cartItem);
+                        const color = variation.grade_color || variation.color || '';
+                        if (color && !addedColors.includes(color)) {
+                          setAddedColors(prev => [...prev, color]);
+                        }
+                        trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
+                        toast({
+                          title: "✅ Adicionado ao carrinho!",
+                          description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
+                        });
+                        toggleCart();
+                      }}
+                      addedColors={addedColors}
+                    />
+                  ) : (
+                    /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
+                    <VariationPicker
+                      variations={product.variations || []}
+                      basePrice={product.retail_price}
+                      onAddToCart={(variation, qty) => {
+                        if (!product) return;
+                        const cartItem = createCartItem(product, 'retail', qty, variation);
+                        addItem(cartItem);
+                        trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
+                        const color = variation.color || '';
+                        if (color && !addedColors.includes(color)) {
+                          setAddedColors(prev => [...prev, color]);
+                        }
+                      }}
+                      onViewCart={toggleCart}
+                      onColorChange={(_color, imageUrl) => setSelectedColorImage(imageUrl)}
+                    />
+                  )}
+                </div>
+              )}
 
-            {/* Descrição */}
-            {product.description && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="font-semibold text-lg mb-3">Descrição</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {product.description}
-                </p>
-              </div>
-            )}
+              {/* Descrição */}
+              {product.description && (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h2 className="font-semibold text-lg mb-3">Descrição</h2>
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {product.description}
+                  </p>
+                </div>
+              )}
 
-            {/* Quantidade e Adicionar ao Carrinho — só para produtos SEM variações */}
-            {!hasVariations && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="space-y-6">
-                  {/* Quantidade */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Quantidade
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      >
-                        -
-                      </Button>
-                      <span className="text-xl font-semibold w-16 text-center">
-                        {quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setQuantity(quantity + 1)}
-                      >
-                        +
-                      </Button>
+              {/* Quantidade e Adicionar ao Carrinho — só para produtos SEM variações */}
+              {!hasVariations && (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="space-y-6">
+                    {/* Quantidade */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Quantidade
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        >
+                          -
+                        </Button>
+                        <span className="text-xl font-semibold w-16 text-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* 🚀 BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
+                    <OptimizedCTA
+                      onClick={handleAddToCart}
+                      disabled={false}
+                      isLoading={false}
+                      price={priceInfo.displayPrice}
+                      buttonText="🛒 COMPRAR AGORA"
+                      showSecurityBadge={true}
+                      isSticky={false}
+                    />
+
+                    {/* Total */}
+                    <div className="text-center pt-2 border-t">
+                      <p className="text-sm text-gray-600">Total</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {formatCurrency(priceInfo.displayPrice * quantity)}
+                      </p>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* 🚀 BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
-                  <OptimizedCTA
-                    onClick={handleAddToCart}
-                    disabled={false}
-                    isLoading={false}
-                    price={priceInfo.displayPrice}
-                    buttonText="🛒 COMPRAR AGORA"
-                    showSecurityBadge={true}
-                    isSticky={false}
+              {/* 🚀 SEÇÃO DE CONFIANÇA - Gatilho Mental #6 */}
+              {storeSettings?.product_show_trust_section && (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <TrustSection
+                    hasFreeShipping={storeSettings.product_trust_free_shipping !== false}
+                    hasMoneyBackGuarantee={storeSettings.product_trust_money_back !== false}
+                    hasFastDelivery={storeSettings.product_trust_fast_delivery !== false}
+                    hasSecurePayment={storeSettings.product_trust_secure_payment !== false}
+                    deliveryDays={storeSettings.product_trust_delivery_days || "2-5"}
+                    returnDays={storeSettings.product_trust_return_days || 7}
+                    isAuthorizedDealer={false}
+                    brandName={product.category}
                   />
+                </div>
+              )}
 
-                  {/* Total */}
-                  <div className="text-center pt-2 border-t">
-                    <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(priceInfo.displayPrice * quantity)}
-                    </p>
+              {/* 🎬 FASE 2: Vídeo do Produto */}
+              {storeSettings?.product_show_videos && product.video_url && (
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <ProductVideoSection
+                    videoUrl={product.video_url}
+                    productName={product.name}
+                  />
+                </div>
+              )}
+
+              {/* 🎯 FASE 2: Tabela de Medidas Automática - SÓ para calçado e roupa */}
+              {storeSettings?.product_show_size_chart &&
+                product.product_gender &&
+                product.product_category_type &&
+                (product.product_category_type === 'calcado' ||
+                  product.product_category_type === 'roupa_superior' ||
+                  product.product_category_type === 'roupa_inferior') && (
+                  <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <AutoSizeChart
+                      gender={product.product_gender as any}
+                      category={product.product_category_type as any}
+                      isCollapsible={true}
+                      defaultOpen={storeSettings.product_size_chart_default_open || false}
+                    />
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* 🚀 SEÇÃO DE CONFIANÇA - Gatilho Mental #6 */}
-            {storeSettings?.product_show_trust_section && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <TrustSection
-                  hasFreeShipping={storeSettings.product_trust_free_shipping !== false}
-                  hasMoneyBackGuarantee={storeSettings.product_trust_money_back !== false}
-                  hasFastDelivery={storeSettings.product_trust_fast_delivery !== false}
-                  hasSecurePayment={storeSettings.product_trust_secure_payment !== false}
-                  deliveryDays={storeSettings.product_trust_delivery_days || "2-5"}
-                  returnDays={storeSettings.product_trust_return_days || 7}
-                  isAuthorizedDealer={false}
-                  brandName={product.category}
-                />
-              </div>
-            )}
-
-            {/* 🎬 FASE 2: Vídeo do Produto */}
-            {storeSettings?.product_show_videos && product.video_url && (
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <ProductVideoSection
-                  videoUrl={product.video_url}
-                  productName={product.name}
-                />
-              </div>
-            )}
-
-            {/* 🎯 FASE 2: Tabela de Medidas Automática - SÓ para calçado e roupa */}
-            {storeSettings?.product_show_size_chart &&
-              product.product_gender &&
-              product.product_category_type &&
-              (product.product_category_type === 'calcado' ||
-                product.product_category_type === 'roupa_superior' ||
-                product.product_category_type === 'roupa_inferior') && (
+              {/* 💬 FASE 2: Depoimentos de Clientes */}
+              {storeSettings?.product_show_testimonials && (
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <AutoSizeChart
-                    gender={product.product_gender as any}
-                    category={product.product_category_type as any}
-                    isCollapsible={true}
-                    defaultOpen={storeSettings.product_size_chart_default_open || false}
+                  <SocialProofTestimonials
+                    testimonials={testimonials}
+                    maxDisplay={storeSettings.product_testimonials_max_display || 3}
                   />
                 </div>
               )}
 
-            {/* 💬 FASE 2: Depoimentos de Clientes */}
-            {storeSettings?.product_show_testimonials && (
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <SocialProofTestimonials
-                  testimonials={testimonials}
-                  maxDisplay={storeSettings.product_testimonials_max_display || 3}
-                />
-              </div>
-            )}
-
-            {/* 🎯 FASE 2: Cuidados do Produto - Usa dados cadastrados ou auto-gera */}
-            {storeSettings?.product_show_care_section &&
-              (product.product_category_type || product.material) && (
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <ProductCareSection
-                    productCategory={product.product_category_type || 'calcado'}
-                    material={product.material}
-                    isCollapsible={true}
-                    defaultOpen={storeSettings.product_care_section_default_open || false}
-                  />
-                </div>
-              )}
+              {/* 🎯 FASE 2: Cuidados do Produto - Usa dados cadastrados ou auto-gera */}
+              {storeSettings?.product_show_care_section &&
+                (product.product_category_type || product.material) && (
+                  <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <ProductCareSection
+                      productCategory={product.product_category_type || 'calcado'}
+                      material={product.material}
+                      isCollapsible={true}
+                      defaultOpen={storeSettings.product_care_section_default_open || false}
+                    />
+                  </div>
+                )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* FloatingCart - Carrinho lateral flutuante */}
-      <FloatingCart
-        onCheckout={() => {
-          console.log("🛒 Abrindo checkout...");
+        {/* FloatingCart - Carrinho lateral flutuante */}
+        <FloatingCart
+          onCheckout={() => {
+            console.log("🛒 Abrindo checkout...");
 
-          // 📊 Tracking: InitiateCheckout
-          trackInitiateCheckout(totalAmount, cartItems.length);
+            // 📊 Tracking: InitiateCheckout
+            trackInitiateCheckout(totalAmount, cartItems.length);
 
-          setShowCheckout(true);
-        }}
-        storeId={product.store_id}
-      />
-
-      {/* Checkout Modal */}
-      {showCheckout && product && (
-        <CheckoutModalWrapper
-          onClose={() => {
-            console.log("❌ Fechando checkout");
-            setShowCheckout(false);
+            setShowCheckout(true);
           }}
-        >
-          <EnhancedCheckout
-            storeId={product.store_id}
-            storeName={storeName}
-            storePhone={storePhone}
+          storeId={product.store_id}
+        />
+
+        {/* Checkout Modal */}
+        {showCheckout && product && (
+          <CheckoutModalWrapper
             onClose={() => {
               console.log("❌ Fechando checkout");
               setShowCheckout(false);
             }}
-          />
-        </CheckoutModalWrapper>
-      )}
-    </div>
-  );
+          >
+            <EnhancedCheckout
+              storeId={product.store_id}
+              storeName={storeName}
+              storePhone={storePhone}
+              onClose={() => {
+                console.log("❌ Fechando checkout");
+                setShowCheckout(false);
+              }}
+            />
+          </CheckoutModalWrapper>
+        )}
+      </div>
+      );
 };
 
-export default ProductPage;
+      export default ProductPage;
 
