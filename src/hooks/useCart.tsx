@@ -353,6 +353,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const storeId = product?.store_id ?? catalogStoreId ?? undefined;
       const adjustment = item.variation?.price_adjustment || 0;
 
+      // Preços ajustados proporcionais
+      const baseRetail = product.retail_price || 0;
+      const baseWholesale = product.wholesale_price || baseRetail;
+      const adjustedRetail = Math.max(0, baseRetail + adjustment);
+      const adjustedWholesale = (baseRetail > 0)
+        ? Math.max(0, adjustedRetail * (baseWholesale / baseRetail))
+        : Math.max(0, baseWholesale + adjustment);
+
       // Usar modelo buscado nesta execução (não o cache do estado)
       const priceModel = storeId ? modelByStoreId[storeId] : null;
       const priceModelType = priceModel?.price_model || product.price_model;
@@ -413,8 +421,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         (item.catalogType === "wholesale" || priceModelType === "wholesale_only") &&
         !product.enable_gradual_wholesale // Só aplicar diretamente se não tiver gradativo
       ) {
-        const wholesalePrice =
-          (product.wholesale_price || product.retail_price || 0) + adjustment;
+        const wholesalePrice = adjustedWholesale;
         console.log(
           `✅ [recalculateItemPrices] ${product.name}: Aplicando preço atacado (catalogType: ${item.catalogType}, price_model: ${product.price_model}): R$${wholesalePrice}`
         );
@@ -514,7 +521,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Opção 1: Por carrinho (total de unidades)
         if (isByCartTotal && storeId && totalUnitsInCart >= cartMinQty) {
-          const price = product.wholesale_price + adjustment;
+          const price = adjustedWholesale;
           console.log(
             `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsInCart} >= ${cartMinQty}: R$${price}`
           );
@@ -527,7 +534,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Opção 2: Por produto (quantidade individual)
         if (!isByCartTotal && quantity >= minQtyForProduct) {
-          const price = product.wholesale_price + adjustment;
+          const price = adjustedWholesale;
           console.log(
             `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${price}`
           );
@@ -538,25 +545,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           };
         }
 
-        // Se não atingiu nenhum mínimo, usar varejo
+        // Se não atingiu nenhum mínimo, usar varejo (ajustado)
+        const retailPrice = adjustedRetail;
         console.log(
-          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Não atingiu mínimo (por ${isByCartTotal ? 'carrinho' : 'produto'}), usando varejo: R$${item.originalPrice}`
+          `⚠️ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE - Não atingiu mínimo (por ${isByCartTotal ? 'carrinho' : 'produto'}), usando varejo ajustado: R$${retailPrice}`
         );
         return {
           ...item,
-          price: item.originalPrice,
+          price: retailPrice,
           isWholesalePrice: false,
         };
       }
 
-      // Se catalogType é "retail" e não é simple_wholesale, usar preço varejo
+      // Se catalogType é "retail" e não é simple_wholesale, usar preço varejo (ajustado)
       if (item.catalogType === "retail" && priceModelType !== "simple_wholesale") {
+        const retailPrice = adjustedRetail;
         console.log(
-          `📋 [recalculateItemPrices] ${product.name}: MODO VAREJO - Mantendo preço varejo (qtd: ${quantity}): R$${item.originalPrice}`
+          `📋 [recalculateItemPrices] ${product.name}: MODO VAREJO - Mantendo preço varejo ajustado (qtd: ${quantity}): R$${retailPrice}`
         );
         return {
           ...item,
-          price: item.originalPrice,
+          price: retailPrice,
           isWholesalePrice: false,
         };
       }
@@ -569,7 +578,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         !product.enable_gradual_wholesale // Só atacado simples se gradativo estiver desativado
       ) {
         if (product.wholesale_price && product.min_wholesale_qty && quantity >= product.min_wholesale_qty) {
-          const price = product.wholesale_price + adjustment;
+          const price = adjustedWholesale;
           console.log(
             `✅ [recalculateItemPrices] ${product.name}: MODO ATACADO - Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${price}`
           );
@@ -588,20 +597,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         item.catalogType === "wholesale" &&
         priceModelType !== "wholesale_only"
       ) {
+        const retailPrice = adjustedRetail;
         console.log(
-          `⚠️ [recalculateItemPrices] ${product.name}: MODO ATACADO - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo: R$${item.originalPrice}`
+          `⚠️ [recalculateItemPrices] ${product.name}: MODO ATACADO - Quantidade insuficiente (qtd: ${quantity}, mín: ${product.min_wholesale_qty || 1}), usando preço varejo ajustado: R$${retailPrice}`
         );
         return {
           ...item,
-          price: item.originalPrice,
+          price: retailPrice,
           isWholesalePrice: false,
         };
       }
 
       // Se é wholesale_only mas não entrou na condição anterior (porque tem gradativo), aplicar preço de atacado diretamente
       if (priceModelType === "wholesale_only") {
-        const wholesalePrice =
-          (product.wholesale_price || product.retail_price || 0) + adjustment;
+        const wholesalePrice = adjustedWholesale;
         console.log(
           `✅ [recalculateItemPrices] ${product.name}: WHOLESALE_ONLY - Aplicando preço atacado: R$${wholesalePrice}`
         );
@@ -617,10 +626,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      // Fallback: usar preço original (varejo)
       const isByCartTotalFallback = priceModel?.simple_wholesale_by_cart_total === true;
+      const fallbackPrice = adjustedRetail;
       console.warn(
-        `⚠️ [recalculateItemPrices] ${product.name}: FALLBACK - Nenhuma condição aplicou atacado! Mantendo preço varejo: R$${item.originalPrice}`,
+        `⚠️ [recalculateItemPrices] ${product.name}: FALLBACK - Nenhuma condição aplicou atacado! Mantendo preço varejo ajustado: R$${fallbackPrice}`,
         {
           priceModelType,
           catalogType: item.catalogType,
@@ -634,7 +643,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       return {
         ...item,
-        price: item.originalPrice,
+        price: fallbackPrice,
         isWholesalePrice: false,
       };
     });

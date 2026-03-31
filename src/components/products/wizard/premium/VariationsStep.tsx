@@ -571,13 +571,16 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                                       </div>
                                    </div>
 
-                                   {/* Preço de Atacado (Sugerido/Calculado) */}
+                                   {/* Preço de Atacado (Sugerido/Calculado Proporcionalmente) */}
                                    <div className="flex flex-col items-center">
                                       <span className="text-[8px] uppercase text-emerald-400 font-bold mb-1">Preço Atacado</span>
-                                      <div className="flex items-center h-8 px-2 bg-emerald-50/20 rounded-md border border-emerald-50 min-w-[70px] justify-center">
+                                      <div className="flex flex-col items-center h-8 px-2 bg-emerald-50/20 rounded-md border border-emerald-50 min-w-[80px] justify-center tooltip" title="Calculado proporcionalmente à margem do produto base">
                                         <span className="text-[10px] font-bold text-emerald-700">
-                                          R$ {((formData.wholesale_price || 0) + (v.price_adjustment || 0)).toFixed(2)}
+                                          R$ {Math.max(0, (formData.retail_price > 0 
+                                            ? ((formData.retail_price + (v.price_adjustment || 0)) * ((formData.wholesale_price || formData.retail_price) / formData.retail_price))
+                                            : ((formData.wholesale_price || 0) + (v.price_adjustment || 0)))).toFixed(2)}
                                         </span>
+                                        <span className="text-[6px] text-emerald-500 font-bold uppercase -mt-1">Proporcional</span>
                                       </div>
                                    </div>
                                 </div>

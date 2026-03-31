@@ -21,38 +21,43 @@ export const useProductDisplayPrice = ({
     const modelKey = priceModel?.price_model || "retail_only";
     const adjustment = variation?.price_adjustment || 0;
 
+    const baseRetail = product.retail_price || 0;
+    const baseWholesale = product.wholesale_price || baseRetail;
+    const currentRetail = Math.max(0, baseRetail + adjustment);
+    const currentWholesale = (baseRetail > 0)
+      ? Math.max(0, currentRetail * (baseWholesale / baseRetail))
+      : Math.max(0, baseWholesale + adjustment);
+
     // Se ainda está carregando o modelo de preço, usar fallback baseado no catalogType
     if (loading) {
       // Para catálogo atacado, usar preço de atacado como fallback
       if (catalogType === "wholesale") {
-        const fallbackPrice = (product.wholesale_price || 0) + adjustment;
         return {
-          displayPrice: fallbackPrice,
-          originalPrice: fallbackPrice,
+          displayPrice: currentWholesale,
+          originalPrice: currentWholesale,
           minQuantity: product.min_wholesale_qty || 1,
           isWholesaleOnly: true,
           shouldShowRetailPrice: false,
           shouldShowWholesaleInfo: true,
           modelKey: "wholesale_only",
-          retailPrice: (product.retail_price || 0) + adjustment,
-          wholesalePrice: (product.wholesale_price || 0) + adjustment,
+          retailPrice: currentRetail,
+          wholesalePrice: currentWholesale,
           minWholesaleQty: product.min_wholesale_qty || 1,
           isLoading: true,
         };
       }
 
       // Para catálogo varejo, usar preço de varejo como fallback
-      const fallbackPrice = (product.retail_price || 0) + adjustment;
       return {
-        displayPrice: fallbackPrice,
-        originalPrice: fallbackPrice,
+        displayPrice: currentRetail,
+        originalPrice: currentRetail,
         minQuantity: 1,
         isWholesaleOnly: false,
         shouldShowRetailPrice: true,
         shouldShowWholesaleInfo: false,
         modelKey: "retail_only",
-        retailPrice: (product.retail_price || 0) + adjustment,
-        wholesalePrice: (product.wholesale_price || 0) + adjustment,
+        retailPrice: currentRetail,
+        wholesalePrice: currentWholesale,
         minWholesaleQty: product.min_wholesale_qty || 1,
         isLoading: true,
       };
@@ -61,7 +66,7 @@ export const useProductDisplayPrice = ({
     // Para catálogo atacado, sempre usar wholesale_price como fallback
     if (catalogType === "wholesale") {
       // Para catálogo atacado, SEMPRE usar preço de atacado, mesmo que seja 0
-      const displayPrice = (product.wholesale_price || 0) + adjustment;
+      const displayPrice = currentWholesale;
       const minQuantity = product.min_wholesale_qty || 1;
 
       console.log(
@@ -77,15 +82,15 @@ export const useProductDisplayPrice = ({
       );
 
       return {
-        displayPrice,
-        originalPrice: displayPrice,
-        minQuantity,
+        displayPrice: currentWholesale,
+        originalPrice: currentWholesale,
+        minQuantity: minQuantity,
         isWholesaleOnly: true,
         shouldShowRetailPrice: false,
         shouldShowWholesaleInfo: true,
         modelKey: "wholesale_only",
-        retailPrice: (product.retail_price || 0) + adjustment,
-        wholesalePrice: (product.wholesale_price || 0) + adjustment,
+        retailPrice: currentRetail,
+        wholesalePrice: currentWholesale,
         minWholesaleQty: minQuantity,
         isLoading: false,
       };
@@ -93,40 +98,43 @@ export const useProductDisplayPrice = ({
 
     // Para wholesale_only, sempre usar wholesale_price
     if (modelKey === "wholesale_only") {
-      const displayPrice = (product.wholesale_price || 0) + adjustment;
       const minQuantity = product.min_wholesale_qty || 1;
 
       return {
-        displayPrice,
-        originalPrice: displayPrice,
+        displayPrice: currentWholesale,
+        originalPrice: currentWholesale,
         minQuantity,
         isWholesaleOnly: true,
         shouldShowRetailPrice: false,
         shouldShowWholesaleInfo: true,
         modelKey,
+        retailPrice: currentRetail,
+        wholesalePrice: currentWholesale,
+        minWholesaleQty: minQuantity,
         isLoading: false,
       };
     }
 
     // Para retail_only, sempre usar retail_price
     if (modelKey === "retail_only") {
-      const displayPrice = (product.retail_price || 0) + adjustment;
-
       return {
-        displayPrice,
-        originalPrice: displayPrice,
+        displayPrice: currentRetail,
+        originalPrice: currentRetail,
         minQuantity: 1,
         isWholesaleOnly: false,
         shouldShowRetailPrice: true,
         shouldShowWholesaleInfo: false,
         modelKey,
+        retailPrice: currentRetail,
+        wholesalePrice: currentWholesale,
+        minWholesaleQty: product.min_wholesale_qty || 1,
         isLoading: false,
       };
     }
 
     // Para modelos mistos (simple_wholesale, gradual_wholesale)
-    const retailPrice = (product.retail_price || 0) + adjustment;
-    const wholesalePrice = (product.wholesale_price || (product.retail_price || 0)) + adjustment;
+    const retailPrice = currentRetail;
+    const wholesalePrice = currentWholesale;
     const minWholesaleQty = product.min_wholesale_qty || 1;
 
     let displayPrice = retailPrice;
