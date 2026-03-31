@@ -38,7 +38,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formData, updateFormData }) => 
   };
 
   // Cores únicas das variações para associar
-  const availableColors = Array.from(new Set(formData.variations.map(v => v.color)));
+  const availableColors = Array.from(new Set(formData.variations.map(v => v.color).filter(Boolean)));
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">

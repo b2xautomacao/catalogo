@@ -9,7 +9,7 @@ import { resolveColorHex, isLightColor } from "@/lib/colors";
 import { Card, CardContent } from "@/components/ui/card";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
 import { ProductVariation } from "@/types/product";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import UnifiedGradeManager from "../UnifiedGradeManager";
 import ColorPickerPopover from "../ColorPickerPopover";
 import { useToast } from "@/hooks/use-toast";

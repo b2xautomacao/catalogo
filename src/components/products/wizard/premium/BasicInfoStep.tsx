@@ -151,7 +151,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ formData, updateFormData 
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categories.filter(cat => !!cat.name).map((cat) => (
                       <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                     ))}
                   </SelectContent>
