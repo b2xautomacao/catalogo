@@ -546,25 +546,38 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
                                       />
                                    </div>
 
-                                   {/* Ajuste de Preço */}
+                                   {/* Preço de Varejo */}
                                    <div className="flex flex-col items-center">
-                                      <span className="text-[8px] uppercase text-blue-400 font-bold mb-1">Preço (+/-)</span>
+                                      <span className="text-[8px] uppercase text-blue-400 font-bold mb-1">Preço Varejo</span>
                                       <div className="relative">
                                         <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-blue-500">R$</span>
                                         <Input 
                                           type="number"
                                           placeholder="0.00"
-                                          value={v.price_adjustment || ""}
+                                          value={((formData.retail_price || 0) + (v.price_adjustment || 0))}
                                           onChange={(e) => {
                                             const val = parseFloat(e.target.value) || 0;
+                                            const baseRetail = formData.retail_price || 0;
+                                            const adjustment = val - baseRetail;
+                                            
                                             updateFormData({
                                               variations: formData.variations.map(varI => 
-                                                varI.id === v.id ? { ...varI, price_adjustment: val } : varI
+                                                varI.id === v.id ? { ...varI, price_adjustment: adjustment } : varI
                                               )
                                             });
                                           }}
                                           className="w-20 h-8 pl-4 text-[11px] text-center font-bold bg-blue-50/20 border-blue-50 text-blue-700 focus:bg-white placeholder:text-blue-300"
                                         />
+                                      </div>
+                                   </div>
+
+                                   {/* Preço de Atacado (Sugerido/Calculado) */}
+                                   <div className="flex flex-col items-center">
+                                      <span className="text-[8px] uppercase text-emerald-400 font-bold mb-1">Preço Atacado</span>
+                                      <div className="flex items-center h-8 px-2 bg-emerald-50/20 rounded-md border border-emerald-50 min-w-[70px] justify-center">
+                                        <span className="text-[10px] font-bold text-emerald-700">
+                                          R$ {((formData.wholesale_price || 0) + (v.price_adjustment || 0)).toFixed(2)}
+                                        </span>
                                       </div>
                                    </div>
                                 </div>

@@ -351,6 +351,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const product = item.product;
       const quantity = typeof item.quantity === "number" && !isNaN(item.quantity) ? item.quantity : 0;
       const storeId = product?.store_id ?? catalogStoreId ?? undefined;
+      const adjustment = item.variation?.price_adjustment || 0;
 
       // Usar modelo buscado nesta execução (não o cache do estado)
       const priceModel = storeId ? modelByStoreId[storeId] : null;
@@ -413,7 +414,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         !product.enable_gradual_wholesale // Só aplicar diretamente se não tiver gradativo
       ) {
         const wholesalePrice =
-          product.wholesale_price || product.retail_price || 0;
+          (product.wholesale_price || product.retail_price || 0) + adjustment;
         console.log(
           `✅ [recalculateItemPrices] ${product.name}: Aplicando preço atacado (catalogType: ${item.catalogType}, price_model: ${product.price_model}): R$${wholesalePrice}`
         );
@@ -461,18 +462,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         );
 
         if (bestTier) {
+          const tierPrice = bestTier.price + adjustment;
           console.log(
-            `✅ [recalculateItemPrices] ${product.name}: Aplicando tier '${bestTier.tier_name}' (qtd: ${bestTier.min_quantity}+): R$${bestTier.price}`
+            `✅ [recalculateItemPrices] ${product.name}: Aplicando tier '${bestTier.tier_name}' (qtd: ${bestTier.min_quantity}+): R$${tierPrice}`
           );
           if (nextTier) {
             console.log(
               `➡️ [recalculateItemPrices] ${product.name}: Faltam ${nextTier.min_quantity - quantity
-              } para '${nextTier.tier_name}' (R$${nextTier.price})`
+              } para '${nextTier.tier_name}' (R$${nextTier.price + adjustment})`
             );
           }
           return {
             ...item,
-            price: bestTier.price,
+            price: tierPrice,
             isWholesalePrice: bestTier.tier_order > 1,
             currentTier: bestTier,
             nextTier: nextTier || null,
@@ -512,24 +514,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Opção 1: Por carrinho (total de unidades)
         if (isByCartTotal && storeId && totalUnitsInCart >= cartMinQty) {
+          const price = product.wholesale_price + adjustment;
           console.log(
-            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsInCart} >= ${cartMinQty}: R$${product.wholesale_price}`
+            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por carrinho) - Total loja: ${totalUnitsInCart} >= ${cartMinQty}: R$${price}`
           );
           return {
             ...item,
-            price: product.wholesale_price,
+            price: price,
             isWholesalePrice: true,
           };
         }
 
         // Opção 2: Por produto (quantidade individual)
         if (!isByCartTotal && quantity >= minQtyForProduct) {
+          const price = product.wholesale_price + adjustment;
           console.log(
-            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${product.wholesale_price}`
+            `✅ [recalculateItemPrices] ${product.name}: SIMPLE_WHOLESALE (por produto) - qtd: ${quantity} >= ${minQtyForProduct}: R$${price}`
           );
           return {
             ...item,
-            price: product.wholesale_price,
+            price: price,
             isWholesalePrice: true,
           };
         }
@@ -562,19 +566,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       if (
         item.catalogType === "wholesale" &&
         priceModelType !== "wholesale_only" && // Não é wholesale_only
-        !product.enable_gradual_wholesale && // Só atacado simples se gradativo estiver desativado
-        product.wholesale_price &&
-        product.min_wholesale_qty &&
-        quantity >= product.min_wholesale_qty
+        !product.enable_gradual_wholesale // Só atacado simples se gradativo estiver desativado
       ) {
-        console.log(
-          `✅ [recalculateItemPrices] ${product.name}: MODO ATACADO - Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${product.wholesale_price}`
-        );
-        return {
-          ...item,
-          price: product.wholesale_price,
-          isWholesalePrice: true,
-        };
+        if (product.wholesale_price && product.min_wholesale_qty && quantity >= product.min_wholesale_qty) {
+          const price = product.wholesale_price + adjustment;
+          console.log(
+            `✅ [recalculateItemPrices] ${product.name}: MODO ATACADO - Aplicando preço atacado simples (qtd: ${product.min_wholesale_qty}+): R$${price}`
+          );
+          return {
+            ...item,
+            price: price,
+            isWholesalePrice: true,
+          };
+        }
       }
 
       // Nota: A lógica de simple_wholesale já foi tratada acima (por produto ou por carrinho)
@@ -597,7 +601,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // Se é wholesale_only mas não entrou na condição anterior (porque tem gradativo), aplicar preço de atacado diretamente
       if (priceModelType === "wholesale_only") {
         const wholesalePrice =
-          product.wholesale_price || product.retail_price || 0;
+          (product.wholesale_price || product.retail_price || 0) + adjustment;
         console.log(
           `✅ [recalculateItemPrices] ${product.name}: WHOLESALE_ONLY - Aplicando preço atacado: R$${wholesalePrice}`
         );

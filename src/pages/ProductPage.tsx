@@ -274,6 +274,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
     } as Product,
     catalogType: 'retail',
     quantity,
+    variation: selectedVariation,
   });
 
   const handleAddToCart = () => {
