@@ -19,6 +19,7 @@ interface SizeStepProps {
   selectedColor: string;
   showStock?: boolean;
   onQuickAdd?: (variation: ProductVariation) => void;
+  allowBack?: boolean;
 }
 
 const SizeStep: React.FC<SizeStepProps> = ({
@@ -28,7 +29,8 @@ const SizeStep: React.FC<SizeStepProps> = ({
   onBack,
   selectedColor,
   showStock = true,
-  onQuickAdd
+  onQuickAdd,
+  allowBack = true
 }) => {
   const handleQuickAdd = (e: React.MouseEvent, sizeGroup: SizeGroup) => {
     e.stopPropagation();
@@ -40,12 +42,14 @@ const SizeStep: React.FC<SizeStepProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
+        {allowBack && (
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        )}
         <h4 className="font-semibold text-lg">
-          Escolha o Tamanho - {selectedColor}
+          {allowBack ? `Escolha o Tamanho - ${selectedColor}` : 'Escolha o Tamanho'}
         </h4>
       </div>
       

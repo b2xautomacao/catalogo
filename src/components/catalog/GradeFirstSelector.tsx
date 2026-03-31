@@ -9,7 +9,7 @@
  * 5. Sugere outras cores após adicionar
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,6 +144,13 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
       },
     };
   }, [basePrice, config, halfGradeInfo, firstVariation]);
+
+  // Auto-seleção se houver apenas uma cor
+  useEffect(() => {
+    if (selectedGradeMode && selectedGradeMode !== 'custom' && colorGroups.length === 1 && selectedColors.size === 0) {
+      handleColorToggle(colorGroups[0].color);
+    }
+  }, [selectedGradeMode, colorGroups, selectedColors.size]);
 
   // Handler para seleção de modo de grade
   const handleGradeModeSelect = (mode: 'full' | 'half' | 'custom') => {

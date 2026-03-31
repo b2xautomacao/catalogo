@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -184,6 +184,16 @@ const HierarchicalColorSizeSelector: React.FC<
 
     return Object.values(groups).sort((a, b) => b.totalStock - a.totalStock);
   }, [variations]);
+
+  // Auto-seleção se houver apenas uma cor disponível
+  useEffect(() => {
+    if (colorGroups.length === 1 && step === "color" && !selectedColor) {
+      const singleColor = colorGroups[0].color;
+      if (colorGroups[0].isAvailable) {
+        handleColorSelect(singleColor);
+      }
+    }
+  }, [colorGroups, step, selectedColor]);
 
   // Obter tamanhos disponíveis para a cor selecionada
   const availableSizes = useMemo<SizeGroup[]>(() => {
@@ -392,6 +402,7 @@ const HierarchicalColorSizeSelector: React.FC<
             selectedColor={selectedColor}
             showStock={showStock}
             onQuickAdd={onQuickAdd ? handleQuickAddVariation : undefined}
+            allowBack={colorGroups.length > 1}
           />
         )}
 

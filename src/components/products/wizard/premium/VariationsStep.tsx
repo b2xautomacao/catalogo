@@ -79,6 +79,22 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     }
   }, [formData.variations, sizeGrades, initialized]);
 
+  // Carregar tamanhos customizados salvos no localStorage para esta loja
+  useEffect(() => {
+    const storageKey = `b2x_custom_sizes_${formData.store_id || 'global'}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as string[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCustomSizes(prev => [...new Set([...prev, ...parsed])]);
+        }
+      } catch (e) {
+        console.error("Erro ao carregar tamanhos customizados:", e);
+      }
+    }
+  }, [formData.store_id]);
+
   const getSizes = () => {
     let baseSizes: string[] = [];
     if (formData.product_category_type === "calcado") baseSizes = sizeGrades.calcado;
@@ -120,7 +136,13 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
     
     const newSize = customSizeInput.trim();
     if (!customSizes.includes(newSize)) {
-      setCustomSizes(prev => [...prev, newSize]);
+      const updatedCustom = [...customSizes, newSize];
+      setCustomSizes(updatedCustom);
+      
+      // Persistir no localStorage
+      const storageKey = `b2x_custom_sizes_${formData.store_id || 'global'}`;
+      localStorage.setItem(storageKey, JSON.stringify(updatedCustom));
+
       if (!selectedSizes.includes(newSize)) {
         setSelectedSizes(prev => [...prev, newSize]);
       }
@@ -129,8 +151,13 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
   };
 
   const removeCustomSize = (size: string) => {
-    setCustomSizes(prev => prev.filter(s => s !== size));
+    const updatedCustom = customSizes.filter(s => s !== size);
+    setCustomSizes(updatedCustom);
     setSelectedSizes(prev => prev.filter(s => s !== size));
+    
+    // Atualizar no localStorage
+    const storageKey = `b2x_custom_sizes_${formData.store_id || 'global'}`;
+    localStorage.setItem(storageKey, JSON.stringify(updatedCustom));
   };
 
   const generateVariations = (mode: 'standard' | 'half' | 'merged' = 'standard') => {
