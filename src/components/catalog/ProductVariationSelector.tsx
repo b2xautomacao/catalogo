@@ -341,7 +341,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       )}
 
       {/* Color Selection */}
-      {colors.length > 0 && (
+      {colors.length > 1 && (
         <div className="space-y-3">
           <h5 className="font-medium text-base flex items-center gap-2">
             <Palette className="h-4 w-4" />
