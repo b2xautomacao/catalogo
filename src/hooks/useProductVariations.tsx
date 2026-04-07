@@ -53,6 +53,8 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
         grade_quantity: v.grade_quantity || null,
         grade_sizes: v.grade_sizes || null,
         grade_pairs: v.grade_pairs || null,
+        grade_sale_mode: v.grade_sale_mode || null,
+        flexible_grade_config: v.flexible_grade_config || null,
       })) || [];
 
       setVariations(processedVariations);
@@ -134,6 +136,8 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
               variationData.grade_quantity = typeof variation.grade_quantity === "number" ? variation.grade_quantity : null;
               variationData.grade_sizes = Array.isArray(variation.grade_sizes) ? variation.grade_sizes : null;
               variationData.grade_pairs = Array.isArray(variation.grade_pairs) ? variation.grade_pairs : null;
+              variationData.grade_sale_mode = variation.grade_sale_mode || null;
+              variationData.flexible_grade_config = variation.flexible_grade_config || null;
             }
 
             return variationData;
