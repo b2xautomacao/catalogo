@@ -115,24 +115,44 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
     const fullGradeTotalPairs = firstVariation?.grade_quantity || 0;
     const currentAdjustment = firstVariation?.price_adjustment || 0;
     const adjustedBasePrice = basePrice + currentAdjustment;
-    const fullGradePrice = adjustedBasePrice * fullGradeTotalPairs;
+
+    // Tentar obter preço da grade
+    let fullGradePrice = 0;
+    let fullGradeUnitPrice = adjustedBasePrice;
+
+    // 1️⃣ grade_price dedicado (campo do banco — pós migração)
+    const gp = (firstVariation as any)?.grade_price;
+    if (gp && gp > 0) {
+      fullGradePrice = gp;
+      fullGradeUnitPrice = fullGradeTotalPairs > 0 ? gp / fullGradeTotalPairs : gp;
+    } else {
+      // 2️⃣ Fallback: heurística para não multiplicar em lojas onde basePrice já é o valor total
+      const seemsLikeGradePrice = adjustedBasePrice >= fullGradeTotalPairs * 3;
+      if (seemsLikeGradePrice) {
+        fullGradePrice = adjustedBasePrice;
+        fullGradeUnitPrice = fullGradeTotalPairs > 0 ? adjustedBasePrice / fullGradeTotalPairs : adjustedBasePrice;
+      } else {
+        fullGradePrice = adjustedBasePrice * fullGradeTotalPairs;
+        fullGradeUnitPrice = adjustedBasePrice;
+      }
+    }
 
     let halfGradePrice = 0;
-    let halfGradeUnitPrice = adjustedBasePrice;
+    let halfGradeUnitPrice = fullGradeUnitPrice;
 
     if (halfGradeInfo && config?.allow_half_grade) {
       const discount = (config.half_grade_discount_percentage || 0) / 100;
-      halfGradeUnitPrice = adjustedBasePrice * (1 - discount);
+      halfGradeUnitPrice = fullGradeUnitPrice * (1 - discount);
       halfGradePrice = halfGradeUnitPrice * halfGradeInfo.totalPairs;
     }
 
     const customMixAdjustment = config?.custom_mix_price_adjustment || 0;
-    const customMixUnitPrice = adjustedBasePrice + customMixAdjustment;
+    const customMixUnitPrice = fullGradeUnitPrice + customMixAdjustment;
 
     return {
       full: {
         total: fullGradePrice,
-        unit: adjustedBasePrice,
+        unit: fullGradeUnitPrice,
         pairs: fullGradeTotalPairs,
       },
       half: halfGradeInfo && config?.allow_half_grade ? {
