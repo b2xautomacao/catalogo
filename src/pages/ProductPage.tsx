@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { useProductDisplayPrice } from "@/hooks/useProductDisplayPrice";
+import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { useConversionTracking } from "@/hooks/useConversionTracking";
 import { formatCurrency } from "@/lib/utils";
@@ -78,6 +79,14 @@ const ProductPage: React.FC<ProductPageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // storeId derivado do produto carregado
+  const [productStoreId, setProductStoreId] = useState<string | undefined>(undefined);
+  // Modelo de preço da loja do produto
+  const { priceModel: storePriceModel } = useStorePriceModel(productStoreId);
+  // catalogType: determinado pelo modelo de preço da loja
+  const catalogType = (storePriceModel?.price_model === 'wholesale_only' || storePriceModel?.price_model === 'simple_wholesale')
+    ? 'wholesale' as const
+    : 'retail' as const;
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   // 🔴 NOVO: Rastrear cores adicionadas ao carrinho (para sugestões)
@@ -207,6 +216,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
         });
 
         setProduct(fullProduct);
+        setProductStoreId(productData.store_id);  // ← alimenta useStorePriceModel
 
         // Definir informações da loja baseado no contexto
         if (isPublicContext && storeContext) {
@@ -262,7 +272,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
     loadProduct();
   }, [productId, navigate, toast, isPublicContext, storeContext]);
 
-  // Calcular preço
+  // Calcular preço — catalogType agora é dinâmico baseado no modelo da loja
   const priceInfo = useProductDisplayPrice({
     product: product || {
       id: '',
@@ -272,7 +282,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       min_wholesale_qty: 1,
       store_id: '',
     } as Product,
-    catalogType: 'retail',
+    catalogType,
     quantity,
     variation: selectedVariation,
   });
@@ -308,8 +318,8 @@ const ProductPage: React.FC<ProductPageProps> = ({
     });
 
     try {
-      // ⚠️ createCartItem(product, catalogType, quantity, variation)
-      const cartItem = createCartItem(product, 'retail', quantity, selectedVariation || undefined);
+      // catalogType agora é dinâmico (wholesale para lojas atacado, retail para demais)
+      const cartItem = createCartItem(product, catalogType, quantity, selectedVariation || undefined);
 
       console.log("🛒 CartItem criado:", {
         id: cartItem.id,
@@ -533,7 +543,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                       if (!product) return;
                       const cartItem = createCartItem(
                         product,
-                        'retail',
+                        catalogType,
                         1,
                         variation,
                         gradeMode,
@@ -567,7 +577,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     basePrice={product.retail_price}
                     onAddToCart={(variation, qty) => {
                       if (!product) return;
-                      const cartItem = createCartItem(product, 'retail', qty, variation);
+                      const cartItem = createCartItem(product, catalogType, qty, variation);
                       addItem(cartItem);
                       trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
                       const color = variation.color || '';
@@ -673,7 +683,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                       if (!product) return;
                       const cartItem = createCartItem(
                         product,
-                        'retail',
+                        catalogType,
                         1,
                         variation,
                         gradeMode,

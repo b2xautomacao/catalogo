@@ -45,8 +45,8 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
 
   const steps = [
     { title: "Informações", description: "Dados, Medidas e Cuidados", icon: "📌" },
-    { title: "Precificação", description: "Varejo e Atacado", icon: "💰" },
     { title: "Oferta", description: "Cores, Tamanhos e Grade", icon: "🎨" },
+    { title: "Precificação", description: "Varejo, Atacado e Ajustes", icon: "💰" },
     { title: "Imagens & Vídeo", description: "Identidade Visual (10f/2v)", icon: "📸" },
     { title: "Search (SEO)", description: "Busca e Meta Tags", icon: "🌐" },
   ];
@@ -151,8 +151,8 @@ const PremiumWizardContent: React.FC<PremiumProductWizardProps> = ({
         <main className="flex-1 overflow-y-auto p-8 lg:p-12 scroll-smooth">
           <div className="max-w-3xl mx-auto h-full">
             {currentStep === 0 && <BasicInfoStep formData={formData} updateFormData={updateFormData} />}
-            {currentStep === 1 && <PricingStep formData={formData} updateFormData={updateFormData} priceModel={priceModel} />}
-            {currentStep === 2 && <VariationsStep formData={formData} updateFormData={updateFormData} productId={editingProduct?.id} />}
+            {currentStep === 1 && <VariationsStep formData={formData} updateFormData={updateFormData} productId={editingProduct?.id} />}
+            {currentStep === 2 && <PricingStep formData={formData} updateFormData={updateFormData} priceModel={priceModel} />}
             {currentStep === 3 && <ImagesStep formData={formData} updateFormData={updateFormData} />}
             {currentStep === 4 && <SEOStep formData={formData} updateFormData={updateFormData} />}
           </div>
