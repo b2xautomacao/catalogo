@@ -381,38 +381,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         hasGradeInfo: !!item.gradeInfo,
       });
 
-      // 🔴 NOVO: Se for uma grade com modo flexível (meia grade ou custom), não recalcular o preço
-      // O preço já foi calculado corretamente no cartHelpers baseado no modo selecionado
-      if (item.gradeInfo && item.variation?.is_grade) {
-        // Se tem flexibleGradeMode diferente de 'full', preservar o preço calculado
-        if (item.flexibleGradeMode && item.flexibleGradeMode !== 'full') {
-          console.log(
-            `📦 [recalculateItemPrices] ${product.name}: Mantendo preço de ${item.flexibleGradeMode === 'half' ? 'meia grade' : 'grade customizada'} (R$${item.price})`
-          );
-          return {
-            ...item,
-            // Manter o preço original calculado para meia grade/custom
-            isWholesalePrice: item.catalogType === "wholesale",
-            currentTier: undefined,
-            nextTier: undefined,
-            nextTierQuantityNeeded: undefined,
-            nextTierPotentialSavings: undefined,
-          };
-        }
-
-        // Para grade completa, também preservar o preço (já calculado corretamente)
+      // 🔴 NOVO: Se for uma grade (Full, Half ou Custom) no ATACADO, não recalcular o preço
+      // O preço no atacado para grades é FIXO por grade (unidade = 1 grade), 
+      // independentemente do número de pares. A lógica de preço por par é apenas visual.
+      if (item.gradeInfo && (item.catalogType === "wholesale" || priceModelType === "wholesale_only")) {
         console.log(
-          `📦 [recalculateItemPrices] ${product.name}: Mantendo preço da grade completa (R$${item.price})`
+          `📦 [recalculateItemPrices] ${product.name}: Mantendo preço FIXO da grade no atacado (R$${item.price})`
         );
         return {
           ...item,
-          // Manter o preço original da grade
-          isWholesalePrice: item.catalogType === "wholesale",
+          isWholesalePrice: true,
           currentTier: undefined,
           nextTier: undefined,
           nextTierQuantityNeeded: undefined,
           nextTierPotentialSavings: undefined,
         };
+      }
+
+      // Para grade no VAREJO, se houver lógica específica, tratamos aqui (geralmente segue multiplicação normal)
+      if (item.gradeInfo && item.catalogType === "retail") {
+        console.log(`📦 [recalculateItemPrices] ${product.name}: Grade em modo VAREJO - seguindo recálculo padrão.`);
       }
 
       // Se for catálogo atacado ou apenas atacado, sempre usar preço de atacado
