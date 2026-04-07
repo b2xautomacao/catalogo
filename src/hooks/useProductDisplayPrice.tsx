@@ -28,31 +28,86 @@ export const useProductDisplayPrice = ({
       ? Math.max(0, currentRetail * (baseWholesale / baseRetail))
       : Math.max(0, baseWholesale + adjustment);
 
-    // 🔴 GRADE com grade_price dedicado: exibir diretamente esse valor
-    // É o preço fixo da grade inteira, salvo no banco via Wizard.
-    if (variation?.is_grade && (variation as any).grade_price && (variation as any).grade_price > 0) {
-      const gradePrice = (variation as any).grade_price as number;
+    // Detectar se a loja é atacado (pelo priceModel interno OU pelo catalogType externo)
+    const isWholesaleCatalog =
+      catalogType === "wholesale" ||
+      modelKey === "wholesale_only" ||
+      priceModel?.price_model === "wholesale_only" ||
+      priceModel?.price_model === "simple_wholesale";
+
+    // ── GRADE: rota de preço dedicada ──────────────────────────────────
+    if (variation?.is_grade) {
+      const gradePriceDedicated = (variation as any).grade_price;
       const totalPairs = Array.isArray((variation as any).grade_pairs)
-        ? ((variation as any).grade_pairs as number[]).reduce((s, p) => s + p, 0)
+        ? ((variation as any).grade_pairs as number[]).reduce((s: number, p: number) => s + p, 0)
         : ((variation as any).grade_quantity as number) || 1;
 
-      return {
-        displayPrice: gradePrice,
-        originalPrice: gradePrice,
-        minQuantity: 1,
-        isWholesaleOnly: catalogType === "wholesale",
-        shouldShowRetailPrice: false,
-        shouldShowWholesaleInfo: true,
-        modelKey,
-        retailPrice: gradePrice,
-        wholesalePrice: gradePrice,
-        minWholesaleQty: 1,
-        isLoading: false,
-        gradePrice,
-        totalPairs,
-        pricePerPair: totalPairs > 0 ? gradePrice / totalPairs : gradePrice,
-      };
+      // 1️⃣ Prioridade máxima: campo grade_price salvo no banco (pós-migração)
+      if (gradePriceDedicated && gradePriceDedicated > 0) {
+        const gradePrice = gradePriceDedicated as number;
+        return {
+          displayPrice: gradePrice,
+          originalPrice: gradePrice,
+          minQuantity: 1,
+          isWholesaleOnly: isWholesaleCatalog,
+          shouldShowRetailPrice: false,
+          shouldShowWholesaleInfo: true,
+          modelKey,
+          retailPrice: gradePrice,
+          wholesalePrice: gradePrice,
+          minWholesaleQty: 1,
+          isLoading: false,
+          gradePrice,
+          totalPairs,
+          pricePerPair: totalPairs > 0 ? gradePrice / totalPairs : gradePrice,
+        };
+      }
+
+      // 2️⃣ Fallback pré-migração: loja atacado-only com retail_price=0
+      //    O wholesale_price DO PRODUTO é o preço da grade inteira
+      if (isWholesaleCatalog && baseWholesale > 0) {
+        const gradePrice = Math.max(0, baseWholesale + adjustment);
+        return {
+          displayPrice: gradePrice,
+          originalPrice: gradePrice,
+          minQuantity: 1,
+          isWholesaleOnly: true,
+          shouldShowRetailPrice: false,
+          shouldShowWholesaleInfo: true,
+          modelKey,
+          retailPrice: gradePrice,
+          wholesalePrice: gradePrice,
+          minWholesaleQty: 1,
+          isLoading: false,
+          gradePrice,
+          totalPairs,
+          pricePerPair: totalPairs > 0 ? gradePrice / totalPairs : gradePrice,
+        };
+      }
+
+      // 3️⃣ Fallback geral: loja mista com retail_price > 0
+      //    Calcular precio proporcional
+      if (currentRetail > 0) {
+        const gradePrice = isWholesaleCatalog ? currentWholesale : currentRetail;
+        return {
+          displayPrice: gradePrice,
+          originalPrice: currentRetail,
+          minQuantity: 1,
+          isWholesaleOnly: isWholesaleCatalog,
+          shouldShowRetailPrice: !isWholesaleCatalog && currentRetail > 0,
+          shouldShowWholesaleInfo: isWholesaleCatalog,
+          modelKey,
+          retailPrice: currentRetail,
+          wholesalePrice: currentWholesale,
+          minWholesaleQty: 1,
+          isLoading: false,
+          gradePrice,
+          totalPairs,
+          pricePerPair: totalPairs > 0 ? gradePrice / totalPairs : gradePrice,
+        };
+      }
     }
+    // ── FIM GRADE ──────────────────────────────────────────────────────
 
     // Se ainda está carregando o modelo de preço, usar fallback baseado no catalogType
     if (loading) {
