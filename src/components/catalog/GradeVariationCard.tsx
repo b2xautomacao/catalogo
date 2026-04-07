@@ -25,7 +25,8 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
   basePrice = 0,
   showStock = false,
 }) => {
-  // Calcular preço para grade: preço unitário × total de pares
+  // Calcular preço para grade:
+  // Prioridade: grade_price (dedicado) > basePrice (effectiveBasePrice do ProductPage)
   let finalPrice = basePrice + (variation.price_adjustment || 0);
 
   if (variation.is_grade && variation.grade_pairs && variation.grade_sizes) {
@@ -36,15 +37,32 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
             0
           )
         : 0;
-      finalPrice = basePrice * totalPairs;
+      
+      // 1️⃣ grade_price dedicado (campo do banco — pós migração)
+      const gp = (variation as any).grade_price;
+      if (gp && gp > 0) {
+        finalPrice = gp;
+      } else {
+        // 2️⃣ Fallback: para atacado-only, basePrice JÁ é wholesale_price (via effectiveBasePrice)
+        //    Nesse caso, consideramos que basePrice é o preço da grade inteira
+        //    (não multiplicar por pares pois seria errado)
+        //    Para lojas de varejo, basePrice=retail_price_per_unit → multiplicar por pares
+        if (basePrice > 0 && totalPairs > 0) {
+          // Se basePrice é muito baixo (provavelmente preço unitário de varejo), multiplicar
+          // Se basePrice parece ser preço de grade (valor alto), usar direto
+          // Heurística: se basePrice ≥ totalPairs * 5 (R$5 mínimo/par), é preço de grade
+          // Caso contrário, é preço unitário
+          const seemsLikeGradePrice = basePrice >= totalPairs * 3;
+          finalPrice = seemsLikeGradePrice ? basePrice : basePrice * totalPairs;
+        }
+      }
 
       console.log("📦 GradeVariationCard - Cálculo de preço:", {
         variationName: variation.grade_name,
         basePrice,
+        grade_price: gp,
         totalPairs,
         finalPrice,
-        gradeSizes: variation.grade_sizes,
-        gradePairs: variation.grade_pairs,
       });
     } catch (error) {
       console.error("Erro ao calcular preço da grade:", error);

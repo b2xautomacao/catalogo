@@ -404,6 +404,11 @@ const ProductPage: React.FC<ProductPageProps> = ({
   const hasVariations = product.variations && product.variations.length > 0;
   const hasGradeVariations = hasVariations && product.variations?.some(v => v.is_grade);
 
+  // Preço base efetivo: em lojas atacado-only (retail_price=0), usar wholesale_price
+  const effectiveBasePrice = (product.retail_price > 0)
+    ? product.retail_price
+    : (product.wholesale_price || 0);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header com Navegação */}
@@ -536,7 +541,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     variations={product.variations || []}
                     selectedVariation={selectedVariation}
                     onVariationChange={setSelectedVariation}
-                    basePrice={product.retail_price}
+                    basePrice={effectiveBasePrice}
                     showPriceInCards={true}
                     showStock={true}
                     onAddToCart={(variation, gradeMode, customSel) => {
@@ -574,7 +579,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                   /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
                   <VariationPicker
                     variations={product.variations || []}
-                    basePrice={product.retail_price}
+                    basePrice={effectiveBasePrice}
                     onAddToCart={(variation, qty) => {
                       if (!product) return;
                       const cartItem = createCartItem(product, catalogType, qty, variation);
@@ -652,8 +657,8 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
               <Separator className="my-6" />
 
-              {/* TODO: Implementar EnhancedPriceDisplay quando hooks tiverem campos necessários */}
-              {/* <div className="space-y-2">
+              {/* ── Exibição do Preço Principal ── */}
+              <div className="space-y-2">
                 <div className="text-3xl md:text-4xl font-bold text-primary">
                   {formatCurrency(priceInfo.displayPrice)}
                 </div>
@@ -662,75 +667,17 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     {formatCurrency(priceInfo.originalPrice)}
                   </div>
                 )}
-              </div>*/}
-            </div>
-
-            {/* ── Seletor de Variações ─────────────────────────────────────── */}
-            {hasVariations && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="font-semibold text-lg mb-4">Opções do Produto</h2>
-
-                {hasGradeVariations ? (
-                  /* Grade: seletor original */
-                  <ProductVariationSelector
-                    variations={product.variations || []}
-                    selectedVariation={selectedVariation}
-                    onVariationChange={setSelectedVariation}
-                    basePrice={product.retail_price}
-                    showPriceInCards={true}
-                    showStock={true}
-                    onAddToCart={(variation, gradeMode, customSel) => {
-                      if (!product) return;
-                      const cartItem = createCartItem(
-                        product,
-                        catalogType,
-                        1,
-                        variation,
-                        gradeMode,
-                        customSel ? {
-                          items: customSel.items.map(item => ({
-                            color: item.color || '',
-                            size: item.size || '',
-                            quantity: item.quantity || 0,
-                          })),
-                          totalPairs: customSel.totalPairs || 0,
-                        } : undefined
-                      );
-                      addItem(cartItem);
-                      const color = variation.grade_color || variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
-                      toast({
-                        title: "✅ Adicionado ao carrinho!",
-                        description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
-                      });
-                      toggleCart();
-                    }}
-                    addedColors={addedColors}
-                  />
-                ) : (
-                  /* Variações simples: seletor por etapas (cor → tamanho → qty → CTA) */
-                  <VariationPicker
-                    variations={product.variations || []}
-                    basePrice={product.retail_price}
-                    onAddToCart={(variation, qty) => {
-                      if (!product) return;
-                      const cartItem = createCartItem(product, 'retail', qty, variation);
-                      addItem(cartItem);
-                      trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: qty });
-                      const color = variation.color || '';
-                      if (color && !addedColors.includes(color)) {
-                        setAddedColors(prev => [...prev, color]);
-                      }
-                    }}
-                    onViewCart={toggleCart}
-                    onColorChange={(_color, imageUrl) => setSelectedColorImage(imageUrl)}
-                  />
+                {/* Se é grade, mostrar info de preço por par */}
+                {selectedVariation?.is_grade && (priceInfo as any).totalPairs > 0 && (
+                  <div className="text-sm text-gray-500">
+                    {(priceInfo as any).totalPairs} pares • {formatCurrency((priceInfo as any).pricePerPair || 0)}/par
+                  </div>
+                )}
+                {priceInfo.isWholesaleOnly && (
+                  <Badge variant="secondary" className="text-xs">Atacado</Badge>
                 )}
               </div>
-            )}
+            </div>
 
             {/* Descrição */}
             {product.description && (
