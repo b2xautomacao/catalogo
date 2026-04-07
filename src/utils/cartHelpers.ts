@@ -57,104 +57,93 @@ export const createCartItem = (
     
   let finalPrice = basePriceWithAdjustment;
 
-  // 🔴 NOVO: Se for uma variação de grade, calcular preço baseado no modo selecionado
-  if (
-    variation &&
-    variation.is_grade &&
-    variation.grade_pairs &&
-    variation.grade_sizes
-  ) {
+  // ────────────────────────────────────────────────────────────────
+  // 🔴 PREÇO DE GRADE: Usa o campo grade_price como fonte primária.
+  // grade_price = preço FIXO da grade inteira (salvo no banco via Wizard).
+  // Esse valor é sempre o preço de 1 grade completa, independente de pares.
+  // ────────────────────────────────────────────────────────────────
+  if (variation && variation.is_grade) {
     try {
-      const config = variation.flexible_grade_config;
       const totalPairs = Array.isArray(variation.grade_pairs)
-        ? variation.grade_pairs.reduce(
-          (sum: number, pairs: number) => sum + pairs,
-          0
-        )
+        ? variation.grade_pairs.reduce((sum: number, pairs: number) => sum + pairs, 0)
         : 0;
 
-      // Calcular preço baseado no modo selecionado (se tiver configuração flexível)
-      if (config && flexibleGradeMode === 'half' && config.allow_half_grade) {
-        // Meia grade: calcular pares da meia grade e aplicar desconto
+      // 1️⃣ Fonte primária: grade_price (campo dedicado, preço fixo da grade inteira)
+      // 2️⃣ Fallback para catálogo atacado: wholesale_price do produto (caso grade_price não exista)
+      // 3️⃣ Fallback geral: basePriceWithAdjustment (legado)
+      const gradeBasePrice = (variation.grade_price && variation.grade_price > 0)
+        ? variation.grade_price
+        : (catalogType === "wholesale" && wholesalePrice > 0)
+          ? wholesalePrice
+          : basePriceWithAdjustment;
+
+      if (flexibleGradeMode === 'half' && variation.flexible_grade_config?.allow_half_grade) {
         const halfGradeInfo = calculateHalfGradeInfo(
-          variation.grade_sizes,
-          variation.grade_pairs,
-          config
+          variation.grade_sizes!,
+          variation.grade_pairs!,
+          variation.flexible_grade_config
         );
+        const halfGradeDiscount = (variation.flexible_grade_config.half_grade_discount_percentage || 0) / 100;
 
-        const halfGradeDiscount = (config.half_grade_discount_percentage || 0) / 100;
-        
         if (catalogType === "wholesale") {
-            // Se atacado e variação de grade, o preço é DA GRADE, não multiplica pelos pares
-            // O preço da meia grade será proporcional ao valor da grade inteira
-            const fraction = totalPairs > 0 ? (halfGradeInfo.totalPairs / totalPairs) : 0.5;
-            finalPrice = (basePriceWithAdjustment * fraction) * (1 - halfGradeDiscount);
+          // Atacado: preço da meia grade = fração proporcional do preço da grade inteira
+          const fraction = totalPairs > 0 ? (halfGradeInfo.totalPairs / totalPairs) : 0.5;
+          finalPrice = gradeBasePrice * fraction * (1 - halfGradeDiscount);
         } else {
-            // Modo varejo, multiplica pelo número de pares
-            const halfGradeUnitPrice = basePriceWithAdjustment * (1 - halfGradeDiscount);
-            finalPrice = halfGradeUnitPrice * halfGradeInfo.totalPairs;
+          // Varejo: preço por par * número de pares da meia grade
+          const pricePerPair = totalPairs > 0 ? (gradeBasePrice / totalPairs) : gradeBasePrice;
+          finalPrice = pricePerPair * halfGradeInfo.totalPairs * (1 - halfGradeDiscount);
         }
 
-        console.log("📦 CART HELPER - Cálculo de MEIA GRADE:", {
-          productName: product.name,
-          catalogType,
-          totalPairsFull: totalPairs,
-          totalPairsHalf: halfGradeInfo.totalPairs,
-          basePriceWithAdjustment,
-          discount: config.half_grade_discount_percentage,
+        console.log("📦 CART HELPER - Cálculo MEIA GRADE:", {
+          productName: product.name, catalogType, gradeBasePrice,
+          totalPairsFull: totalPairs, totalPairsHalf: halfGradeInfo.totalPairs,
+          discount: variation.flexible_grade_config.half_grade_discount_percentage,
           finalPrice: `R$ ${finalPrice.toFixed(2)}`,
         });
-      } else if (config && flexibleGradeMode === 'custom' && config.allow_custom_mix && customSelection) {
-        // Grade customizada: usar seleção customizada
-        const customMixAdjustment = config.custom_mix_price_adjustment || 0;
-        
+
+      } else if (
+        flexibleGradeMode === 'custom' &&
+        variation.flexible_grade_config?.allow_custom_mix &&
+        customSelection
+      ) {
+        const customMixAdjustment = variation.flexible_grade_config.custom_mix_price_adjustment || 0;
+
         if (catalogType === "wholesale") {
-            // Em atacado, o preço é da grade. A grade personalizada tem seu preço
-            // proporcional à quantidade de pares.
-            const fraction = totalPairs > 0 ? (customSelection.totalPairs / totalPairs) : 1;
-            const customGradePrice = basePriceWithAdjustment * fraction;
-            finalPrice = customGradePrice + customMixAdjustment;
+          // Atacado: grade customizada = fração proporcional
+          const fraction = totalPairs > 0 ? (customSelection.totalPairs / totalPairs) : 1;
+          finalPrice = (gradeBasePrice * fraction) + customMixAdjustment;
         } else {
-            const customUnitPrice = basePriceWithAdjustment + customMixAdjustment;
-            finalPrice = customUnitPrice * customSelection.totalPairs;
+          // Varejo: preço por par * quantidade customizada
+          const pricePerPair = totalPairs > 0 ? (gradeBasePrice / totalPairs) : gradeBasePrice;
+          finalPrice = (pricePerPair * customSelection.totalPairs) + customMixAdjustment;
         }
 
-        console.log("📦 CART HELPER - Cálculo de GRADE CUSTOMIZADA:", {
-          productName: product.name,
-          catalogType,
-          totalPairs: customSelection.totalPairs,
-          basePriceWithAdjustment,
-          customMixAdjustment,
+        console.log("📦 CART HELPER - Cálculo GRADE CUSTOMIZADA:", {
+          productName: product.name, catalogType, gradeBasePrice,
+          totalPairs: customSelection.totalPairs, customMixAdjustment,
           finalPrice: `R$ ${finalPrice.toFixed(2)}`,
         });
+
       } else {
         // Grade completa (padrão)
         if (catalogType === "wholesale") {
-            // ATACADO: o preço é da grade, não multiplica
-            finalPrice = basePriceWithAdjustment;
+          // ATACADO: o preço é da grade INTEIRA — nunca multiplica pelos pares
+          finalPrice = gradeBasePrice;
         } else {
-            // VAREJO: multiplica
-            finalPrice = basePriceWithAdjustment * totalPairs;
+          // VAREJO: multiplica o preço unitário pelos pares totais
+          finalPrice = totalPairs > 0 ? gradeBasePrice * totalPairs : gradeBasePrice;
         }
 
-        console.log("📦 CART HELPER - Cálculo de GRADE COMPLETA:", {
-          productName: product.name,
-          catalogType,
-          totalPairs,
-          basePriceWithAdjustment,
+        console.log("📦 CART HELPER - Cálculo GRADE COMPLETA:", {
+          productName: product.name, catalogType, gradeBasePrice, totalPairs,
           finalPrice: `R$ ${finalPrice.toFixed(2)}`,
+          fonte: variation.grade_price ? "grade_price" : catalogType === "wholesale" ? "wholesale_price" : "basePriceWithAdjustment",
         });
       }
     } catch (error) {
       console.error("❌ Erro ao calcular preço da grade:", error);
-      // Fallback para cálculo padrão
-      const totalPairs = Array.isArray(variation.grade_pairs)
-        ? variation.grade_pairs.reduce(
-          (sum: number, pairs: number) => sum + pairs,
-          0
-        )
-        : 0;
-      finalPrice = catalogType === "wholesale" ? basePriceWithAdjustment : basePriceWithAdjustment * totalPairs;
+      finalPrice = catalogType === "wholesale" ? basePriceWithAdjustment : basePriceWithAdjustment;
     }
   }
 
@@ -246,6 +235,7 @@ export const createCartItem = (
         grade_quantity: variation.grade_quantity,
         grade_sizes: variation.grade_sizes,
         grade_pairs: variation.grade_pairs,
+        grade_price: variation.grade_price, // preço fixo da grade inteira
         variation_type: variation.variation_type,
       }
       : undefined,

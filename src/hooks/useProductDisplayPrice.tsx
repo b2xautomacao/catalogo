@@ -28,6 +28,32 @@ export const useProductDisplayPrice = ({
       ? Math.max(0, currentRetail * (baseWholesale / baseRetail))
       : Math.max(0, baseWholesale + adjustment);
 
+    // 🔴 GRADE com grade_price dedicado: exibir diretamente esse valor
+    // É o preço fixo da grade inteira, salvo no banco via Wizard.
+    if (variation?.is_grade && (variation as any).grade_price && (variation as any).grade_price > 0) {
+      const gradePrice = (variation as any).grade_price as number;
+      const totalPairs = Array.isArray((variation as any).grade_pairs)
+        ? ((variation as any).grade_pairs as number[]).reduce((s, p) => s + p, 0)
+        : ((variation as any).grade_quantity as number) || 1;
+
+      return {
+        displayPrice: gradePrice,
+        originalPrice: gradePrice,
+        minQuantity: 1,
+        isWholesaleOnly: catalogType === "wholesale",
+        shouldShowRetailPrice: false,
+        shouldShowWholesaleInfo: true,
+        modelKey,
+        retailPrice: gradePrice,
+        wholesalePrice: gradePrice,
+        minWholesaleQty: 1,
+        isLoading: false,
+        gradePrice,
+        totalPairs,
+        pricePerPair: totalPairs > 0 ? gradePrice / totalPairs : gradePrice,
+      };
+    }
+
     // Se ainda está carregando o modelo de preço, usar fallback baseado no catalogType
     if (loading) {
       // Para catálogo atacado, usar preço de atacado como fallback

@@ -55,6 +55,7 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
         grade_pairs: v.grade_pairs || null,
         grade_sale_mode: v.grade_sale_mode || null,
         flexible_grade_config: v.flexible_grade_config || null,
+        grade_price: typeof v.grade_price === 'number' ? v.grade_price : null,
       })) || [];
 
       setVariations(processedVariations);
@@ -138,6 +139,10 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
               variationData.grade_pairs = Array.isArray(variation.grade_pairs) ? variation.grade_pairs : null;
               variationData.grade_sale_mode = variation.grade_sale_mode || null;
               variationData.flexible_grade_config = variation.flexible_grade_config || null;
+              // grade_price: preço fixo da grade inteira (fonte primária no cartHelpers)
+              if (typeof variation.grade_price === 'number' && variation.grade_price > 0) {
+                variationData.grade_price = variation.grade_price;
+              }
             }
 
             return variationData;
