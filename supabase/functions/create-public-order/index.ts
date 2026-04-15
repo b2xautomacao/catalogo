@@ -80,21 +80,41 @@ serve(async (req) => {
       if (item.variation_id) {
         const { data: vData, error: vErr } = await supabase
           .from('product_variations')
-          .select('stock, reserved_stock')
+          .select('stock, reserved_stock, is_grade')
           .eq('id', item.variation_id)
           .single();
-        
+
         if (vErr || !vData) throw new Error(`Variação não encontrada para ${product.name}`);
-        
-        const avail = (vData.stock || 0) - (vData.reserved_stock || 0);
-        if (avail < item.quantity && !product.allow_negative_stock) {
-          throw new Error(`Estoque insuficiente para variação de ${product.name}`);
+
+        // Grades têm estoque nas variações-filho (tamanhos), não na variação-grade em si.
+        // Para grades, pular a checagem de estoque no registro pai; o lojista
+        // gerencia o estoque por tamanho individualmente.
+        if (!vData.is_grade) {
+          const avail = (vData.stock || 0) - (vData.reserved_stock || 0);
+          if (avail < item.quantity && !product.allow_negative_stock) {
+            throw new Error(`Estoque insuficiente para variação de ${product.name}. Disponível: ${avail}, Solicitado: ${item.quantity}`);
+          }
         }
+        // is_grade === true: estoque verificado por tamanho no painel; permite prosseguir
       } else {
-        const avail = (product.stock || 0) - (product.reserved_stock || 0);
-        if (avail < item.quantity && !product.allow_negative_stock) {
-          throw new Error(`Estoque insuficiente para ${product.name}`);
+        // Sem variação: verificar se o produto tem variações de grade cadastradas.
+        // Se tiver, o estoque real está nelas; usar allow_negative_stock como guarda.
+        const { data: gradeVars } = await supabase
+          .from('product_variations')
+          .select('id')
+          .eq('product_id', productId)
+          .eq('is_grade', true)
+          .limit(1);
+
+        const hasGradeVariations = gradeVars && gradeVars.length > 0;
+
+        if (!hasGradeVariations) {
+          const avail = (product.stock || 0) - (product.reserved_stock || 0);
+          if (avail < item.quantity && !product.allow_negative_stock) {
+            throw new Error(`Estoque insuficiente para ${product.name}. Disponível: ${avail}, Solicitado: ${item.quantity}`);
+          }
         }
+        // hasGradeVariations === true: estoque gerenciado por grade; permite prosseguir
       }
     }
 
