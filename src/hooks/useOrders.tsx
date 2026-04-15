@@ -202,8 +202,16 @@ export const useOrders = () => {
       );
 
       if (functionError) {
+        let errorMsg = functionError.message;
+        try {
+          const errorBody = await (functionError as any).context?.json?.();
+          if (errorBody?.error) {
+            errorMsg = errorBody.error;
+            console.error('❌ useOrders: Detalhe do erro da Edge Function:', errorBody);
+          }
+        } catch {}
         console.error('❌ useOrders: Erro na Edge Function:', functionError);
-        throw new Error(`Erro ao processar pedido: ${functionError.message}`);
+        throw new Error(`Erro ao processar pedido: ${errorMsg}`);
       }
 
       if (!functionResult?.success) {
@@ -211,8 +219,8 @@ export const useOrders = () => {
         throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
       }
 
-      const createdOrder = functionResult.order;
-      console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', createdOrder.id);
+      const createdOrder = functionResult.data;
+      console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', createdOrder?.id);
 
       if (profile?.store_id && profile.store_id === storeId) {
         console.log('🔄 useOrders: Recarregando lista de pedidos...');

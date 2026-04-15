@@ -67,8 +67,16 @@ export const useCheckoutLogic = () => {
       );
 
       if (functionError) {
+        let errorMsg = functionError.message;
+        try {
+          const errorBody = await (functionError as any).context?.json?.();
+          if (errorBody?.error) {
+            errorMsg = errorBody.error;
+            console.error('❌ createOrderViaEdgeFunction: Detalhe do erro:', errorBody);
+          }
+        } catch {}
         console.error('❌ createOrderViaEdgeFunction: Erro na Edge Function:', functionError);
-        throw new Error(`Erro ao processar pedido: ${functionError.message}`);
+        throw new Error(`Erro ao processar pedido: ${errorMsg}`);
       }
 
       if (!functionResult?.success) {
@@ -76,8 +84,8 @@ export const useCheckoutLogic = () => {
         throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
       }
 
-      console.log('✅ createOrderViaEdgeFunction: Pedido criado com sucesso via Edge Function:', functionResult.order);
-      return functionResult.order;
+      console.log('✅ createOrderViaEdgeFunction: Pedido criado com sucesso via Edge Function:', functionResult.data);
+      return functionResult.data;
     } catch (error) {
       console.error('❌ createOrderViaEdgeFunction: Erro geral', error);
       throw error;
