@@ -37,6 +37,7 @@ import OrderBump from "./OrderBump";
 import CartItemThumbnail from "./CartItemThumbnail";
 import TrustBadges from "./TrustBadges";
 import { formatCurrency } from "@/lib/utils";
+import { useMobileWhatsApp } from "./hooks/useMobileWhatsApp";
 
 interface EnhancedCheckoutProps {
   storeId: string;
