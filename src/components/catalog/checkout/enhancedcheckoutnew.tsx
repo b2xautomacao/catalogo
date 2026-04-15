@@ -68,12 +68,15 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   const { config, loading: configLoading } = useCheckoutConfig();
   const { toast } = useToast();
   const { createOrder, isCreatingOrder } = useOrders();
+  const { isMobile, openWhatsApp } = useMobileWhatsApp();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingCost, setShippingCost] = useState(0);
   const [orderBumpTotal, setOrderBumpTotal] = useState(0);
   const [urgencyTime, setUrgencyTime] = useState(600); // 10 minutos
   const [socialProofCount, setSocialProofCount] = useState(0);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [createdOrderData, setCreatedOrderData] = useState<any>(null);
 
   const form = useForm<CheckoutForm>({
     defaultValues: {
@@ -185,24 +188,26 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
 
       // Criar pedido no sistema
       const createdOrder = await createOrder(orderData);
-
-      // Gerar mensagem do WhatsApp
-      if (storePhone) {
-        const message = generateWhatsAppMessage(data, createdOrder);
-        const whatsappUrl = `https://wa.me/${storePhone.replace(
-          /\D/g,
-          ""
-        )}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, "_blank");
+      
+      if (!storeId) {
+        throw new Error('Identificador da loja (Store ID) não encontrado. Por favor, recarregue a página.');
+      }
+      
+      if (!createdOrder?.data) {
+        throw new Error("Não foi possível obter os dados do pedido criado.");
       }
 
+      setCreatedOrderData(createdOrder.data);
+      setIsSuccess(true);
       clearCart();
+
       toast({
         title: "Pedido finalizado!",
-        description: `Pedido #${createdOrder?.data?.id?.slice(-8) || "N/A"
-          } criado com sucesso.`,
+        description: `Pedido #${createdOrder.data.id.slice(-8)} criado com sucesso.`,
       });
-      onClose();
+
+      // Removido o window.open automático para evitar bloqueio no iOS
+      // O usuário agora clica no botão dedicado na tela de sucesso
     } catch (error) {
       console.error("Erro ao processar pedido:", error);
       toast({
@@ -335,8 +340,59 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           </div>
         ))}
       </div>
-
-      <Form {...form}>
+ 
+      {isSuccess ? (
+        <Card className="max-w-2xl mx-auto border-2 border-green-500 shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-green-500 p-6 text-white text-center">
+            <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold">Pedido Recebido!</h2>
+            <p className="opacity-90">Número: #{createdOrderData?.id?.slice(-8)}</p>
+          </div>
+ 
+          <CardContent className="p-8 space-y-6">
+            <div className="space-y-4 text-center">
+              <p className="text-gray-600 text-lg">
+                Seu pedido foi registrado com sucesso em nosso sistema e o estoque foi reservado.
+              </p>
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg text-blue-800 text-sm text-center">
+                <p className="font-semibold mb-1">⚠️ IMPORTANTE:</p>
+                <p>Para concluir sua compra e combinar o pagamento, você precisa enviar o resumo para o nosso WhatsApp.</p>
+              </div>
+            </div>
+ 
+            <div className="space-y-3 pt-4">
+              <Button
+                size="lg"
+                className="w-full h-16 text-xl bg-[#25D366] hover:bg-[#128C7E] text-white gap-3 shadow-lg hover:shadow-xl transition-all active:scale-95"
+                onClick={() => {
+                  if (storePhone && createdOrderData) {
+                    const message = generateWhatsAppMessage(form.getValues(), { data: createdOrderData });
+                    openWhatsApp(storePhone, message);
+                  }
+                }}
+              >
+                <Smartphone className="h-6 w-6" />
+                Finalizar no WhatsApp
+              </Button>
+ 
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onClose}
+              >
+                Voltar para a Loja
+              </Button>
+            </div>
+ 
+            <p className="text-center text-xs text-gray-400">
+              Ao clicar no botão acima, você será redirecionado para o app do WhatsApp.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="grid grid-cols-1 lg:grid-cols-3 gap-6"
@@ -1009,7 +1065,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
             <TrustBadges enabled={true} />
           </div>
         </form>
-      </Form>
+      )}
     </div>
   );
 };

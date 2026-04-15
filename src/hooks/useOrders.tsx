@@ -211,7 +211,8 @@ export const useOrders = () => {
         store_id: storeId
       };
 
-      console.log('🔗 useOrders: Chamando Edge Function create-public-order...');
+      console.log('🏪 useOrders: Store ID final:', storeId);
+      console.log('📦 useOrders: Payload enviado para Edge Function:', JSON.stringify(orderPayload, null, 2));
 
       // Chamar Edge Function em vez de inserir diretamente
       const { data: functionResult, error: functionError } = await supabase.functions.invoke(
