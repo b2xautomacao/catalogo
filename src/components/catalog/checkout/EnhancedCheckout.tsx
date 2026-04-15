@@ -216,7 +216,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           unit_price: item.price,
           total_price: item.price * item.quantity,
           variation_id: item.variation?.id || null,
-          is_grade: (item.variation as any)?.is_grade || false,
+          is_grade: !!((item.variation as any)?.is_grade || item.gradeInfo),
           variation_details: item.variation
             ? {
               color: item.variation.color,
@@ -265,112 +265,96 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   };
 
   const generateWhatsAppMessage = (data: CheckoutForm, order?: any) => {
+    // 💡 IMPORTANTE: Se o carrinho foi limpo, usamos os dados do pedido vindo da API
+    // para garantir que os valores não apareçam como zero na mensagem.
+    const rawOrderData = order?.data || order;
+    const displayItems = rawOrderData?.items || items;
+    const displayTotal = rawOrderData?.total_amount ?? totalAmount;
+    const displayShipping = rawOrderData?.shipping_cost ?? shippingCost;
+
     const headerTitle = sellerName
       ? `🛒 *NOVO PEDIDO* - (Atendimento: ${sellerName})\n\n`
       : `🛒 *NOVO PEDIDO*\n\n`;
-    // ? `🛒 *NOVO PEDIDO - ${storeName}* (Atendimento: ${sellerName})\n\n`
-    // : `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
     let message = headerTitle;
     message += `👤 *Cliente:* ${data.customerName}\n`;
-    message += `📧 *Email:* ${data.customerEmail}\n`;
+    if (data.customerEmail) message += `📧 *Email:* ${data.customerEmail}\n`;
     message += `📱 *Telefone:* ${data.customerPhone}\n\n`;
 
-    // Informações do pedido
-    if (order?.id || order?.data?.id) {
-      const orderId = order?.id || order?.data?.id;
-      message += `📋 *Pedido:* #${orderId.slice(-8)}\n\n`;
+    if (rawOrderData?.id) {
+      message += `📋 *Pedido:* #${rawOrderData.id.slice(-8)}\n\n`;
     }
 
     message += `📦 *ITENS DO PEDIDO:*\n`;
 
-    // Separar itens normais e order bumps
-    const normalItems = items.filter(
-      (item) => !(item.product as any)?.isOrderBump
-    );
-    const orderBumpItems = items.filter(
-      (item) => (item.product as any)?.isOrderBump
-    );
-
-    // Itens normais
-    normalItems.forEach((item, index) => {
-      message += `${index + 1}. ${item.product.name}\n`;
-      message += `   Qtd: ${item.quantity}x\n`;
-      message += `   Preço: ${formatCurrency(item.price)}\n`;
-      if (item.gradeInfo) {
-        message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
-      } else if (item.variation) {
-        message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
+    // Mapear itens para um formato comum
+    const mappedItems = displayItems.map((item: any) => {
+      // Se for item vindo do pedido (banco), mapear propriedades
+      if (item.product_name) {
+        return {
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.unit_price || item.price || 0,
+          isOrderBump: !!item.is_order_bump,
+          variationDetails: item.variation_details,
+          // Preservar detalhes de variação formatados se vierem do banco
+          variationString: item.variation_details 
+            ? [item.variation_details.color, item.variation_details.size].filter(Boolean).join(" - ")
+            : ""
+        };
       }
-      message += `   Subtotal: ${formatCurrency(
-        item.price * item.quantity
-      )}\n\n`;
+      // Se for item vindo do carrinho (hook)
+      return {
+        name: item.product?.name,
+        quantity: item.quantity,
+        price: item.price,
+        isOrderBump: !!(item.product as any)?.isOrderBump,
+        variationString: item.variation 
+          ? [item.variation.color, item.variation.size].filter(Boolean).join(" - ")
+          : "",
+        gradeInfo: item.gradeInfo
+      };
     });
 
-    // Order Bumps (ofertas especiais)
+    const normalItems = mappedItems.filter((i: any) => !i.isOrderBump);
+    const orderBumpItems = mappedItems.filter((i: any) => i.isOrderBump);
+
+    // Itens normais
+    normalItems.forEach((item: any, index: number) => {
+      message += `${index + 1}. ${item.name}\n`;
+      message += `   Qtd: ${item.quantity}x\n`;
+      message += `   Preço: ${formatCurrency(item.price)}\n`;
+      
+      if (item.gradeInfo) {
+        message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
+      } else if (item.variationString) {
+        message += `   Variação: ${item.variationString}\n`;
+      }
+      
+      message += `   Subtotal: ${formatCurrency(item.price * item.quantity)}\n\n`;
+    });
+
+    // Order Bumps
     if (orderBumpItems.length > 0) {
       message += `🎁 *OFERTAS ESPECIAIS:*\n`;
-      orderBumpItems.forEach((item, index) => {
-        const originalPrice =
-          (item.product as any)?.originalPrice || item.price;
-        const discountPercentage =
-          (item.product as any)?.discountPercentage || 0;
-
-        message += `${index + 1}. ${item.product.name} 🔥\n`;
+      orderBumpItems.forEach((item: any, index: number) => {
+        message += `${index + 1}. ${item.name} 🔥\n`;
         message += `   Qtd: ${item.quantity}x\n`;
-        if (discountPercentage > 0) {
-          message += `   Preço original: ${formatCurrency(originalPrice)}\n`;
-          message += `   Desconto: ${discountPercentage}% OFF\n`;
-          message += `   Preço final: ${formatCurrency(item.price)}\n`;
-        } else {
-          message += `   Preço: ${formatCurrency(item.price)}\n`;
+        message += `   Preço: ${formatCurrency(item.price)}\n`;
+        if (item.variationString) {
+          message += `   Variação: ${item.variationString}\n`;
         }
-        if (item.gradeInfo) {
-          message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
-        } else if (item.variation) {
-          message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
-        }
-        message += `   Subtotal: ${formatCurrency(
-          item.price * item.quantity
-        )}\n\n`;
+        message += `   Subtotal: ${formatCurrency(item.price * item.quantity)}\n\n`;
       });
     }
 
-    // Debug do total
-    console.log("🛒 EnhancedCheckout - Debug total:", {
-      totalAmount,
-      shippingCost,
-      finalTotal,
-      cartItemsCount: items.length,
-      cartItems: items.map((item) => ({
-        name: item.product?.name,
-        price: item.price,
-        quantity: item.quantity,
-        subtotal: item.price * item.quantity,
-      })),
-    });
-
     message += `💰 *RESUMO FINANCEIRO:*\n`;
-    message += `Subtotal produtos: ${formatCurrency(totalAmount)}\n`;
-    if (shippingCost > 0) {
-      message += `Frete: ${formatCurrency(shippingCost)}\n`;
+    message += `Subtotal produtos: ${formatCurrency(displayTotal - displayShipping)}\n`;
+    if (displayShipping > 0) {
+      message += `Frete: ${formatCurrency(displayShipping)}\n`;
     }
-    if (orderBumpItems.length > 0) {
-      const orderBumpTotal = orderBumpItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-      const orderBumpSavings = orderBumpItems.reduce((sum, item) => {
-        const originalPrice =
-          (item.product as any)?.originalPrice || item.price;
-        return sum + (originalPrice - item.price) * item.quantity;
-      }, 0);
+    
+    message += `*TOTAL FINAL: ${formatCurrency(displayTotal)}*\n\n`;
 
-      message += `Ofertas especiais: ${formatCurrency(orderBumpTotal)}\n`;
-      if (orderBumpSavings > 0) {
-        message += `💚 Economia: ${formatCurrency(orderBumpSavings)}\n`;
-      }
-    }
-    message += `*TOTAL FINAL: ${formatCurrency(finalTotal)}*\n\n`;
 
     message += `🚚 *Entrega:* ${config?.shipping_methods.find((m) => m.id === data.shippingMethod)
       ?.name || "A Combinar"

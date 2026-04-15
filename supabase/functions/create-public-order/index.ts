@@ -61,6 +61,9 @@ serve(async (req) => {
       const productId = item.id || item.product_id;
       if (!productId) throw new Error('Item sem ID de produto');
 
+      // 🔍 LOG DE DEBUG: Verificando o que está chegando para cada item
+      console.log(`📦 Processando item: ${item.product_name} | Var: ${item.variation_id} | Grade: ${item.is_grade}`);
+
       const { data: product, error: pErr } = await supabase
         .from('products')
         .select('name, stock, reserved_stock, allow_negative_stock, is_active')
@@ -78,27 +81,47 @@ serve(async (req) => {
 
       // Validar variação se houver
       if (item.variation_id) {
-        const { data: vData, error: vErr } = await supabase
-          .from('product_variations')
-          .select('stock, reserved_stock, is_grade')
-          .eq('id', item.variation_id)
-          .single();
+        // 🔍 DETECÇÃO DE GRADE: Mais robusta para evitar falso-negativos
+        const productNameNormalized = (product.name || item.product_name || "").toUpperCase();
+        const isGradeDetected = item.is_grade === true || 
+                                productNameNormalized.includes('GRADE') || 
+                                productNameNormalized.includes('(GRADE');
 
-        if (vErr || !vData) throw new Error(`Variação não encontrada para ${product.name}`);
+        console.log(`🔍 Verificação do item ${item.product_name || product.name}: is_grade=${item.is_grade}, detectado=${isGradeDetected}`);
 
-        // Grades têm estoque nas variações-filho (tamanhos), não na variação-grade em si.
-        // Para grades, pular a checagem de estoque no registro pai; o lojista
-        // gerencia o estoque por tamanho individualmente.
-        if (!vData.is_grade) {
-          const avail = (vData.stock || 0) - (vData.reserved_stock || 0);
-          if (avail < item.quantity && !product.allow_negative_stock) {
-            throw new Error(`Estoque insuficiente para variação de ${product.name}. Disponível: ${avail}, Solicitado: ${item.quantity}`);
+        if (isGradeDetected) {
+          console.log(`ℹ️ Item identificado como GRADE. Ignorando lookup obrigatório em product_variations.`);
+        } else {
+          const { data: vData, error: vErr } = await supabase
+            .from('product_variations')
+            .select('stock, reserved_stock, is_grade')
+            .eq('id', item.variation_id)
+            .single();
+
+          if (vErr || !vData) {
+            // Se falhou o lookup, mas o produto aceita estoque negativo, podemos prosseguir 
+            if (product.allow_negative_stock) {
+              console.warn(`⚠️ Variação ${item.variation_id} não encontrada para ${product.name}, mas permitindo prosseguir (estoque negativo habilitado).`);
+            } else {
+              console.error(`❌ Variação não encontrada no banco: ${item.variation_id} para o produto ${product.name}`);
+              console.log(`DEBUG: Payload do item:`, JSON.stringify(item));
+              throw new Error(`Variação não encontrada para ${product.name}. Por favor, remova o item e adicione novamente.`);
+            }
+          } else if (vData) {
+            // Se encontrou a variação no banco, mas ela é marcada como grade no banco, também tratamos
+            if (vData.is_grade) {
+              console.log(`ℹ️ Variação ${item.variation_id} marcada como GRADE no banco. Prosseguindo.`);
+            } else {
+              const avail = (vData.stock || 0) - (vData.reserved_stock || 0);
+              if (avail < item.quantity && !product.allow_negative_stock) {
+                throw new Error(`Estoque insuficiente para variação de ${product.name}. Disponível: ${avail}, Solicitado: ${item.quantity}`);
+              }
+            }
           }
         }
-        // is_grade === true: estoque verificado por tamanho no painel; permite prosseguir
+
       } else {
         // Sem variação: verificar se o produto tem variações de grade cadastradas.
-        // Se tiver, o estoque real está nelas; usar allow_negative_stock como guarda.
         const { data: gradeVars } = await supabase
           .from('product_variations')
           .select('id')
@@ -114,7 +137,6 @@ serve(async (req) => {
             throw new Error(`Estoque insuficiente para ${product.name}. Disponível: ${avail}, Solicitado: ${item.quantity}`);
           }
         }
-        // hasGradeVariations === true: estoque gerenciado por grade; permite prosseguir
       }
     }
 
@@ -133,7 +155,7 @@ serve(async (req) => {
       notes: orderData.notes || null,
       order_type: orderData.order_type || 'retail',
       status: 'pending',
-      stock_reserved: false, // Inicialmente false
+      stock_reserved: false, 
       reservation_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
     };
 
@@ -150,16 +172,17 @@ serve(async (req) => {
     }
 
     // 3. Reservar estoque
-    let reservationSuccess = true;
     for (const item of orderData.items) {
       const productId = item.id || item.product_id;
       
-      if (item.variation_id) {
-        // Reservar na variação
+      // Só reservar na variação se não for grade e o ID existir
+      if (item.variation_id && !item.is_grade) {
         const { data: vFetch } = await supabase.from('product_variations').select('reserved_stock').eq('id', item.variation_id).single();
-        await supabase.from('product_variations').update({ 
-          reserved_stock: (vFetch?.reserved_stock || 0) + item.quantity 
-        }).eq('id', item.variation_id);
+        if (vFetch) {
+          await supabase.from('product_variations').update({ 
+            reserved_stock: (vFetch.reserved_stock || 0) + item.quantity 
+          }).eq('id', item.variation_id);
+        }
       }
       
       // Sempre reservar no produto pai (estatística/controle geral)

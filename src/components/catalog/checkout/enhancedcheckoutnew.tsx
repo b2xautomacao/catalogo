@@ -165,7 +165,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           unit_price: item.price,
           total_price: item.price * item.quantity,
           variation_id: item.variation?.id || null,
-          is_grade: (item.variation as any)?.is_grade || false,
+          is_grade: !!((item.variation as any)?.is_grade || item.gradeInfo),
           variation_details: item.variation
             ? {
               color: item.variation.color,
@@ -225,40 +225,76 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   };
 
   const generateWhatsAppMessage = (data: CheckoutForm, order?: any) => {
+    // 💡 IMPORTANTE: Se o carrinho foi limpo, usamos os dados do pedido vindo da API
+    // para garantir que os valores não apareçam como zero na mensagem.
+    const rawOrderData = order?.data || order;
+    const displayItems = rawOrderData?.items || items;
+    const displayTotal = rawOrderData?.total_amount ?? totalAmount;
+    const displayShipping = rawOrderData?.shipping_cost ?? shippingCost;
+
     let message = `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
     message += `👤 *Cliente:* ${data.customerName}\n`;
-    message += `📧 *Email:* ${data.customerEmail}\n`;
+    if (data.customerEmail) message += `📧 *Email:* ${data.customerEmail}\n`;
     message += `📱 *Telefone:* ${data.customerPhone}\n\n`;
 
-    // Informações do pedido
-    if (order?.data?.id) {
-      message += `📋 *Pedido:* #${order.data.id.slice(-8)}\n\n`;
+    if (rawOrderData?.id) {
+      message += `📋 *Pedido:* #${rawOrderData.id.slice(-8)}\n\n`;
     }
 
     message += `📦 *ITENS DO PEDIDO:*\n`;
-    items.forEach((item, index) => {
-      message += `${index + 1}. ${item.product.name}\n`;
+
+    // Mapear itens para um formato comum
+    const mappedItems = displayItems.map((item: any) => {
+      // Se for item vindo do pedido (banco), mapear propriedades
+      if (item.product_name) {
+        return {
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.unit_price || item.price || 0,
+          isOrderBump: !!item.is_order_bump,
+          variationDetails: item.variation_details,
+          // Preservar detalhes de variação formatados se vierem do banco
+          variationString: item.variation_details 
+            ? [item.variation_details.color, item.variation_details.size].filter(Boolean).join(" - ")
+            : ""
+        };
+      }
+      // Se for item vindo do carrinho (hook)
+      return {
+        name: item.product?.name,
+        quantity: item.quantity,
+        price: item.price,
+        isOrderBump: !!(item.product as any)?.isOrderBump,
+        variationString: item.variation 
+          ? [item.variation.color, item.variation.size].filter(Boolean).join(" - ")
+          : "",
+        gradeInfo: item.gradeInfo
+      };
+    });
+
+    // Listar todos os itens
+    mappedItems.forEach((item: any, index: number) => {
+      message += `${index + 1}. ${item.name}${item.isOrderBump ? ' 🔥' : ''}\n`;
       message += `   Qtd: ${item.quantity}x\n`;
       message += `   Preço: ${formatCurrency(item.price)}\n`;
+      
       if (item.gradeInfo) {
         message += `   Grade: ${item.gradeInfo.name} (Tamanhos: ${item.gradeInfo.sizes?.join(", ")})\n`;
-      } else if (item.variation) {
-        message += `   Variação: ${[item.variation.color, item.variation.size].filter(Boolean).join(" - ")}\n`;
+      } else if (item.variationString) {
+        message += `   Variação: ${item.variationString}\n`;
       }
-      message += `   Subtotal: ${formatCurrency(
-        item.price * item.quantity
-      )}\n\n`;
+      
+      message += `   Subtotal: ${formatCurrency(item.price * item.quantity)}\n\n`;
     });
 
     message += `💰 *RESUMO FINANCEIRO:*\n`;
-    message += `Subtotal produtos: ${formatCurrency(totalAmount)}\n`;
-    if (shippingCost > 0) {
-      message += `Frete: ${formatCurrency(shippingCost)}\n`;
+    message += `Subtotal produtos: ${formatCurrency(displayTotal - displayShipping)}\n`;
+    if (displayShipping > 0) {
+      message += `Frete: ${formatCurrency(displayShipping)}\n`;
     }
-    if (orderBumpTotal > 0) {
-      message += `Ofertas especiais: ${formatCurrency(orderBumpTotal)}\n`;
-    }
-    message += `*TOTAL FINAL: ${formatCurrency(finalTotal)}*\n\n`;
+    
+    // Total final
+    message += `*TOTAL FINAL: ${formatCurrency(displayTotal)}*\n\n`;
 
     message += `🚚 *Entrega:* ${data.shippingMethod}\n`;
     message += `💳 *Pagamento:* ${data.paymentMethod}\n`;
