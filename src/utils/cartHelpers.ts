@@ -156,17 +156,15 @@ export const createCartItem = (
     minQuantity = product.min_wholesale_qty;
   }
 
-  // Para produtos com grade, quantidade sempre é 1 (1 grade completa)
+  // Para produtos com grade, quantidade sempre é 1 (1 grade completa) — tem prioridade sobre tudo
   let finalQuantity = Math.max(minQuantity, Math.floor(quantity));
 
   if (variation && variation.is_grade) {
-    finalQuantity = 1; // Sempre 1 grade completa
+    finalQuantity = 1; // Sempre 1 grade completa — NÃO pode ser sobrescrito pelo override de varejo
     console.log("📦 CART HELPER - Produto com grade: quantidade fixada em 1");
-  }
-
-  // 🔴 CORREÇÃO: Se catalogType é "retail", garantir que quantidade pode ser 1
-  if (catalogType === "retail") {
-    finalQuantity = Math.max(1, Math.floor(quantity)); // Mínimo 1, mas pode ser qualquer quantidade
+  } else if (catalogType === "retail") {
+    // Só aplica o override de varejo para produtos SEM grade
+    finalQuantity = Math.max(1, Math.floor(quantity));
     console.log("🛒 CART HELPER - MODO VAREJO: Permitindo compra unitária (qtd:", finalQuantity, ")");
   }
 

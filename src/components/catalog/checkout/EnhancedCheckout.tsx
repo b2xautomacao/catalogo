@@ -216,6 +216,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           unit_price: item.price,
           total_price: item.price * item.quantity,
           variation_id: item.variation?.id || null,
+          is_grade: (item.variation as any)?.is_grade || false,
           variation_details: item.variation
             ? {
               color: item.variation.color,
