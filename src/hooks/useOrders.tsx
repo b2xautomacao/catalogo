@@ -175,8 +175,6 @@ export const useOrders = () => {
 
       console.log('🏪 useOrders: Store ID determinado:', storeId);
 
-      console.log('🏪 useOrders: Store ID determinado:', storeId);
-
       const orderPayload = {
         customer_name: orderData.customer_name,
         customer_email: orderData.customer_email || null,

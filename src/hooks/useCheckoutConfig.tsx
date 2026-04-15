@@ -210,10 +210,32 @@ export const useCheckoutConfig = (explicitStoreId?: string) => {
         }
       }
 
+      // Adicionar fallback virtual se não houver métodos
+      const finalPaymentMethods = (paymentMethods || []).length > 0 
+        ? paymentMethods 
+        : [{
+            id: 'virtual-cash',
+            name: 'A Combinar',
+            type: 'cash',
+            is_active: true,
+            config: { instructions: 'Pagamento a combinar na entrega ou via WhatsApp' }
+          }];
+
+      const finalShippingMethods = (shippingMethods || []).length > 0
+        ? shippingMethods
+        : [{
+            id: 'virtual-pickup',
+            name: 'A Combinar',
+            type: 'custom',
+            is_active: true,
+            price: 0,
+            config: { custom_instructions: 'Detalhes da entrega serão definidos via WhatsApp' }
+          }];
+
       // Atualizar configuração
       setConfig({
-        payment_methods: paymentMethods || [],
-        shipping_methods: shippingMethods || [],
+        payment_methods: finalPaymentMethods,
+        shipping_methods: finalShippingMethods,
         order_bump_products: orderBumpProducts,
         order_bump_configs: orderBumpConfigs || [],
       });
@@ -236,111 +258,7 @@ export const useCheckoutConfig = (explicitStoreId?: string) => {
     fetchCheckoutConfig();
   }, [fetchCheckoutConfig]);
 
-  // Função para adicionar método de pagamento padrão "A Combinar"
-  const addDefaultPaymentMethod = useCallback(async () => {
-    if (!storeId) return;
 
-    try {
-      const { error } = await (supabase as any)
-        .from("store_payment_methods")
-        .insert({
-          store_id: storeId,
-          name: "A Combinar",
-          type: "cash",
-          is_active: true,
-          config: {
-            instructions: "Forma de pagamento será definida via WhatsApp",
-          },
-        });
-
-      if (error) {
-        console.error("Erro ao adicionar método padrão:", error);
-      } else {
-        fetchCheckoutConfig();
-      }
-    } catch (err) {
-      console.error("Erro ao adicionar método padrão:", err);
-    }
-  }, [storeId, fetchCheckoutConfig]);
-
-  // Função para adicionar método de entrega padrão "A Combinar"
-  const addDefaultShippingMethod = useCallback(async () => {
-    if (!storeId) return;
-
-    try {
-      const { error } = await (supabase as any)
-        .from("store_shipping_methods")
-        .insert({
-          store_id: storeId,
-          name: "A Combinar",
-          type: "custom",
-          is_active: true,
-          price: 0,
-          config: {
-            custom_instructions:
-              "Detalhes da entrega serão definidos via WhatsApp",
-          },
-        });
-
-      if (error) {
-        console.error("Erro ao adicionar método padrão:", error);
-      } else {
-        fetchCheckoutConfig();
-      }
-    } catch (err) {
-      console.error("Erro ao adicionar método padrão:", err);
-    }
-  }, [storeId, fetchCheckoutConfig]);
-
-  // Verificar se precisa adicionar métodos padrão
-  useEffect(() => {
-    if (!loading && storeId && storeId !== 'null' && config.payment_methods.length === 0) {
-      // Verificar no banco se já existe um método "A Combinar"
-      const checkAndAddDefaultPayment = async () => {
-        if (!storeId || storeId === 'null') return;
-        
-        const { data: existingMethods } = await (supabase as any)
-          .from("store_payment_methods")
-          .select("id")
-          .eq("store_id", storeId)
-          .eq("name", "A Combinar")
-          .eq("is_active", true);
-
-        if (!existingMethods || existingMethods.length === 0) {
-          addDefaultPaymentMethod();
-        }
-      };
-
-      checkAndAddDefaultPayment();
-    }
-
-    if (!loading && storeId && storeId !== 'null' && config.shipping_methods.length === 0) {
-      // Verificar no banco se já existe um método "A Combinar"
-      const checkAndAddDefaultShipping = async () => {
-        if (!storeId || storeId === 'null') return;
-        
-        const { data: existingMethods } = await (supabase as any)
-          .from("store_shipping_methods")
-          .select("id")
-          .eq("store_id", storeId)
-          .eq("name", "A Combinar")
-          .eq("is_active", true);
-
-        if (!existingMethods || existingMethods.length === 0) {
-          addDefaultShippingMethod();
-        }
-      };
-
-      checkAndAddDefaultShipping();
-    }
-  }, [
-    loading,
-    config.payment_methods.length,
-    config.shipping_methods.length,
-    storeId,
-    addDefaultPaymentMethod,
-    addDefaultShippingMethod,
-  ]);
 
   return {
     config,
