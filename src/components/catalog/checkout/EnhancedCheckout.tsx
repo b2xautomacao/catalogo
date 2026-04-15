@@ -274,8 +274,9 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     message += `📱 *Telefone:* ${data.customerPhone}\n\n`;
 
     // Informações do pedido
-    if (order?.id) {
-      message += `📋 *Pedido:* #${order.id.slice(-8)}\n\n`;
+    if (order?.id || order?.data?.id) {
+      const orderId = order?.id || order?.data?.id;
+      message += `📋 *Pedido:* #${orderId.slice(-8)}\n\n`;
     }
 
     message += `📦 *ITENS DO PEDIDO:*\n`;
@@ -470,7 +471,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
         ))}
       </div>
  
-      {isSuccess ? (
+      {isSuccess && (
         <Card className="max-w-2xl mx-auto border-2 border-green-500 shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300">
           <div className="bg-green-500 p-6 text-white text-center">
             <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -520,7 +521,9 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
             </p>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {!isSuccess && (
         <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -1074,6 +1077,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
             <TrustBadges enabled={true} />
           </div>
         </form>
+      </Form>
       )}
     </div>
   );
