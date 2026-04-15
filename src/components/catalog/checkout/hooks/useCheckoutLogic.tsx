@@ -84,8 +84,8 @@ export const useCheckoutLogic = () => {
         throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
       }
 
-      console.log('✅ createOrderViaEdgeFunction: Pedido criado com sucesso via Edge Function:', functionResult.data);
-      return functionResult.data;
+      console.log('✅ createOrderViaEdgeFunction: Pedido criado com sucesso via Edge Function:', functionResult.order);
+      return functionResult.order;
     } catch (error) {
       console.error('❌ createOrderViaEdgeFunction: Erro geral', error);
       throw error;

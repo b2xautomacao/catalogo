@@ -219,7 +219,7 @@ export const useOrders = () => {
         throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
       }
 
-      const createdOrder = functionResult.data;
+      const createdOrder = functionResult.order;
       console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', createdOrder?.id);
 
       if (profile?.store_id && profile.store_id === storeId) {
