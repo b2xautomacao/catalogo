@@ -89,8 +89,11 @@ export interface CheckoutConfig {
   };
 }
 
-export const useCheckoutConfig = () => {
-  const { storeId } = useCatalogSettings();
+import { useCurrentStoreId } from "@/contexts/CurrentStoreIdContext";
+
+export const useCheckoutConfig = (explicitStoreId?: string) => {
+  const contextStoreId = useCurrentStoreId();
+  const storeId = explicitStoreId || contextStoreId;
   const { products } = useProducts();
   const { toast } = useToast();
   const [config, setConfig] = useState<CheckoutConfig>({
@@ -291,9 +294,11 @@ export const useCheckoutConfig = () => {
 
   // Verificar se precisa adicionar métodos padrão
   useEffect(() => {
-    if (!loading && config.payment_methods.length === 0) {
+    if (!loading && storeId && storeId !== 'null' && config.payment_methods.length === 0) {
       // Verificar no banco se já existe um método "A Combinar"
       const checkAndAddDefaultPayment = async () => {
+        if (!storeId || storeId === 'null') return;
+        
         const { data: existingMethods } = await (supabase as any)
           .from("store_payment_methods")
           .select("id")
@@ -309,9 +314,11 @@ export const useCheckoutConfig = () => {
       checkAndAddDefaultPayment();
     }
 
-    if (!loading && config.shipping_methods.length === 0) {
+    if (!loading && storeId && storeId !== 'null' && config.shipping_methods.length === 0) {
       // Verificar no banco se já existe um método "A Combinar"
       const checkAndAddDefaultShipping = async () => {
+        if (!storeId || storeId === 'null') return;
+        
         const { data: existingMethods } = await (supabase as any)
           .from("store_shipping_methods")
           .select("id")

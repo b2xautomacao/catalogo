@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
 import { useCheckoutConfig } from "@/hooks/useCheckoutConfig";
 import { useToast } from "@/hooks/use-toast";
+import { useCatalogSettings } from "@/hooks/useCatalogSettings";
 import { useOrders, CreateOrderData } from "@/hooks/useOrders";
 import OrderBump from "./OrderBump";
 import CartItemThumbnail from "./CartItemThumbnail";
@@ -66,11 +67,12 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   storePhone,
   onClose,
 }) => {
-  const { items, totalAmount, addItem, clearCart } = useCart();
-  const { config, loading: configLoading } = useCheckoutConfig();
-  const { toast } = useToast();
-  const { createOrder, isCreatingOrder } = useOrders();
-  const { isMobile, openWhatsApp } = useMobileWhatsApp();
+  const { items, totalAmount, addItem, clearCart, updateQuantity } = useCart();
+  const { config, loading: configLoading } = useCheckoutConfig(storeId);
+  const { settings: storeSettings, loading: settingsLoading } = useCatalogSettings(storeId);
+   const { isMobile, openWhatsApp } = useMobileWhatsApp();
+   const { toast } = useToast();
+   const { createOrder, isCreatingOrder } = useOrders();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingCost, setShippingCost] = useState(0);

@@ -73,7 +73,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   onClose,
 }) => {
   const { items, totalAmount, addItem, clearCart } = useCart();
-  const { config, loading: configLoading } = useCheckoutConfig();
+  const { config, loading: configLoading } = useCheckoutConfig(storeId);
   const { settings: storeSettings, loading: settingsLoading } = useCatalogSettings(storeId);
   const { toast } = useToast();
   const { createOrder, isCreatingOrder } = useOrders();

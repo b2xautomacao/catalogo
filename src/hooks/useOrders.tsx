@@ -165,34 +165,15 @@ export const useOrders = () => {
       if (!storeId) {
         console.log('⚠️ useOrders: Store ID não fornecido, tentando obter do profile...');
         storeId = profile?.store_id;
-        
-        if (!storeId) {
-          console.warn('⚠️ useOrders: Store ID não encontrado no profile');
-          
-          try {
-            await waitForProfile(5);
-            storeId = profile?.store_id;
-          } catch {
-            console.log('🔍 useOrders: Buscando store ativa como fallback...');
-            const { data: activeStores } = await supabase
-              .from('stores')
-              .select('id')
-              .eq('is_active', true)
-              .limit(1);
-              
-            if (activeStores?.length) {
-              storeId = activeStores[0].id;
-              console.log('✅ useOrders: Usando store ativa como fallback:', storeId);
-            } else {
-              throw new Error('Nenhuma loja disponível para criar o pedido');
-            }
-          }
-        }
       }
 
+      // Se ainda não tiver storeId, e não houver profile (caso de catálogo público),
+      // precisamos garantir que os dados do pedido o contenham
       if (!storeId) {
-        throw new Error('Store ID não encontrado. Verifique se existe uma loja ativa.');
+        throw new Error('Identificador da loja não encontrado. Por favor, recarregue a página.');
       }
+
+      console.log('🏪 useOrders: Store ID determinado:', storeId);
 
       console.log('🏪 useOrders: Store ID determinado:', storeId);
 
@@ -232,37 +213,8 @@ export const useOrders = () => {
         throw new Error(functionResult?.error || 'Erro desconhecido ao criar pedido');
       }
 
-      console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', functionResult.order);
-
-      // Reservar estoque automaticamente para todos os itens, agora passando storeId
       const createdOrder = functionResult.order;
-      console.log('🔒 useOrders: Iniciando reserva automática de estoque...');
-      
-      for (const item of orderData.items) {
-        const reserveResult = await reserveStock({
-          productId: item.product_id,
-          quantity: item.quantity,
-          orderId: createdOrder.id,
-          expiresInHours: 24, // Reserva expira em 24h
-          storeId: storeId // Passar storeId para ajudar na busca do produto
-        });
-
-        if (!reserveResult.success) {
-          console.warn(`⚠️ useOrders: Falha na reserva para produto ${item.product_id}:`, reserveResult.error);
-          // Continuamos o processo mesmo com falha na reserva
-        }
-      }
-
-      // Marcar pedido como tendo estoque reservado
-      await supabase
-        .from('orders')
-        .update({ 
-          stock_reserved: true,
-          reservation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
-        })
-        .eq('id', createdOrder.id);
-
-      console.log('✅ useOrders: Reserva de estoque concluída');
+      console.log('✅ useOrders: Pedido criado com sucesso via Edge Function:', createdOrder.id);
 
       if (profile?.store_id && profile.store_id === storeId) {
         console.log('🔄 useOrders: Recarregando lista de pedidos...');
