@@ -213,7 +213,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
 
     onAddToCart(variation, selectedGradeMode, customSelection || undefined);
     setLastAddedColor(color);
-    
+
     // Limpar seleção de cor específica, mas manter modo de grade
     setSelectedColors(prev => {
       const newSet = new Set(prev);
@@ -252,7 +252,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
         >
           ← Voltar às Opções
         </Button>
-        
+
         <CustomGradeBuilder
           variation={firstVariation}
           allVariations={variations}
@@ -268,13 +268,13 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
   return (
     <div className="space-y-6">
       {/* Preço Unitário */}
-      {showPrices && (
+      {/* {showPrices && (
         <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
           <p className="text-sm text-muted-foreground mb-1">Preço Unitário</p>
           <p className="text-2xl font-bold text-primary">{formatCurrency(basePrice)}</p>
           <p className="text-xs text-muted-foreground mt-1">por par</p>
         </div>
-      )}
+      )} */}
 
       {/* Seleção de Tipo de Grade - NÍVEL PAI */}
       <div className="space-y-3">
@@ -282,15 +282,14 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
           <Package className="h-5 w-5 text-primary" />
           Escolha o Tipo de Grade
         </h4>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Grade Completa */}
           <Card
-            className={`cursor-pointer transition-all hover:shadow-lg ${
-              selectedGradeMode === 'full'
+            className={`cursor-pointer transition-all hover:shadow-lg ${selectedGradeMode === 'full'
                 ? 'border-primary border-2 bg-primary/5 shadow-md'
                 : 'border-gray-200 hover:border-primary/50'
-            }`}
+              }`}
             onClick={() => handleGradeModeSelect('full')}
           >
             <CardContent className="p-4">
@@ -320,11 +319,10 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
           {/* Meia Grade */}
           {config?.allow_half_grade && prices.half && (
             <Card
-              className={`cursor-pointer transition-all hover:shadow-lg ${
-                selectedGradeMode === 'half'
+              className={`cursor-pointer transition-all hover:shadow-lg ${selectedGradeMode === 'half'
                   ? 'border-orange-500 border-2 bg-orange-50 shadow-md'
                   : 'border-gray-200 hover:border-orange-300'
-              }`}
+                }`}
               onClick={() => handleGradeModeSelect('half')}
             >
               <CardContent className="p-4">
@@ -360,11 +358,10 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
           {/* Grade Flexível/Custom */}
           {config?.allow_custom_mix && (
             <Card
-              className={`cursor-pointer transition-all hover:shadow-lg ${
-                selectedGradeMode === 'custom'
+              className={`cursor-pointer transition-all hover:shadow-lg ${selectedGradeMode === 'custom'
                   ? 'border-purple-500 border-2 bg-purple-50 shadow-md'
                   : 'border-gray-200 hover:border-purple-300'
-              }`}
+                }`}
               onClick={() => handleGradeModeSelect('custom')}
             >
               <CardContent className="p-4">
@@ -421,13 +418,12 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
               return (
                 <Card
                   key={color}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    isSelected
+                  className={`cursor-pointer transition-all hover:shadow-md ${isSelected
                       ? 'border-primary border-2 bg-primary/5 shadow-md'
                       : isAdded
-                      ? 'border-green-300 border-2 bg-green-50'
-                      : 'border-gray-200 hover:border-primary/50'
-                  } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? 'border-green-300 border-2 bg-green-50'
+                        : 'border-gray-200 hover:border-primary/50'
+                    } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={() => isAvailable && !isAdded && handleColorToggle(color)}
                 >
                   <CardContent className="p-4">
@@ -436,7 +432,7 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
                         {isSelected && (
                           <CheckCircle className="w-5 h-5 text-primary" />
                         )}
-                        <div 
+                        <div
                           className="w-5 h-5 rounded-full border border-gray-300 shadow-sm"
                           style={{ backgroundColor: resolveColorHex(color, variation?.hex_color) }}
                         />
