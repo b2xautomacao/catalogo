@@ -103,7 +103,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div 
+      <div
         className="relative aspect-square overflow-hidden cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
@@ -134,9 +134,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
 
         {/* Botões de Ação - Top Right */}
         <div
-          className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${
-            isHovered ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${isHovered ? "opacity-100" : "opacity-0"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -149,9 +148,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
             }}
           >
             <Heart
-              className={`h-4 w-4 ${
-                isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
-              }`}
+              className={`h-4 w-4 ${isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
+                }`}
             />
           </Button>
 
@@ -169,7 +167,7 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
         </div>
 
         {/* Badge de Variações - Bottom Center */}
-        {hasVariations &&
+        {/* {hasVariations &&
           product.variations &&
           product.variations.length > 1 && (
             <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 pointer-events-none">
@@ -188,20 +186,19 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
                 )}
               </Badge>
             </div>
-          )}
+          )} */}
 
         {/* Overlay de hover */}
         <div
-          className={`absolute inset-0 bg-black/20 transition-opacity duration-200 pointer-events-none ${
-            isHovered ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/20 transition-opacity duration-200 pointer-events-none ${isHovered ? "opacity-100" : "opacity-0"
+            }`}
         />
       </div>
 
       <CardContent className="p-4">
         {/* Nome */}
         <div className="space-y-1 mb-3">
-          <h3 
+          <h3
             className="font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
@@ -242,13 +239,12 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Estoque:</span>
               <span
-                className={`font-medium ${
-                  totalStock > 10
+                className={`font-medium ${totalStock > 10
                     ? "text-green-600"
                     : totalStock > 0
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                  }`}
               >
                 {totalStock} unidades
               </span>
@@ -266,8 +262,8 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({
           {hasVariations
             ? "Ver Opções"
             : isOutOfStock
-            ? "Esgotado"
-            : "Adicionar"}
+              ? "Esgotado"
+              : "Adicionar"}
         </Button>
       </CardContent>
     </Card>

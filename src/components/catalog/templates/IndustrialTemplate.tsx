@@ -85,7 +85,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div 
+      <div
         className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
@@ -116,11 +116,10 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
 
         {/* Botões de Ação - Top Right */}
         <div
-          className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${
-            isHovered
+          className={`absolute top-3 right-3 flex gap-1 transition-all duration-200 ${isHovered
               ? "opacity-100 transform translate-x-0"
               : "opacity-0 transform translate-x-2"
-          }`}
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -133,9 +132,8 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
             }}
           >
             <Heart
-              className={`h-4 w-4 ${
-                isInWishlist ? "fill-red-500 text-red-500" : "text-gray-700"
-              }`}
+              className={`h-4 w-4 ${isInWishlist ? "fill-red-500 text-red-500" : "text-gray-700"
+                }`}
             />
           </Button>
 
@@ -153,7 +151,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
         </div>
 
         {/* Badge de Variações - Bottom Center */}
-        {hasVariations &&
+        {/* {hasVariations &&
           product.variations &&
           product.variations.length > 1 && (
             <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 pointer-events-none">
@@ -169,7 +167,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
                   : `+${product.variations.length} OPÇÕES`}
               </Badge>
             </div>
-          )}
+          )} */}
 
         {/* Corner Lines - Design Industrial */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-gray-400 pointer-events-none" />
@@ -181,7 +179,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
       <CardContent className="p-4 bg-gray-50 border-t-2 border-gray-200">
         {/* Nome */}
         <div className="space-y-1 mb-3">
-          <h3 
+          <h3
             className="font-bold text-gray-900 line-clamp-2 uppercase tracking-wide text-sm group-hover:text-slate-600 transition-colors cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
@@ -227,22 +225,20 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
               </span>
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3 h-1 ${
-                    totalStock > 10
+                  className={`w-3 h-1 ${totalStock > 10
                       ? "bg-green-500"
                       : totalStock > 0
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    }`}
                 />
                 <span
-                  className={`font-black font-mono ${
-                    totalStock > 10
+                  className={`font-black font-mono ${totalStock > 10
                       ? "text-green-600"
                       : totalStock > 0
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
                 >
                   {totalStock}
                 </span>
@@ -261,8 +257,8 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
           {hasVariations
             ? "VER OPÇÕES"
             : isOutOfStock
-            ? "ESGOTADO"
-            : "ADICIONAR"}
+              ? "ESGOTADO"
+              : "ADICIONAR"}
         </Button>
       </CardContent>
     </Card>

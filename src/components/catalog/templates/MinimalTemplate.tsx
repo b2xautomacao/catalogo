@@ -107,7 +107,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div 
+      <div
         className="relative aspect-square overflow-hidden cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
@@ -138,9 +138,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
 
         {/* Botões de Ação - Top Right */}
         <div
-          className={`absolute top-2 right-2 flex gap-1 transition-opacity duration-200 ${
-            isHovered ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute top-2 right-2 flex gap-1 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -153,9 +152,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
             }}
           >
             <Heart
-              className={`h-4 w-4 ${
-                isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
-              }`}
+              className={`h-4 w-4 ${isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
+                }`}
             />
           </Button>
 
@@ -173,7 +171,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
         </div>
 
         {/* Badge de Variações - Bottom Center */}
-        {hasVariations &&
+        {/* {hasVariations &&
           product.variations &&
           product.variations.length > 1 && (
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 pointer-events-none">
@@ -192,13 +190,13 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
                 )}
               </Badge>
             </div>
-          )}
+          )} */}
       </div>
 
       <CardContent className="p-4 space-y-3">
         {/* Nome */}
         <div>
-          <h3 
+          <h3
             className="font-medium text-gray-900 line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
@@ -235,13 +233,12 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           <div className="text-sm text-gray-600">
             Estoque:{" "}
             <span
-              className={`font-medium ${
-                totalStock > 10
+              className={`font-medium ${totalStock > 10
                   ? "text-green-600"
                   : totalStock > 0
-                  ? "text-yellow-600"
-                  : "text-red-600"
-              }`}
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }`}
             >
               {totalStock}
             </span>
@@ -260,8 +257,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
               buttonText: hasVariations
                 ? "Ver Opções"
                 : isOutOfStock
-                ? "Esgotado"
-                : "Adicionar",
+                  ? "Esgotado"
+                  : "Adicionar",
             });
             handleAddToCart();
           }}
@@ -271,8 +268,8 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           {hasVariations
             ? "Ver Opções"
             : isOutOfStock
-            ? "Esgotado"
-            : "Adicionar"}
+              ? "Esgotado"
+              : "Adicionar"}
         </Button>
       </CardContent>
     </Card>
