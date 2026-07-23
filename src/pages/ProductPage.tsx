@@ -50,6 +50,7 @@ import {
   Star,
   Loader2,
   Home,
+  Check,
 } from "lucide-react";
 
 interface ProductPageProps {
@@ -345,7 +346,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
       // Lógica simples: Mostrar toast e abrir carrinho
       toast({
-        title: "✅ Adicionado ao carrinho!",
+        title: "Adicionado ao carrinho",
         description: `${quantity}x ${product.name}${selectedVariation ? ` - ${selectedVariation.color || selectedVariation.grade_name}` : ''}`,
       });
 
@@ -356,7 +357,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
     } catch (error) {
       console.error("❌ Erro ao adicionar ao carrinho:", error);
       toast({
-        title: "❌ Erro ao adicionar",
+        title: "Erro ao adicionar",
         description: "Não foi possível adicionar o item ao carrinho",
         variant: "destructive",
       });
@@ -495,14 +496,21 @@ const ProductPage: React.FC<ProductPageProps> = ({
             {/* Badges */}
             <div className="flex flex-wrap gap-2 mt-4">
               {product.is_featured && (
-                <Badge className="bg-yellow-500">⭐ Destaque</Badge>
+                <Badge variant="secondary">
+                  <Star data-icon="inline-start" />
+                  Destaque
+                </Badge>
               )}
               {hasGradeVariations && (
-                <Badge variant="secondary">📦 Grade Disponível</Badge>
+                <Badge variant="secondary">
+                  <Package data-icon="inline-start" />
+                  Grade disponível
+                </Badge>
               )}
               {product.stock && product.stock > 0 && (
                 <Badge variant="outline" className="text-green-600">
-                  ✓ Em Estoque
+                  <Check data-icon="inline-start" />
+                  Em estoque
                 </Badge>
               )}
             </div>
@@ -568,7 +576,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                       }
                       trackAddToCart({ id: product.id, name: product.name, price: cartItem.price, quantity: 1 });
                       toast({
-                        title: "✅ Adicionado ao carrinho!",
+                        title: "Adicionado ao carrinho",
                         description: `${color} (${variation.grade_name || "Grade"}${gradeMode === 'half' ? ' - Meia Grade' : gradeMode === 'custom' ? ' - Personalizada' : ''}) adicionado.`,
                       });
                       toggleCart();
@@ -725,7 +733,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     disabled={false}
                     isLoading={false}
                     price={priceInfo.displayPrice}
-                    buttonText="🛒 COMPRAR AGORA"
+                    buttonText="Comprar agora"
                     showSecurityBadge={true}
                     isSticky={false}
                   />

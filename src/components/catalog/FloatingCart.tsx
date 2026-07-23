@@ -415,10 +415,11 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
       <div className="fixed bottom-20 right-6 z-50">
         <Button
           size="lg"
-          className="floating-cart-button relative h-16 w-16 rounded-full shadow-2xl flex items-center justify-center bg-blue-600 hover:bg-blue-700"
+          className="floating-cart-button relative flex size-14 items-center justify-center rounded-full bg-primary shadow-xl hover:bg-primary/90 sm:size-16"
           onClick={toggleCart}
+          aria-label={`Abrir carrinho com ${totalItems} ${totalItems === 1 ? "item" : "itens"}`}
         >
-          <p className=" text-white text-2xl">🛒</p>
+          <ShoppingCart className="text-primary-foreground" />
           {totalItems > 0 && (
             <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center p-0 min-w-6">
               {totalItems > 99 ? "99+" : totalItems}
@@ -443,7 +444,7 @@ const FloatingCart: React.FC<{ onCheckout?: () => void; storeId?: string }> = ({
             <div className="flex flex-col h-full">
               <div className="cart-header-gradient px-6 py-4">
                 <h2 className="text-xl font-bold text-white text-center">
-                  🛒 Carrinho de Compras ({totalItems}{" "}
+                  Carrinho de compras ({totalItems}{" "}
                   {totalItems === 1 ? "item" : "itens"})
                 </h2>
               </div>

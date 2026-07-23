@@ -230,7 +230,7 @@ const AutoSizeChart: React.FC<AutoSizeChartProps> = ({
 
       {/* Dicas de medição */}
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-900 font-semibold mb-2">💡 Como medir corretamente:</p>
+        <p className="text-sm text-blue-900 font-semibold mb-2">Como medir corretamente:</p>
         <ul className="text-xs text-blue-800 space-y-1">
           {isShoe ? (
             <>
@@ -263,10 +263,10 @@ const AutoSizeChart: React.FC<AutoSizeChartProps> = ({
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-              {gender === 'masculino' ? '👔 Masculino' : 
-               gender === 'feminino' ? '👗 Feminino' : 
-               gender === 'infantil' ? '👶 Infantil' : 
-               '👕 Unissex'}
+              {gender === 'masculino' ? 'Masculino' :
+               gender === 'feminino' ? 'Feminino' :
+               gender === 'infantil' ? 'Infantil' :
+               'Unissex'}
             </Badge>
             {isCollapsible && (
               isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />

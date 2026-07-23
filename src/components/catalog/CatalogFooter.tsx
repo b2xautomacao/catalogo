@@ -253,8 +253,9 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({
     <>
       <style>{`
         .catalog-footer {
-          background: var(--template-text, #1E293B);
-          color: white;
+          background: var(--template-surface, #FFFFFF);
+          color: var(--template-text, #1E293B);
+          border-top: 1px solid var(--template-border, #E2E8F0);
         }
         
         .footer-logo-gradient {
@@ -262,7 +263,7 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({
         }
         
         .footer-link {
-          color: rgba(255, 255, 255, 0.7);
+          color: color-mix(in srgb, var(--template-text, #1E293B) 72%, transparent);
           transition: color 0.2s ease;
         }
         
@@ -271,8 +272,8 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({
         }
         
         .footer-social-button {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: color-mix(in srgb, var(--template-primary, #0057FF) 7%, white);
+          border: 1px solid var(--template-border, #E2E8F0);
           transition: all 0.2s ease;
         }
         
@@ -282,27 +283,39 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({
         }
         
         .footer-separator {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--template-border, #E2E8F0);
         }
         
         .footer-bottom {
-          background: rgba(0, 0, 0, 0.2);
+          background: color-mix(in srgb, var(--template-text, #1E293B) 3%, white);
         }
         
         .footer-payment-method {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: white;
+          border: 1px solid var(--template-border, #E2E8F0);
         }
         
         .footer-shipping-option {
-          background: rgba(255, 255, 255, 0.1);
+          background: color-mix(in srgb, var(--template-primary, #0057FF) 7%, white);
+        }
+
+        .catalog-footer .text-white,
+        .catalog-footer .text-gray-300,
+        .catalog-footer .text-gray-400,
+        .catalog-footer .text-gray-500 {
+          color: var(--template-text, #1E293B) !important;
+        }
+
+        .catalog-footer .bg-gray-800 {
+          background: color-mix(in srgb, var(--template-text, #1E293B) 3%, white) !important;
+          border: 1px solid var(--template-border, #E2E8F0);
         }
       `}</style>
 
-      <footer className="catalog-footer text-white">
+      <footer className="catalog-footer">
         {/* Main Footer */}
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="container mx-auto px-4 py-9">
+          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-4">
             {/* Sobre a Loja */}
             <div>
               <div className="flex items-center gap-3 mb-4">

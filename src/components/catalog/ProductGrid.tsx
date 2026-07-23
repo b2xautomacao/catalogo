@@ -5,6 +5,7 @@ import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
 import { useMobileLayout } from '@/hooks/useMobileLayout';
 import TemplateSelector from './TemplateSelector';
+import { PackageOpen } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
@@ -58,7 +59,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   if (!loading && products.length === 0 && hasFetched) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-gray-400 text-6xl mb-4">📦</div>
+        <PackageOpen className="mb-4 size-12 text-muted-foreground" />
         <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhum produto encontrado</h3>
         <p className="text-gray-500 text-center max-w-md">
           Não encontramos produtos que correspondam aos seus filtros. Tente ajustar os critérios de busca.

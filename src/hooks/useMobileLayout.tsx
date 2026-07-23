@@ -8,7 +8,7 @@ export const useMobileLayout = (storeIdentifier?: string) => {
   
   // Gerar classes CSS baseadas na configuração
   const getMobileGridClasses = () => {
-    const baseClasses = 'grid gap-4';
+    const baseClasses = 'grid min-w-0 gap-3 sm:gap-4';
     
     if (mobileColumns === 1) {
       return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;

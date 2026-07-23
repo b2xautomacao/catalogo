@@ -131,7 +131,7 @@ const SocialProofTestimonials: React.FC<SocialProofTestimonialsProps> = ({
               </div>
               {testimonial.helpful_count && testimonial.helpful_count > 0 && (
                 <div className="text-gray-600">
-                  👍 {testimonial.helpful_count} {testimonial.helpful_count === 1 ? 'pessoa achou' : 'pessoas acharam'} útil
+                  {testimonial.helpful_count} {testimonial.helpful_count === 1 ? 'pessoa achou' : 'pessoas acharam'} útil
                 </div>
               )}
             </div>

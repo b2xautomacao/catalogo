@@ -99,7 +99,7 @@ const ProductVideoSection: React.FC<ProductVideoSectionProps> = ({
             Vídeo do Produto
           </CardTitle>
           <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-            📹 Vídeo
+            Vídeo
           </Badge>
         </div>
       </CardHeader>

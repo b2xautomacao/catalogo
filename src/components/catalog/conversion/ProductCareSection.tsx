@@ -157,7 +157,7 @@ const ProductCareSection: React.FC<ProductCareSectionProps> = ({
         <div>
           <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
-            ✅ Cuidados Recomendados
+            Cuidados recomendados
           </h4>
           <ul className="space-y-2">
             {doInstructions.map((instruction) => (
@@ -180,7 +180,7 @@ const ProductCareSection: React.FC<ProductCareSectionProps> = ({
         <div>
           <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
             <XCircle className="w-5 h-5 text-red-600" />
-            ❌ Evite
+            Evite
           </h4>
           <ul className="space-y-2">
             {dontInstructions.map((instruction) => (
@@ -203,7 +203,7 @@ const ProductCareSection: React.FC<ProductCareSectionProps> = ({
         <div>
           <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-600" />
-            ⚠️ Atenção
+            Atenção
           </h4>
           <ul className="space-y-2">
             {warningInstructions.map((instruction) => (
@@ -224,7 +224,7 @@ const ProductCareSection: React.FC<ProductCareSectionProps> = ({
       {/* Dica Geral */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-3">
         <p className="text-sm text-purple-900">
-          <strong>💡 Dica:</strong> Seguindo estas recomendações, seu produto terá maior durabilidade e manterá a qualidade original por mais tempo.
+          <strong>Dica:</strong> Seguindo estas recomendações, seu produto terá maior durabilidade e manterá a qualidade original por mais tempo.
         </p>
       </div>
     </div>
@@ -243,7 +243,7 @@ const ProductCareSection: React.FC<ProductCareSectionProps> = ({
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="bg-teal-100 text-teal-700">
-              🧼 Manutenção
+              Manutenção
             </Badge>
             {isCollapsible && (
               isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />

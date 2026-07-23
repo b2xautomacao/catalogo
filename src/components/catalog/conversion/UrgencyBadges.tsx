@@ -76,7 +76,7 @@ const UrgencyBadges: React.FC<UrgencyBadgesProps> = ({
       {isNew && (
         <Badge className="bg-purple-100 text-purple-700 border border-purple-300 px-3 py-1 text-sm font-semibold">
           <Star className="w-4 h-4 mr-1" />
-          ✨ Novidade
+          Novidade
         </Badge>
       )}
 
