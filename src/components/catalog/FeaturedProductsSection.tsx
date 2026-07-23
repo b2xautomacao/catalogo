@@ -12,6 +12,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import ProductCardImageGallery from "./ProductCardImageGallery";
+import { useProductDisplayPrice } from "@/hooks/useProductDisplayPrice";
 
 // Busca apenas a imagem principal do produto (sem os controles de galeria,
 // que assumem um container quadrado — inadequado para o banner full-width do hero).
@@ -59,14 +60,27 @@ interface FeaturedProductsSectionProps {
   products: Product[];
   enabled?: boolean;
   style?: "hero" | "carousel";
+  /** Necessário para resolver o preço correto em lojas de atacado/híbridas — sem isso, o preço exibido cai no `retail_price` bruto, que fica zerado em catálogos wholesale_only. */
+  catalogType?: "retail" | "wholesale";
   onProductSelect: (product: Product) => void;
   className?: string;
 }
+
+/** Preço do destaque, resolvido pelo mesmo hook usado no resto do catálogo (ProductPriceDisplay, ProductCardOptimized) — respeita varejo/atacado/híbrido em vez de sempre ler `retail_price`. */
+const FeaturedPriceLabel: React.FC<{
+  product: Product;
+  catalogType?: "retail" | "wholesale";
+  className?: string;
+}> = ({ product, catalogType, className }) => {
+  const { displayPrice } = useProductDisplayPrice({ product, catalogType });
+  return <span className={className}>{formatCurrency(displayPrice)}</span>;
+};
 
 const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({
   products,
   enabled = true,
   style = "carousel",
+  catalogType,
   onProductSelect,
   className = "",
 }) => {
@@ -89,6 +103,7 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({
     return (
       <FeaturedHero
         products={featuredProducts}
+        catalogType={catalogType}
         onProductSelect={onProductSelect}
         className={className}
       />
@@ -98,6 +113,7 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({
   return (
     <FeaturedCarousel
       products={featuredProducts}
+      catalogType={catalogType}
       onProductSelect={onProductSelect}
       className={className}
     />
@@ -110,9 +126,10 @@ const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = ({
 
 const FeaturedHero: React.FC<{
   products: Product[];
+  catalogType?: "retail" | "wholesale";
   onProductSelect: (product: Product) => void;
   className?: string;
-}> = ({ products, onProductSelect, className = "" }) => {
+}> = ({ products, catalogType, onProductSelect, className = "" }) => {
   const [api, setApi] = useState<CarouselApi>();
 
   useEffect(() => {
@@ -154,7 +171,7 @@ const FeaturedHero: React.FC<{
                     {product.name}
                   </h2>
                   <p className="text-xl md:text-2xl font-semibold mb-5">
-                    {formatCurrency(product.retail_price)}
+                    <FeaturedPriceLabel product={product} catalogType={catalogType} />
                   </p>
                   <Button
                     size="lg"
@@ -225,9 +242,10 @@ const FeaturedHeroImage: React.FC<{ productId: string; productName: string }> = 
 
 const FeaturedCarousel: React.FC<{
   products: Product[];
+  catalogType?: "retail" | "wholesale";
   onProductSelect: (product: Product) => void;
   className?: string;
-}> = ({ products, onProductSelect, className = "" }) => {
+}> = ({ products, catalogType, onProductSelect, className = "" }) => {
   return (
     <div className={`featured-products-carousel ${className}`}>
       <div className="flex items-center gap-2 mb-4">
@@ -256,7 +274,7 @@ const FeaturedCarousel: React.FC<{
                     {product.name}
                   </h3>
                   <p className="font-bold text-sm text-foreground">
-                    {formatCurrency(product.retail_price)}
+                    <FeaturedPriceLabel product={product} catalogType={catalogType} />
                   </p>
                 </div>
               </div>

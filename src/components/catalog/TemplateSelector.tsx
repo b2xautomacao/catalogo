@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
-import { useEditorSync } from '@/hooks/useEditorSync';
+import { useTenantTheme } from '@/hooks/useTenantTheme';
 import ModernTemplate from './templates/ModernTemplate';
 import MinimalTemplate from './templates/MinimalTemplate';
 import ElegantTemplate, { CatalogSettingsData } from './templates/ElegantTemplate';
@@ -36,7 +36,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   showStock,
   storeIdentifier
 }) => {
-  const { settings } = useEditorSync(storeIdentifier);
+  const { settings } = useTenantTheme(storeIdentifier);
 
   // Converter settings para o formato esperado pelo ElegantTemplate
   const editorSettings: CatalogSettingsData = {

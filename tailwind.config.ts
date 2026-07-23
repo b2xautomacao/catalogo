@@ -26,48 +26,39 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#0057FF',
-					foreground: '#FFFFFF',
-					50: '#E6F0FF',
-					100: '#CCE0FF',
-					500: '#0057FF',
-					600: '#0044CC',
-					700: '#003399'
+					DEFAULT: 'hsl(var(--primary))',
+					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
-					DEFAULT: '#FF6F00',
-					foreground: '#FFFFFF',
-					50: '#FFF3E6',
-					100: '#FFE6CC',
-					500: '#FF6F00',
-					600: '#E65500',
-					700: '#CC4400'
+					DEFAULT: 'hsl(var(--secondary))',
+					foreground: 'hsl(var(--secondary-foreground))'
 				},
 				destructive: {
-					DEFAULT: '#FF3B30',
-					foreground: '#FFFFFF'
+					DEFAULT: 'hsl(var(--destructive))',
+					foreground: 'hsl(var(--destructive-foreground))'
 				},
 				muted: {
-					DEFAULT: '#F5F5F5',
-					foreground: '#666666'
+					DEFAULT: 'hsl(var(--muted))',
+					foreground: 'hsl(var(--muted-foreground))'
 				},
 				accent: {
-					DEFAULT: '#8E2DE2',
-					foreground: '#FFFFFF',
-					50: '#F5E6FF',
-					100: '#EBCCFF',
-					500: '#8E2DE2',
-					600: '#7A26C2',
-					700: '#661FA3'
+					DEFAULT: 'hsl(var(--accent))',
+					foreground: 'hsl(var(--accent-foreground))'
 				},
 				popover: {
-					DEFAULT: '#FFFFFF',
-					foreground: '#333333'
+					DEFAULT: 'hsl(var(--popover))',
+					foreground: 'hsl(var(--popover-foreground))'
 				},
 				card: {
-					DEFAULT: '#FFFFFF',
-					foreground: '#333333'
+					DEFAULT: 'hsl(var(--card))',
+					foreground: 'hsl(var(--card-foreground))'
 				},
+				surface: {
+					DEFAULT: 'hsl(var(--surface))',
+					foreground: 'hsl(var(--surface-foreground))'
+				},
+				// Sidebar é do painel administrativo (não do catálogo público) e permanece
+				// com paleta própria fixa, fora do sistema de tema por tenant.
 				sidebar: {
 					DEFAULT: '#FFFFFF',
 					foreground: '#333333',
@@ -80,9 +71,15 @@ export default {
 				}
 			},
 			borderRadius: {
-				lg: '12px',
-				md: '8px',
-				sm: '6px'
+				xl: 'calc(var(--radius) + 4px)',
+				lg: 'var(--radius)',
+				md: 'calc(var(--radius) - 2px)',
+				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				card: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
+				elevated: '0 4px 16px -4px rgb(0 0 0 / 0.10), 0 2px 6px -2px rgb(0 0 0 / 0.06)',
+				'elevated-lg': '0 12px 32px -8px rgb(0 0 0 / 0.14), 0 4px 12px -4px rgb(0 0 0 / 0.08)'
 			},
 			fontFamily: {
 				'inter': ['Inter', 'sans-serif'],

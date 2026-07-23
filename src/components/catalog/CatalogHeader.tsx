@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Store } from "@/hooks/useCatalog";
 import { CatalogType } from "@/hooks/useCatalog";
-import { useTemplateHeaderColors } from "@/hooks/useTemplateHeaderColors";
+import { useTenantTheme } from "@/hooks/useTenantTheme";
 
 export interface CatalogHeaderProps {
   store: Store;
@@ -26,7 +26,7 @@ const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   onCartClick,
 }) => {
   const storeId = store.url_slug || store.id;
-  const { isReady } = useTemplateHeaderColors(storeId);
+  const { isConnected: isReady } = useTenantTheme(storeId);
 
   return (
     <header

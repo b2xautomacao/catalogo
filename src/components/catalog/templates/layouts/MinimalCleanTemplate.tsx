@@ -3,7 +3,7 @@ import { Store, CatalogType } from '@/hooks/useCatalog';
 import { CatalogSettingsData } from '@/hooks/useCatalogSettings';
 import ConversionHeader from '@/components/catalog/headers/ConversionHeader';
 import CustomizableFooter from '@/components/catalog/footers/CustomizableFooter';
-import FullWidthHeroBanner from '@/components/catalog/banners/FullWidthHeroBanner';
+import SplitHeroBanner from '@/components/catalog/banners/SplitHeroBanner';
 import FeaturedProductsSection from '@/components/catalog/FeaturedProductsSection';
 
 interface MinimalCleanTemplateProps {
@@ -58,15 +58,17 @@ const MinimalCleanTemplate: React.FC<MinimalCleanTemplateProps> = ({
         storeSettings={storeSettings}
       />
 
-      {/* Hero Banner Full-Width */}
-      <FullWidthHeroBanner
+      {/* Hero Section */}
+      <SplitHeroBanner
         storeId={storeId}
-        showCTA={false}
+        buttonShape={(storeSettings?.button_style as "flat" | "modern" | "rounded") ?? "modern"}
+        className="py-8 md:py-12"
       />
 
       {/* Produtos em Destaque */}
       <FeaturedProductsSection
         products={products}
+        catalogType={catalogType}
         enabled={storeSettings?.featured_products_enabled ?? true}
         style={(storeSettings?.featured_products_style as "hero" | "carousel") ?? "carousel"}
         onProductSelect={(product) => onProductSelect?.(product)}

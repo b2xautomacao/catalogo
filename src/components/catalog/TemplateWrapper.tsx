@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
-import { useEditorSync } from "@/hooks/useEditorSync";
-import { useTemplateHeaderColors } from "@/hooks/useTemplateHeaderColors";
+import React from "react";
+import { useTenantTheme } from "@/hooks/useTenantTheme";
 import { CatalogSettingsData } from "@/hooks/useCatalogSettings";
 import ModernCatalogTemplate from "./templates/layouts/ModernCatalogTemplate";
 import IndustrialCatalogTemplate from "./templates/layouts/IndustrialCatalogTemplate";
@@ -9,7 +8,6 @@ import MinimalCleanTemplate from "./templates/layouts/MinimalCleanTemplate";
 import ElegantCatalogTemplate from "./templates/layouts/ElegantCatalogTemplate";
 import { Store } from "@/hooks/useCatalog";
 import { CatalogType } from "@/hooks/useCatalog";
-import { ButtonStyleProvider } from "./ButtonStyleProvider";
 
 interface TemplateWrapperProps {
   templateName: string;
@@ -46,38 +44,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
 }) => {
   // Sempre chamar hooks na mesma ordem, independente de condições
   const storeId = store?.url_slug || store?.id || "";
-  const { settings } = useEditorSync(storeId);
-
-  // Sempre chamar este hook, mesmo se storeId for vazio
-  useTemplateHeaderColors(storeId);
-
-  // Aplicar configurações globais do editor ao documento
-  useEffect(() => {
-    if (settings && storeId) {
-      const root = document.documentElement;
-
-      // Aplicar configurações de fonte
-      if (settings.font_family) {
-        root.style.setProperty("--template-font-family", settings.font_family);
-      }
-
-      // Aplicar configurações de espaçamento
-      if (settings.layout_spacing) {
-        root.style.setProperty(
-          "--template-spacing",
-          `${settings.layout_spacing}px`
-        );
-      }
-
-      // Aplicar configurações de border radius
-      if (settings.border_radius) {
-        root.style.setProperty(
-          "--template-border-radius",
-          `${settings.border_radius}px`
-        );
-      }
-    }
-  }, [settings, storeId]);
+  const { settings } = useTenantTheme(storeId);
 
   const templateProps = {
     store,
@@ -108,29 +75,19 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     );
   }
 
-  const buttonStyle = (storeSettings?.button_style as 'flat' | 'modern' | 'rounded') || 'modern';
-
-  const renderTemplate = () => {
-    switch (templateName) {
-      case "industrial":
-        return <IndustrialCatalogTemplate {...templateProps} />;
-      case "minimal":
-        return <MinimalCatalogTemplate {...templateProps} />;
-      case "minimal_clean":
-        return <MinimalCleanTemplate {...templateProps} />;
-      case "elegant":
-        return <ElegantCatalogTemplate {...templateProps} />;
-      case "modern":
-      default:
-        return <ModernCatalogTemplate {...templateProps} />;
-    }
-  };
-
-  return (
-    <ButtonStyleProvider buttonStyle={buttonStyle}>
-      {renderTemplate()}
-    </ButtonStyleProvider>
-  );
+  switch (templateName) {
+    case "industrial":
+      return <IndustrialCatalogTemplate {...templateProps} />;
+    case "minimal":
+      return <MinimalCatalogTemplate {...templateProps} />;
+    case "minimal_clean":
+      return <MinimalCleanTemplate {...templateProps} />;
+    case "elegant":
+      return <ElegantCatalogTemplate {...templateProps} />;
+    case "modern":
+    default:
+      return <ModernCatalogTemplate {...templateProps} />;
+  }
 };
 
 export default TemplateWrapper;
