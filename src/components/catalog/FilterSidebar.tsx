@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import VariationFilters, { VariationFilterState } from './VariationFilters';
+import { Product } from '@/types/product';
 
 export interface FilterState {
   categories: string[];
@@ -20,8 +21,10 @@ interface FilterSidebarProps {
   onFilter: (filters: FilterState) => void;
   isOpen: boolean;
   onClose: () => void;
-  products?: any[];
+  products?: Product[];
   isMobile?: boolean;
+  showCategories?: boolean;
+  showPrice?: boolean;
 }
 
 const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
@@ -29,7 +32,9 @@ const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
   isOpen,
   onClose,
   products = [],
-  isMobile = false
+  isMobile = false,
+  showCategories = true,
+  showPrice = true
 }) => {
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
@@ -123,7 +128,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
         priceRange: priceRange as [number, number]
       }));
     }
-  }, [priceRange]);
+  }, [priceRange, products.length]);
 
   const FilterContent = memo(() => (
     <div className="space-y-6">
@@ -144,7 +149,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
       </div>
 
       {/* Categorias */}
-      {availableCategories.length > 0 && (
+      {showCategories && availableCategories.length > 0 && (
         <div className="space-y-3">
           <h3 className="font-medium">Categorias</h3>
           <div className="space-y-2">
@@ -167,7 +172,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
       )}
 
       {/* Faixa de Preço */}
-      <div className="space-y-3">
+      {showPrice && <div className="space-y-3">
         <div className="flex items-center gap-2">
           <DollarSign className="h-4 w-4" />
           <h3 className="font-medium">Faixa de Preço</h3>
@@ -186,7 +191,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = memo(({
             <span>R$ {filters.priceRange[1]}</span>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Disponibilidade */}
       <div className="space-y-3">

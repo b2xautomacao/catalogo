@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Product } from '@/hooks/useProducts';
 import { ProductVariation } from '@/types/variation';
 import { CatalogType } from '@/hooks/useCatalog';
-import { useTenantTheme } from '@/hooks/useTenantTheme';
 import ModernTemplate from './templates/ModernTemplate';
 import MinimalTemplate from './templates/MinimalTemplate';
 import ElegantTemplate, { CatalogSettingsData } from './templates/ElegantTemplate';
@@ -34,19 +33,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   isInWishlist,
   showPrices,
   showStock,
-  storeIdentifier
+  storeIdentifier: _storeIdentifier
 }) => {
-  const { settings } = useTenantTheme(storeIdentifier);
-
   // Converter settings para o formato esperado pelo ElegantTemplate
   const editorSettings: CatalogSettingsData = {
-    colors: settings?.colors || {
+    colors: {
       primary: '#0057FF',
       secondary: '#FF6F00',
       surface: '#FFFFFF',
       text: '#1E293B'
     },
-    global: settings?.global || {
+    global: {
       borderRadius: 8,
       fontSize: {
         small: '14px',
@@ -54,7 +51,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         large: '20px'
       }
     },
-    productCard: settings?.productCard || {
+    productCard: {
       showQuickView: true,
       showAddToCart: true,
       productCardStyle: 'default'

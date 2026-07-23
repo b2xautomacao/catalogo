@@ -99,22 +99,22 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center gap-4 md:gap-6">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center gap-3 md:gap-8">
           <div className="flex items-center gap-3 flex-shrink-0">
             {store.logo_url ? (
               <img
                 src={store.logo_url}
                 alt={store.name}
-                className="w-9 h-9 rounded-full object-cover"
+                className="size-11 rounded-full border border-border object-cover"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+              <div className="flex size-11 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
                 {store.name.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="hidden sm:block">
-              <span className="font-semibold text-foreground text-base leading-none">{store.name}</span>
+              <span className="text-lg font-semibold leading-none tracking-[-0.02em] text-foreground">{store.name}</span>
               {sellerName && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Atendimento: <span className="font-medium text-foreground">{sellerName}</span>
@@ -123,7 +123,7 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 max-w-xl mx-auto">
+          <div className="mx-auto max-w-2xl flex-1">
             <SmartSearch
               products={products}
               onSearch={onSearch}
@@ -132,7 +132,7 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center gap-1 md:gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -140,7 +140,7 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
               className="md:hidden"
               aria-label="Abrir filtros"
             >
-              <Menu className="h-5 w-5" />
+                <Menu />
             </Button>
 
             {wishlistCount > 0 && (
@@ -148,7 +148,7 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
                 className="relative p-2 hover:bg-muted rounded-lg transition-colors hidden sm:flex"
                 aria-label="Favoritos"
               >
-                <Heart className="h-5 w-5 text-foreground/70" />
+                <Heart className="text-foreground/70" />
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                   {wishlistCount}
                 </Badge>
@@ -157,10 +157,11 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
 
             <button
               onClick={onCartClick}
-              className="relative p-2 hover:bg-muted rounded-lg transition-colors"
+              className="relative flex min-h-11 items-center gap-2 rounded-lg px-2 transition-colors hover:bg-muted"
               aria-label="Carrinho"
             >
-              <ShoppingBag className="h-5 w-5 text-foreground/70" />
+              <ShoppingBag className="size-5 text-foreground/70" />
+              <span className="hidden text-sm text-foreground/80 lg:inline">Meu carrinho</span>
               {cartItemsCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
                   {cartItemsCount}
@@ -174,7 +175,7 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
       {categories && categories.length > 0 && (
         <div className="border-t border-border">
           <div className="container mx-auto px-4">
-            <nav className="flex items-center gap-6 overflow-x-auto py-2.5 text-sm">
+            <nav aria-label="Categorias da loja" className="flex items-center gap-7 overflow-x-auto py-3 text-sm">
               {categories.map((category) => (
                 <button
                   key={category.id}

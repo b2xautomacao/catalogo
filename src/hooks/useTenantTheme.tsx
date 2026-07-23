@@ -59,12 +59,9 @@ export function useTenantTheme(storeIdentifier: string) {
     root.style.setProperty('--accent', hexToHslTriplet(accent));
     root.style.setProperty('--accent-foreground', getForegroundHslForHex(accent));
     root.style.setProperty('--ring', hexToHslTriplet(primary));
-    if (settings?.background_color) {
-      root.style.setProperty('--background', hexToHslTriplet(background));
-    }
-    if (settings?.border_color) {
-      root.style.setProperty('--border', hexToHslTriplet(border));
-    }
+    root.style.setProperty('--background', hexToHslTriplet(background));
+    root.style.setProperty('--foreground', hexToHslTriplet(text));
+    root.style.setProperty('--border', hexToHslTriplet(border));
 
     // Variáveis legadas (compatibilidade com Footer/ConversionHeader/FloatingCart/Checkout)
     root.style.setProperty('--template-primary', primary);
@@ -73,9 +70,9 @@ export function useTenantTheme(storeIdentifier: string) {
     root.style.setProperty('--template-background', background);
     root.style.setProperty('--template-text', text);
     root.style.setProperty('--template-border', border);
-    root.style.setProperty('--template-surface', '#FFFFFF');
+    root.style.setProperty('--template-surface', background);
     root.style.setProperty('--template-header-bg', primary);
-    root.style.setProperty('--template-header-text', '#FFFFFF');
+    root.style.setProperty('--template-header-text', `hsl(${getForegroundHslForHex(primary)})`);
     root.style.setProperty('--template-button-primary', primary);
     root.style.setProperty('--template-button-secondary', secondary);
     root.style.setProperty('--template-button-accent', accent);
@@ -97,6 +94,20 @@ export function useTenantTheme(storeIdentifier: string) {
     if (settings?.layout_spacing) {
       root.style.setProperty('--template-spacing', `${settings.layout_spacing}px`);
     }
+
+    return () => {
+      [
+        '--primary', '--primary-foreground', '--secondary', '--secondary-foreground',
+        '--accent', '--accent-foreground', '--ring', '--background', '--foreground',
+        '--border', '--template-primary', '--template-secondary', '--template-accent',
+        '--template-background', '--template-text', '--template-border', '--template-surface',
+        '--template-header-bg', '--template-header-text', '--template-button-primary',
+        '--template-button-secondary', '--template-button-accent', '--template-link-color',
+        '--template-link-hover', '--template-button-gradient',
+        '--template-button-primary-hover', '--template-button-secondary-hover',
+        '--template-font-family', '--template-border-radius', '--template-spacing',
+      ].forEach((property) => root.style.removeProperty(property));
+    };
   }, [settings]);
 
   return {

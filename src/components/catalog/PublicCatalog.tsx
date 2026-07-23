@@ -130,6 +130,13 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     setSearchTerm(query);
   }, []);
 
+  const handleCategorySelect = useCallback((category: string) => {
+    setActiveFilters((current) => ({ ...current, categories: [category] }));
+    requestAnimationFrame(() => {
+      document.querySelector("main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   const handleAddToCart = (
     product: Product,
     quantity: number = 1,
@@ -336,9 +343,10 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
           storeSettings={settings}
           onSearch={handleSearchChange}
           onToggleFilters={() => setShowFilters(true)}
-          onCartClick={() => console.log("Cart clicked")}
-          products={filteredProducts}
+          onCartClick={handleOpenCheckout}
+          products={products}
           onProductSelect={handleProductClick}
+          onCategorySelect={handleCategorySelect}
         >
           <div className="flex gap-6">
             {/* Filtros Desktop */}
@@ -350,6 +358,8 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
                   onClose={() => { }}
                   products={products}
                   isMobile={false}
+                  showCategories={showCategoryFilter}
+                  showPrice={showPriceFilter}
                 />
               </div>
             )}
@@ -395,6 +405,8 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
               onClose={() => setShowFilters(false)}
               products={products}
               isMobile={true}
+              showCategories={showCategoryFilter}
+              showPrice={showPriceFilter}
             />
           )}
         </TemplateWrapper>

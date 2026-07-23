@@ -8,6 +8,7 @@ import MinimalCleanTemplate from "./templates/layouts/MinimalCleanTemplate";
 import ElegantCatalogTemplate from "./templates/layouts/ElegantCatalogTemplate";
 import { Store } from "@/hooks/useCatalog";
 import { CatalogType } from "@/hooks/useCatalog";
+import { Product } from "@/types/product";
 
 interface TemplateWrapperProps {
   templateName: string;
@@ -22,8 +23,9 @@ interface TemplateWrapperProps {
   onToggleFilters: () => void;
   onCartClick: () => void;
   children: React.ReactNode;
-  products?: any[];
-  onProductSelect?: (product: any) => void;
+  products?: Product[];
+  onProductSelect?: (product: Product) => void;
+  onCategorySelect?: (category: string) => void;
 }
 
 const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
@@ -41,6 +43,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
   children,
   products,
   onProductSelect,
+  onCategorySelect,
 }) => {
   // Sempre chamar hooks na mesma ordem, independente de condições
   const storeId = store?.url_slug || store?.id || "";
@@ -61,6 +64,7 @@ const TemplateWrapper: React.FC<TemplateWrapperProps> = ({
     editorSettings: settings,
     products,
     onProductSelect,
+    onCategorySelect,
   };
 
   // Verificação de segurança após os hooks
