@@ -14,6 +14,7 @@ import {
   Power,
   PowerOff,
   Palette,
+  Star,
 } from "lucide-react";
 import { Product } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
@@ -28,6 +29,7 @@ interface ProductListCardProps {
   onDuplicate?: (product: Product) => void; // 🎯 NOVO: Callback para duplicar produto
   onManageStock?: (product: Product) => void; // 🎯 NOVO: Callback para gerenciar estoque
   onToggleStatus?: (product: Product, isActive: boolean) => void; // 🎯 NOVO: Callback para ativar/desativar
+  onToggleFeatured?: (product: Product, isFeatured: boolean) => void; // Callback para destacar/remover destaque
   onListUpdate?: () => void; // 🎯 NOVO: Callback para atualizar lista
 }
 
@@ -39,6 +41,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   onDuplicate,
   onManageStock,
   onToggleStatus,
+  onToggleFeatured,
   onListUpdate,
 }) => {
   const { images } = useProductImages(product.id);
@@ -77,6 +80,8 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   const handleManageStock = () => onManageStock?.(product);
   const handleToggleStatus = () =>
     onToggleStatus?.(product, !product.is_active);
+  const handleToggleFeatured = () =>
+    onToggleFeatured?.(product, !product.is_featured);
 
   // 🎯 NOVA FUNÇÃO: Callback quando imagens são atualizadas (não usado neste componente)
   const handleImagesUpdated = () => {
@@ -230,6 +235,25 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                 ) : (
                   <Power className="h-4 w-4" />
                 )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleFeatured}
+                className={`h-8 w-8 p-0 ${product.is_featured
+                  ? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                  : "text-muted-foreground hover:text-yellow-600 hover:bg-yellow-50"
+                  }`}
+                title={
+                  product.is_featured
+                    ? "Remover dos destaques"
+                    : "Marcar como destaque"
+                }
+              >
+                <Star
+                  className="h-4 w-4"
+                  fill={product.is_featured ? "currentColor" : "none"}
+                />
               </Button>
               {product.variations && product.variations.length > 0 && (
                 <Button

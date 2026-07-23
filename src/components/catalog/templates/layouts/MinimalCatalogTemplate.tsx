@@ -4,6 +4,7 @@ import { CatalogSettingsData } from "@/hooks/useCatalogSettings";
 import CatalogFooter from "@/components/catalog/CatalogFooter";
 import HeroBanner from "@/components/catalog/banners/HeroBanner";
 import PromotionalBanner from "@/components/catalog/banners/PromotionalBanner";
+import FeaturedProductsSection from "@/components/catalog/FeaturedProductsSection";
 import SmartSearch from "@/components/catalog/SmartSearch";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,15 @@ const MinimalCatalogTemplate: React.FC<MinimalCatalogTemplateProps> = ({
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Hero Banner Section */}
         <HeroBanner storeId={storeId} className="mb-12" />
+
+        {/* Produtos em Destaque */}
+        <FeaturedProductsSection
+          products={products}
+          enabled={storeSettings?.featured_products_enabled ?? true}
+          style={(storeSettings?.featured_products_style as "hero" | "carousel") ?? "carousel"}
+          onProductSelect={(product) => onProductSelect?.(product)}
+          className="mb-12"
+        />
 
         {/* Promotional Banners */}
         <PromotionalBanner storeId={storeId} className="mb-12" />

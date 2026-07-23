@@ -4,6 +4,7 @@ import { CatalogSettingsData } from "@/hooks/useCatalogSettings";
 import CatalogFooter from "@/components/catalog/CatalogFooter";
 import HeroBanner from "@/components/catalog/banners/HeroBanner";
 import PromotionalBanner from "@/components/catalog/banners/PromotionalBanner";
+import FeaturedProductsSection from "@/components/catalog/FeaturedProductsSection";
 import SmartSearch from "@/components/catalog/SmartSearch";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +108,15 @@ const ModernCatalogTemplate: React.FC<ModernCatalogTemplateProps> = ({
 
       {/* Hero Banner Section */}
       <HeroBanner storeId={storeId} className="container mx-auto px-4 pt-6" />
+
+      {/* Produtos em Destaque */}
+      <FeaturedProductsSection
+        products={products}
+        enabled={storeSettings?.featured_products_enabled ?? true}
+        style={(storeSettings?.featured_products_style as "hero" | "carousel") ?? "carousel"}
+        onProductSelect={(product) => onProductSelect?.(product)}
+        className="container mx-auto px-4 mt-6"
+      />
 
       <div className="container mx-auto px-4 py-8">
         {/* Promotional Banners */}

@@ -281,6 +281,40 @@ export const useProducts = () => {
     }
   };
 
+  const toggleFeaturedStatus = async (productId: string, isFeatured: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_featured: isFeatured })
+        .eq("id", productId);
+
+      if (error) throw error;
+
+      await fetchProducts(); // Recarregar produtos após alteração
+
+      toast({
+        title: isFeatured ? "Produto em destaque!" : "Destaque removido",
+        description: `O produto foi ${
+          isFeatured ? "adicionado aos" : "removido dos"
+        } destaques do catálogo.`,
+      });
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error("Erro ao alterar destaque do produto:", error);
+      toast({
+        title: "Erro ao alterar destaque",
+        description: "Não foi possível alterar o destaque do produto.",
+        variant: "destructive",
+      });
+      return {
+        data: null,
+        error:
+          error instanceof Error ? error.message : "Erro ao alterar destaque",
+      };
+    }
+  };
+
   const duplicateProduct = async (originalProduct: Product) => {
     try {
       console.log("useProducts: Duplicando produto:", originalProduct.name);
@@ -447,6 +481,7 @@ export const useProducts = () => {
     createProduct,
     duplicateProduct,
     toggleProductStatus,
+    toggleFeaturedStatus,
   };
 };
 

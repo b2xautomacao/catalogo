@@ -106,6 +106,9 @@ export interface CatalogSettingsData {
   product_care_section_default_open?: boolean;
   product_videos_default_open?: boolean;
   product_testimonials_default_open?: boolean;
+  // Seção de Produtos em Destaque
+  featured_products_enabled?: boolean;
+  featured_products_style?: "hero" | "carousel";
   // Pixels e Tracking
   meta_pixel_id?: string;
   meta_pixel_enabled?: boolean;
@@ -358,6 +361,9 @@ export const useCatalogSettings = (storeIdentifier?: string) => {
           product_care_section_default_open: (data as any).product_care_section_default_open,
           product_videos_default_open: (data as any).product_videos_default_open,
           product_testimonials_default_open: (data as any).product_testimonials_default_open,
+          // Seção de Produtos em Destaque
+          featured_products_enabled: (data as any).featured_products_enabled,
+          featured_products_style: (data as any).featured_products_style,
           // Pixels e Tracking
           meta_pixel_id: (data as any).meta_pixel_id,
           meta_pixel_enabled: (data as any).meta_pixel_enabled,

@@ -4,6 +4,7 @@ import { CatalogSettingsData } from '@/hooks/useCatalogSettings';
 import ConversionHeader from '@/components/catalog/headers/ConversionHeader';
 import CustomizableFooter from '@/components/catalog/footers/CustomizableFooter';
 import FullWidthHeroBanner from '@/components/catalog/banners/FullWidthHeroBanner';
+import FeaturedProductsSection from '@/components/catalog/FeaturedProductsSection';
 
 interface MinimalCleanTemplateProps {
   store: Store;
@@ -58,9 +59,18 @@ const MinimalCleanTemplate: React.FC<MinimalCleanTemplateProps> = ({
       />
 
       {/* Hero Banner Full-Width */}
-      <FullWidthHeroBanner 
+      <FullWidthHeroBanner
         storeId={storeId}
         showCTA={false}
+      />
+
+      {/* Produtos em Destaque */}
+      <FeaturedProductsSection
+        products={products}
+        enabled={storeSettings?.featured_products_enabled ?? true}
+        style={(storeSettings?.featured_products_style as "hero" | "carousel") ?? "carousel"}
+        onProductSelect={(product) => onProductSelect?.(product)}
+        className="max-w-6xl mx-auto px-4 mt-8"
       />
 
       {/* Main Content - Container estreito para foco */}

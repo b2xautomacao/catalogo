@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Plus, Upload, Package, Settings, Sparkles } from "lucide-react";
+import { Plus, Upload, Package, Settings, Sparkles, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import BulkImportModal from "./BulkImportModal";
 import BulkStockModal from "./BulkStockModal";
 import ProductStockManagerModal from "./ProductStockManagerModal";
@@ -11,6 +12,8 @@ import { useProducts } from "@/hooks/useProducts";
 import ProductList from "./ProductList";
 import { Product } from "@/types/product";
 import { useToast } from "@/hooks/use-toast";
+
+const FEATURED_SOFT_LIMIT = 12;
 
 const ProductsPage = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -33,7 +36,10 @@ const ProductsPage = () => {
     deleteProduct,
     duplicateProduct,
     toggleProductStatus,
+    toggleFeaturedStatus,
   } = useProducts();
+
+  const featuredCount = products.filter((p) => p.is_featured).length;
 
   // Função para editar produto usando o Wizard Premium
   const handleEdit = (product: Product) => {
@@ -102,6 +108,18 @@ const ProductsPage = () => {
     }
   };
 
+  // Função para destacar/remover destaque de um produto direto da listagem
+  const handleToggleFeatured = async (product: Product, isFeatured: boolean) => {
+    try {
+      const result = await toggleFeaturedStatus(product.id, isFeatured);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error("Erro ao alterar destaque do produto:", error);
+    }
+  };
+
   // Função para fechar modal de gerenciamento de estoque
   const handleCloseStockManager = () => {
     setIsStockManagerOpen(false);
@@ -114,7 +132,27 @@ const ProductsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Produtos</h1>
-          <p className="text-gray-600">Gerencie seus produtos e estoque</p>
+          <div className="flex items-center gap-2">
+            <p className="text-gray-600">Gerencie seus produtos e estoque</p>
+            {featuredCount > 0 && (
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-1 ${
+                  featuredCount > FEATURED_SOFT_LIMIT
+                    ? "border-amber-400 text-amber-700 bg-amber-50"
+                    : "border-yellow-300 text-yellow-700 bg-yellow-50"
+                }`}
+                title={
+                  featuredCount > FEATURED_SOFT_LIMIT
+                    ? `Recomendamos até ${FEATURED_SOFT_LIMIT} produtos em destaque para não sobrecarregar a vitrine`
+                    : "Produtos marcados como destaque no catálogo"
+                }
+              >
+                <Star className="h-3 w-3" fill="currentColor" />
+                {featuredCount} em destaque
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3">
@@ -201,6 +239,7 @@ const ProductsPage = () => {
         onDuplicate={handleDuplicate}
         onManageStock={handleManageStock}
         onToggleStatus={handleToggleStatus}
+        onToggleFeatured={handleToggleFeatured}
         onGenerateDescription={() => {}}
         onListUpdate={fetchProducts}
       />

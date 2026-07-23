@@ -34,6 +34,7 @@ interface ProductGridCardProps {
   onDuplicate?: (product: Product) => void; // 🎯 NOVO: Callback para duplicar produto
   onManageStock?: (product: Product) => void; // 🎯 NOVO: Callback para gerenciar estoque
   onToggleStatus?: (product: Product, isActive: boolean) => void; // 🎯 NOVO: Callback para ativar/desativar
+  onToggleFeatured?: (product: Product, isFeatured: boolean) => void; // Callback para destacar/remover destaque
   onListUpdate?: () => void; // 🎯 NOVO: Callback para atualizar lista
 }
 
@@ -45,6 +46,7 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
   onDuplicate,
   onManageStock,
   onToggleStatus,
+  onToggleFeatured,
   onListUpdate, // 🎯 NOVO: Receber callback
 }) => {
   const { images } = useProductImages(product.id || "");
@@ -115,6 +117,13 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
     e.stopPropagation();
     if (onToggleStatus) {
       onToggleStatus(product, !product.is_active);
+    }
+  };
+
+  const handleToggleFeatured = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleFeatured) {
+      onToggleFeatured(product, !product.is_featured);
     }
   };
 
@@ -287,6 +296,25 @@ const ProductGridCard: React.FC<ProductGridCardProps> = ({
                 ) : (
                   <Power className="h-4 w-4" />
                 )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleFeatured}
+                className={`h-8 w-8 p-0 ${product.is_featured
+                    ? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                    : "text-muted-foreground hover:text-yellow-600 hover:bg-yellow-50"
+                  }`}
+                title={
+                  product.is_featured
+                    ? "Remover dos destaques"
+                    : "Marcar como destaque"
+                }
+              >
+                <Star
+                  className="h-4 w-4"
+                  fill={product.is_featured ? "currentColor" : "none"}
+                />
               </Button>
               {product.variations && product.variations.length > 0 && (
                 <Button

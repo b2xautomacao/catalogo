@@ -14,6 +14,7 @@ interface ProductListProps {
   onDuplicate?: (product: Product) => void; // 🎯 NOVO: Callback para duplicar produto
   onManageStock?: (product: Product) => void; // 🎯 NOVO: Callback para gerenciar estoque
   onToggleStatus?: (product: Product, isActive: boolean) => void; // 🎯 NOVO: Callback para ativar/desativar
+  onToggleFeatured?: (product: Product, isFeatured: boolean) => void; // Callback para destacar/remover destaque
   onGenerateDescription?: (productId: string) => void;
   onListUpdate?: () => void; // 🎯 NOVO: Callback para atualizar lista
 }
@@ -25,6 +26,7 @@ const ProductList: React.FC<ProductListProps> = ({
   onDuplicate,
   onManageStock,
   onToggleStatus,
+  onToggleFeatured,
   onGenerateDescription,
   onListUpdate, // 🎯 NOVO: Receber callback
 }) => {
@@ -170,6 +172,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 onDuplicate={onDuplicate}
                 onManageStock={onManageStock}
                 onToggleStatus={onToggleStatus}
+                onToggleFeatured={onToggleFeatured}
                 onView={handleView}
                 onListUpdate={onListUpdate}
               />
@@ -182,6 +185,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 onDuplicate={onDuplicate}
                 onManageStock={onManageStock}
                 onToggleStatus={onToggleStatus}
+                onToggleFeatured={onToggleFeatured}
                 onView={handleView}
                 onListUpdate={onListUpdate}
               />

@@ -20,7 +20,8 @@ import {
   Settings as SettingsIcon,
   Globe,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Star
 } from "lucide-react";
 
 // Importar componentes específicos
@@ -30,6 +31,7 @@ import MobileLayoutSettings from "./MobileLayoutSettings";
 import FooterSettings from "./FooterSettings";
 import OrderBumpSettings from "./OrderBumpSettings";
 import ShareableLinks from "./ShareableLinks";
+import FeaturedProductsSettings from "./FeaturedProductsSettings";
 
 interface ConfigCard {
   id: string;
@@ -168,6 +170,13 @@ const CatalogSettings = () => {
       color: "bg-gradient-to-br from-indigo-500 to-purple-500"
     },
     {
+      id: "featured",
+      title: "Destaques",
+      description: "Escolha os produtos e o estilo da vitrine de destaque",
+      icon: <Star className="h-5 w-5 text-white" />,
+      color: "bg-gradient-to-br from-yellow-500 to-amber-500"
+    },
+    {
       id: "footer",
       title: "Footer",
       description: "Configure o rodapé do catálogo",
@@ -210,6 +219,15 @@ const CatalogSettings = () => {
             onUpdate={(field, value) => {
               console.log('ProductPage Config Update:', field, value);
               // Atualizar configurações imediatamente
+              updateSettings({ [field]: value });
+            }}
+          />
+        );
+      case "featured":
+        return (
+          <FeaturedProductsSettings
+            settings={settings || {}}
+            onUpdate={(field, value) => {
               updateSettings({ [field]: value });
             }}
           />
