@@ -92,11 +92,14 @@ const SplitHeroBanner: React.FC<SplitHeroBannerProps> = ({
       </div>
 
       <div className="order-1 md:order-2">
+        {/* object-contain (não cover): banners são enviados pelo lojista como peças de arte
+            completas, muitas vezes com texto/selos até a borda — cortar com object-cover
+            corta esse conteúdo. Contain garante que a arte inteira sempre apareça. */}
         <div className="relative aspect-[4/3] md:aspect-square rounded-xl overflow-hidden bg-surface">
           <img
             src={banner.image_url}
             alt={banner.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             loading="eager"
           />
         </div>

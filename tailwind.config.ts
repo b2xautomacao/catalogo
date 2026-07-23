@@ -55,7 +55,8 @@ export default {
 				},
 				surface: {
 					DEFAULT: 'hsl(var(--surface))',
-					foreground: 'hsl(var(--surface-foreground))'
+					foreground: 'hsl(var(--surface-foreground))',
+					muted: 'hsl(var(--surface-muted))'
 				},
 				// Sidebar é do painel administrativo (não do catálogo público) e permanece
 				// com paleta própria fixa, fora do sistema de tema por tenant.

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Sparkles } from "lucide-react";
 import { Product } from "@/hooks/useProducts";
 import { ProductVariation } from "@/types/variation";
 import { CatalogType } from "@/hooks/useCatalog";
@@ -108,8 +108,9 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
         {/* Badge de Destaque - Top Left */}
         {product.is_featured && (
           <div className="absolute top-3 left-3 pointer-events-none">
-            <Badge className="bg-gradient-to-r from-yellow-600 to-amber-600 text-white text-xs font-bold uppercase tracking-wide shadow-md">
-              ✨ DESTAQUE
+            <Badge className="bg-gradient-to-r from-yellow-600 to-amber-600 text-white text-xs font-bold uppercase tracking-wide shadow-md flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              DESTAQUE
             </Badge>
           </div>
         )}

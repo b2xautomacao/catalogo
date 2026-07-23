@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Sparkles } from "lucide-react";
 import { Product } from "@/hooks/useProducts";
 import { ProductVariation } from "@/types/variation";
 import { CatalogType } from "@/hooks/useCatalog";
@@ -130,8 +130,9 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
         {/* Badge de Destaque - Top Left */}
         {product.is_featured && (
           <div className="absolute top-2 left-2 pointer-events-none">
-            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm">
-              ✨ DESTAQUE
+            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              DESTAQUE
             </Badge>
           </div>
         )}
