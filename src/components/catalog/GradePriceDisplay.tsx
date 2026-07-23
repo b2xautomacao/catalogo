@@ -92,7 +92,7 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* 🎯 Preço Principal da Grade */}
+      {/*  Preço Principal da Grade */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
         </div>
       </div>
 
-      {/* 🎯 Detalhamento por Tamanho */}
+      {/*  Detalhamento por Tamanho */}
       {showGradeBreakdown && (
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <div className="flex items-center gap-2 mb-3">
@@ -233,7 +233,7 @@ const GradePriceDisplay: React.FC<GradePriceDisplayProps> = ({
         </div>
       )}
 
-      {/* 🎯 Informações Adicionais */}
+      {/*  Informações Adicionais */}
       {wholesalePrice && wholesalePrice !== retailPrice && (
         <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
           <div className="flex items-center gap-2 mb-2">

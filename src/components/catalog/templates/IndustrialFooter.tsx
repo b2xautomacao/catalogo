@@ -199,7 +199,7 @@ const IndustrialFooter: React.FC<IndustrialFooterProps> = ({
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-slate-400 text-sm mb-4 md:mb-0">
-              © 2024 {storeName}. Todos os direitos reservados.
+               2024 {storeName}. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <span>Desenvolvido com tecnologia avançada</span>

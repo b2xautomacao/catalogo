@@ -144,7 +144,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
           {product.is_featured && (
             <div className="absolute top-0 left-0">
               <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm">
-                ✨ Destaque
+                 Destaque
               </Badge>
             </div>
           )}

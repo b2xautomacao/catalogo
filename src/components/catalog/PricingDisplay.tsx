@@ -79,7 +79,7 @@ const PricingDisplay: React.FC<PricingDisplayProps> = ({
               <div className="flex items-center justify-center gap-2 mb-1">
                 <TrendingUp className="w-4 h-4 text-orange-600" />
                 <span className="text-orange-800 font-medium">
-                  💡 Dica de Economia
+                   Dica de Economia
                 </span>
               </div>
               <p className="text-orange-700">

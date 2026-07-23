@@ -647,7 +647,7 @@ const CatalogFooter: React.FC<CatalogFooterProps> = ({
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm text-center md:text-left">
               {storeSettings?.footer_copyright_text ||
-                `© ${currentYear} ${store.name}. Todos os direitos reservados.`}
+                ` ${currentYear} ${store.name}. Todos os direitos reservados.`}
             </p>
 
             {/* Opções de Entrega - se configuradas */}

@@ -85,7 +85,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   }, [store?.id, catalogStoreIdApi]);
 
   const applyFilters = useCallback(() => {
-    console.log("🎯 PUBLIC CATALOG - Aplicando filtros:", {
+    console.log(" PUBLIC CATALOG - Aplicando filtros:", {
       searchTerm,
       activeFilters,
     });
@@ -121,12 +121,12 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   }, [applyFilters]);
 
   const handleFilterChange = useCallback((filters: FilterState) => {
-    console.log("🔧 PUBLIC CATALOG - Filtros alterados:", filters);
+    console.log(" PUBLIC CATALOG - Filtros alterados:", filters);
     setActiveFilters(filters);
   }, []);
 
   const handleSearchChange = useCallback((query: string) => {
-    console.log("🔍 PUBLIC CATALOG - Busca alterada:", query);
+    console.log(" PUBLIC CATALOG - Busca alterada:", query);
     setSearchTerm(query);
   }, []);
 
@@ -142,7 +142,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     quantity: number = 1,
     variation?: ProductVariation
   ) => {
-    console.log("🛒 PUBLIC CATALOG - Adicionando ao carrinho:", {
+    console.log(" PUBLIC CATALOG - Adicionando ao carrinho:", {
       productId: product.id,
       productName: product.name,
       quantity,
@@ -162,7 +162,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
     });
 
     try {
-      console.log("🔧 PUBLIC CATALOG - ANTES createCartItem:", {
+      console.log(" PUBLIC CATALOG - ANTES createCartItem:", {
         product: product.name,
         catalogType,
         quantity,
@@ -188,7 +188,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
         variation
       );
 
-      console.log("🔧 PUBLIC CATALOG - DEPOIS createCartItem:", {
+      console.log(" PUBLIC CATALOG - DEPOIS createCartItem:", {
         cartItemId: cartItem.id,
         cartItemPrice: cartItem.price,
         hasGradeInfo: !!cartItem.gradeInfo,
@@ -198,7 +198,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
       addItem(cartItem);
 
       console.log(
-        "✅ PUBLIC CATALOG - Item adicionado com sucesso ao carrinho global"
+        " PUBLIC CATALOG - Item adicionado com sucesso ao carrinho global"
       );
 
       toast({
@@ -208,7 +208,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
       });
     } catch (error) {
       console.error(
-        "❌ PUBLIC CATALOG - Erro ao adicionar ao carrinho:",
+        " PUBLIC CATALOG - Erro ao adicionar ao carrinho:",
         error
       );
       toast({
@@ -220,7 +220,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   };
 
   const handleAddToWishlist = (product: Product) => {
-    console.log("💝 PUBLIC CATALOG - Adicionando à wishlist:", product.name);
+    console.log(" PUBLIC CATALOG - Adicionando à wishlist:", product.name);
     setWishlist((prev) => {
       const isInWishlist = prev.some((item) => item.id === product.id);
       if (isInWishlist) {
@@ -242,7 +242,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   };
 
   const handleShareProduct = (product: Product) => {
-    console.log("📤 PUBLIC CATALOG - Compartilhando produto:", product.name);
+    console.log(" PUBLIC CATALOG - Compartilhando produto:", product.name);
     if (navigator.share) {
       navigator.share({
         title: product.name,
@@ -259,13 +259,13 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   };
 
   const handleProductClick = (product: Product) => {
-    console.log("👆 PUBLIC CATALOG - Produto clicado:", product.name);
+    console.log(" PUBLIC CATALOG - Produto clicado:", product.name);
     // Redirecionar para página dedicada do produto
     window.location.href = `/produto/${product.id}`;
   };
 
   const handleQuickView = (product: Product) => {
-    console.log("🚀 PUBLIC CATALOG - handleQuickView chamado:", {
+    console.log(" PUBLIC CATALOG - handleQuickView chamado:", {
       productName: product.name,
       productId: product.id,
       hasVariations: product.variations && product.variations.length > 0,
@@ -276,7 +276,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   };
 
   const handleCloseModal = () => {
-    console.log("❌ PUBLIC CATALOG - Fechando modal");
+    console.log(" PUBLIC CATALOG - Fechando modal");
     setIsModalOpen(false);
     setSelectedProduct(null);
   };
@@ -290,7 +290,7 @@ const PublicCatalog: React.FC<PublicCatalogProps> = ({ storeIdentifier, sellerSl
   };
 
   useEffect(() => {
-    console.log("🔍 PUBLIC CATALOG - Estado do carrinho:", {
+    console.log(" PUBLIC CATALOG - Estado do carrinho:", {
       totalItems,
       itemsCount: cartItems.length,
       catalogType,

@@ -101,10 +101,10 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
   const [isGradeSelected, setIsGradeSelected] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  // 🔴 NOVO: Estado para grade flexível
+  //  NOVO: Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
   const [customGradeSelection, setCustomGradeSelection] = useState<CustomGradeSelection | null>(null);
-  // 🔴 NOVO: Rastrear cores adicionadas ao carrinho
+  //  NOVO: Rastrear cores adicionadas ao carrinho
   const [addedColors, setAddedColors] = useState<string[]>([]);
 
   // Dados simulados para demonstração
@@ -168,7 +168,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
       return;
     }
 
-    // 🔴 NOVO: Se for grade flexível, usar createCartItem diretamente
+    //  NOVO: Se for grade flexível, usar createCartItem diretamente
     if (selectedVariation?.is_grade && selectedVariation?.flexible_grade_config) {
       const finalQuantity = selectedVariation.is_grade ? 1 : quantity;
       const cartItem = createCartItem(
@@ -189,7 +189,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
       
       addItem(cartItem);
       
-      // 🔴 NOVO: Adicionar cor à lista de cores adicionadas
+      //  NOVO: Adicionar cor à lista de cores adicionadas
       const color = selectedVariation.grade_color || selectedVariation.color || '';
       if (color && !addedColors.includes(color)) {
         setAddedColors(prev => [...prev, color]);
@@ -445,7 +445,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                       basePrice={price}
                       showPriceInCards={true}
                       showStock={showStock}
-                      // 🔴 NOVO: Passar callbacks para capturar modo de grade flexível
+                      //  NOVO: Passar callbacks para capturar modo de grade flexível
                       onFlexibleGradeModeChange={(mode) => {
                         // Armazenar modo para usar ao adicionar ao carrinho
                         setFlexibleGradeMode(mode);
@@ -462,7 +462,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                           estimatedPrice: selection.estimatedPrice,
                         } : null);
                       }}
-                      // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
+                      //  NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
                       onAddToCart={(variation, gradeMode, customSel) => {
                         const finalQuantity = variation.is_grade ? 1 : quantity;
                         const productWithStore = { ...product, store_id: product.store_id ?? storeIdProp ?? "" };
@@ -499,7 +499,7 @@ const ProductDetailsModalOptimized: React.FC<ProductDetailsModalOptimizedProps> 
                           } adicionado.`,
                         });
                       }}
-                      // 🔴 NOVO: Passar cores já adicionadas para sugestões
+                      //  NOVO: Passar cores já adicionadas para sugestões
                       addedColors={addedColors}
                     />
                   </div>

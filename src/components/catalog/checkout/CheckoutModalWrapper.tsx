@@ -46,7 +46,7 @@ const CheckoutModalWrapper: React.FC<CheckoutModalWrapperProps> = ({
         `}>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <span className="font-bold text-sm">🛒</span>
+                            <span className="font-bold text-sm"></span>
                         </div>
                         <h2 className="font-bold text-lg text-gray-900">{title}</h2>
                     </div>

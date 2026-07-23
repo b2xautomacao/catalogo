@@ -165,12 +165,12 @@ const Checkout: React.FC<CheckoutProps> = ({ settings, onClose }) => {
   };
 
   const generateWhatsAppMessage = (data: CheckoutForm, orderData: any) => {
-    let message = `🛒 *Novo Pedido*\n\n`;
-    message += `👤 *Cliente:* ${data.customerName}\n`;
-    message += `📧 *Email:* ${data.customerEmail}\n`;
-    message += `📱 *Telefone:* ${data.customerPhone}\n\n`;
+    let message = ` *Novo Pedido*\n\n`;
+    message += ` *Cliente:* ${data.customerName}\n`;
+    message += ` *Email:* ${data.customerEmail}\n`;
+    message += ` *Telefone:* ${data.customerPhone}\n\n`;
 
-    message += `📦 *Itens:*\n`;
+    message += ` *Itens:*\n`;
     items.forEach((item) => {
       let variationText = "";
       if (item.gradeInfo) {
@@ -187,19 +187,19 @@ const Checkout: React.FC<CheckoutProps> = ({ settings, onClose }) => {
       ).toFixed(2)}\n`;
     });
 
-    message += `\n💰 *Total:* R$ ${totalAmount.toFixed(2)}`;
+    message += `\n *Total:* R$ ${totalAmount.toFixed(2)}`;
 
-    message += `\n📋 *Forma de Pagamento:* ${getPaymentMethodName(
+    message += `\n *Forma de Pagamento:* ${getPaymentMethodName(
       data.paymentMethod
     )}`;
-    message += `\n🚚 *Entrega:* ${getShippingMethodName(data.shippingMethod)}`;
+    message += `\n *Entrega:* ${getShippingMethodName(data.shippingMethod)}`;
 
     if (data.shippingAddress && data.shippingMethod !== "pickup") {
-      message += `\n📍 *Endereço:* ${data.shippingAddress.street}, ${data.shippingAddress.number}, ${data.shippingAddress.neighborhood}, ${data.shippingAddress.city} - ${data.shippingAddress.state}`;
+      message += `\n *Endereço:* ${data.shippingAddress.street}, ${data.shippingAddress.number}, ${data.shippingAddress.neighborhood}, ${data.shippingAddress.city} - ${data.shippingAddress.state}`;
     }
 
     if (data.notes) {
-      message += `\n📝 *Observações:* ${data.notes}`;
+      message += `\n *Observações:* ${data.notes}`;
     }
 
     return message;

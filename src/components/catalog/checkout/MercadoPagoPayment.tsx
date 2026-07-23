@@ -82,7 +82,7 @@ const MercadoPagoPayment: React.FC<MercadoPagoPaymentProps> = ({
     // Verificar se as credenciais estão configuradas
     if (!hasCredentials) {
       toast({
-        title: "❌ Credenciais não configuradas",
+        title: " Credenciais não configuradas",
         description: "Configure o Access Token e Public Key do Mercado Pago nas configurações de pagamento.",
         variant: "destructive",
         duration: 7000,
@@ -111,7 +111,7 @@ const MercadoPagoPayment: React.FC<MercadoPagoPaymentProps> = ({
             onPaymentStarted?.(result.preference_id);
             
             toast({
-              title: "🚀 Redirecionando para pagamento",
+              title: " Redirecionando para pagamento",
               description: "Você será redirecionado para o Mercado Pago em uma nova aba.",
               duration: 3000,
             });
@@ -130,7 +130,7 @@ const MercadoPagoPayment: React.FC<MercadoPagoPaymentProps> = ({
             onPaymentStarted?.(result.preference_id);
             
             toast({
-              title: "🚀 Redirecionando para pagamento",
+              title: " Redirecionando para pagamento",
               description: "Você será redirecionado para o Mercado Pago em uma nova aba.",
               duration: 3000,
             });
@@ -148,7 +148,7 @@ const MercadoPagoPayment: React.FC<MercadoPagoPaymentProps> = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao processar pagamento';
       toast({
-        title: "❌ Erro no pagamento",
+        title: " Erro no pagamento",
         description: errorMessage,
         variant: "destructive",
         duration: 5000,
@@ -160,7 +160,7 @@ const MercadoPagoPayment: React.FC<MercadoPagoPaymentProps> = ({
   const handlePixPaymentConfirmed = () => {
     setShowPixModal(false);
     toast({
-      title: "✅ Pagamento confirmado!",
+      title: " Pagamento confirmado!",
       description: `Pedido #${orderId?.slice(-8)} confirmado via PIX.`,
       duration: 5000,
     });

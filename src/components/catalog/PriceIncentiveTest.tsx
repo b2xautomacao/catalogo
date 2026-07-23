@@ -122,7 +122,7 @@ const PriceIncentiveTest: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Coins className="h-5 w-5" />
-          🧪 Teste de Incentivos de Preço
+           Teste de Incentivos de Preço
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -173,7 +173,7 @@ const PriceIncentiveTest: React.FC = () => {
 
         <Button
           onClick={() => {
-            console.group("🧪 Teste de Incentivos");
+            console.group(" Teste de Incentivos");
             console.log("Produto:", testProduct);
             console.log("Níveis:", testPriceTiers);
             testPriceTiers.forEach((tier) => {
@@ -186,7 +186,7 @@ const PriceIncentiveTest: React.FC = () => {
           variant="outline"
           className="w-full"
         >
-          📋 Log Detalhado no Console
+           Log Detalhado no Console
         </Button>
       </CardContent>
     </Card>

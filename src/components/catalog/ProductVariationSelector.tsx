@@ -22,16 +22,16 @@ interface ProductVariationSelectorProps {
   basePrice?: number;
   showPriceInCards?: boolean;
   showStock?: boolean;
-  // 🔴 NOVO: Callbacks para expor estado de grade flexível
+  //  NOVO: Callbacks para expor estado de grade flexível
   onFlexibleGradeModeChange?: (mode: 'full' | 'half' | 'custom') => void;
   onCustomSelectionChange?: (selection: CustomGradeSelection | null) => void;
-  // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (para novo fluxo)
+  //  NOVO: Callback para adicionar ao carrinho diretamente (para novo fluxo)
   onAddToCart?: (
     variation: ProductVariation,
     gradeMode: 'full' | 'half' | 'custom',
     customSelection?: CustomGradeSelection
   ) => void;
-  // 🔴 NOVO: Cores já adicionadas ao carrinho (para sugestões)
+  //  NOVO: Cores já adicionadas ao carrinho (para sugestões)
   addedColors?: string[];
 }
 
@@ -52,7 +52,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
   const [customSelection, setCustomSelection] = useState<CustomGradeSelection | null>(null);
   
-  // 🔴 CORREÇÃO: Atualizar callbacks quando o modo ou seleção customizada mudar
+  //  CORREÇÃO: Atualizar callbacks quando o modo ou seleção customizada mudar
   const handleModeSelect = (mode: 'full' | 'half' | 'custom') => {
     setFlexibleGradeMode(mode);
     if (onFlexibleGradeModeChange) {
@@ -67,7 +67,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     }
   };
   
-  // 🔴 CORREÇÃO: Resetar modo quando a variação selecionada mudar
+  //  CORREÇÃO: Resetar modo quando a variação selecionada mudar
   React.useEffect(() => {
     if (selectedVariation) {
       setFlexibleGradeMode('full');
@@ -96,7 +96,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     (v) => v.variation_type === "grade" || v.is_grade
   );
   
-  console.log("🔍 ProductVariationSelector - Detecção de grades:", {
+  console.log(" ProductVariationSelector - Detecção de grades:", {
     totalVariations: variations.length,
     hasGradeVariations,
     variations: variations.map(v => ({
@@ -132,9 +132,9 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     gradeCount: grades.length,
   };
 
-  // 🐛 DEBUG: Log apenas se houver problema (menos de 2 cores ou tamanhos)
+  //  DEBUG: Log apenas se houver problema (menos de 2 cores ou tamanhos)
   if (colors.length < 2 && sizes.length < 2 && variations.length > 1) {
-    console.warn("🚨 PROBLEMA: Produto com múltiplas variações mas poucas cores/tamanhos:", {
+    console.warn(" PROBLEMA: Produto com múltiplas variações mas poucas cores/tamanhos:", {
       totalVariations: variations.length,
       colors: colors.length,
       sizes: sizes.length,
@@ -143,10 +143,10 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
   }
 
   if (hasGradeVariations) {
-    // 🔴 NOVO: Sempre usar novo fluxo para grades (melhor UX)
+    //  NOVO: Sempre usar novo fluxo para grades (melhor UX)
     // Se tem callback onAddToCart, usar GradeFirstSelector completo
     if (onAddToCart) {
-      console.log("✅ ProductVariationSelector - Usando GradeFirstSelector (novo fluxo)", {
+      console.log(" ProductVariationSelector - Usando GradeFirstSelector (novo fluxo)", {
         gradesCount: grades.length,
         hasOnAddToCart: !!onAddToCart,
         addedColorsCount: addedColors?.length || 0,
@@ -168,7 +168,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
       );
     }
     
-    console.log("⚠️ ProductVariationSelector - onAddToCart não fornecido, usando fluxo antigo", {
+    console.log(" ProductVariationSelector - onAddToCart não fornecido, usando fluxo antigo", {
       gradesCount: grades.length,
       onAddToCart: typeof onAddToCart,
     });
@@ -228,7 +228,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
 
         {/* Seletor de Grade Flexível (se disponível) */}
         {selectedVariation && (() => {
-          // 🔴 CORREÇÃO: Verificar se é realmente uma grade antes de mostrar opções flexíveis
+          //  CORREÇÃO: Verificar se é realmente uma grade antes de mostrar opções flexíveis
           const isGradeVariation = selectedVariation.is_grade || 
                                    selectedVariation.variation_type === "grade" ||
                                    (selectedVariation.grade_name && selectedVariation.grade_sizes);
@@ -238,8 +238,8 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
             ? allowsMultiplePurchaseOptions(selectedVariation.flexible_grade_config)
             : false;
           
-          // 🔍 DEBUG: Log detalhado
-          console.log("🔍 FlexibleGradeSelector - Verificação:", {
+          //  DEBUG: Log detalhado
+          console.log(" FlexibleGradeSelector - Verificação:", {
             isGradeVariation,
             gradeSelected: selectedVariation.grade_name,
             hasConfig,
@@ -250,7 +250,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
             willRender: isGradeVariation && hasConfig && allowsMultiple,
           });
           
-          // 🔴 CORREÇÃO: Só mostrar se for realmente uma grade
+          //  CORREÇÃO: Só mostrar se for realmente uma grade
           if (isGradeVariation && hasConfig && allowsMultiple) {
             return (
               <FlexibleGradeSelector
@@ -267,7 +267,7 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
           
           // Se for produto unitário, não mostrar opções de grade
           if (!isGradeVariation) {
-            console.log("ℹ️ ProductVariationSelector - Produto unitário detectado, não mostrando grade flexível");
+            console.log(" ProductVariationSelector - Produto unitário detectado, não mostrando grade flexível");
           }
           
           return null;
@@ -302,8 +302,8 @@ const ProductVariationSelector: React.FC<ProductVariationSelectorProps> = ({
     }
   };
 
-  // 🔍 DEBUG: Log quando cai no fluxo antigo
-  console.log("⚠️ ProductVariationSelector - CAINDO NO FLUXO ANTIGO (cores primeiro):", {
+  //  DEBUG: Log quando cai no fluxo antigo
+  console.log(" ProductVariationSelector - CAINDO NO FLUXO ANTIGO (cores primeiro):", {
     hasGradeVariations,
     gradesCount: grades.length,
     hasOnAddToCart: !!onAddToCart,

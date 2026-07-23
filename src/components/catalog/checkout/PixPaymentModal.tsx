@@ -60,7 +60,7 @@ const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
       await navigator.clipboard.writeText(pixCode);
       setCopied(true);
       toast({
-        title: "✅ Código PIX copiado!",
+        title: " Código PIX copiado!",
         description: "Cole o código no seu banco ou app de pagamento",
         duration: 3000,
       });
@@ -68,7 +68,7 @@ const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
       setTimeout(() => setCopied(false), 3000);
     } catch (error) {
       toast({
-        title: "❌ Erro ao copiar",
+        title: " Erro ao copiar",
         description: "Não foi possível copiar o código PIX",
         variant: "destructive",
       });
@@ -193,7 +193,7 @@ const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
               onClick={onPaymentConfirmed}
               className="w-full bg-green-600 hover:bg-green-700"
             >
-              ✅ Já paguei - Confirmar Pagamento
+               Já paguei - Confirmar Pagamento
             </Button>
             
             <Button

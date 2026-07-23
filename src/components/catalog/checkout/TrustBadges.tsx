@@ -73,7 +73,7 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ enabled = true }) => {
       {/* Badges principais - compactos */}
       <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-lg border">
         <h4 className="font-semibold text-sm text-gray-700 mb-3 text-center">
-          ✓ Compra Protegida
+           Compra Protegida
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {badges.slice(0, 4).map((badge, index) => (

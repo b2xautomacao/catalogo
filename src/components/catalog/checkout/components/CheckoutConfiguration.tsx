@@ -69,7 +69,7 @@ const CheckoutConfiguration: React.FC<CheckoutConfigurationProps> = ({ isOpen, o
                 target="_blank"
                 className="text-blue-600 underline font-medium"
               >
-                👉 Ir para Dados da Loja
+                 Ir para Dados da Loja
               </a>
               <div className="mt-4">
                 <Button onClick={onClose}>Fechar</Button>
@@ -87,7 +87,7 @@ const CheckoutConfiguration: React.FC<CheckoutConfigurationProps> = ({ isOpen, o
                 target="_blank"
                 className="text-blue-600 underline font-medium"
               >
-                👉 Configurar pagamentos online
+                 Configurar pagamentos online
               </a>
               <div className="mt-4">
                 <Button onClick={onClose}>Fechar</Button>

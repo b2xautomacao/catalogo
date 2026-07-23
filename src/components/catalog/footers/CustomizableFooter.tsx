@@ -275,7 +275,7 @@ const CustomizableFooter: React.FC<CustomizableFooterProps> = ({
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-center md:text-left" style={{ opacity: 0.8 }}>
             {storeSettings?.footer_copyright_text ||
-              `© ${currentYear} ${store.name}. Todos os direitos reservados.`}
+              ` ${currentYear} ${store.name}. Todos os direitos reservados.`}
           </p>
 
           {storeSettings?.footer_custom_text && (

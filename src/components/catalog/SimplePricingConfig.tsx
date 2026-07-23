@@ -32,13 +32,13 @@ interface PricingMode {
 interface SimplePricingConfigProps {
   storeId: string;
   onConfigChange?: (config: any) => void;
-  onUnsavedChanges?: (hasChanges: boolean) => void; // 🎯 NOVO: Notificar mudanças pendentes
+  onUnsavedChanges?: (hasChanges: boolean) => void; //  NOVO: Notificar mudanças pendentes
 }
 
 const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
   storeId,
   onConfigChange,
-  onUnsavedChanges, // 🎯 NOVO: Callback para mudanças pendentes
+  onUnsavedChanges, //  NOVO: Callback para mudanças pendentes
 }) => {
   const [selectedMode, setSelectedMode] = useState<string>("retail_only");
   const [originalMode, setOriginalMode] = useState<string>("retail_only");
@@ -274,7 +274,7 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 🎯 NOVO: Indicador de mudanças não salvas */}
+          {/*  NOVO: Indicador de mudanças não salvas */}
           {hasUnsavedChanges && (
             <Alert className="border-orange-200 bg-orange-50">
               <Info className="h-4 w-4 text-orange-600" />
@@ -407,7 +407,7 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
             </AlertDescription>
           </Alert>
 
-          {/* 🎯 MELHORADO: Botão de Salvar com indicador de mudanças */}
+          {/*  MELHORADO: Botão de Salvar com indicador de mudanças */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-sm text-gray-600">
               {hasUnsavedChanges ? (
@@ -416,7 +416,7 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
                 </span>
               ) : (
                 <span className="text-green-600">
-                  ✓ Todas as alterações salvas
+                   Todas as alterações salvas
                 </span>
               )}
             </div>
@@ -454,7 +454,7 @@ const SimplePricingConfig: React.FC<SimplePricingConfigProps> = ({
       {/* Dicas de uso */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">💡 Dicas importantes</CardTitle>
+          <CardTitle className="text-base"> Dicas importantes</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="text-sm text-gray-600 space-y-2">

@@ -64,7 +64,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
 
   const handleAddToCart = () => {
     console.log(
-      "🛒 INDUSTRIAL TEMPLATE - Tentativa de adicionar ao carrinho:",
+      " INDUSTRIAL TEMPLATE - Tentativa de adicionar ao carrinho:",
       {
         productId: product.id,
         hasVariations,
@@ -89,7 +89,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
         className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
-          console.log('🖼️ IndustrialTemplate - Click na imagem:', product.name);
+          console.log(' IndustrialTemplate - Click na imagem:', product.name);
           onQuickView(product);
         }}
       >
@@ -164,7 +164,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
                 }`}
               >
                 {hasGradeVariations
-                  ? `📦 ${product.variations.length} GRADES`
+                  ? ` ${product.variations.length} GRADES`
                   : `+${product.variations.length} OPÇÕES`}
               </Badge>
             </div>
@@ -184,7 +184,7 @@ const IndustrialTemplate: React.FC<IndustrialTemplateProps> = ({
             className="font-bold text-gray-900 line-clamp-2 uppercase tracking-wide text-sm group-hover:text-slate-600 transition-colors cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
-              console.log('📝 IndustrialTemplate - Click no título:', product.name);
+              console.log(' IndustrialTemplate - Click no título:', product.name);
               onQuickView(product);
             }}
           >

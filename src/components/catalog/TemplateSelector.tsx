@@ -71,7 +71,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   };
 
   // Verificar se o produto tem variações
-  console.log('🎯 TemplateSelector - Produto:', {
+  console.log(' TemplateSelector - Produto:', {
     id: product.id,
     name: product.name,
     variations: product.variations?.length || 0,

@@ -225,23 +225,23 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
   };
 
   const generateWhatsAppMessage = (data: CheckoutForm, order?: any) => {
-    // 💡 IMPORTANTE: Se o carrinho foi limpo, usamos os dados do pedido vindo da API
+    //  IMPORTANTE: Se o carrinho foi limpo, usamos os dados do pedido vindo da API
     // para garantir que os valores não apareçam como zero na mensagem.
     const rawOrderData = order?.data || order;
     const displayItems = rawOrderData?.items || items;
     const displayTotal = rawOrderData?.total_amount ?? totalAmount;
     const displayShipping = rawOrderData?.shipping_cost ?? shippingCost;
 
-    let message = `🛒 *NOVO PEDIDO - ${storeName}*\n\n`;
-    message += `👤 *Cliente:* ${data.customerName}\n`;
-    if (data.customerEmail) message += `📧 *Email:* ${data.customerEmail}\n`;
-    message += `📱 *Telefone:* ${data.customerPhone}\n\n`;
+    let message = ` *NOVO PEDIDO - ${storeName}*\n\n`;
+    message += ` *Cliente:* ${data.customerName}\n`;
+    if (data.customerEmail) message += ` *Email:* ${data.customerEmail}\n`;
+    message += ` *Telefone:* ${data.customerPhone}\n\n`;
 
     if (rawOrderData?.id) {
-      message += `📋 *Pedido:* #${rawOrderData.id.slice(-8)}\n\n`;
+      message += ` *Pedido:* #${rawOrderData.id.slice(-8)}\n\n`;
     }
 
-    message += `📦 *ITENS DO PEDIDO:*\n`;
+    message += ` *ITENS DO PEDIDO:*\n`;
 
     // Mapear itens para um formato comum
     const mappedItems = displayItems.map((item: any) => {
@@ -274,7 +274,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
 
     // Listar todos os itens
     mappedItems.forEach((item: any, index: number) => {
-      message += `${index + 1}. ${item.name}${item.isOrderBump ? ' 🔥' : ''}\n`;
+      message += `${index + 1}. ${item.name}${item.isOrderBump ? ' ' : ''}\n`;
       message += `   Qtd: ${item.quantity}x\n`;
       message += `   Preço: ${formatCurrency(item.price)}\n`;
       
@@ -287,7 +287,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
       message += `   Subtotal: ${formatCurrency(item.price * item.quantity)}\n\n`;
     });
 
-    message += `💰 *RESUMO FINANCEIRO:*\n`;
+    message += ` *RESUMO FINANCEIRO:*\n`;
     message += `Subtotal produtos: ${formatCurrency(displayTotal - displayShipping)}\n`;
     if (displayShipping > 0) {
       message += `Frete: ${formatCurrency(displayShipping)}\n`;
@@ -296,11 +296,11 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
     // Total final
     message += `*TOTAL FINAL: ${formatCurrency(displayTotal)}*\n\n`;
 
-    message += `🚚 *Entrega:* ${data.shippingMethod}\n`;
-    message += `💳 *Pagamento:* ${data.paymentMethod}\n`;
+    message += ` *Entrega:* ${data.shippingMethod}\n`;
+    message += ` *Pagamento:* ${data.paymentMethod}\n`;
 
     if (data.notes) {
-      message += `📝 *Observações:* ${data.notes}\n`;
+      message += ` *Observações:* ${data.notes}\n`;
     }
 
     return message;
@@ -353,7 +353,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
           <div className="flex items-center gap-2 text-green-800 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span>
-              🔥 <strong>{socialProofCount + 847} pessoas</strong> estão
+               <strong>{socialProofCount + 847} pessoas</strong> estão
               visualizando produtos agora
             </span>
           </div>
@@ -398,7 +398,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                 Seu pedido foi registrado com sucesso em nosso sistema e o estoque foi reservado.
               </p>
               <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg text-blue-800 text-sm text-center">
-                <p className="font-semibold mb-1">⚠️ IMPORTANTE:</p>
+                <p className="font-semibold mb-1"> IMPORTANTE:</p>
                 <p>Para concluir sua compra e combinar o pagamento, você precisa enviar o resumo para o nosso WhatsApp.</p>
               </div>
             </div>
@@ -834,7 +834,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                                         htmlFor="pix"
                                         className="font-medium cursor-pointer flex items-center gap-2"
                                       >
-                                        💰 PIX
+                                         PIX
                                       </label>
                                       <p className="text-sm text-gray-600 mt-1">
                                         Pagamento instantâneo via PIX
@@ -854,7 +854,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                                         htmlFor="combine"
                                         className="font-medium cursor-pointer flex items-center gap-2"
                                       >
-                                        📱 A combinar
+                                         A combinar
                                       </label>
                                       <p className="text-sm text-gray-600 mt-1">
                                         Forma de pagamento será definida via
@@ -886,10 +886,10 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                                         htmlFor={method.id}
                                         className="font-medium cursor-pointer flex items-center gap-2"
                                       >
-                                        {method.type === "pix" && "💰"}
-                                        {method.type === "credit_card" && "💳"}
+                                        {method.type === "pix" && ""}
+                                        {method.type === "credit_card" && ""}
                                         {method.type === "bank_transfer" &&
-                                          "🏦"}
+                                          ""}
                                         {method.name}
                                       </label>
                                       {method.config?.instructions && (
@@ -986,7 +986,7 @@ const EnhancedCheckout: React.FC<EnhancedCheckoutProps> = ({
                           Processando...
                         </div>
                       ) : (
-                        `🚀 Finalizar Pedido - ${formatCurrency(finalTotal)}`
+                        ` Finalizar Pedido - ${formatCurrency(finalTotal)}`
                       )}
                     </Button>
                   </div>

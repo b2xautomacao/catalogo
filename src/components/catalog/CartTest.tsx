@@ -27,7 +27,7 @@ const CartTest: React.FC = () => {
       isWholesalePrice: false,
     };
 
-    console.log("➕ Adicionando item teste:", testItem);
+    console.log(" Adicionando item teste:", testItem);
     cart.addItem(testItem);
   };
 
@@ -40,21 +40,21 @@ const CartTest: React.FC = () => {
   return (
     <Card className="m-4 max-w-md">
       <CardHeader>
-        <CardTitle>🧪 Teste do Carrinho</CardTitle>
+        <CardTitle> Teste do Carrinho</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={addTestItem} variant="outline">
-            ➕ Adicionar Item
+             Adicionar Item
           </Button>
           <Button onClick={addBulkItems} variant="outline">
-            ➕ 3 Itens
+             3 Itens
           </Button>
           <Button onClick={cart.clearCart} variant="destructive">
-            🗑️ Limpar
+             Limpar
           </Button>
           <Button onClick={cart.toggleCart} variant="secondary">
-            {cart.isOpen ? "❌ Fechar" : "🛒 Abrir"}
+            {cart.isOpen ? " Fechar" : " Abrir"}
           </Button>
         </div>
 
@@ -75,7 +75,7 @@ const CartTest: React.FC = () => {
 
         <Button
           onClick={() => {
-            console.group("🛒 Debug Carrinho");
+            console.group(" Debug Carrinho");
             console.log("Estado completo:", cart);
             console.log("Items array:", cart.items);
             console.log("LocalStorage:", localStorage.getItem("cart-items"));
@@ -84,7 +84,7 @@ const CartTest: React.FC = () => {
           variant="ghost"
           className="w-full text-xs"
         >
-          📋 Log Debug no Console
+           Log Debug no Console
         </Button>
       </CardContent>
     </Card>

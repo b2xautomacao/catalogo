@@ -1,9 +1,9 @@
 export const generateWhatsAppMessage = (orderData: any) => {
-  let message = `🛒 *NOVO PEDIDO*\n`;
+  let message = ` *NOVO PEDIDO*\n`;
   message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
   // Dados do cliente
-  message += `👤 *CLIENTE*\n`;
+  message += ` *CLIENTE*\n`;
   message += `- Nome: ${orderData.customer_name}\n`;
   if (orderData.customer_email) {
     message += `- Email: ${orderData.customer_email}\n`;
@@ -11,20 +11,20 @@ export const generateWhatsAppMessage = (orderData: any) => {
   message += `- WhatsApp: ${orderData.customer_phone}\n\n`;
 
   // Itens do pedido
-  message += `📦 *PRODUTOS*\n`;
+  message += ` *PRODUTOS*\n`;
   orderData.items.forEach((item: any, index: number) => {
     const itemTotal = item.price * item.quantity;
     message += `${index + 1}. *${item.name}*\n`;
     if (item.variation) {
-      message += `   🔸 ${item.variation}\n`;
+      message += `    ${item.variation}\n`;
     }
-    message += `   🔸 Qtd: ${item.quantity}x\n`;
-    message += `   🔸 Valor: R$ ${item.price.toFixed(2)} cada\n`;
-    message += `   🔸 Subtotal: R$ ${itemTotal.toFixed(2)}\n\n`;
+    message += `    Qtd: ${item.quantity}x\n`;
+    message += `    Valor: R$ ${item.price.toFixed(2)} cada\n`;
+    message += `    Subtotal: R$ ${itemTotal.toFixed(2)}\n\n`;
   });
 
   // Resumo financeiro
-  message += `💰 *RESUMO FINANCEIRO*\n`;
+  message += ` *RESUMO FINANCEIRO*\n`;
 
   const subtotal = orderData.items.reduce(
     (sum: number, item: any) => sum + item.price * item.quantity,
@@ -38,11 +38,11 @@ export const generateWhatsAppMessage = (orderData: any) => {
   }
 
   message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-  message += `✅ *TOTAL: R$ ${orderData.total_amount.toFixed(2)}*\n`;
+  message += ` *TOTAL: R$ ${orderData.total_amount.toFixed(2)}*\n`;
   message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
   // Método de entrega
-  message += `🚚 *ENTREGA*\n`;
+  message += ` *ENTREGA*\n`;
   message += `- Método: ${getShippingMethodName(orderData.shipping_method)}\n`;
 
   if (orderData.shipping_address && orderData.shipping_method !== "pickup") {
@@ -54,39 +54,39 @@ export const generateWhatsAppMessage = (orderData: any) => {
   message += `\n`;
 
   // Pagamento
-  message += `💳 *PAGAMENTO*\n`;
+  message += ` *PAGAMENTO*\n`;
   message += `- Método: ${getPaymentMethodName(orderData.payment_method)}\n\n`;
 
   // Observações
   if (orderData.notes) {
-    message += `📝 *OBSERVAÇÕES*\n`;
+    message += ` *OBSERVAÇÕES*\n`;
     message += `${orderData.notes}\n\n`;
   }
 
   // Rodapé
-  message += `⏰ Pedido gerado em: ${new Date().toLocaleString("pt-BR")}\n`;
-  message += `🤖 Enviado automaticamente pelo sistema de catálogo`;
+  message += ` Pedido gerado em: ${new Date().toLocaleString("pt-BR")}\n`;
+  message += ` Enviado automaticamente pelo sistema de catálogo`;
 
   return message;
 };
 
 export const getPaymentMethodName = (method: string) => {
   const methods: { [key: string]: string } = {
-    pix: "PIX 💸",
-    credit_card: "Cartão de Crédito 💳",
-    bank_slip: "Boleto Bancário 🧾",
-    cash: "Dinheiro 💵",
-    whatsapp: "A combinar via WhatsApp 📱",
+    pix: "PIX ",
+    credit_card: "Cartão de Crédito ",
+    bank_slip: "Boleto Bancário ",
+    cash: "Dinheiro ",
+    whatsapp: "A combinar via WhatsApp ",
   };
   return methods[method] || method;
 };
 
 export const getShippingMethodName = (method: string) => {
   const methods: { [key: string]: string } = {
-    pickup: "Retirada na Loja 🏬",
-    delivery: "Entrega Local 🚗",
-    shipping: "Correios 📮",
-    combine: "A combinar via WhatsApp 📱",
+    pickup: "Retirada na Loja ",
+    delivery: "Entrega Local ",
+    shipping: "Correios ",
+    combine: "A combinar via WhatsApp ",
   };
   return methods[method] || method;
 };

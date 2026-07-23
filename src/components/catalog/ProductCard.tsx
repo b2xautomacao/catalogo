@@ -140,23 +140,23 @@ const ProductCard: React.FC<ProductCardProps> = ({
           : "border-border bg-white hover:border-primary/30"
       }`}
     >
-      {/* 🎯 MELHORADO: Image Container com aspect ratio 1:1 e click */}
+      {/*  MELHORADO: Image Container com aspect ratio 1:1 e click */}
       <div className="relative cursor-pointer" onClick={handleViewDetails}>
         <ProductCardImageGallery
           productId={product.id}
           productName={product.name}
           maxImages={3}
-          className="aspect-square" // 🎯 FORÇA ASPECT RATIO 1:1
-          preloadedImages={(product as any).images} // 🚀 OTIMIZAÇÃO: Passar imagens pré-carregadas
+          className="aspect-square" //  FORÇA ASPECT RATIO 1:1
+          preloadedImages={(product as any).images} //  OTIMIZAÇÃO: Passar imagens pré-carregadas
         />
 
-        {/* 🎯 REORGANIZADOS: Badges sem sobreposição */}
+        {/*  REORGANIZADOS: Badges sem sobreposição */}
         <div className="absolute inset-2 pointer-events-none">
           {/* Top Left - Badge de Destaque */}
           {product.is_featured && (
             <div className="absolute top-0 left-0">
               <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs font-medium shadow-sm">
-                ✨ Destaque
+                 Destaque
               </Badge>
             </div>
           )}
@@ -212,7 +212,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Preço Principal */}
           {/* Price Display */}
           {variationInfo?.grades > 0 ? (
-            // 🎯 Produto com Grade - Usar GradePriceDisplay compacto
+            //  Produto com Grade - Usar GradePriceDisplay compacto
             <GradePriceDisplay
               retailPrice={product.retail_price}
               wholesalePrice={product.wholesale_price}
@@ -225,7 +225,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               className="p-0"
             />
           ) : (
-            // 🎯 Produto Normal - Preço padrão
+            //  Produto Normal - Preço padrão
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-foreground">

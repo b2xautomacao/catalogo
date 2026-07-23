@@ -415,7 +415,7 @@ const OrderBump: React.FC<OrderBumpProps> = ({
               >
                 {isSelected && (
                   <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">✓</span>
+                    <span className="text-white text-xs font-bold"></span>
                   </div>
                 )}
               </div>
@@ -481,7 +481,7 @@ const OrderBump: React.FC<OrderBumpProps> = ({
                           {formatCurrency(discountedPrice)}
                         </div>
                         <div className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full inline-block">
-                          💰 Economize {formatCurrency(savings)}
+                           Economize {formatCurrency(savings)}
                         </div>
                       </div>
                     ) : (
@@ -549,7 +549,7 @@ const OrderBump: React.FC<OrderBumpProps> = ({
           </div>
           <div className="hidden sm:block text-gray-400">•</div>
           <div className="text-xs font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
-            ⚡ Ofertas por tempo limitado
+             Ofertas por tempo limitado
           </div>
         </div>
       </div>

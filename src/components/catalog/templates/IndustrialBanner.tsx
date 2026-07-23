@@ -145,7 +145,7 @@ const IndustrialBanner: React.FC<IndustrialBannerProps> = ({ banner, onClick }) 
         <div className="flex items-center justify-between">
           <div>
             <Badge className="mb-2 bg-white/20 text-white font-bold px-3 py-1 clip-path-badge">
-              🔥 PROMOÇÃO
+               PROMOÇÃO
             </Badge>
             <h4 className="text-xl font-bold text-white mb-2">
               {banner.title}

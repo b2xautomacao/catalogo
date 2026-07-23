@@ -32,7 +32,7 @@ const CatalogExample: React.FC<CatalogExampleProps> = ({
   // Inicializar catálogo quando componente montar
   useEffect(() => {
     if (storeIdentifier) {
-      console.log("🚀 CATALOG EXAMPLE - Inicializando catálogo:", {
+      console.log(" CATALOG EXAMPLE - Inicializando catálogo:", {
         storeIdentifier,
         catalogType,
       });

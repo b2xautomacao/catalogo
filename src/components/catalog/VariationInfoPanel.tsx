@@ -32,7 +32,7 @@ const VariationInfoPanel: React.FC<VariationInfoPanelProps> = ({
         : 0;
       finalPrice = basePrice * totalPairs;
 
-      console.log("📦 VariationInfoPanel - Cálculo de preço da grade:", {
+      console.log(" VariationInfoPanel - Cálculo de preço da grade:", {
         variationName: variation.grade_name,
         basePrice,
         totalPairs,

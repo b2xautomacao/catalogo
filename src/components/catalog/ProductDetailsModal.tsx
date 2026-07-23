@@ -147,10 +147,10 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     useState<ProductVariation | null>(null);
   const [quickAddItems, setQuickAddItems] = useState<VariationSelection[]>([]);
   const [isGradeSelected, setIsGradeSelected] = useState(false);
-  // 🔴 NOVO: Estado para grade flexível
+  //  NOVO: Estado para grade flexível
   const [flexibleGradeMode, setFlexibleGradeMode] = useState<'full' | 'half' | 'custom'>('full');
   const [customGradeSelection, setCustomGradeSelection] = useState<CustomGradeSelection | null>(null);
-  // 🔴 NOVO: Rastrear cores adicionadas ao carrinho
+  //  NOVO: Rastrear cores adicionadas ao carrinho
   const [addedColors, setAddedColors] = useState<string[]>([]);
 
   // Usar um produto "vazio" para manter consistência dos hooks
@@ -186,7 +186,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     product.variations?.some((v) => v.is_grade || v.variation_type === "grade");
 
   // Debug para variações
-  console.log("🔍 ProductDetailsModal - Debug variações:", {
+  console.log(" ProductDetailsModal - Debug variações:", {
     productName: product.name,
     hasVariations,
     variationsCount: product.variations?.length || 0,
@@ -208,7 +208,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   });
 
   // Debug adicional: verificar se o produto tem as variações corretas
-  console.log("🔍 ProductDetailsModal - Debug produto completo:", {
+  console.log(" ProductDetailsModal - Debug produto completo:", {
     productId: product.id,
     productName: product.name,
     productKeys: Object.keys(product),
@@ -220,7 +220,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     variation: ProductVariation,
     quantity: number = minQuantity
   ) => {
-    console.log("🚀 ProductDetailsModal - handleQuickAdd CHAMADO:", {
+    console.log(" ProductDetailsModal - handleQuickAdd CHAMADO:", {
       variationId: variation.id,
       variationColor: variation.color,
       isGrade: variation.is_grade,
@@ -230,7 +230,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     // Para produtos com grade, quantidade sempre é 1 (1 grade completa)
     const finalQuantity = variation.is_grade ? 1 : quantity;
 
-    console.log("🛒 ProductDetailsModal - handleQuickAdd:", {
+    console.log(" ProductDetailsModal - handleQuickAdd:", {
       productName: product.name,
       variationId: variation.id,
       variationColor: variation.color,
@@ -306,7 +306,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
     // Para produtos com grade, quantidade sempre é 1 (1 grade completa)
     const finalQuantity = variation.is_grade ? 1 : minQuantity;
 
-    // 🔴 NOVO: Se for grade flexível, usar createCartItem diretamente com flexibleGradeMode
+    //  NOVO: Se for grade flexível, usar createCartItem diretamente com flexibleGradeMode
     if (variation.is_grade && variation.flexible_grade_config) {
       const cartItem = createCartItem(
         product,
@@ -326,7 +326,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
       
       addItem(cartItem);
       
-      // 🔴 NOVO: Adicionar cor à lista de cores adicionadas
+      //  NOVO: Adicionar cor à lista de cores adicionadas
       const color = variation.grade_color || variation.color || '';
       if (color && !addedColors.includes(color)) {
         setAddedColors(prev => [...prev, color]);
@@ -660,7 +660,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                           }
                           showPriceInCards={false}
                           showStock={showStock}
-                          // 🔴 NOVO: Passar callbacks para capturar modo de grade flexível
+                          //  NOVO: Passar callbacks para capturar modo de grade flexível
                           onFlexibleGradeModeChange={setFlexibleGradeMode}
                           onCustomSelectionChange={(selection) => {
                             setCustomGradeSelection(selection ? {
@@ -674,7 +674,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                               estimatedPrice: selection.estimatedPrice,
                             } : null);
                           }}
-                          // 🔴 NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
+                          //  NOVO: Callback para adicionar ao carrinho diretamente (novo fluxo)
                           onAddToCart={(variation, gradeMode, customSel) => {
                             const finalQuantity = variation.is_grade ? 1 : minQuantity;
                             const cartItem = createCartItem(
@@ -710,7 +710,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                               } adicionado.`,
                             });
                           }}
-                          // 🔴 NOVO: Passar cores já adicionadas para sugestões
+                          //  NOVO: Passar cores já adicionadas para sugestões
                           addedColors={addedColors}
                         />
 

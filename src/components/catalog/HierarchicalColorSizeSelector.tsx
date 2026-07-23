@@ -69,7 +69,7 @@ const HierarchicalColorSizeSelector: React.FC<
   const [selectedVariation, setSelectedVariation] =
     useState<ProductVariation | null>(null);
   // Debug para verificar catalogType
-  console.log("🔍 HierarchicalColorSizeSelector - Debug:", {
+  console.log(" HierarchicalColorSizeSelector - Debug:", {
     catalogType,
     productMinWholesaleQty: product.min_wholesale_qty,
     productName: product.name,
@@ -328,7 +328,7 @@ const HierarchicalColorSizeSelector: React.FC<
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-blue-600 text-sm">💡</span>
+            <span className="text-blue-600 text-sm"></span>
           </div>
           <div>
             <h4 className="font-medium text-blue-900 mb-1">Como funciona:</h4>
@@ -340,7 +340,7 @@ const HierarchicalColorSizeSelector: React.FC<
             {minQuantity > 1 && (
               <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
                 <p className="text-xs text-amber-700 font-medium">
-                  ⚠️ Quantidade mínima: {minQuantity} unidades por variação
+                   Quantidade mínima: {minQuantity} unidades por variação
                 </p>
               </div>
             )}

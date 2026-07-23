@@ -69,7 +69,7 @@ export const ButtonStyleProvider: React.FC<ButtonStyleProviderProps> = ({
         break;
     }
 
-    console.log(`🎨 Button style aplicado: ${style}`);
+    console.log(` Button style aplicado: ${style}`);
   };
 
   const setButtonStyle = (style: ButtonStyle) => {

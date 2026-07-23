@@ -167,7 +167,7 @@ const EnhancedWhatsAppCheckout: React.FC<EnhancedWhatsAppCheckoutProps> = ({
           </div>
 
           <p className="text-xs text-center text-gray-600">
-            🔒 Ao confirmar, você será redirecionado para o WhatsApp da loja
+             Ao confirmar, você será redirecionado para o WhatsApp da loja
           </p>
         </CardContent>
       </Card>

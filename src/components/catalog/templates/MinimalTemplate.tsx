@@ -46,7 +46,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
     product.variations?.some((v) => v.is_grade || v.variation_type === "grade");
 
   // Debug para detecção de grades
-  console.log("🔍 MinimalTemplate - Debug grade:", {
+  console.log(" MinimalTemplate - Debug grade:", {
     productName: product.name,
     hasVariations,
     hasGradeVariations,
@@ -76,7 +76,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
   const isOutOfStock = totalStock === 0 && !product.allow_negative_stock;
 
   const handleAddToCart = () => {
-    console.log("🛒 MINIMAL TEMPLATE - Tentativa de adicionar ao carrinho:", {
+    console.log(" MINIMAL TEMPLATE - Tentativa de adicionar ao carrinho:", {
       productId: product.id,
       productName: product.name,
       hasVariations,
@@ -91,11 +91,11 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
     });
 
     if (hasVariations) {
-      console.log("🔄 MINIMAL TEMPLATE - Abrindo modal (tem variações)");
+      console.log(" MINIMAL TEMPLATE - Abrindo modal (tem variações)");
       onQuickView(product);
     } else {
       console.log(
-        "🔄 MINIMAL TEMPLATE - Adicionando diretamente (sem variações)"
+        " MINIMAL TEMPLATE - Adicionando diretamente (sem variações)"
       );
       onAddToCart(product, minQuantity);
     }
@@ -111,7 +111,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
         className="relative aspect-square overflow-hidden cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
-          console.log('🖼️ MinimalTemplate - Click na imagem:', product.name);
+          console.log(' MinimalTemplate - Click na imagem:', product.name);
           onQuickView(product);
         }}
       >
@@ -185,7 +185,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
                 }`}
               >
                 {hasGradeVariations ? (
-                  <>📦 {product.variations.length} grades</>
+                  <> {product.variations.length} grades</>
                 ) : (
                   `+${product.variations.length} opções`
                 )}
@@ -201,7 +201,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
             className="font-medium text-gray-900 line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
-              console.log('📝 MinimalTemplate - Click no título:', product.name);
+              console.log(' MinimalTemplate - Click no título:', product.name);
               onQuickView(product);
             }}
           >
@@ -251,7 +251,7 @@ const MinimalTemplate: React.FC<MinimalTemplateProps> = ({
           className="w-full"
           variant={isOutOfStock ? "outline" : "default"}
           onClick={() => {
-            console.log("🖱️ MINIMAL TEMPLATE - Botão clicado:", {
+            console.log(" MINIMAL TEMPLATE - Botão clicado:", {
               productName: product.name,
               hasVariations,
               isOutOfStock,

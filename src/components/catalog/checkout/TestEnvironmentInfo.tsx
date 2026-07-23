@@ -45,7 +45,7 @@ const TestEnvironmentInfo = () => {
               <div className="flex items-center gap-2 mb-2">
                 <h4 className="font-semibold text-yellow-800">Ambiente de Teste</h4>
                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
-                  🧪 SANDBOX
+                   SANDBOX
                 </Badge>
               </div>
               <p className="text-yellow-700 text-sm mb-3">

@@ -73,7 +73,7 @@ const CustomGradeBuilder: React.FC<CustomGradeBuilderProps> = ({
 
   // Cores e tamanhos disponíveis
   const availableColors = useMemo(() => {
-    // 🔴 NOVO: Obter todas as cores disponíveis de todas as variações de grade
+    //  NOVO: Obter todas as cores disponíveis de todas as variações de grade
     const colorsSet = new Set<string>();
     
     // Se temos todas as variações, usar todas as cores

@@ -61,7 +61,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
         
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-blue-800 text-sm flex items-center gap-2">
-            <span className="text-blue-600">🔒</span>
+            <span className="text-blue-600"></span>
             Todos os pagamentos são processados de forma segura pelo Mercado Pago
           </p>
         </div>

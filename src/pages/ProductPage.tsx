@@ -27,13 +27,13 @@ import FloatingCart from "@/components/catalog/FloatingCart";
 import EnhancedCheckout from "@/components/catalog/checkout/EnhancedCheckout";
 import CheckoutModalWrapper from "@/components/catalog/checkout/CheckoutModalWrapper";
 import VariationPicker from "@/components/catalog/VariationPicker";
-// 🚀 Componentes de Conversão - FASE 1
+//  Componentes de Conversão - FASE 1
 import UrgencyBadges from "@/components/catalog/conversion/UrgencyBadges";
 import EnhancedPriceDisplay from "@/components/catalog/conversion/EnhancedPriceDisplay";
 import TrustSection from "@/components/catalog/conversion/TrustSection";
 import OptimizedCTA from "@/components/catalog/conversion/OptimizedCTA";
 import SimpleRating from "@/components/catalog/conversion/SimpleRating";
-// 🎯 Componentes de Conversão - FASE 2 (melhorias solicitadas)
+//  Componentes de Conversão - FASE 2 (melhorias solicitadas)
 import SocialProofCarousel from "@/components/catalog/conversion/SocialProofCarousel";
 import ProductVideoSection from "@/components/catalog/conversion/ProductVideoSection";
 import SocialProofTestimonials from "@/components/catalog/conversion/SocialProofTestimonials";
@@ -90,14 +90,14 @@ const ProductPage: React.FC<ProductPageProps> = ({
     : 'retail' as const;
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  // 🔴 NOVO: Rastrear cores adicionadas ao carrinho (para sugestões)
+  //  NOVO: Rastrear cores adicionadas ao carrinho (para sugestões)
   const [addedColors, setAddedColors] = useState<string[]>([]);
-  // 🖼️ Imagem da cor selecionada (atualiza galeria ao selecionar cor, mesmo sem tamanho)
+  //  Imagem da cor selecionada (atualiza galeria ao selecionar cor, mesmo sem tamanho)
   const [selectedColorImage, setSelectedColorImage] = useState<string | undefined>(undefined);
   const [storeName, setStoreName] = useState<string>('');
   const [storePhone, setStorePhone] = useState<string>('');
   const [catalogUrl, setCatalogUrl] = useState<string>('/');
-  // 🎬 FASE 2: Dados de vídeo e extras
+  //  FASE 2: Dados de vídeo e extras
   const [productVideo, setProductVideo] = useState<{
     video_url: string;
     video_type: 'youtube' | 'vimeo' | 'direct';
@@ -108,7 +108,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
   // Debug: Log das configurações de produto
   useEffect(() => {
     if (storeSettings) {
-      console.log("🔧 ProductPage - Configurações carregadas:", {
+      console.log(" ProductPage - Configurações carregadas:", {
         product_show_urgency_badges: storeSettings.product_show_urgency_badges,
         product_show_social_proof_carousel: storeSettings.product_show_social_proof_carousel,
         product_show_ratings: storeSettings.product_show_ratings,
@@ -120,7 +120,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
         storeContext: storeContext ? { id: storeContext.id, slug: storeContext.slug } : null,
       });
     } else {
-      console.warn("⚠️ ProductPage - storeSettings está null/undefined");
+      console.warn(" ProductPage - storeSettings está null/undefined");
     }
   }, [storeSettings, isPublicContext, storeContext]);
 
@@ -139,7 +139,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       try {
         setIsLoading(true);
 
-        console.log("📥 ProductPage - Carregando produto:", productId);
+        console.log(" ProductPage - Carregando produto:", productId);
 
         // Buscar produto
         let productQuery = supabase
@@ -156,7 +156,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
         const { data: productData, error: productError } = await productQuery.single();
 
         if (productError || !productData) {
-          console.error("❌ Erro ao buscar produto:", productError);
+          console.error(" Erro ao buscar produto:", productError);
 
           if (!isPublicContext) {
             toast({
@@ -182,7 +182,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        console.log("📦 Variações carregadas:", variations?.length || 0);
+        console.log(" Variações carregadas:", variations?.length || 0);
 
         // Buscar imagens
         const { data: images } = await supabase
@@ -191,7 +191,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
           .eq('product_id', productId)
           .order('display_order', { ascending: true });
 
-        console.log("📸 Imagens carregadas:", {
+        console.log(" Imagens carregadas:", {
           count: images?.length || 0,
           images: images?.map(img => ({
             url: img.image_url,
@@ -209,7 +209,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
           images: images || [],
         };
 
-        console.log("✅ Produto completo montado:", {
+        console.log(" Produto completo montado:", {
           name: fullProduct.name,
           hasImages: fullProduct.images.length > 0,
           hasVariations: fullProduct.variations.length > 0,
@@ -223,10 +223,10 @@ const ProductPage: React.FC<ProductPageProps> = ({
         if (isPublicContext && storeContext) {
           setStoreName(storeContext.name);
           setCatalogUrl(`https://${storeContext.slug}.aoseudispor.com.br`);
-          console.log("🏪 Contexto público - Loja:", storeContext.name);
+          console.log(" Contexto público - Loja:", storeContext.name);
         }
 
-        // 📊 Tracking: ViewContent (produto visualizado)
+        //  Tracking: ViewContent (produto visualizado)
         trackProductView({
           id: fullProduct.id,
           name: fullProduct.name,
@@ -245,14 +245,14 @@ const ProductPage: React.FC<ProductPageProps> = ({
               setStoreName(storeData.name || '');
               setStorePhone(storeData.phone || '');
               setCatalogUrl(storeData.url_slug ? `/catalog/${storeData.url_slug}` : '/');
-              console.log("✅ Dados da loja carregados:", {
+              console.log(" Dados da loja carregados:", {
                 name: storeData.name,
                 phone: storeData.phone,
                 url_slug: storeData.url_slug,
                 catalogUrl: storeData.url_slug ? `/catalog/${storeData.url_slug}` : '/',
               });
             } else {
-              console.warn("⚠️ Erro ao buscar loja (usando fallbacks):", storeError);
+              console.warn(" Erro ao buscar loja (usando fallbacks):", storeError);
               setCatalogUrl('/');
             }
           });
@@ -290,13 +290,13 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
   const handleAddToCart = () => {
     if (!product) {
-      console.error("❌ handleAddToCart - Produto não encontrado");
+      console.error(" handleAddToCart - Produto não encontrado");
       return;
     }
 
     // Se tem variações e nenhuma foi selecionada
     if (product.variations && product.variations.length > 0 && !selectedVariation) {
-      console.warn("⚠️ handleAddToCart - Nenhuma variação selecionada");
+      console.warn(" handleAddToCart - Nenhuma variação selecionada");
       toast({
         title: "Selecione uma opção",
         description: "Por favor, escolha cor, tamanho ou grade",
@@ -305,7 +305,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       return;
     }
 
-    console.log("🛒 handleAddToCart - Criando item do carrinho:", {
+    console.log(" handleAddToCart - Criando item do carrinho:", {
       productId: product.id,
       productName: product.name,
       quantity,
@@ -322,7 +322,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       // catalogType agora é dinâmico (wholesale para lojas atacado, retail para demais)
       const cartItem = createCartItem(product, catalogType, quantity, selectedVariation || undefined);
 
-      console.log("🛒 CartItem criado:", {
+      console.log(" CartItem criado:", {
         id: cartItem.id,
         productName: cartItem.product.name,
         quantity: cartItem.quantity,
@@ -334,9 +334,9 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
       addItem(cartItem);
 
-      console.log("✅ addItem() chamado com sucesso");
+      console.log(" addItem() chamado com sucesso");
 
-      // 📊 Tracking: AddToCart
+      //  Tracking: AddToCart
       trackAddToCart({
         id: product.id,
         name: product.name,
@@ -351,11 +351,11 @@ const ProductPage: React.FC<ProductPageProps> = ({
       });
 
       // Abrir FloatingCart automaticamente
-      console.log("🛒 Abrindo FloatingCart...");
+      console.log(" Abrindo FloatingCart...");
       toggleCart();
 
     } catch (error) {
-      console.error("❌ Erro ao adicionar ao carrinho:", error);
+      console.error(" Erro ao adicionar ao carrinho:", error);
       toast({
         title: "Erro ao adicionar",
         description: "Não foi possível adicionar o item ao carrinho",
@@ -419,7 +419,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
             <Button
               variant="ghost"
               onClick={() => {
-                console.log("⬅️ Voltando ao catálogo:", catalogUrl);
+                console.log(" Voltando ao catálogo:", catalogUrl);
                 window.location.href = catalogUrl;
               }}
               className="gap-2"
@@ -453,7 +453,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  console.log("🏠 Indo ao catálogo:", catalogUrl);
+                  console.log(" Indo ao catálogo:", catalogUrl);
                   window.location.href = catalogUrl;
                 }}
                 title="Ir ao catálogo"
@@ -515,7 +515,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               )}
             </div>
 
-            {/* 🎯 FASE 2: Vídeo do Produto (abaixo das imagens) - SÓ SE HOUVER VÍDEO CADASTRADO */}
+            {/*  FASE 2: Vídeo do Produto (abaixo das imagens) - SÓ SE HOUVER VÍDEO CADASTRADO */}
             <div className="mt-6 space-y-4">
               {storeSettings?.product_show_videos && productVideo && (
                 <ProductVideoSection
@@ -526,7 +526,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 />
               )}
 
-              {/* 🎯 FASE 2: Depoimentos de Clientes - SÓ SE HOUVER DEPOIMENTOS */}
+              {/*  FASE 2: Depoimentos de Clientes - SÓ SE HOUVER DEPOIMENTOS */}
               {storeSettings?.product_show_testimonials && testimonials && testimonials.length > 0 && (
                 <SocialProofTestimonials
                   testimonials={testimonials}
@@ -616,7 +616,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
 
               <Separator className="my-4" />
 
-              {/* 🚀 BADGES DE URGÊNCIA - Gatilho Mental #1 */}
+              {/*  BADGES DE URGÊNCIA - Gatilho Mental #1 */}
               {storeSettings?.product_show_urgency_badges && (
                 <UrgencyBadges
                   stock={storeSettings.product_show_low_stock_badge ? (product.stock || 0) : 999}
@@ -630,7 +630,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 />
               )}
 
-              {/* 🚀 PROVA SOCIAL EM CARROSSEL - Gatilho Mental #2 (FASE 2: Melhorado) */}
+              {/*  PROVA SOCIAL EM CARROSSEL - Gatilho Mental #2 (FASE 2: Melhorado) */}
               {storeSettings?.product_show_social_proof_carousel && (
                 <SocialProofCarousel
                   salesCount={75}
@@ -654,7 +654,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 />
               )}
 
-              {/* 🚀 RATING - Gatilho Mental #3 */}
+              {/*  RATING - Gatilho Mental #3 */}
               {storeSettings?.product_show_ratings && (
                 <SimpleRating
                   rating={4.8}
@@ -727,7 +727,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                     </div>
                   </div>
 
-                  {/* 🚀 BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
+                  {/*  BOTÃO CTA OTIMIZADO - Gatilho Mental #5 */}
                   <OptimizedCTA
                     onClick={handleAddToCart}
                     disabled={false}
@@ -749,7 +749,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* 🚀 SEÇÃO DE CONFIANÇA - Gatilho Mental #6 */}
+            {/*  SEÇÃO DE CONFIANÇA - Gatilho Mental #6 */}
             {storeSettings?.product_show_trust_section && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <TrustSection
@@ -765,7 +765,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* 🎬 FASE 2: Vídeo do Produto */}
+            {/*  FASE 2: Vídeo do Produto */}
             {storeSettings?.product_show_videos && product.video_url && (
               <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                 <ProductVideoSection
@@ -775,7 +775,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* 🎯 FASE 2: Tabela de Medidas Automática - SÓ para calçado e roupa */}
+            {/*  FASE 2: Tabela de Medidas Automática - SÓ para calçado e roupa */}
             {storeSettings?.product_show_size_chart &&
               product.product_gender &&
               product.product_category_type &&
@@ -792,7 +792,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
               )}
 
-            {/* 💬 FASE 2: Depoimentos de Clientes */}
+            {/*  FASE 2: Depoimentos de Clientes */}
             {storeSettings?.product_show_testimonials && (
               <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                 <SocialProofTestimonials
@@ -802,7 +802,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* 🎯 FASE 2: Cuidados do Produto - Usa dados cadastrados ou auto-gera */}
+            {/*  FASE 2: Cuidados do Produto - Usa dados cadastrados ou auto-gera */}
             {storeSettings?.product_show_care_section &&
               (product.product_category_type || product.material) && (
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -821,9 +821,9 @@ const ProductPage: React.FC<ProductPageProps> = ({
       {/* FloatingCart - Carrinho lateral flutuante */}
       <FloatingCart
         onCheckout={() => {
-          console.log("🛒 Abrindo checkout...");
+          console.log(" Abrindo checkout...");
 
-          // 📊 Tracking: InitiateCheckout
+          //  Tracking: InitiateCheckout
           trackInitiateCheckout(totalAmount, cartItems.length);
 
           setShowCheckout(true);
@@ -835,7 +835,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
       {showCheckout && product && (
         <CheckoutModalWrapper
           onClose={() => {
-            console.log("❌ Fechando checkout");
+            console.log(" Fechando checkout");
             setShowCheckout(false);
           }}
         >
@@ -844,7 +844,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
             storeName={storeName}
             storePhone={storePhone}
             onClose={() => {
-              console.log("❌ Fechando checkout");
+              console.log(" Fechando checkout");
               setShowCheckout(false);
             }}
           />

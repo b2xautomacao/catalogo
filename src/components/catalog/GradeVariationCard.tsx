@@ -38,12 +38,12 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
           )
         : 0;
       
-      // 1️⃣ grade_price dedicado (campo do banco — pós migração)
+      // 1⃣ grade_price dedicado (campo do banco — pós migração)
       const gp = (variation as any).grade_price;
       if (gp && gp > 0) {
         finalPrice = gp;
       } else {
-        // 2️⃣ Fallback: para atacado-only, basePrice JÁ é wholesale_price (via effectiveBasePrice)
+        // 2⃣ Fallback: para atacado-only, basePrice JÁ é wholesale_price (via effectiveBasePrice)
         //    Nesse caso, consideramos que basePrice é o preço da grade inteira
         //    (não multiplicar por pares pois seria errado)
         //    Para lojas de varejo, basePrice=retail_price_per_unit → multiplicar por pares
@@ -57,7 +57,7 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
         }
       }
 
-      console.log("📦 GradeVariationCard - Cálculo de preço:", {
+      console.log(" GradeVariationCard - Cálculo de preço:", {
         variationName: variation.grade_name,
         basePrice,
         grade_price: gp,
@@ -134,7 +134,7 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
               variation.grade_sizes &&
               variation.grade_pairs && (
                 <div className="space-y-3 mt-3">
-                  {/* 🎨 MELHORIA UX: Título mais destacado */}
+                  {/*  MELHORIA UX: Título mais destacado */}
                   <div className="flex items-center gap-2">
                     <div className="text-base font-semibold text-gray-900">
                       Composição da Grade:
@@ -146,7 +146,7 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
                     )}
                   </div>
                   
-                  {/* 🎨 MELHORIA UX: Grid melhorado com mais contraste */}
+                  {/*  MELHORIA UX: Grid melhorado com mais contraste */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                     {variation.grade_sizes.map((size, index) => {
                       const pairs = variation.grade_pairs?.[index] || 0;
@@ -159,18 +159,18 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
                           key={size}
                           className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 px-3 py-2.5 rounded-lg hover:shadow-md transition-shadow"
                         >
-                          {/* 🎨 MELHORIA UX: Tamanho destacado */}
+                          {/*  MELHORIA UX: Tamanho destacado */}
                           <div className="text-center mb-1.5">
                             <div className="text-lg font-bold text-gray-900 mb-0.5">
                               {size}
                             </div>
-                            {/* 🎨 MELHORIA UX: Quantidade com destaque */}
+                            {/*  MELHORIA UX: Quantidade com destaque */}
                             <div className="text-sm font-semibold text-primary">
                               {pairs} {pairs === 1 ? 'par' : 'pares'}
                             </div>
                           </div>
                           
-                          {/* 🎨 MELHORIA UX: Barra visual de proporção */}
+                          {/*  MELHORIA UX: Barra visual de proporção */}
                           {totalPairs > 0 && (
                             <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
                               <div
@@ -184,7 +184,7 @@ const GradeVariationCard: React.FC<GradeVariationCardProps> = ({
                     })}
                   </div>
                   
-                  {/* 🎨 MELHORIA UX: Resumo total mais visível */}
+                  {/*  MELHORIA UX: Resumo total mais visível */}
                   <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                     <span className="text-sm font-medium text-gray-700">
                       Total de pares:

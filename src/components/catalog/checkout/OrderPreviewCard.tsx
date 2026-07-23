@@ -72,7 +72,7 @@ const OrderPreviewCard: React.FC<OrderPreviewCardProps> = ({ orderData }) => {
         </Button>
 
         <div className="text-xs text-green-600 bg-green-100 p-2 rounded-lg">
-          💡 Esta mensagem será enviada automaticamente para o WhatsApp da loja
+           Esta mensagem será enviada automaticamente para o WhatsApp da loja
           quando você confirmar o pedido.
         </div>
       </CardContent>

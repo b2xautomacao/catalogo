@@ -64,7 +64,7 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
       >
         <DialogHeader className="checkout-modal-header shrink-0 px-6 py-4 border-b">
           <DialogTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white text-center`}>
-            🛒 Finalizar Pedido
+             Finalizar Pedido
           </DialogTitle>
         </DialogHeader>
 

@@ -31,7 +31,7 @@ const CheckoutContent: React.FC<CheckoutContentProps> = ({ onClose }) => {
   } = useCheckoutContext();
 
   // Debug do total do carrinho
-  console.log("🛒 CheckoutContent - Debug:", {
+  console.log(" CheckoutContent - Debug:", {
     cartItemsCount: cartItems.length,
     totalAmount,
     shippingCost,
@@ -54,7 +54,7 @@ const CheckoutContent: React.FC<CheckoutContentProps> = ({ onClose }) => {
     isMobile,
   } = useCheckoutLogic();
 
-  console.log("🖥️ CheckoutContent: Renderizando", {
+  console.log(" CheckoutContent: Renderizando", {
     currentStep,
     checkoutType,
     isMobile,

@@ -53,8 +53,8 @@ const MinimumPurchaseAlert: React.FC<MinimumPurchaseAlertProps> = ({
             <div className="space-y-2">
               <p className="font-medium">
                 {validation.isMinimumMet
-                  ? "✅ Pedido mínimo atingido!"
-                  : "⚠️ Pedido mínimo necessário"}
+                  ? " Pedido mínimo atingido!"
+                  : " Pedido mínimo necessário"}
               </p>
 
               <p className="text-sm">{validation.formattedMessage}</p>

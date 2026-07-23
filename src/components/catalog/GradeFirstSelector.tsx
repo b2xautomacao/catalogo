@@ -120,13 +120,13 @@ const GradeFirstSelector: React.FC<GradeFirstSelectorProps> = ({
     let fullGradePrice = 0;
     let fullGradeUnitPrice = adjustedBasePrice;
 
-    // 1️⃣ grade_price dedicado (campo do banco — pós migração)
+    // 1⃣ grade_price dedicado (campo do banco — pós migração)
     const gp = (firstVariation as any)?.grade_price;
     if (gp && gp > 0) {
       fullGradePrice = gp;
       fullGradeUnitPrice = fullGradeTotalPairs > 0 ? gp / fullGradeTotalPairs : gp;
     } else {
-      // 2️⃣ Fallback: heurística para não multiplicar em lojas onde basePrice já é o valor total
+      // 2⃣ Fallback: heurística para não multiplicar em lojas onde basePrice já é o valor total
       const seemsLikeGradePrice = adjustedBasePrice >= fullGradeTotalPairs * 3;
       if (seemsLikeGradePrice) {
         fullGradePrice = adjustedBasePrice;

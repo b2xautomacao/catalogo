@@ -128,7 +128,7 @@ const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
-                Olá! 👋 Como posso ajudar você hoje?
+                Olá!  Como posso ajudar você hoje?
               </p>
 
               {totalItems > 0 && (

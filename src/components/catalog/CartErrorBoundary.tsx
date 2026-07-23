@@ -25,14 +25,14 @@ class CartErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🚨 CartErrorBoundary: Erro capturado no carrinho:', error, errorInfo);
+    console.error(' CartErrorBoundary: Erro capturado no carrinho:', error, errorInfo);
     
     // Limpar dados corrompidos do localStorage
     try {
       localStorage.removeItem('cart-items');
-      console.log('🧹 CartErrorBoundary: localStorage do carrinho limpo');
+      console.log(' CartErrorBoundary: localStorage do carrinho limpo');
     } catch (e) {
-      console.error('❌ Erro ao limpar localStorage:', e);
+      console.error(' Erro ao limpar localStorage:', e);
     }
   }
 
@@ -44,7 +44,7 @@ class CartErrorBoundary extends Component<Props, State> {
       // Recarregar a página para garantir estado limpo
       window.location.reload();
     } catch (error) {
-      console.error('❌ Erro ao resetar carrinho:', error);
+      console.error(' Erro ao resetar carrinho:', error);
     }
   };
 

@@ -151,7 +151,7 @@ const ProductCardOptimized: React.FC<ProductCardOptimizedProps> = ({
   };
 
   const handleViewDetails = (e?: React.MouseEvent) => {
-    console.log('🖱️ ProductCardOptimized - handleViewDetails chamado:', { 
+    console.log(' ProductCardOptimized - handleViewDetails chamado:', {
       productId: product.id, 
       productName: product.name,
       hasOnViewDetails: !!onViewDetails,
@@ -170,7 +170,7 @@ const ProductCardOptimized: React.FC<ProductCardOptimizedProps> = ({
       const currentHost = window.location.hostname;
       const isSubdomain = currentHost.includes('.aoseudispor.com.br') && !currentHost.startsWith('app.');
       
-      console.log('🔄 ProductCardOptimized - Redirecionando:', { currentHost, isSubdomain });
+      console.log(' ProductCardOptimized - Redirecionando:', { currentHost, isSubdomain });
       
       if (isSubdomain) {
         window.location.href = `/produto/${product.id}`;
