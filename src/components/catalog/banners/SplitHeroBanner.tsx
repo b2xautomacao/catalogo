@@ -57,18 +57,20 @@ const SplitHeroBanner: React.FC<SplitHeroBannerProps> = ({
   if (loading || banners.length === 0) return null;
 
   const renderSlide = (banner: (typeof banners)[number], index: number) => {
-    const isArtwork = wideArtwork[banner.id];
+    const artworkStatus = wideArtwork[banner.id];
+    const isArtwork = artworkStatus === true;
+    const isPending = artworkStatus === undefined;
 
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-border/70 bg-background",
-          isArtwork
-            ? "aspect-[16/7] min-h-[220px]"
+          "relative w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border/70 bg-background md:rounded-2xl",
+          isArtwork || isPending
+            ? "aspect-[2.25/1] md:aspect-[16/7]"
             : "grid min-h-[380px] items-center gap-8 px-6 py-10 md:grid-cols-[0.82fr_1.18fr] md:px-12 md:py-12"
         )}
       >
-        {!isArtwork && (
+        {!isArtwork && !isPending && (
           <div className="order-2 flex flex-col items-start md:order-1">
             {eyebrowText && (
               <span className="mb-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -99,12 +101,12 @@ const SplitHeroBanner: React.FC<SplitHeroBannerProps> = ({
           </div>
         )}
 
-        <div className={cn("order-1 md:order-2", isArtwork && "absolute inset-0")}>
-          <div className={cn("relative size-full overflow-hidden bg-muted/20", !isArtwork && "aspect-[4/3] rounded-xl")}>
+        <div className={cn("order-1 min-w-0 md:order-2", (isArtwork || isPending) && "absolute inset-0")}>
+          <div className={cn("relative size-full min-w-0 overflow-hidden bg-muted/20", !isArtwork && !isPending && "aspect-[4/3] rounded-xl")}>
             <img
               src={banner.image_url}
               alt={banner.title}
-              className={cn("size-full", isArtwork ? "object-cover" : "object-contain")}
+              className="block size-full max-w-full object-contain"
               loading={index === 0 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "auto"}
               onLoad={(event) => {
@@ -122,8 +124,8 @@ const SplitHeroBanner: React.FC<SplitHeroBannerProps> = ({
   };
 
   return (
-    <section className={cn("bg-background", className)}>
-      <div className="container mx-auto px-4">
+    <section className={cn("w-full max-w-full overflow-x-hidden bg-background", className)}>
+      <div className="container mx-auto min-w-0 max-w-full px-3 sm:px-4">
         {banners.length === 1 ? (
           renderSlide(banners[0], 0)
         ) : (
