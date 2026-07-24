@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, Package, ShoppingCart, Sparkles } from "lucide-react";
+import { Heart, ShoppingCart, SlidersHorizontal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,9 +47,7 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
   const hasVariations = Boolean(product.variations?.length);
-  const hasGradeVariations = Boolean(
-    product.variations?.some((variation) => variation.is_grade || variation.variation_type === "grade")
-  );
+  const variationCount = product.variations?.length || 0;
   const priceInfo = useProductDisplayPrice({ product, catalogType, quantity: 1 });
   const totalStock = hasVariations
     ? product.variations?.reduce((sum, variation) => sum + (variation.stock || 0), 0) || 0
@@ -80,9 +78,8 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
         </button>
 
         {product.is_featured && (
-          <Badge variant="secondary" className="pointer-events-none absolute left-2 top-2 gap-1 px-2 py-1 text-[10px] sm:left-3 sm:top-3 sm:text-xs">
-            <Sparkles />
-            <span className="hidden min-[380px]:inline">Destaque</span>
+          <Badge variant="secondary" className="pointer-events-none absolute left-2 top-2 px-2 py-1 text-[10px] font-medium sm:left-3 sm:top-3 sm:text-xs">
+            Destaque
           </Badge>
         )}
 
@@ -94,13 +91,12 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           aria-label={isInWishlist ? "Remover dos favoritos" : "Adicionar aos favoritos"}
           onClick={() => onAddToWishlist(product)}
         >
-          <Heart className={cn(isInWishlist && "fill-current text-primary")} />
+          <Heart className={cn("text-foreground", isInWishlist && "fill-current text-primary")} />
         </Button>
 
         {hasVariations && (
-          <Badge variant="secondary" className="pointer-events-none absolute bottom-2 left-2 gap-1 text-[10px] sm:text-xs">
-            <Package />
-            {hasGradeVariations ? "Grades" : `${product.variations?.length} opções`}
+          <Badge variant="secondary" className="pointer-events-none absolute bottom-2 left-2 text-[10px] font-medium sm:text-xs">
+            {variationCount} {variationCount === 1 ? "variação" : "variações"}
           </Badge>
         )}
       </div>
@@ -144,7 +140,11 @@ const ElegantTemplate: React.FC<ElegantTemplateProps> = ({
           onClick={handleAction}
           disabled={isOutOfStock}
         >
-          <ShoppingCart data-icon="inline-start" className="hidden min-[360px]:block" />
+          {hasVariations ? (
+            <SlidersHorizontal data-icon="inline-start" className="hidden min-[360px]:block" />
+          ) : (
+            <ShoppingCart data-icon="inline-start" className="hidden min-[360px]:block" />
+          )}
           <span className="sm:hidden">{hasVariations ? "Opções" : isOutOfStock ? "Esgotado" : "Adicionar"}</span>
           <span className="hidden sm:inline">
             {hasVariations ? "Escolher opções" : isOutOfStock ? "Esgotado" : "Adicionar"}

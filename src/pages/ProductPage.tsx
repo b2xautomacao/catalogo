@@ -44,13 +44,10 @@ import {
   ShoppingCart,
   Heart,
   Share2,
-  Package,
   Truck,
   Shield,
-  Star,
   Loader2,
   Home,
-  Check,
 } from "lucide-react";
 
 interface ProductPageProps {
@@ -492,28 +489,6 @@ const ProductPage: React.FC<ProductPageProps> = ({
               productName={product.name}
               selectedVariationImage={selectedVariation?.image_url || selectedColorImage || product.image_url}
             />
-
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              {product.is_featured && (
-                <Badge variant="secondary">
-                  <Star data-icon="inline-start" />
-                  Destaque
-                </Badge>
-              )}
-              {hasGradeVariations && (
-                <Badge variant="secondary">
-                  <Package data-icon="inline-start" />
-                  Grade disponível
-                </Badge>
-              )}
-              {product.stock && product.stock > 0 && (
-                <Badge variant="outline" className="text-green-600">
-                  <Check data-icon="inline-start" />
-                  Em estoque
-                </Badge>
-              )}
-            </div>
 
             {/*  FASE 2: Vídeo do Produto (abaixo das imagens) - SÓ SE HOUVER VÍDEO CADASTRADO */}
             <div className="mt-6 space-y-4">
