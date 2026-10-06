@@ -12,6 +12,7 @@ import { ProductVariation } from "@/types/product";
 
 import UnifiedGradeManager from "../UnifiedGradeManager";
 import ColorPickerPopover from "../ColorPickerPopover";
+import VisualVariationMatrix from "./VisualVariationMatrix";
 import { useToast } from "@/hooks/use-toast";
 
 interface VariationsStepProps {
@@ -655,6 +656,11 @@ const VariationsStep: React.FC<VariationsStepProps> = ({ formData, updateFormDat
            </Card>
         </div>
       </div>
+
+      {/* Matriz Canônica e Grade Cards Visuais */}
+      {formData.variations.length > 0 && (
+        <VisualVariationMatrix variations={formData.variations} />
+      )}
     </div>
   );
 };

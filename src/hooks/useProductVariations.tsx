@@ -2,8 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ProductVariation } from "@/types/product";
+import { reconcileProductVariations } from "@/lib/variationReconciliationService";
 
-export const useProductVariations = (productId?: string, initialData?: ProductVariation[]) => {
+export const useProductVariations = (
+  productId?: string,
+  initialData?: ProductVariation[],
+  storeId?: string
+) => {
   const [variations, setVariations] = useState<ProductVariation[]>(initialData || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,82 +96,31 @@ export const useProductVariations = (productId?: string, initialData?: ProductVa
 
   const saveVariations = useCallback(async (
     prodId: string,
-    vars: ProductVariation[]
+    vars: ProductVariation[],
+    targetStoreId?: string
   ) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("product_variations")
-        .delete()
-        .eq("product_id", prodId)
-        .or("variation_type.is.null,variation_type.eq.simple,variation_type.eq.grade");
+      const effectiveStoreId = targetStoreId || storeId;
+      const result = await reconcileProductVariations(prodId, vars, {
+        storeId: effectiveStoreId,
+        uploadImageFn: uploadVariationImage,
+      });
 
-      if (deleteError) throw deleteError;
-
-      if (vars.length > 0) {
-        const variationsToInsert = await Promise.all(
-          vars.map(async (variation, i) => {
-            let imageUrl = variation.image_url;
-            if (variation.image_file) {
-              const uploadedUrl = await uploadVariationImage(variation.image_file, i, prodId);
-              if (uploadedUrl) imageUrl = uploadedUrl;
-            }
-
-            const variationType = variation.variation_type === "grade" || variation.is_grade ? "grade" : variation.variation_type || "simple";
-            const isGradeVariation = !!variation.is_grade || variationType === "grade";
-
-            const variationData: any = {
-              product_id: prodId,
-              variation_type: variationType,
-              variation_value: variation.name || variation.color || variation.size || `Variação ${i + 1}`,
-              color: variation.color || null,
-              size: variation.size || null,
-              sku: variation.sku || null,
-              stock: typeof variation.stock === "number" ? variation.stock : 0,
-              price_adjustment: typeof variation.price_adjustment === "number" ? variation.price_adjustment : 0,
-              is_active: typeof variation.is_active === "boolean" ? variation.is_active : true,
-              image_url: imageUrl || null,
-              hex_color: variation.hex_color || null,
-              display_order: i,
-              name: variation.name || null,
-              is_grade: isGradeVariation,
-            };
-
-            if (isGradeVariation) {
-              variationData.grade_name = variation.grade_name || null;
-              variationData.grade_color = variation.grade_color || variation.color || null;
-              variationData.grade_quantity = typeof variation.grade_quantity === "number" ? variation.grade_quantity : null;
-              variationData.grade_sizes = Array.isArray(variation.grade_sizes) ? variation.grade_sizes : null;
-              variationData.grade_pairs = Array.isArray(variation.grade_pairs) ? variation.grade_pairs : null;
-              variationData.grade_sale_mode = variation.grade_sale_mode || null;
-              variationData.flexible_grade_config = variation.flexible_grade_config || null;
-              // grade_price: preço fixo da grade inteira (fonte primária no cartHelpers)
-              if (typeof variation.grade_price === 'number' && variation.grade_price > 0) {
-                variationData.grade_price = variation.grade_price;
-              }
-            }
-
-            return variationData;
-          })
-        );
-
-        const { data, error: insertError } = await supabase
-          .from("product_variations")
-          .insert(variationsToInsert)
-          .select();
-
-        if (insertError) throw insertError;
-        setVariations((data as any[]) || []);
-      } else {
-        setVariations([]);
+      if (!result.success) {
+        throw new Error(result.error || "Falha na reconciliação de variações");
       }
 
-      toast({ title: "Variações salvas!", description: `${vars.length} variação(ões) salva(s) com sucesso.` });
+      setVariations(result.variations);
+      toast({
+        title: "Variações sincronizadas!",
+        description: `${result.variations.length} variação(ões) salva(s) com sucesso.`,
+      });
       return { success: true, error: null };
     } catch (error: any) {
       toast({ title: "Erro ao salvar variações", description: error.message, variant: "destructive" });
       return { success: false, error: error.message };
     }
-  }, [uploadVariationImage, toast]);
+  }, [storeId, uploadVariationImage, toast]);
 
   const deleteVariationById = useCallback(async (variationId: string) => {
     try {

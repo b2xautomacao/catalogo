@@ -28,9 +28,11 @@ import FlexibleGradeConfigForm from "./FlexibleGradeConfigForm";
 import ColorPickerPopover from "./ColorPickerPopover";
 import type { FlexibleGradeConfig } from "@/types/flexible-grade";
 import { DEFAULT_FLEXIBLE_GRADE_CONFIG } from "@/types/flexible-grade";
-import { useStoreGrades } from "@/hooks/useStoreGrades";
+import { useGradeTemplates } from "@/hooks/useGradeTemplates";
 import { useStoreColors } from "@/hooks/useStoreColors";
 import { resolveColorHex } from "@/lib/colors";
+import { GradeTemplate, SizePairConfig } from "@/types/grade";
+import { templateToWizardGrade, calculateTemplateTotal } from "@/lib/gradeDomainAdapter";
 
 interface GradeConfigurationFormProps {
   variations: ProductVariation[];
@@ -38,11 +40,6 @@ interface GradeConfigurationFormProps {
   productId?: string;
   storeId?: string;
   productName?: string;
-}
-
-interface SizePairConfig {
-  size: string;
-  pairs: number;
 }
 
 const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
@@ -59,8 +56,18 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
   const [customMaterial, setCustomMaterial] = useState("");
   const [sizePairConfigs, setSizePairConfigs] = useState<SizePairConfig[]>([]);
   const [gradeName, setGradeName] = useState("Grade Personalizada");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [customTemplateName, setCustomTemplateName] = useState("");
 
-  const { grades: storeGrades } = useStoreGrades(storeId);
+  const {
+    systemTemplates,
+    customTemplates,
+    loading: loadingTemplates,
+    error: templatesError,
+    refetch: refetchTemplates,
+    createCustomTemplate,
+  } = useGradeTemplates(storeId);
+
   const { colors: storeColors, syncDefaultColors } = useStoreColors(storeId);
   const [syncingDefaults, setSyncingDefaults] = useState(false);
 
@@ -102,51 +109,6 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "P", "M", "G", "GG"
   ];
 
-
-
-  const gradeTemplates = [
-    {
-      name: "Grade Baixa",
-      sizes: ["35", "36", "37", "38", "39"],
-      distribution: [1, 2, 2, 2, 1],
-    },
-    {
-      name: "Grade Média",
-      sizes: ["34", "35", "36", "37", "38", "39", "40"],
-      distribution: [1, 2, 2, 3, 2, 2, 1],
-    },
-    {
-      name: "Grade Alta",
-      sizes: ["36", "37", "38", "39", "40", "41", "42"],
-      distribution: [1, 2, 2, 3, 2, 2, 1],
-    },
-    {
-      name: "Grade Masculina",
-      sizes: ["38", "39", "40", "41", "42", "43", "44"],
-      distribution: [1, 2, 3, 3, 2, 1, 1],
-    },
-    {
-      name: "Grade Infantil Pequena",
-      sizes: ["17/18", "19/20", "21/22", "23/24"],
-      distribution: [3, 3, 3, 3],
-    },
-    {
-      name: "Grade Infantil Média",
-      sizes: ["21/22", "23/24", "25/26", "26/27"],
-      distribution: [3, 3, 3, 3],
-    },
-    {
-      name: "Grade Infantil Grande",
-      sizes: ["26/27", "28/29", "30/31", "32/33"],
-      distribution: [3, 3, 3, 3],
-    },
-    {
-      name: "Grade Letras",
-      sizes: ["P", "M", "G", "GG"],
-      distribution: [2, 3, 3, 2],
-    }
-  ];
-
   // Cores da loja são as únicas disponíveis
   const availableColors = storeColors.map(c => c.name);
 
@@ -176,17 +138,14 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
     }
   };
 
-  const applyGradeTemplate = (template: any) => {
-    const templatePairs = template.distribution || template.default_quantities || [];
-    const newConfigs: SizePairConfig[] = template.sizes.map((size, index) => ({
-      size,
-      pairs: templatePairs[index] || 1,
-    }));
+  const applyGradeTemplate = (template: GradeTemplate) => {
+    const newConfigs = templateToWizardGrade(template);
     setSizePairConfigs(newConfigs);
     setGradeName(template.name);
+    const total = template.total_units || calculateTemplateTotal(template.items);
     toast({ 
       title: "Template Aplicado", 
-      description: `${template.name} com ${newConfigs.reduce((s, c) => s + c.pairs, 0)} pares selecionada.` 
+      description: `${template.name} com ${total} pares selecionada.` 
     });
   };
 
@@ -339,6 +298,29 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
           variant: "destructive",
         });
         return;
+      }
+
+      // Se o usuário selecionou para salvar como modelo da loja
+      if (saveAsTemplate && sizePairConfigs.length > 0) {
+        const templateNameToSave = customTemplateName.trim() || gradeName;
+        const { error: saveTmplErr } = await createCustomTemplate({
+          name: templateNameToSave,
+          items: sizePairConfigs,
+        });
+
+        if (saveTmplErr) {
+          toast({
+            title: "Aviso sobre modelo de grade",
+            description: saveTmplErr,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Modelo salvo na loja!",
+            description: `O modelo "${templateNameToSave}" foi salvo e já está disponível para reutilização.`,
+          });
+          setSaveAsTemplate(false);
+        }
       }
 
       console.log(
@@ -543,11 +525,34 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               Use um template pronto ou configure manualmente os tamanhos e quantidades
             </p>
 
-            {storeGrades && storeGrades.length > 0 && (
+            {templatesError && (
+              <Alert variant="destructive" className="mb-4 py-2">
+                <AlertDescription className="flex items-center justify-between text-xs">
+                  <span>{templatesError}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchTemplates()}
+                    className="h-6 text-xs bg-white text-slate-800"
+                  >
+                    Tentar novamente
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {loadingTemplates && (
+              <div className="flex items-center gap-2 py-3 text-xs text-gray-400">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                Carregando modelos de grade...
+              </div>
+            )}
+
+            {!loadingTemplates && customTemplates && customTemplates.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 font-semibold uppercase mb-2">⭐️ Suas Grades Personalizadas</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  {storeGrades.map((template) => (
+                  {customTemplates.map((template) => (
                     <Button
                       key={template.id}
                       variant="default"
@@ -558,7 +563,7 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                       <Package className="w-4 h-4 mr-2" />
                       <span className="truncate">{template.name}</span>
                       <Badge variant="secondary" className="ml-auto bg-emerald-500 text-white font-bold">
-                        {((template as any).distribution || (template as any).default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
+                        {template.total_units} P
                       </Badge>
                     </Button>
                   ))}
@@ -566,24 +571,28 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
               </div>
             )}
 
-            <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Templates Padrão</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-              {gradeTemplates.map((template) => (
-                <Button
-                  key={template.name}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => applyGradeTemplate(template)}
-                  className="justify-start text-gray-600"
-                >
-                  <Package className="w-4 h-4 mr-2 opacity-50" />
-                  <span className="truncate">{template.name}</span>
-                  <Badge variant="secondary" className="ml-auto opacity-75 font-bold">
-                    {((template as any).distribution || (template as any).default_quantities || []).reduce((a: number, b: number) => a + b, 0)} P
-                  </Badge>
-                </Button>
-              ))}
-            </div>
+            {!loadingTemplates && systemTemplates && systemTemplates.length > 0 && (
+              <>
+                <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Templates Padrão</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+                  {systemTemplates.map((template) => (
+                    <Button
+                      key={template.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => applyGradeTemplate(template)}
+                      className="justify-start text-gray-600"
+                    >
+                      <Package className="w-4 h-4 mr-2 opacity-50" />
+                      <span className="truncate">{template.name}</span>
+                      <Badge variant="secondary" className="ml-auto opacity-75 font-bold">
+                        {template.total_units} P
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -703,6 +712,37 @@ const GradeConfigurationForm: React.FC<GradeConfigurationFormProps> = ({
                     </Button>
                   </div>
                 ))}
+
+                {/* Opção discreta para salvar como modelo da loja */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="save-as-template"
+                      checked={saveAsTemplate}
+                      onCheckedChange={(checked) => {
+                        const isChecked = Boolean(checked);
+                        setSaveAsTemplate(isChecked);
+                        if (isChecked && !customTemplateName) {
+                          setCustomTemplateName(gradeName !== "Grade Personalizada" ? gradeName : "");
+                        }
+                      }}
+                    />
+                    <Label htmlFor="save-as-template" className="text-xs font-medium text-slate-700 cursor-pointer">
+                      Salvar como modelo da loja (reutilizável em outros produtos)
+                    </Label>
+                  </div>
+
+                  {saveAsTemplate && (
+                    <div className="flex gap-2 items-center pl-6">
+                      <Input
+                        placeholder="Nome do modelo (ex: Grade Verão Especial)"
+                        value={customTemplateName}
+                        onChange={(e) => setCustomTemplateName(e.target.value)}
+                        className="h-8 text-xs max-w-xs"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

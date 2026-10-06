@@ -1,13 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { DollarSign, Tag, TrendingDown, Info, Layers, Package, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, Tag, TrendingDown, Info, Layers, Package, AlertCircle, Plus, Trash2, Scale } from "lucide-react";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ProductVariation } from "@/types/product";
+import { PriceTierItem, validatePriceTiers, normalizePriceTiers } from "@/lib/priceTierDomainService";
 
 interface PricingStepProps {
   formData: PremiumWizardFormData;
@@ -19,6 +21,54 @@ const PricingStep: React.FC<PricingStepProps> = ({ formData, updateFormData, pri
   const modelType = priceModel?.price_model || 'simple_wholesale';
   const isWholesaleOnly = modelType === 'wholesale_only';
   const isRetailOnly = modelType === 'retail_only';
+
+  const priceTiers = formData.price_tiers || [];
+  const [isTiersExpanded, setIsTiersExpanded] = useState(priceTiers.length > 0);
+
+  // Validação dinâmica das faixas
+  const tierValidation = useMemo(
+    () => validatePriceTiers(priceTiers, formData.retail_price, formData.wholesale_price),
+    [priceTiers, formData.retail_price, formData.wholesale_price]
+  );
+
+  const handleAddTier = () => {
+    if (priceTiers.length >= 4) return;
+    const nextOrder = priceTiers.length + 1;
+    const lastTier = priceTiers[priceTiers.length - 1];
+    const nextMinQty = lastTier ? lastTier.min_quantity + 3 : 3;
+    const nextPrice = lastTier
+      ? Math.max(0, Number((lastTier.price * 0.9).toFixed(2)))
+      : formData.wholesale_price && formData.wholesale_price > 0
+      ? formData.wholesale_price
+      : formData.retail_price && formData.retail_price > 0
+      ? Number((formData.retail_price * 0.9).toFixed(2))
+      : 0;
+
+    const newTier: PriceTierItem = {
+      tier_name: `A partir de ${nextMinQty} un`,
+      min_quantity: nextMinQty,
+      price: nextPrice,
+      tier_order: nextOrder,
+      tier_type: "gradual_wholesale",
+      is_active: true,
+    };
+
+    updateFormData({
+      price_tiers: [...priceTiers, newTier],
+    });
+    setIsTiersExpanded(true);
+  };
+
+  const handleUpdateTier = (index: number, updates: Partial<PriceTierItem>) => {
+    const updated = priceTiers.map((tier, i) => (i === index ? { ...tier, ...updates } : tier));
+    updateFormData({ price_tiers: updated });
+  };
+
+  const handleRemoveTier = (index: number) => {
+    const filtered = priceTiers.filter((_, i) => i !== index);
+    const normalized = normalizePriceTiers(filtered);
+    updateFormData({ price_tiers: normalized });
+  };
 
   // Separar variações de grade e variações simples
   const gradeVariations = useMemo(
@@ -161,6 +211,174 @@ const PricingStep: React.FC<PricingStepProps> = ({ formData, updateFormData, pri
               de desconto).
             </AlertDescription>
           </Alert>
+        )}
+      </div>
+
+      {/* ── NÍVEIS DE PREÇO POR QUANTIDADE (ATACAREJO / PROGRESSIVO) ── */}
+      <div className="pt-6 border-t border-slate-100">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600">
+              <Scale className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-900">Faixas de Preço por Quantidade</h2>
+                <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 bg-amber-50">
+                  {priceTiers.length > 0 ? `${priceTiers.length} faixa${priceTiers.length > 1 ? "s" : ""}` : "Atacarejo / Opcional"}
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-500">
+                Ofereça descontos automáticos no carrinho conforme a quantidade adquirida (ex: 3+, 6+, 12+ peças).
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsTiersExpanded(!isTiersExpanded)}
+            className="text-xs border-slate-200 hover:bg-slate-50"
+          >
+            {isTiersExpanded ? "Ocultar Faixas" : priceTiers.length > 0 ? "Editar Faixas" : "+ Configurar Faixas"}
+          </Button>
+        </div>
+
+        {isTiersExpanded && (
+          <Card className="border-amber-100 bg-amber-50/20 mt-3">
+            <CardContent className="p-4 space-y-4">
+              {priceTiers.length === 0 ? (
+                <div className="text-center py-5 space-y-2">
+                  <p className="text-xs text-slate-600 font-medium">
+                    Nenhuma faixa de atacarejo configurada para este produto.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddTier}
+                    className="bg-amber-600 hover:bg-amber-700 text-white text-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Adicionar Primeira Faixa
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    {priceTiers.map((tier, idx) => {
+                      const discount =
+                        formData.retail_price > 0 && tier.price > 0
+                          ? ((1 - tier.price / formData.retail_price) * 100).toFixed(1)
+                          : null;
+
+                      return (
+                        <div
+                          key={tier.id || idx}
+                          className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-white rounded-xl border border-amber-100 shadow-sm"
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-[10px] font-bold">
+                              Faixa {idx + 1}
+                            </Badge>
+                            <Input
+                              type="text"
+                              value={tier.tier_name}
+                              onChange={(e) => handleUpdateTier(idx, { tier_name: e.target.value })}
+                              placeholder={`Ex: A partir de ${tier.min_quantity} un`}
+                              className="h-8 text-xs font-semibold bg-slate-50/50 border-slate-200 flex-1 min-w-[120px]"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <Label className="text-[11px] font-bold text-slate-600 whitespace-nowrap">Qtd. Mín:</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={tier.min_quantity}
+                                onChange={(e) => handleUpdateTier(idx, { min_quantity: parseInt(e.target.value) || 1 })}
+                                className="h-8 w-20 text-xs font-bold text-center bg-slate-50 border-slate-200"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <Label className="text-[11px] font-bold text-slate-600 whitespace-nowrap">Preço Un:</Label>
+                              <div className="w-28">
+                                <CurrencyInput
+                                  value={tier.price}
+                                  onChange={(v) => handleUpdateTier(idx, { price: v })}
+                                  className="h-8 text-xs font-bold bg-white border-amber-200 text-amber-900"
+                                  placeholder="R$ 0,00"
+                                />
+                              </div>
+                            </div>
+
+                            {discount && Number(discount) > 0 && (
+                              <Badge className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] whitespace-nowrap">
+                                -{discount}%
+                              </Badge>
+                            )}
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveTier(idx)}
+                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-600"
+                              title="Remover faixa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Feedback de Validação */}
+                  {!tierValidation.valid && tierValidation.errors.length > 0 && (
+                    <Alert className="bg-red-50 border-red-200 py-2">
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                      <AlertDescription className="text-red-700 text-xs">
+                        {tierValidation.errors.map((err, i) => (
+                          <div key={i}>{err}</div>
+                        ))}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {tierValidation.warnings.length > 0 && (
+                    <Alert className="bg-amber-50 border-amber-200 py-2">
+                      <Info className="w-4 h-4 text-amber-500" />
+                      <AlertDescription className="text-amber-700 text-xs">
+                        {tierValidation.warnings.map((warn, i) => (
+                          <div key={i}>{warn}</div>
+                        ))}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-[11px] text-slate-500">
+                      Máximo de 4 faixas permitidas por produto.
+                    </p>
+                    {priceTiers.length < 4 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddTier}
+                        className="text-xs border-amber-300 text-amber-800 hover:bg-amber-100"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        Adicionar Mais uma Faixa ({priceTiers.length}/4)
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
 

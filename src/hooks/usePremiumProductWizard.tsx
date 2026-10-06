@@ -6,6 +6,7 @@ import { useStorePriceModel } from "@/hooks/useStorePriceModel";
 import { useProductVariations } from "@/hooks/useProductVariations";
 import { ProductVariation } from "@/types/product";
 import { resolveColorHex } from "@/lib/colors";
+import { PriceTierItem, reconcileProductPriceTiers } from "@/lib/priceTierDomainService";
 
 export interface PremiumWizardFormData {
   name: string;
@@ -21,6 +22,7 @@ export interface PremiumWizardFormData {
   stock_alert_threshold: number;
   store_id: string;
   variations: ProductVariation[];
+  price_tiers?: PriceTierItem[];
   // Novos campos Premium
   product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil';
   product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio';
@@ -41,8 +43,9 @@ export const usePremiumProductWizard = (
 ) => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const { saveVariations } = useProductVariations();
-  const { priceModel } = useStorePriceModel(profile?.store_id);
+  const effectiveStoreId = editingProduct?.store_id || profile?.store_id;
+  const { saveVariations } = useProductVariations(editingProduct?.id, editingProduct?.variations, effectiveStoreId);
+  const { priceModel } = useStorePriceModel(effectiveStoreId);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -60,6 +63,7 @@ export const usePremiumProductWizard = (
     stock_alert_threshold: 5,
     store_id: profile?.store_id || "",
     variations: [],
+    price_tiers: [],
     material: "",
     video_url: "",
     video_type: "youtube",
@@ -90,6 +94,7 @@ export const usePremiumProductWizard = (
       stock_alert_threshold: 5,
       store_id: profile?.store_id || "",
       variations: [],
+      price_tiers: [],
       material: "",
       video_url: "",
       video_type: "youtube",
@@ -121,6 +126,7 @@ export const usePremiumProductWizard = (
         stock_alert_threshold: editingProduct.stock_alert_threshold || 5,
         store_id: editingProduct.store_id || profile?.store_id || "",
         variations: editingProduct.variations || [],
+        price_tiers: editingProduct.price_tiers || [],
         material: editingProduct.material || "",
         video_url: editingProduct.video_url || "",
         video_type: editingProduct.video_type || "youtube",
@@ -133,6 +139,32 @@ export const usePremiumProductWizard = (
         measurements: editingProduct.measurements || "",
         care_instructions: editingProduct.care_instructions || "",
       });
+
+      // Se price_tiers não vier no objeto editingProduct, buscar no Supabase
+      if (editingProduct.id && !editingProduct.price_tiers) {
+        (supabase.from("product_price_tiers") as any)
+          .select("*")
+          .eq("product_id", editingProduct.id)
+          .eq("is_active", true)
+          .order("tier_order", { ascending: true })
+          .then(({ data, error }: any) => {
+            if (!error && data) {
+              setFormData((prev) => ({
+                ...prev,
+                price_tiers: data.map((t: any) => ({
+                  id: t.id,
+                  product_id: t.product_id,
+                  tier_name: t.tier_name,
+                  tier_order: t.tier_order,
+                  tier_type: t.tier_type,
+                  price: Number(t.price),
+                  min_quantity: t.min_quantity,
+                  is_active: t.is_active,
+                })),
+              }));
+            }
+          });
+      }
     }
   }, [editingProduct, profile?.store_id]);
 
@@ -191,14 +223,19 @@ export const usePremiumProductWizard = (
         await uploadAllImages(productId);
       }
 
-      // Salvar variações com foco no hex_color correto
+      // Salvar variações com reconciliação não-destrutiva e preservação de snapshots
       if (formData.variations.length > 0 && productId) {
         const processedVariations = formData.variations.map(v => ({
           ...v,
           product_id: productId,
           hex_color: v.hex_color || resolveColorHex(v.color)
         }));
-        await saveVariations(productId, processedVariations);
+        await saveVariations(productId, processedVariations, effectiveStoreId);
+      }
+
+      // Reconciliar faixas de preço (Atacarejo / Tiers) de forma não-destrutiva
+      if (productId) {
+        await reconcileProductPriceTiers(supabase, productId, formData.price_tiers || []);
       }
 
       toast({

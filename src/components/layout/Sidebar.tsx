@@ -9,20 +9,7 @@ import {
   Percent,
   Truck,
   BarChart,
-  Store,
-  UserPlus,
   Palette,
-  Shield,
-  CreditCard,
-  Globe,
-  Database,
-  FileText,
-  Zap,
-  Crown,
-  Building2,
-  TrendingUp,
-  Activity,
-  DollarSign,
   LayoutGrid,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -67,12 +54,6 @@ const Sidebar = () => {
       label: "Produtos",
       href: "/products",
       isActive: location.pathname === "/products",
-    },
-    {
-      icon: Palette,
-      label: "Grupos de Variações",
-      href: "/variation-groups",
-      isActive: location.pathname === "/variation-groups",
     },
     {
       icon: Grid3X3,

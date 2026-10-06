@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PremiumWizardFormData } from "@/hooks/usePremiumProductWizard";
 import { Globe, Key, Sparkles, Loader2, Link2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ProductSummaryReview from "./ProductSummaryReview";
 
 interface SEOStepProps {
   formData: PremiumWizardFormData;
@@ -167,6 +168,9 @@ const SEOStep: React.FC<SEOStepProps> = ({ formData, updateFormData }) => {
               </span>
            </div>
         </div>
+
+        {/* Resumo Consolidado do Produto */}
+        <ProductSummaryReview formData={formData} />
       </div>
     </div>
   );

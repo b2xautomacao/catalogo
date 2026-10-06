@@ -93,6 +93,198 @@ export type Database = {
           }
         ];
       };
+      grade_templates: {
+        Row: {
+          id: string;
+          store_id: string | null;
+          name: string;
+          slug: string | null;
+          product_category_type: string | null;
+          is_system: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id?: string | null;
+          name: string;
+          slug?: string | null;
+          product_category_type?: string | null;
+          is_system?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string | null;
+          name?: string;
+          slug?: string | null;
+          product_category_type?: string | null;
+          is_system?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "grade_templates_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      grade_template_items: {
+        Row: {
+          id: string;
+          grade_template_id: string;
+          size: string;
+          quantity: number;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          grade_template_id: string;
+          size: string;
+          quantity: number;
+          position: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          grade_template_id?: string;
+          size?: string;
+          quantity?: number;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "grade_template_items_grade_template_id_fkey";
+            columns: ["grade_template_id"];
+            isOneToOne: false;
+            referencedRelation: "grade_templates";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      product_grade_snapshots: {
+        Row: {
+          id: string;
+          store_id: string;
+          product_id: string;
+          template_id: string | null;
+          pack_variation_id: string | null;
+          name: string;
+          color: string | null;
+          color_ref?: string | null;
+          total_units: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          product_id: string;
+          template_id?: string | null;
+          pack_variation_id?: string | null;
+          name: string;
+          color?: string | null;
+          color_ref?: string | null;
+          total_units: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          product_id?: string;
+          template_id?: string | null;
+          pack_variation_id?: string | null;
+          name?: string;
+          color?: string | null;
+          color_ref?: string | null;
+          total_units?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_grade_snapshots_pack_variation_id_fkey";
+            columns: ["pack_variation_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_grade_snapshots_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_grade_snapshots_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_grade_snapshots_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "grade_templates";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      product_grade_snapshot_items: {
+        Row: {
+          id: string;
+          snapshot_id: string;
+          size: string;
+          quantity: number;
+          position: number;
+          variation_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          snapshot_id: string;
+          size: string;
+          quantity: number;
+          position: number;
+          variation_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          snapshot_id?: string;
+          size?: string;
+          quantity?: number;
+          position?: number;
+          variation_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_grade_snapshot_items_snapshot_id_fkey";
+            columns: ["snapshot_id"];
+            isOneToOne: false;
+            referencedRelation: "product_grade_snapshots";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "product_grade_snapshot_items_variation_id_fkey";
+            columns: ["variation_id"];
+            isOneToOne: false;
+            referencedRelation: "product_variations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       bulk_import_jobs: {
         Row: {
           completed_at: string | null
