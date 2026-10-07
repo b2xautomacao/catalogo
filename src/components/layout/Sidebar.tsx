@@ -11,6 +11,7 @@ import {
   BarChart,
   Palette,
   LayoutGrid,
+  Bot,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -104,6 +105,13 @@ const Sidebar = () => {
       isActive: location.pathname === "/protected-reports",
     },
     {
+      icon: Bot,
+      label: "IA",
+      href: "/ia",
+      isActive: location.pathname.startsWith("/ia"),
+      badge: "NOVO",
+    },
+    {
       icon: Settings,
       label: "Configurações",
       href: "/settings",
@@ -169,14 +177,24 @@ const Sidebar = () => {
               key={item.label}
               onClick={() => navigate(item.href)}
               className={cn(
-                "flex items-center space-x-3 px-3 py-2.5 text-sm rounded-lg w-full text-left transition-colors",
+                "flex items-center justify-between px-3 py-2.5 text-sm rounded-lg w-full text-left transition-colors",
                 item.isActive
                   ? "bg-blue-50 text-blue-700 font-medium"
                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <div className="flex items-center space-x-3 min-w-0">
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </div>
+              {item.badge && (
+                <Badge
+                  variant="outline"
+                  className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] px-1.5 py-0 font-bold tracking-wider"
+                >
+                  {item.badge}
+                </Badge>
+              )}
             </button>
           ))}
         </div>

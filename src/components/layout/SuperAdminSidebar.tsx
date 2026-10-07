@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Activity,
   TrendingUp,
@@ -6,6 +5,7 @@ import {
   Crown,
   Zap,
   Settings,
+  Bot,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +49,19 @@ const SuperAdminSidebar = () => {
           isActive: location.pathname === "/analytics",
           description: "Métricas e KPIs do sistema",
           badge: null,
+        },
+      ],
+    },
+    {
+      section: "Inteligência Artificial",
+      items: [
+        {
+          icon: Bot,
+          label: "IA",
+          href: "/ia",
+          isActive: location.pathname.startsWith("/ia"),
+          description: "Tenant MCP Hub, Credenciais e Docs",
+          badge: "NOVO",
         },
       ],
     },

@@ -38,6 +38,7 @@ import Revenue from '@/pages/Revenue';
 import Monitoring from '@/pages/Monitoring';
 import StoreColors from '@/pages/StoreColors';
 import StoreGrades from '@/pages/StoreGrades';
+import IaHubPage from '@/pages/IaHubPage';
 
 /**
  * Error component for subdomain store loading errors
@@ -275,6 +276,60 @@ const MainAppRouter: React.FC = () => {
               subtitle="Gerencie modelos de grade pré-configurados"
             >
               <StoreGrades />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* IA — Tenant MCP Hub Routes */}
+      <Route
+        path="/ia"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="IA — Tenant MCP Hub"
+              subtitle="Conecte seu catálogo a qualquer IA com permissões seguras"
+            >
+              <IaHubPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ia/credenciais"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="IA — Credenciais MCP"
+              subtitle="Gerencie credenciais e chaves para agentes de IA"
+            >
+              <IaHubPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ia/docs"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="IA — Documentação MCP"
+              subtitle="Referência técnica completa e ferramentas disponíveis"
+            >
+              <IaHubPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ia/atividade"
+        element={
+          <ProtectedRoute>
+            <AppLayout
+              title="IA — Atividade & Auditoria"
+              subtitle="Auditoria em tempo real de chamadas MCP"
+            >
+              <IaHubPage />
             </AppLayout>
           </ProtectedRoute>
         }

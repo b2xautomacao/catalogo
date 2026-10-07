@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_credentials: {
+        Row: {
+          id: string;
+          name: string | null;
+          key_prefix: string;
+          key_hash: string;
+          principal_type: string;
+          principal_id: string;
+          store_id: string | null;
+          scopes: string[];
+          created_at: string;
+          expires_at: string | null;
+          revoked_at: string | null;
+          last_used_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name?: string | null;
+          key_prefix: string;
+          key_hash: string;
+          principal_type?: string;
+          principal_id: string;
+          store_id?: string | null;
+          scopes?: string[];
+          created_at?: string;
+          expires_at?: string | null;
+          revoked_at?: string | null;
+          last_used_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string | null;
+          key_prefix?: string;
+          key_hash?: string;
+          principal_type?: string;
+          principal_id?: string;
+          store_id?: string | null;
+          scopes?: string[];
+          created_at?: string;
+          expires_at?: string | null;
+          revoked_at?: string | null;
+          last_used_at?: string | null;
+        };
+        Relationships: [];
+      };
+      agent_audit_log: {
+        Row: {
+          id: string;
+          principal_type: string;
+          principal_id: string;
+          store_id: string | null;
+          tool_name: string | null;
+          event_type: string;
+          status: string;
+          duration_ms: number | null;
+          error_code: string | null;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          principal_type: string;
+          principal_id: string;
+          store_id?: string | null;
+          tool_name?: string | null;
+          event_type: string;
+          status: string;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          principal_type?: string;
+          principal_id?: string;
+          store_id?: string | null;
+          tool_name?: string | null;
+          event_type?: string;
+          status?: string;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       store_colors: {
         Row: {
           id: string;
