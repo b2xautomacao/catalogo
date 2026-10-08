@@ -418,8 +418,8 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
 
       {/* Modal: Nova Credencial MCP */}
       <Dialog open={isOpenNewModal} onOpenChange={onOpenNewModalChange}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleCreateSubmit}>
+        <DialogContent className="sm:max-w-xl max-w-[calc(100vw-2rem)] w-full max-h-[90vh] overflow-y-auto">
+          <form onSubmit={handleCreateSubmit} className="min-w-0 max-w-full">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
                 <Key className="w-5 h-5 text-indigo-600" />
@@ -746,7 +746,7 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
           }
         }}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl max-w-[calc(100vw-2rem)] w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
               <Lock className="w-5 h-5 text-emerald-600" />
@@ -758,25 +758,25 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
           </DialogHeader>
 
           {createdResult && (
-            <div className="space-y-4 py-3">
+            <div className="space-y-4 py-3 min-w-0 max-w-full">
               {/* Alerta Crítico */}
-              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5 min-w-0 max-w-full">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0 flex-1">
                   <p className="font-bold">Aviso Crítico de Segurança:</p>
-                  <p>
+                  <p className="leading-relaxed">
                     Copie esta chave agora. Por segurança, ela não poderá ser exibida novamente. Se você perdê-la, será necessário revogar esta credencial e gerar uma nova.
                   </p>
                 </div>
               </div>
 
               {/* Chave com Botão Copiar */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0 max-w-full">
                 <Label className="text-xs font-semibold text-slate-800">
                   Chave Secreta MCP (Bearer Token):
                 </Label>
-                <div className="p-3 bg-slate-950 text-emerald-400 font-mono text-xs rounded-lg border border-slate-800 break-all select-all flex items-center justify-between gap-3">
-                  <span>{createdResult.rawApiKey}</span>
+                <div className="p-3 bg-slate-950 text-emerald-400 font-mono text-xs rounded-lg border border-slate-800 flex items-center justify-between gap-3 min-w-0 max-w-full">
+                  <span className="font-mono break-all select-all min-w-0 flex-1 leading-relaxed">{createdResult.rawApiKey}</span>
                   <Button
                     type="button"
                     size="sm"
@@ -797,7 +797,7 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
               </div>
 
               {/* Snippet Completo Pronto */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0 max-w-full">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold text-slate-800">
                     Configuração Pronta (com Chave Embutida):
@@ -812,14 +812,16 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
                     {copiedFullConfig ? 'Copiado!' : 'Copiar JSON Completo'}
                   </Button>
                 </div>
-                <pre className="p-3 bg-slate-900 text-slate-200 font-mono text-[11px] rounded-lg border border-slate-800 overflow-x-auto max-h-36">
-                  {getQuickConfigSnippet(createdResult.rawApiKey)}
-                </pre>
+                <div className="relative min-w-0 max-w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+                  <pre className="p-3 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-40 max-w-full whitespace-pre">
+                    {getQuickConfigSnippet(createdResult.rawApiKey)}
+                  </pre>
+                </div>
               </div>
 
               {/* Checkbox Obrigatório para Fechar */}
-              <div className="pt-2 border-t border-slate-200">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="pt-2 border-t border-slate-200 min-w-0">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <Checkbox
                     id="confirmSavedKey"
                     checked={hasSavedKey}
@@ -833,7 +835,7 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="w-full min-w-0">
             <Button
               type="button"
               disabled={!hasSavedKey}
@@ -848,7 +850,7 @@ export const McpCredentialsList: React.FC<McpCredentialsListProps> = ({
 
       {/* Modal: Confirmação de Revogação */}
       <Dialog open={!!credentialToRevoke} onOpenChange={(open) => !open && setCredentialToRevoke(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)] w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold text-red-600">
               <AlertTriangle className="w-5 h-5 text-red-600" />
