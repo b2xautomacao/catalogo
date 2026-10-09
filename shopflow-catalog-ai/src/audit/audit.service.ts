@@ -245,5 +245,77 @@ export class AuditService {
       console.error('[AuditService] Failed to record grade applied to product event:', err);
     });
   }
+
+  async logProductImageAdded(
+    context: AgentContext,
+    imageId: string,
+    details: {
+      productId: string;
+      isPrimary: boolean;
+      imageOrder: number;
+      duplicate?: boolean;
+    }
+  ): Promise<void> {
+    const entry: CreateAuditLogEntry = {
+      session_id: context.sessionId,
+      principal_type: context.principalType,
+      principal_id: context.principalId,
+      store_id: context.activeStoreId,
+      event_type: 'product_image_added',
+      tool_name: 'adicionar_imagem_produto',
+      entity_type: 'product_image',
+      entity_id: imageId,
+      metadata: details,
+    };
+
+    this.repository.recordEvent(entry).catch((err) => {
+      console.error('[AuditService] Failed to record product image added event:', err);
+    });
+  }
+
+  async logProductImagePrimaryChanged(
+    context: AgentContext,
+    imageId: string,
+    productId: string
+  ): Promise<void> {
+    const entry: CreateAuditLogEntry = {
+      session_id: context.sessionId,
+      principal_type: context.principalType,
+      principal_id: context.principalId,
+      store_id: context.activeStoreId,
+      event_type: 'product_image_primary_changed',
+      tool_name: 'definir_imagem_principal',
+      entity_type: 'product_image',
+      entity_id: imageId,
+      metadata: { productId },
+    };
+
+    this.repository.recordEvent(entry).catch((err) => {
+      console.error('[AuditService] Failed to record product image primary changed event:', err);
+    });
+  }
+
+  async logProductImageRemoved(
+    context: AgentContext,
+    imageId: string,
+    productId: string,
+    newPrimaryId?: string | null
+  ): Promise<void> {
+    const entry: CreateAuditLogEntry = {
+      session_id: context.sessionId,
+      principal_type: context.principalType,
+      principal_id: context.principalId,
+      store_id: context.activeStoreId,
+      event_type: 'product_image_removed',
+      tool_name: 'remover_imagem_produto',
+      entity_type: 'product_image',
+      entity_id: imageId,
+      metadata: { productId, hadNewPrimary: !!newPrimaryId },
+    };
+
+    this.repository.recordEvent(entry).catch((err) => {
+      console.error('[AuditService] Failed to record product image removed event:', err);
+    });
+  }
 }
 

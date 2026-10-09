@@ -15,11 +15,11 @@ import {
 } from '../apiKeyCrypto';
 
 describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
-  const EXPECTED_TOOL_COUNT = 17;
+  const EXPECTED_TOOL_COUNT = 21;
   const EXPECTED_SCOPE_COUNT = 8;
   const EXPECTED_ERROR_COUNT = 11;
 
-  it('1. Consistency: Registered MCP Tools == Documented MCP Tools (Exatamente 17)', () => {
+  it('1. Consistency: Registered MCP Tools == Documented MCP Tools (Exatamente 21)', () => {
     assert.equal(
       MCP_TOOLS.length,
       EXPECTED_TOOL_COUNT,
@@ -44,6 +44,10 @@ describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
       'buscar_lojas',
       'obter_loja_ativa',
       'selecionar_loja',
+      'adicionar_imagem_produto',
+      'listar_imagens_produto',
+      'definir_imagem_principal',
+      'remover_imagem_produto',
     ];
 
     const registeredNames = MCP_TOOLS.map((t) => t.name);
@@ -65,7 +69,7 @@ describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
 
     const validScopeStrings = MCP_SCOPES.map((s) => s.scope);
 
-    // Cada uma das 17 ferramentas deve apontar para um escopo canônico válido
+    // Cada uma das 21 ferramentas deve apontar para um escopo canônico válido
     for (const tool of MCP_TOOLS) {
       assert.ok(
         validScopeStrings.includes(tool.requiredScope),
@@ -98,7 +102,7 @@ describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
     assert.ok(md.includes('Rate Limits'));
     assert.ok(md.includes('Catálogo de Erros'));
 
-    // Verifica que todas as 17 ferramentas estão no Markdown
+    // Verifica que todas as 21 ferramentas estão no Markdown
     for (const tool of MCP_TOOLS) {
       assert.ok(
         md.includes(`#### \`${tool.name}\``),
@@ -123,6 +127,7 @@ describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
     assert.ok(guide.includes('buscar_catalogo'));
     assert.ok(guide.includes('consultar_estoque'));
     assert.ok(guide.includes('obter_produto'));
+    assert.ok(guide.includes('listar_imagens_produto'));
 
     // Ferramentas de escrita NÃO DEVEM estar presentes
     assert.ok(!guide.includes('`criar_produto`'));
@@ -130,6 +135,9 @@ describe('SPRINT IA — Tenant MCP Hub Consistency & Security Tests', () => {
     assert.ok(!guide.includes('`desativar_produto`'));
     assert.ok(!guide.includes('`ajustar_estoque`'));
     assert.ok(!guide.includes('`aplicar_grade_produto`'));
+    assert.ok(!guide.includes('`adicionar_imagem_produto`'));
+    assert.ok(!guide.includes('`definir_imagem_principal`'));
+    assert.ok(!guide.includes('`remover_imagem_produto`'));
 
     // Deve conter orientações claras
     assert.ok(guide.includes('Você pode:'));

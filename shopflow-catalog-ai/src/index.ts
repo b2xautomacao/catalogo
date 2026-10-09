@@ -23,6 +23,11 @@ import { registerListarModelosGradeTool } from './tools/listar-modelos-grade.too
 import { registerObterModeloGradeTool } from './tools/obter-modelo-grade.tool.js';
 import { registerCriarModeloGradeTool } from './tools/criar-modelo-grade.tool.js';
 import { registerAplicarGradeProdutoTool } from './tools/aplicar-grade-produto.tool.js';
+import { ProductMediaService } from './services/product-media.service.js';
+import { registerAdicionarImagemProdutoTool } from './tools/adicionar-imagem-produto.tool.js';
+import { registerListarImagensProdutoTool } from './tools/listar-imagens-produto.tool.js';
+import { registerDefinirImagemPrincipalTool } from './tools/definir-imagem-principal.tool.js';
+import { registerRemoverImagemProdutoTool } from './tools/remover-imagem-produto.tool.js';
 import './config/env.js'; // Triggers env validation on startup — fatal if invalid
 
 async function main() {
@@ -34,6 +39,7 @@ async function main() {
   const storeService = new StoreService(session);
   const inventoryService = new InventoryService(session);
   const gradeService = new GradeService(session);
+  const mediaService = new ProductMediaService(session);
 
   await serveStdio(() => {
     const server = new McpServer({
@@ -67,6 +73,12 @@ async function main() {
     registerObterModeloGradeTool(server, gradeService);
     registerCriarModeloGradeTool(server, gradeService);
     registerAplicarGradeProdutoTool(server, gradeService);
+
+    // Product Media Management Tools (4)
+    registerAdicionarImagemProdutoTool(server, mediaService);
+    registerListarImagensProdutoTool(server, mediaService);
+    registerDefinirImagemPrincipalTool(server, mediaService);
+    registerRemoverImagemProdutoTool(server, mediaService);
 
     return server;
   }, {

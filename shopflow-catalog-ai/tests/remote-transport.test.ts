@@ -268,7 +268,7 @@ describe('Sprint 13 / Remediation: Remote MCP Streamable HTTP & Transport Lifecy
 
     assert.equal(listData.id, 2);
     assert.ok(Array.isArray(listData.result.tools));
-    assert.equal(listData.result.tools.length, 17, 'Must register exactly 17 tools');
+    assert.equal(listData.result.tools.length, 21, 'Must register exactly 21 tools');
 
     const toolNames = listData.result.tools.map((t: any) => t.name);
     assert.ok(toolNames.includes('catalog_health'));
@@ -288,6 +288,10 @@ describe('Sprint 13 / Remediation: Remote MCP Streamable HTTP & Transport Lifecy
     assert.ok(toolNames.includes('obter_modelo_grade'));
     assert.ok(toolNames.includes('criar_modelo_grade'));
     assert.ok(toolNames.includes('aplicar_grade_produto'));
+    assert.ok(toolNames.includes('adicionar_imagem_produto'));
+    assert.ok(toolNames.includes('listar_imagens_produto'));
+    assert.ok(toolNames.includes('definir_imagem_principal'));
+    assert.ok(toolNames.includes('remover_imagem_produto'));
 
     // Step D: Execute read-only tool (catalog_health)
     const callRes = await fetch(`http://localhost:${port}/mcp`, {

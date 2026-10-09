@@ -151,3 +151,59 @@ export class GradeTemplateAlreadyExistsError extends CatalogError {
     this.name = 'GradeTemplateAlreadyExistsError';
   }
 }
+
+export class ImageSourceInvalidError extends CatalogError {
+  constructor(message = 'IMAGE_SOURCE_INVALID') {
+    super(message);
+    this.name = 'ImageSourceInvalidError';
+  }
+}
+
+export class ImageSourceForbiddenError extends CatalogError {
+  constructor(message = 'IMAGE_SOURCE_FORBIDDEN') {
+    super(message);
+    this.name = 'ImageSourceForbiddenError';
+  }
+}
+
+export class ImageDownloadFailedError extends CatalogError {
+  constructor(message = 'IMAGE_DOWNLOAD_FAILED') {
+    super(message);
+    this.name = 'ImageDownloadFailedError';
+  }
+}
+
+export class ImageTooLargeError extends CatalogError {
+  constructor(message = 'IMAGE_TOO_LARGE') {
+    super(message);
+    this.name = 'ImageTooLargeError';
+  }
+}
+
+export class ImageTypeNotSupportedError extends CatalogError {
+  constructor(message = 'IMAGE_TYPE_NOT_SUPPORTED') {
+    super(message);
+    this.name = 'ImageTypeNotSupportedError';
+  }
+}
+
+export class ImageInvalidError extends CatalogError {
+  constructor(message = 'IMAGE_INVALID') {
+    super(message);
+    this.name = 'ImageInvalidError';
+  }
+}
+
+export class ImageUploadFailedError extends CatalogError {
+  constructor(message = 'IMAGE_UPLOAD_FAILED') {
+    super(message);
+    this.name = 'ImageUploadFailedError';
+  }
+}
+
+export class ImageNotFoundError extends CatalogError {
+  constructor(message = 'IMAGE_NOT_FOUND') {
+    super(message);
+    this.name = 'ImageNotFoundError';
+  }
+}

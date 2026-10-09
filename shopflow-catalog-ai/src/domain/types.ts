@@ -99,3 +99,25 @@ export interface DeactivateProductResult {
   product: SafeProductResult;
 }
 
+export interface ProductImageRecord {
+  id: string;
+  product_id: string;
+  variation_id?: string | null;
+  image_url: string;
+  image_order: number;
+  alt_text?: string | null;
+  is_primary: boolean;
+  color_association?: string | null;
+  created_at?: string;
+}
+
+export interface ProductImageDto {
+  id: string;
+  product_id: string;
+  image_url: string;
+  alt_text: string | null;
+  is_primary: boolean;
+  image_order: number;
+  color_association: string | null;
+}
+

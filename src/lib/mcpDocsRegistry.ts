@@ -13,7 +13,7 @@ export interface McpParameterDoc {
 
 export interface McpToolDoc {
   name: string;
-  category: 'catalog' | 'inventory' | 'grade' | 'store';
+  category: 'catalog' | 'inventory' | 'grade' | 'store' | 'media';
   categoryLabel: string;
   requiredScope: string;
   description: string;
@@ -501,6 +501,137 @@ export const MCP_TOOLS: McpToolDoc[] = [
     exampleRequest: {},
     exampleResponse: { hasActiveStore: true, activeStoreId: 'store-1', storeName: 'Calçados Matriz' },
   },
+  {
+    name: 'adicionar_imagem_produto',
+    category: 'media',
+    categoryLabel: 'Imagens e Mídia',
+    requiredScope: 'catalog:write',
+    description: 'Adiciona com segurança uma imagem ao produto a partir de uma source_url HTTPS externa. O servidor faz download, valida integridade/MIME e armazena no storage oficial.',
+    whenToUse: 'Após criar um produto ou quando o usuário solicitar adicionar foto/imagem ao produto.',
+    riskTier: 'WRITE',
+    supportsIdempotency: true,
+    parameters: [
+      { name: 'product_id', type: 'string (UUID)', required: true, description: 'ID do produto no catálogo.' },
+      { name: 'source_url', type: 'string (HTTPS URL)', required: true, description: 'URL externa segura contendo a imagem (JPG, PNG ou WebP).' },
+      { name: 'alt_text', type: 'string', required: false, description: 'Texto alternativo para acessibilidade/SEO.' },
+      { name: 'is_primary', type: 'boolean', required: false, description: 'Se verdadeiro, define esta imagem como a capa principal do produto.' },
+      { name: 'position', type: 'number', required: false, description: 'Posição de exibição da imagem (1 a 10).' },
+      { name: 'color', type: 'string', required: false, description: 'Cor ou variação associada à imagem.' },
+      { name: 'operation_id', type: 'string', required: false, description: 'Identificador único de idempotência para retentativas seguras.' },
+    ],
+    outputDescription: 'Objeto com a imagem criada e indicador se foi repetição idempotente.',
+    errors: [
+      'IMAGE_SOURCE_INVALID',
+      'IMAGE_SOURCE_FORBIDDEN',
+      'IMAGE_DOWNLOAD_FAILED',
+      'IMAGE_TOO_LARGE',
+      'IMAGE_TYPE_NOT_SUPPORTED',
+      'IMAGE_INVALID',
+      'IMAGE_UPLOAD_FAILED',
+      'PRODUCT_NOT_FOUND',
+      'IDEMPOTENCY_CONFLICT',
+      'SCOPE_DENIED',
+      'STORE_CONTEXT_REQUIRED',
+    ],
+    exampleRequest: {
+      product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+      source_url: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=800',
+      alt_text: 'Frasco de perfume elegante',
+      is_primary: true,
+      operation_id: 'media-op-001',
+    },
+    exampleResponse: {
+      image: {
+        id: 'img-123',
+        product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+        image_url: 'https://uytkhyqwikdpplwsesoz.supabase.co/storage/v1/object/public/product-images/products/9f243026-6136-4d04-bf76-749e7bdf5e27/uuid.webp',
+        alt_text: 'Frasco de perfume elegante',
+        is_primary: true,
+        image_order: 1,
+        color_association: null,
+      },
+      duplicate: false,
+    },
+  },
+  {
+    name: 'listar_imagens_produto',
+    category: 'media',
+    categoryLabel: 'Imagens e Mídia',
+    requiredScope: 'catalog:read',
+    description: 'Lista todas as imagens cadastradas para um produto específico da loja ativa.',
+    whenToUse: 'Para inspecionar as fotos existentes de um produto antes ou após alterações de mídia.',
+    riskTier: 'READ',
+    parameters: [
+      { name: 'product_id', type: 'string (UUID)', required: true, description: 'ID do produto no catálogo.' },
+    ],
+    outputDescription: 'Array com todas as imagens sanitizadas do produto.',
+    errors: ['PRODUCT_NOT_FOUND', 'SCOPE_DENIED', 'STORE_CONTEXT_REQUIRED'],
+    exampleRequest: { product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27' },
+    exampleResponse: [
+      {
+        id: 'img-123',
+        product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+        image_url: 'https://uytkhyqwikdpplwsesoz.supabase.co/storage/v1/object/public/product-images/products/9f243026-6136-4d04-bf76-749e7bdf5e27/uuid.webp',
+        alt_text: 'Frasco de perfume elegante',
+        is_primary: true,
+        image_order: 1,
+        color_association: null,
+      },
+    ],
+  },
+  {
+    name: 'definir_imagem_principal',
+    category: 'media',
+    categoryLabel: 'Imagens e Mídia',
+    requiredScope: 'catalog:write',
+    description: 'Define uma imagem existente como a imagem principal (capa de exibição) do produto.',
+    whenToUse: 'Para alternar a imagem de destaque do produto.',
+    riskTier: 'WRITE',
+    parameters: [
+      { name: 'product_id', type: 'string (UUID)', required: true, description: 'ID do produto no catálogo.' },
+      { name: 'image_id', type: 'string (UUID)', required: true, description: 'ID da imagem que será promovida a principal.' },
+    ],
+    outputDescription: 'Objeto de sucesso e dados da imagem promovida.',
+    errors: ['PRODUCT_NOT_FOUND', 'IMAGE_NOT_FOUND', 'SCOPE_DENIED', 'STORE_CONTEXT_REQUIRED'],
+    exampleRequest: {
+      product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+      image_id: 'img-123',
+    },
+    exampleResponse: {
+      success: true,
+      image: {
+        id: 'img-123',
+        product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+        image_url: 'https://uytkhyqwikdpplwsesoz.supabase.co/storage/v1/object/public/product-images/products/9f243026-6136-4d04-bf76-749e7bdf5e27/uuid.webp',
+        is_primary: true,
+        image_order: 1,
+      },
+    },
+  },
+  {
+    name: 'remover_imagem_produto',
+    category: 'media',
+    categoryLabel: 'Imagens e Mídia',
+    requiredScope: 'catalog:write',
+    description: 'Remove persistentemente uma imagem do produto e do Object Storage canônico.',
+    whenToUse: 'Para excluir fotos antigas, desnecessárias ou incorretas do produto.',
+    riskTier: 'WRITE',
+    parameters: [
+      { name: 'product_id', type: 'string (UUID)', required: true, description: 'ID do produto no catálogo.' },
+      { name: 'image_id', type: 'string (UUID)', required: true, description: 'ID da imagem a ser removida.' },
+    ],
+    outputDescription: 'Confirmação de remoção e novo ID de imagem principal, se promovido.',
+    errors: ['PRODUCT_NOT_FOUND', 'IMAGE_NOT_FOUND', 'SCOPE_DENIED', 'STORE_CONTEXT_REQUIRED'],
+    exampleRequest: {
+      product_id: '9f243026-6136-4d04-bf76-749e7bdf5e27',
+      image_id: 'img-123',
+    },
+    exampleResponse: {
+      removed: true,
+      image_id: 'img-123',
+      new_primary_id: null,
+    },
+  },
 ];
 
 export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
@@ -519,6 +650,7 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'obter_modelo_grade',
       'buscar_lojas',
       'obter_loja_ativa',
+      'listar_imagens_produto',
     ],
   },
   {
@@ -532,6 +664,9 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'desativar_produto',
       'criar_modelo_grade',
       'selecionar_loja',
+      'adicionar_imagem_produto',
+      'definir_imagem_principal',
+      'remover_imagem_produto',
     ],
   },
   {
@@ -717,12 +852,16 @@ O runtime aplica janelas deslizantes de rate limiting por credencial:
 1. **Zero Mutações Diretas em Saldo**: Mutações em estoque ocorrem unicamente via ledger (\`ajustar_estoque\`).
 2. **Idempotência Obrigatória**: Operações de escrita sensíveis exigem \`operation_id\`.
    - Repetição do mesmo \`operation_id\` com o mesmo payload = sucesso sem dupla mutação (\`duplicate: true\`).
-   - Repetição com payload diferente = rejeição imediata com \`IDEMPOTENCY_CONFLICT\`.
 3. **Isolamento de Loja**: O agente opera estritamente no contexto da loja autorizada. Tentativas de acessar IDs de outra loja retornam \`NOT_FOUND\` para prevenir enumeração.
+4. **Fluxo Completo de Produto + Imagem + Estoque**:
+   - 1º Criar produto via \`criar_produto\`.
+   - 2º Adicionar imagens via \`adicionar_imagem_produto\` (URL HTTPS externa; download seguro server-side). A primeira imagem se torna automaticamente a principal.
+   - 3º Lançar saldo físico inicial via \`ajustar_estoque\` (motivo \`initial_balance\`).
+   - O MCP possui ferramenta nativa e dedicada para imagens (\`adicionar_imagem_produto\`).
 
 ---
 
-## 6. Catálogo de Ferramentas (17 Tools)
+## 6. Catálogo de Ferramentas (${MCP_TOOLS.length} Tools)
 `;
 
   for (const [category, tools] of Object.entries(toolsByCategory)) {
@@ -864,7 +1003,11 @@ ${
     ? `2. **Idempotência**: Em operações de alteração (\`ajustar_estoque\` e \`atualizar_produtos_em_lote\`), sempre gere um \`operation_id\` descritivo e único (ex: \`ajuste-20261007-001\`). Se receber timeout ou resposta incerta, repita com o **mesmo** \`operation_id\`. Nunca use novo operation_id para a mesma tentativa.\n`
     : ''
 }3. **Respeito aos Scopes**: Não tente invocar ferramentas fora do seu escopo para evitar bloqueios de taxa ou erros 403.
-4. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
+${
+  hasWriteCatalog
+    ? `4. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
+    : ''
+}5. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
 `;
 
   return guide;

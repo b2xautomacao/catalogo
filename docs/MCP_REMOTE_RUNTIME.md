@@ -16,9 +16,9 @@ Shopflow Catalog AI supports both local STDIO transport (for local developer too
 - **Sessões Inativas:** Limpeza automática de sessões inativas após 30 minutos sem requisições.
 
 ## 4. Shared Domain & Zero Business Logic Duplication
-Todas as 17 ferramentas, serviços de domínio (`CatalogService`, `StoreService`, `InventoryService`, `GradeService`), repositórios e validações Zod são compartilhados identicamente entre `src/index.ts` (STDIO) e `src/server-http.ts` (Streamable HTTP).
+Todas as 21 ferramentas, serviços de domínio (`CatalogService`, `StoreService`, `InventoryService`, `GradeService`, `ProductMediaService`), repositórios e validações Zod são compartilhados identicamente entre `src/index.ts` (STDIO) e `src/server-http.ts` (Streamable HTTP).
 
-### Ferramentas Registradas (17):
+### Ferramentas Registradas (21):
 1. `catalog_health`
 2. `listar_produtos`
 3. `obter_produto`
@@ -36,6 +36,10 @@ Todas as 17 ferramentas, serviços de domínio (`CatalogService`, `StoreService`
 15. `obter_modelo_grade`
 16. `criar_modelo_grade`
 17. `aplicar_grade_produto`
+18. `adicionar_imagem_produto`
+19. `listar_imagens_produto`
+20. `definir_imagem_principal`
+21. `remover_imagem_produto`
 
 ## 5. Session Isolation & Context Lifecycle
 - Cada sessão remota recebe um contexto `AgentSession` dedicado, isolado e vinculado ao token autenticado.

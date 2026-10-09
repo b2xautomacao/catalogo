@@ -34,6 +34,10 @@ export const TOOL_RISK_TIERS: Record<string, RiskTier> = {
   desativar_produto: 'WRITE',
   selecionar_loja: 'WRITE',
   criar_modelo_grade: 'WRITE',
+  adicionar_imagem_produto: 'WRITE',
+  definir_imagem_principal: 'WRITE',
+  remover_imagem_produto: 'WRITE',
+  listar_imagens_produto: 'READ',
 
   ajustar_estoque: 'SENSITIVE_WRITE',
   atualizar_produtos_em_lote: 'SENSITIVE_WRITE',

@@ -34,6 +34,11 @@ import { registerListarModelosGradeTool } from './tools/listar-modelos-grade.too
 import { registerObterModeloGradeTool } from './tools/obter-modelo-grade.tool.js';
 import { registerCriarModeloGradeTool } from './tools/criar-modelo-grade.tool.js';
 import { registerAplicarGradeProdutoTool } from './tools/aplicar-grade-produto.tool.js';
+import { ProductMediaService } from './services/product-media.service.js';
+import { registerAdicionarImagemProdutoTool } from './tools/adicionar-imagem-produto.tool.js';
+import { registerListarImagensProdutoTool } from './tools/listar-imagens-produto.tool.js';
+import { registerDefinirImagemPrincipalTool } from './tools/definir-imagem-principal.tool.js';
+import { registerRemoverImagemProdutoTool } from './tools/remover-imagem-produto.tool.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { RateLimiter } from './security/rate-limiter.js';
 import { Logger } from './observability/logger.js';
@@ -59,7 +64,7 @@ interface McpSessionRecord {
 }
 
 /**
- * Instantiates and registers all 17 official catalog tools onto an McpServer instance
+ * Instantiates and registers all 21 official catalog tools onto an McpServer instance
  * bound to an isolated AgentSession.
  */
 function createConfiguredMcpServer(session: AgentSession) {
@@ -72,6 +77,7 @@ function createConfiguredMcpServer(session: AgentSession) {
   const storeService = new StoreService(session);
   const inventoryService = new InventoryService(session);
   const gradeService = new GradeService(session);
+  const mediaService = new ProductMediaService(session);
 
   // Read-Only Catalog Tools (4)
   registerCatalogHealthTool(server, catalogService);
@@ -100,7 +106,13 @@ function createConfiguredMcpServer(session: AgentSession) {
   registerCriarModeloGradeTool(server, gradeService);
   registerAplicarGradeProdutoTool(server, gradeService);
 
-  return { server, catalogService, storeService, inventoryService, gradeService };
+  // Product Media Management Tools (4)
+  registerAdicionarImagemProdutoTool(server, mediaService);
+  registerListarImagensProdutoTool(server, mediaService);
+  registerDefinirImagemPrincipalTool(server, mediaService);
+  registerRemoverImagemProdutoTool(server, mediaService);
+
+  return { server, catalogService, storeService, inventoryService, gradeService, mediaService };
 }
 
 export function createHttpServer(options: HttpServerOptions = {}) {
@@ -603,7 +615,12 @@ function setupGracefulShutdown(server: http.Server) {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-if (process.env.NODE_ENV !== 'test') {
+const isTesting =
+  process.env.NODE_ENV === 'test' ||
+  process.env.npm_lifecycle_event === 'test' ||
+  process.argv.some((a) => a.includes('test'));
+
+if (!isTesting) {
   const PORT = Number(process.env.MCP_PORT) || 3000;
   const HOST = '0.0.0.0';
   const server = createHttpServer();
