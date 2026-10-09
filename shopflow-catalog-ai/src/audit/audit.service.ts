@@ -317,5 +317,27 @@ export class AuditService {
       console.error('[AuditService] Failed to record product image removed event:', err);
     });
   }
+
+  async logTenantDefaultsUpdated(
+    context: AgentContext,
+    storeId: string,
+    updatedFields: string[]
+  ): Promise<void> {
+    const entry: CreateAuditLogEntry = {
+      session_id: context.sessionId,
+      principal_type: context.principalType,
+      principal_id: context.principalId,
+      store_id: storeId,
+      event_type: 'tenant_intake_defaults_updated',
+      tool_name: 'atualizar_defaults_cadastro_produto',
+      entity_type: 'store_settings',
+      entity_id: storeId,
+      metadata: { updatedFields },
+    };
+
+    this.repository.recordEvent(entry).catch((err) => {
+      console.error('[AuditService] Failed to record tenant defaults updated event:', err);
+    });
+  }
 }
 

@@ -216,3 +216,26 @@ export class ImageNotFoundError extends CatalogError {
     this.name = 'ImageNotFoundError';
   }
 }
+
+export class ProductIntakeInvalidError extends CatalogError {
+  constructor(message = 'PRODUCT_INTAKE_INVALID') {
+    super(message);
+    this.name = 'ProductIntakeInvalidError';
+  }
+}
+
+export class ImportBatchTooLargeError extends CatalogError {
+  public maxItems: number;
+  constructor(message = 'IMPORT_BATCH_TOO_LARGE', maxItems = 100) {
+    super(message);
+    this.name = 'ImportBatchTooLargeError';
+    this.maxItems = maxItems;
+  }
+}
+
+export class TenantDefaultInvalidError extends CatalogError {
+  constructor(message = 'TENANT_DEFAULT_INVALID') {
+    super(message);
+    this.name = 'TenantDefaultInvalidError';
+  }
+}

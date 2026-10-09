@@ -1,5 +1,6 @@
 import { ProductRepository } from '../repositories/product.repository.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
+import { ProductIntakeSettingsRepository } from '../repositories/product-intake-settings.repository.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ProductTaxonomyService } from './product-taxonomy.service.js';
 import {
@@ -10,6 +11,7 @@ import {
   NoChangesProvidedError,
   StoreContextRequiredError,
   ForbiddenError,
+  ImportBatchTooLargeError,
 } from '../domain/errors.js';
 import {
   Product,
@@ -24,6 +26,11 @@ import {
   CreatedProductResult,
   NeedsInputProductResult,
   ProductCompletenessPreflight,
+  TenantIntakeDefaults,
+  UpdateTenantIntakeDefaultsInput,
+  ProductIntakePolicyResult,
+  PreparedProductResult,
+  AnalyzeImportResult,
 } from '../domain/types.js';
 import { requireScope, requireActiveStore } from '../auth/agent-context.js';
 import { AgentSession } from '../auth/agent-session.js';
@@ -42,7 +49,8 @@ export class CatalogService {
     private repository: ProductRepository = new ProductRepository(),
     private categoryRepo: CategoryRepository = new CategoryRepository(),
     private auditService: AuditService = new AuditService(),
-    private taxonomyService: ProductTaxonomyService = new ProductTaxonomyService()
+    private taxonomyService: ProductTaxonomyService = new ProductTaxonomyService(),
+    private intakeSettingsRepo: ProductIntakeSettingsRepository = new ProductIntakeSettingsRepository()
   ) {}
 
   async checkHealth(): Promise<CatalogHealthStatus> {
@@ -131,12 +139,14 @@ export class CatalogService {
       }
     }
 
-    // 3. Run Completeness Preflight
+    // 3. Run Completeness Preflight with Tenant Defaults
+    const tenantDefaults = await this.intakeSettingsRepo.getSettings(activeStoreId);
     const completeness = await this.taxonomyService.evaluateCompleteness(
       activeStoreId,
       input,
       this.categoryRepo,
-      this.repository
+      this.repository,
+      tenantDefaults
     );
 
     // If missing decisions, return structured needs_input without partial persistence
@@ -449,6 +459,146 @@ export class CatalogService {
       page_size: pageSize,
       total_pages: totalPages,
     };
+  }
+
+  /**
+   * Retrieves the comprehensive Product Intake Policy for the active store context.
+   * Machine-readable contract defining required, conditional, derivable, resolvable and forbidden fields.
+   */
+  async getIntakePolicy(): Promise<ProductIntakePolicyResult> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+    const tenantDefaults = await this.intakeSettingsRepo.getSettings(activeStoreId);
+
+    return {
+      required: ['name', 'retail_price', 'category'],
+      conditional: {
+        min_wholesale_qty:
+          'Obrigatório se wholesale_price for informado (a menos que a loja possua default_min_wholesale_qty configurado)',
+        product_gender:
+          'Obrigatório se o produto for sensível a gênero (fragrâncias/perfumes, vestuário, calçados) e não for possível inferir do nome',
+      },
+      derivable: ['sku', 'seo_slug', 'meta_title', 'meta_description', 'product_category_type'],
+      resolvable: [
+        'category -> category_id no catálogo da loja ativa via correspondência exata ou normalizada',
+      ],
+      tenant_defaults: tenantDefaults,
+      never_invent: [
+        'brand',
+        'volume',
+        'technical_specifications',
+        'material',
+        'gender',
+        'wholesale_minimum',
+      ],
+      decision_policy: {
+        auto: [
+          'slug generation (com resolução automática de colisão por tenant)',
+          'SEO factual generation (sem inventar especificações não informadas)',
+          'SKU generation (prefixo de categoria e sufixo determinístico)',
+          'exact category resolution',
+          'normalized exact category resolution',
+          'tenant default MOQ application',
+          'safe product category type derivation',
+        ],
+        ask: [
+          'gender desconhecido em categorias sensíveis (ex: Perfumes sem indicador de gênero)',
+          'categoria ambígua (múltiplas correspondências no catálogo)',
+          'MOQ ausente sem default configurado no tenant',
+        ],
+        block: [
+          'categoria inexistente no catálogo da loja ativa',
+          'preço de varejo inválido (<= 0 ou ausente)',
+          'referência cross-tenant não autorizada',
+          'enum de categoria ou gênero não suportado',
+        ],
+      },
+      stock_policy: {
+        mode: 'ledger_only',
+        rule: "Nunca gravar estoque diretamente em products.stock. Usar a ferramenta ajustar_estoque com reason_code = 'initial_balance' após a criação do produto.",
+      },
+      image_policy: {
+        mode: 'post_creation',
+        tool: 'adicionar_imagem_produto',
+        rule: 'Criar o produto primeiro e em seguida associar a imagem via URL através da ferramenta adicionar_imagem_produto.',
+      },
+      summary:
+        'Diretrizes canônicas de intake do B2X Catálogo: intake guiado, preflight determinístico e isolamento rigoroso por loja.',
+    };
+  }
+
+  /**
+   * Retrieves the configured Tenant Defaults for product intake.
+   */
+  async getIntakeDefaults(): Promise<TenantIntakeDefaults> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+    return this.intakeSettingsRepo.getSettings(activeStoreId);
+  }
+
+  /**
+   * Updates Tenant Defaults for product intake for the active store.
+   */
+  async updateIntakeDefaults(
+    input: UpdateTenantIntakeDefaultsInput
+  ): Promise<TenantIntakeDefaults> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:write');
+    const activeStoreId = requireActiveStore(context);
+
+    const updated = await this.intakeSettingsRepo.updateSettings(activeStoreId, input);
+
+    await this.auditService.logTenantDefaultsUpdated(context, activeStoreId, Object.keys(input));
+
+    return updated;
+  }
+
+  /**
+   * Preflight preparation of a single product intake without persistence.
+   * Normalizes fields, resolves category, applies tenant defaults, derives SKU/slug/SEO.
+   */
+  async prepareProduct(input: Record<string, any>): Promise<PreparedProductResult> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+    const tenantDefaults = await this.intakeSettingsRepo.getSettings(activeStoreId);
+
+    return this.taxonomyService.prepareProduct(
+      activeStoreId,
+      input,
+      this.categoryRepo,
+      this.repository,
+      tenantDefaults
+    );
+  }
+
+  /**
+   * Analyzes a batch of products (e.g. from CSV/ERP intake) without persistence.
+   * Classifies items into ready, needs_input and invalid, groups repetitive decisions.
+   */
+  async analyzeImport(input: {
+    products: Array<Record<string, any>>;
+    import_id?: string;
+  }): Promise<AnalyzeImportResult> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+
+    if (input.products.length > 100) {
+      throw new ImportBatchTooLargeError('IMPORT_BATCH_TOO_LARGE: Máximo de 100 produtos por lote de análise.', 100);
+    }
+
+    const tenantDefaults = await this.intakeSettingsRepo.getSettings(activeStoreId);
+
+    return this.taxonomyService.analyzeBatch(
+      activeStoreId,
+      input.products,
+      this.categoryRepo,
+      this.repository,
+      tenantDefaults
+    );
   }
 }
 

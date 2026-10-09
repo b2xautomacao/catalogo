@@ -39,6 +39,11 @@ import { registerAdicionarImagemProdutoTool } from './tools/adicionar-imagem-pro
 import { registerListarImagensProdutoTool } from './tools/listar-imagens-produto.tool.js';
 import { registerDefinirImagemPrincipalTool } from './tools/definir-imagem-principal.tool.js';
 import { registerRemoverImagemProdutoTool } from './tools/remover-imagem-produto.tool.js';
+import { registerObterPoliticaCadastroProdutoTool } from './tools/obter-politica-cadastro-produto.tool.js';
+import { registerObterDefaultsCadastroProdutoTool } from './tools/obter-defaults-cadastro-produto.tool.js';
+import { registerAtualizarDefaultsCadastroProdutoTool } from './tools/atualizar-defaults-cadastro-produto.tool.js';
+import { registerPrepararProdutoTool } from './tools/preparar-produto.tool.js';
+import { registerAnalisarImportacaoProdutosTool } from './tools/analisar-importacao-produtos.tool.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { RateLimiter } from './security/rate-limiter.js';
 import { Logger } from './observability/logger.js';
@@ -111,6 +116,13 @@ function createConfiguredMcpServer(session: AgentSession) {
   registerListarImagensProdutoTool(server, mediaService);
   registerDefinirImagemPrincipalTool(server, mediaService);
   registerRemoverImagemProdutoTool(server, mediaService);
+
+  // Product Intake Automation & Tenant Defaults Tools (5)
+  registerObterPoliticaCadastroProdutoTool(server, catalogService);
+  registerObterDefaultsCadastroProdutoTool(server, catalogService);
+  registerAtualizarDefaultsCadastroProdutoTool(server, catalogService);
+  registerPrepararProdutoTool(server, catalogService);
+  registerAnalisarImportacaoProdutosTool(server, catalogService);
 
   return { server, catalogService, storeService, inventoryService, gradeService, mediaService };
 }

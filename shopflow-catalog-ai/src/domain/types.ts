@@ -173,3 +173,125 @@ export interface ProductImageDto {
   color_association: string | null;
 }
 
+export interface TenantIntakeDefaults {
+  store_id?: string;
+  default_min_wholesale_qty: number | null;
+  auto_generate_sku: boolean;
+  auto_generate_slug: boolean;
+  auto_generate_seo: boolean;
+  auto_set_first_image_primary: boolean;
+  inventory_import_mode: 'initial_balance' | 'increase';
+  unknown_category_policy: 'ask' | 'block';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type IntakeDecision = 'auto' | 'ask' | 'block';
+
+export type ResolutionSource =
+  | 'explicit'
+  | 'tenant_default'
+  | 'exact_match'
+  | 'normalized_match'
+  | 'safe_derivation'
+  | 'generated'
+  | 'unresolved';
+
+export interface FieldResolutionMeta {
+  field: string;
+  decision: IntakeDecision;
+  source: ResolutionSource;
+  confidence: number;
+  value?: any;
+  question?: string;
+  allowed_values?: string[];
+}
+
+export interface ProductIntakePolicyResult {
+  required: string[];
+  conditional: Record<string, string>;
+  derivable: string[];
+  resolvable: string[];
+  tenant_defaults: TenantIntakeDefaults;
+  never_invent: string[];
+  decision_policy: {
+    auto: string[];
+    ask: string[];
+    block: string[];
+  };
+  stock_policy: {
+    mode: 'ledger_only';
+    rule: string;
+  };
+  image_policy: {
+    mode: 'post_creation';
+    tool: string;
+    rule: string;
+  };
+  summary: string;
+}
+
+export interface PreparedProductResult {
+  status: 'ready' | 'needs_input' | 'blocked';
+  resolved_data: Record<string, any>;
+  inventory_intent?: {
+    quantity: number;
+    mode: 'initial_balance' | 'increase';
+  };
+  decisions: FieldResolutionMeta[];
+  issues?: Array<{
+    field: string;
+    code: string;
+    message: string;
+  }>;
+}
+
+export interface BatchImportItemResult {
+  index: number;
+  raw_input: Record<string, any>;
+  status: 'ready' | 'needs_input' | 'invalid';
+  resolved_data?: Record<string, any>;
+  inventory_intent?: {
+    quantity: number;
+    mode: string;
+  };
+  decisions: FieldResolutionMeta[];
+  issues?: Array<{
+    field: string;
+    code: string;
+    message: string;
+  }>;
+}
+
+export interface GroupedDecision {
+  type: 'bulk_decision' | 'decision_group' | 'category_mapping';
+  field: string;
+  affected_count: number;
+  question: string;
+  suggested_default?: any;
+  affected_products?: string[];
+  unmapped_categories?: string[];
+}
+
+export interface AnalyzeImportResult {
+  summary: {
+    total: number;
+    ready: number;
+    needs_input: number;
+    invalid: number;
+  };
+  grouped_decisions: GroupedDecision[];
+  items: BatchImportItemResult[];
+  ready_products: Record<string, any>[];
+}
+
+export interface UpdateTenantIntakeDefaultsInput {
+  default_min_wholesale_qty?: number | null;
+  auto_generate_sku?: boolean;
+  auto_generate_slug?: boolean;
+  auto_generate_seo?: boolean;
+  auto_set_first_image_primary?: boolean;
+  inventory_import_mode?: 'initial_balance' | 'increase';
+  unknown_category_policy?: 'ask' | 'block';
+}
+

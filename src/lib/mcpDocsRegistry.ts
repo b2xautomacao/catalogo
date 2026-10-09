@@ -665,6 +665,123 @@ export const MCP_TOOLS: McpToolDoc[] = [
       new_primary_id: null,
     },
   },
+  {
+    name: 'obter_politica_cadastro_produto',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:read',
+    description: 'Consulta a política canônica de intake e cadastro de produtos da loja ativa.',
+    whenToUse: 'Antes de realizar cadastros para descobrir campos obrigatórios, deriváveis, defaults do lojista e regras estritas de não-invenção.',
+    riskTier: 'READ',
+    parameters: [],
+    outputDescription: 'Contrato estruturado da política de cadastro (required, conditional, derivable, tenant_defaults, never_invent, decision_policy).',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: {},
+    exampleResponse: {
+      required: ['name', 'retail_price', 'category'],
+      conditional: {
+        min_wholesale_qty: 'Obrigatório se atacado for informado (salvo se tenant default existir)',
+      },
+      derivable: ['sku', 'seo_slug', 'meta_title', 'meta_description'],
+      never_invent: ['brand', 'volume', 'technical_specifications', 'material', 'gender', 'wholesale_minimum'],
+    },
+  },
+  {
+    name: 'obter_defaults_cadastro_produto',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:read',
+    description: 'Consulta as preferências e valores padrão (Tenant Defaults) configurados pelo lojista para cadastro de produtos.',
+    whenToUse: 'Para conhecer a quantidade mínima de atacado padrão e regras de automação ativas.',
+    riskTier: 'READ',
+    parameters: [],
+    outputDescription: 'Configurações de defaults do tenant (default_min_wholesale_qty, auto_generate_sku, auto_generate_slug, etc.).',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: {},
+    exampleResponse: {
+      default_min_wholesale_qty: 6,
+      auto_generate_sku: true,
+      auto_generate_slug: true,
+      auto_generate_seo: true,
+      auto_set_first_image_primary: true,
+      inventory_import_mode: 'initial_balance',
+      unknown_category_policy: 'ask',
+    },
+  },
+  {
+    name: 'atualizar_defaults_cadastro_produto',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:write',
+    description: 'Atualiza as configurações de valores padrão (Tenant Defaults) para cadastro de produtos na loja ativa.',
+    whenToUse: 'Para definir quantidade mínima de atacado padrão (ex: 6 peças) ou ajustar políticas de importação.',
+    riskTier: 'WRITE',
+    parameters: [
+      { name: 'default_min_wholesale_qty', type: 'number', required: false, description: 'Quantidade mínima de atacado padrão.' },
+      { name: 'auto_generate_sku', type: 'boolean', required: false, description: 'Gerar SKU automaticamente se omitido.' },
+      { name: 'auto_generate_slug', type: 'boolean', required: false, description: 'Gerar slug automaticamente se omitido.' },
+      { name: 'auto_generate_seo', type: 'boolean', required: false, description: 'Gerar SEO factual automaticamente se omitido.' },
+    ],
+    outputDescription: 'Confirmação e dados atualizados dos defaults do tenant.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: { default_min_wholesale_qty: 6 },
+    exampleResponse: { status: 'updated', defaults: { default_min_wholesale_qty: 6 } },
+  },
+  {
+    name: 'preparar_produto',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:read',
+    description: 'Executa preflight e preparação de cadastro de produto a partir de texto livre ou dados básicos, SEM PERSISTIR no banco.',
+    whenToUse: 'Sempre que o usuário enviar uma descrição livre ou dados soltos de um produto, para verificar o que falta antes de salvar.',
+    riskTier: 'READ',
+    parameters: [
+      { name: 'name', type: 'string', required: false, description: 'Nome do produto (ou alias nome/produto).' },
+      { name: 'retail_price', type: 'number', required: false, description: 'Preço de varejo (ou alias preco/valor).' },
+      { name: 'wholesale_price', type: 'number', required: false, description: 'Preço de atacado (opcional).' },
+      { name: 'category', type: 'string', required: false, description: 'Nome da categoria (ou alias categoria).' },
+      { name: 'stock', type: 'number', required: false, description: 'Intenção de estoque inicial (não grava diretamente).' },
+    ],
+    outputDescription: 'Objeto de status (ready, needs_input ou blocked), dados comerciais resolvidos e intenção de estoque.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: {
+      name: 'Perfume Rose Noir',
+      retail_price: 259,
+      wholesale_price: 189,
+      category: 'Perfumes',
+    },
+    exampleResponse: {
+      status: 'needs_input',
+      decisions: [
+        { field: 'product_gender', decision: 'ask', question: 'Este perfume é feminino, masculino ou unissex?' },
+      ],
+    },
+  },
+  {
+    name: 'analisar_importacao_produtos',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:read',
+    description: 'Analisa e prepara um lote de produtos (CSV/planilha/ERP, máx. 100 itens) sem persistir, agrupando decisões repetitivas.',
+    whenToUse: 'Para importações em massa e planilhas, identificando produtos prontos e perguntas consolidadas.',
+    riskTier: 'READ',
+    parameters: [
+      { name: 'products', type: 'array de objetos', required: true, description: 'Lista de produtos com aliases ou formato canônico.' },
+      { name: 'import_id', type: 'string', required: false, description: 'Identificador opcional do lote.' },
+    ],
+    outputDescription: 'Resumo estatístico (ready, needs_input, invalid), decisões agrupadas e lista de produtos prontos.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED', 'IMPORT_BATCH_TOO_LARGE'],
+    exampleRequest: {
+      products: [
+        { produto: 'Perfume Rose Noir', preco: 259, atacado: 189, estoque: 10, categoria: 'Perfumes' },
+      ],
+    },
+    exampleResponse: {
+      summary: { total: 1, ready: 0, needs_input: 1, invalid: 0 },
+      grouped_decisions: [],
+      ready_products: [],
+    },
+  },
 ];
 
 export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
@@ -684,6 +801,10 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'buscar_lojas',
       'obter_loja_ativa',
       'listar_imagens_produto',
+      'obter_politica_cadastro_produto',
+      'obter_defaults_cadastro_produto',
+      'preparar_produto',
+      'analisar_importacao_produtos',
     ],
   },
   {
@@ -700,6 +821,7 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'adicionar_imagem_produto',
       'definir_imagem_principal',
       'remover_imagem_produto',
+      'atualizar_defaults_cadastro_produto',
     ],
   },
   {
@@ -881,14 +1003,14 @@ O runtime aplica janelas deslizantes de rate limiting por credencial:
   md += `
 ---
 
-## 5. Criação Completa de Produtos (Guided Catalog Intake)
-O fluxo de criação do MCP distingue rigorosamente entre:
-- **Dados Fornecidos**: Parâmetros explícitos enviados pelo usuário (nome, preço de varejo).
-- **Dados Resolvidos no Catálogo**: Categorias textuais resolvidas contra a tabela `categories` da loja ativa (`exact`, `normalized`, ou erro `ambiguous`/`not_found`). Nenhuma categoria é inventada silenciosamente.
-- **Dados Derivados com Segurança**: `seo_slug` normalizado com unicidade garantida no tenant (colisões tratadas com `-2`, `-3`), `meta_title` e `meta_description` estritamente factuais (sem afirmações ou especificações técnicas não fornecidas).
-- **Dados Condicionais Obrigatórios**: Se `wholesale_price` for informado, `min_wholesale_qty` torna-se obrigatório. Não assuma valor 1 sem regra explícita.
-- **Dados Ausentes Relevantes**: Para nichos onde gênero é comercialmente relevante e ambíguo (ex: *Perfume Rose Noir*), o agente formula pergunta direcionada (*"Este perfume é feminino, masculino ou unissex?"*) em vez de salvar produtos incompletos.
-- **Estoque Ledger-Only**: O saldo físico não é injetado no produto na criação; é lançado como saldo inicial via `ajustar_estoque` (`initial_balance`).
+## 5. Cadastro Inteligente & Product Intake Automation
+O fluxo de ingestão e criação do MCP B2X distingue rigorosamente entre:
+- **Product Intake Policy**: Contrato canônico obtido via \`obter_politica_cadastro_produto\`, informando campos obrigatórios, condicionais, deriváveis, resolvíveis e valores proibidos de invenção.
+- **Tenant Defaults**: Preferências de loja consultadas e mantidas via \`obter_defaults_cadastro_produto\` e \`atualizar_defaults_cadastro_produto\`. Permite definir quantidade mínima de atacado padrão (\`default_min_wholesale_qty\`), eliminando perguntas repetitivas de forma segura.
+- **Preparação de Produto (\`preparar_produto\`)**: Executa preflight de itens individuais a partir de dados livres ou aliases de planilhas/ERPs sem persistir no banco. Retorna \`status: 'ready'\`, \`status: 'needs_input'\` ou \`status: 'blocked'\`.
+- **Importação em Lote (\`analisar_importacao_produtos\`)**: Recebe lotes de até 100 produtos, carrega categorias em batch, aplica defaults do tenant, agrupa decisões repetitivas (MOQ coletivo, pendências de gênero e categorias desconhecidas) e fornece a lista de produtos prontos para execução.
+- **Estoque Ledger-Only**: O saldo físico não é injetado diretamente no cadastro; é representado como \`inventory_intent\` e lançado no ledger via \`ajustar_estoque\` (\`initial_balance\`).
+- **Imagens em Fluxo Dedicado**: A primeira imagem pode ser adicionada via \`adicionar_imagem_produto\` e promovida a principal de forma segura.
 
 ---
 
@@ -897,11 +1019,11 @@ O fluxo de criação do MCP distingue rigorosamente entre:
 2. **Idempotência Obrigatória**: Operações de escrita sensíveis exigem \`operation_id\`.
    - Repetição do mesmo \`operation_id\` com o mesmo payload = sucesso sem dupla mutação (\`duplicate: true\`).
 3. **Isolamento de Loja**: O agente opera estritamente no contexto da loja autorizada. Tentativas de acessar IDs de outra loja retornam \`NOT_FOUND\` para prevenir enumeração.
-4. **Fluxo Completo de Produto + Imagem + Estoque**:
-   - 1º Criar produto comercialmente completo via \`criar_produto\`.
+4. **Intake Inteligente**: Ao receber pedidos com texto livre, listas ou planilhas, execute \`preparar_produto\` ou \`analisar_importacao_produtos\` antes da persistência.
+5. **Fluxo Completo de Produto + Imagem + Estoque**:
+   - 1º Preparar/Criar produto comercialmente completo via \`criar_produto\`.
    - 2º Adicionar imagens via \`adicionar_imagem_produto\` (URL HTTPS externa; download seguro server-side). A primeira imagem se torna automaticamente a principal.
    - 3º Lançar saldo físico inicial via \`ajustar_estoque\` (motivo \`initial_balance\`).
-   - O MCP possui ferramenta nativa e dedicada para imagens (\`adicionar_imagem_produto\`).
 
 ---
 
@@ -1049,7 +1171,7 @@ ${
 }3. **Respeito aos Scopes**: Não tente invocar ferramentas fora do seu escopo para evitar bloqueios de taxa ou erros 403.
 ${
   hasWriteCatalog
-    ? `4. **Criação Completa e Taxonomia Segura**: Antes de criar produtos, resolva os campos de taxonomia do catálogo e condições comerciais. Não invente silenciosamente gênero, tipo de produto, quantidade mínima de atacado ou IDs de categoria. Quando preço de atacado for informado, a quantidade mínima (\`min_wholesale_qty\`) é obrigatória. Se faltarem dados essenciais para o domínio (ex: gênero para fragrâncias/roupas), pergunte diretamente ao usuário antes de salvar. Derivações de slug e SEO são automáticas e factuais.\n5. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
+    ? `4. **Product Intake & Criação Completa**: Ao cadastrar produtos a partir de linguagem natural, listas ou planilhas/CSV, consulte a Política de Cadastro (\`obter_politica_cadastro_produto\`) ou utilize \`preparar_produto\` / \`analisar_importacao_produtos\` antes da persistência. Aplique os Tenant Defaults configurados (\`obter_defaults_cadastro_produto\`), como quantidade mínima de atacado padrão. Não invente gênero, marca, material ou especificações. Nunca pergunte dados deriváveis (slug, SEO, SKU) ao usuário.\n5. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
     : ''
 }6. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
 `;
