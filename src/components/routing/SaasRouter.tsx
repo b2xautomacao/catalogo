@@ -498,10 +498,44 @@ const MainAppRouter: React.FC = () => {
 };
 
 /**
+ * MCP Platform Status Screen
+ * Displayed when mcp.gargalozero.com.br or /mcp is accessed via browser GET
+ */
+const McpPlatformScreen: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 p-6">
+    <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-2xl text-center space-y-6">
+      <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+        ⚡
+      </div>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold tracking-tight text-white">B2XCATALOGO MCP Runtime</h1>
+        <p className="text-sm text-slate-400">
+          Ambiente de infraestrutura global de Inteligência Artificial da plataforma.
+        </p>
+      </div>
+      <div className="bg-slate-950/80 border border-slate-800/80 rounded-lg p-4 text-left font-mono text-xs text-slate-300 space-y-2">
+        <div className="flex items-center justify-between text-slate-500 text-[11px] uppercase tracking-wider pb-1 border-b border-slate-800">
+          <span>Endpoint Canônico MCP</span>
+          <span className="text-emerald-400 font-semibold">Online</span>
+        </div>
+        <p className="text-blue-400 break-all font-semibold">POST https://mcp.gargalozero.com.br/mcp</p>
+        <p className="text-slate-500 text-[11px]">Protocolo: Model Context Protocol (Streamable HTTP)</p>
+      </div>
+      <div className="text-xs text-slate-400 bg-slate-950/40 border border-slate-800/50 rounded-lg p-3 text-left space-y-1">
+        <p className="font-semibold text-slate-300">Conexão de Agentes de IA:</p>
+        <p>Este endpoint aceita requisições JSON-RPC via método <code className="text-amber-400">POST</code> com cabeçalho <code className="text-amber-400">Authorization: Bearer &lt;sua-chave&gt;</code>.</p>
+        <p className="text-[11px] text-slate-500 pt-1">Gere sua API key na aba <strong>IA</strong> do painel administrativo da sua loja.</p>
+      </div>
+    </div>
+  </div>
+);
+
+/**
  * SaaS Router - intelligent routing based on domain context
  */
 export const SaasRouter: React.FC = () => {
-  const { isSubdomain, subdomain, isMainApp } = getSubdomainInfo();
+  const { isSubdomain, subdomain, isMainApp, isMcpPlatform } = getSubdomainInfo();
+  const isMcpPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/mcp');
 
   // Debug info in development
   React.useEffect(() => {
@@ -511,16 +545,23 @@ export const SaasRouter: React.FC = () => {
       console.log('Is Subdomain:', isSubdomain);
       console.log('Subdomain:', subdomain);
       console.log('Is Main App:', isMainApp);
-      console.log('Route Decision:', isSubdomain ? 'Catalog' : 'Admin');
+      console.log('Is MCP Platform:', isMcpPlatform);
+      console.log('Route Decision:', isMcpPlatform ? 'MCP' : isSubdomain ? 'Catalog' : 'Admin');
       console.groupEnd();
     }
-  }, [isSubdomain, subdomain, isMainApp]);
+  }, [isSubdomain, subdomain, isMainApp, isMcpPlatform]);
 
-  // Route to catalog if subdomain, admin if main app
+  // 1. Host dedicado de MCP ou rota /mcp -> Renderiza tela do MCP Runtime (NUNCA vai para /auth)
+  if (isMcpPlatform || isMcpPath) {
+    return <McpPlatformScreen />;
+  }
+
+  // 2. Route to catalog if subdomain
   if (isSubdomain && subdomain) {
     return <SubdomainCatalogRouter />;
   }
 
+  // 3. Main admin app
   if (isMainApp) {
     return <MainAppRouter />;
   }

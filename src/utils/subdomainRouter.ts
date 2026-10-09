@@ -9,6 +9,7 @@ export interface SubdomainInfo {
   isSubdomain: boolean;
   subdomain: string | null;
   isMainApp: boolean;
+  isMcpPlatform: boolean;
   hostname: string;
 }
 
@@ -20,20 +21,34 @@ export const getSubdomainInfo = (): SubdomainInfo => {
   const hostname = window.location.hostname;
   const resolution = resolveHostname(hostname);
 
+  // 1. Host de Infraestrutura MCP da Plataforma (mcp.gargalozero.com.br, etc.)
+  if (resolution.type === 'platform' && resolution.service === 'mcp') {
+    return {
+      isSubdomain: false,
+      subdomain: null,
+      isMainApp: false,
+      isMcpPlatform: true,
+      hostname,
+    };
+  }
+
+  // 2. Tenant Subdomain (loja1.gargalozero.com.br, etc.)
   if (resolution.type === 'tenant') {
     return {
       isSubdomain: true,
       subdomain: resolution.slug,
       isMainApp: false,
+      isMcpPlatform: false,
       hostname,
     };
   }
 
-  // platform, root, custom_domain, development
+  // 3. Outros hosts de plataforma, root, custom_domain, development
   return {
     isSubdomain: false,
     subdomain: null,
     isMainApp: true,
+    isMcpPlatform: false,
     hostname,
   };
 };
