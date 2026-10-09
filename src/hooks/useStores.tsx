@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { validateTenantSlug } from '@/lib/platformHosts';
 
 export interface Store {
   id: string;
@@ -220,10 +221,17 @@ export const useStores = () => {
   const updateStoreSlug = async (id: string, slug: string) => {
     try {
       setError(null);
+
+      const validation = validateTenantSlug(slug);
+      if (!validation.valid) {
+        const errorMsg = validation.error || 'Subdomínio ou slug inválido';
+        setError(errorMsg);
+        return { data: null, error: errorMsg };
+      }
       
       const { data, error } = await supabase
         .from('stores')
-        .update({ url_slug: slug })
+        .update({ url_slug: slug.trim().toLowerCase() })
         .eq('id', id)
         .select()
         .single();

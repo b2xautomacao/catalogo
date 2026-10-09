@@ -17,14 +17,16 @@ B2XCATALOGO-WEB (porta interna 80)
 Nginx / Vite SPA
 ```
 
-### Configuração no EasyPanel:
+### Configuração no EasyPanel & Precedência de Wildcards:
 1. No serviço **`B2XCATALOGO-MCP`**:
-   - Adicionar o domínio `mcp.gargalozero.com.br`.
+   - Adicionar o domínio dedicado `mcp.gargalozero.com.br`.
    - Configurar a porta interna para `3000`.
    - Garantir que o container está ativo e com status *healthy*.
+   - **Precedência:** No proxy reverso (Traefik/EasyPanel), rotas de host explícitas (`mcp.gargalozero.com.br`) possuem prioridade estrita de matching sobre regras wildcard (`*.gargalozero.com.br`).
 2. No serviço **`B2XCATALOGO-WEB`**:
-   - Remover o domínio `mcp.gargalozero.com.br` da lista de domínios.
-   - Manter apenas os domínios do frontend / catálogo.
+   - Manter os domínios do frontend / catálogo e os wildcards de lojas (`*.gargalozero.com.br` e `*.aoseudispor.com.br`).
+   - Remover qualquer menção explícita de `mcp.gargalozero.com.br` deste container.
+   - O frontend conta com a política central de hosts (`src/lib/platformHosts.ts`), impedindo que qualquer requisição residual tente consultar stores por slug reservado.
 
 ---
 

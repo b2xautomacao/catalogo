@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useCatalogSettings } from '@/hooks/useCatalogSettings';
 import { useStores } from '@/hooks/useStores';
+import { validateTenantSlug } from '@/lib/platformHosts';
 import { 
   Copy, 
   ExternalLink, 
@@ -55,13 +56,28 @@ const ShareableLinks = () => {
       return;
     }
 
+    const validation = validateTenantSlug(urlSlug.trim());
+    if (!validation.valid) {
+      toast({
+        title: "Subdomínio/URL não permitida",
+        description: validation.error || "Este endereço é reservado pela plataforma. Escolha outro subdomínio.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       console.log('Atualizando URL da loja:', urlSlug.trim());
       const { error } = await updateStoreSlug(currentStore.id, urlSlug.trim());
       if (error) {
         console.error('Erro ao atualizar URL:', error);
-        throw error;
+        toast({
+          title: "Erro ao atualizar URL",
+          description: error,
+          variant: "destructive"
+        });
+        return;
       }
       
       toast({

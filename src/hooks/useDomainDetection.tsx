@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveHostname } from '@/lib/platformHosts';
 
-const BASE_DOMAIN = 'aoseudispor.com.br';
-const APP_DOMAIN = `app.${BASE_DOMAIN}`;
-
-export type DomainType = 'app' | 'subdomain' | 'custom_domain' | 'slug';
+export type DomainType = 'app' | 'platform_mcp' | 'subdomain' | 'custom_domain' | 'slug';
 
 interface DomainInfo {
   type: DomainType;
@@ -20,76 +18,36 @@ export const useDomainDetection = () => {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Detecta o tipo de domínio baseado no host atual
-   */
-  const detectDomainType = useCallback((): DomainType => {
-    const host = window.location.host.toLowerCase();
-
-    console.log('🌐 Detectando tipo de domínio:', host);
-
-    // App principal (admin)
-    if (host === APP_DOMAIN || host === 'localhost:5173' || host === 'localhost:8080') {
-      return 'app';
-    }
-
-    // Subdomínio wildcard
-    if (host.endsWith(`.${BASE_DOMAIN}`)) {
-      return 'subdomain';
-    }
-
-    // Domínio próprio
-    return 'custom_domain';
-  }, []);
-
-  /**
-   * Extrai subdomínio de xxx.aoseudispor.com.br
-   */
-  const extractSubdomain = useCallback((): string | null => {
-    const host = window.location.host.toLowerCase();
-    
-    if (!host.endsWith(`.${BASE_DOMAIN}`)) {
-      return null;
-    }
-
-    const subdomain = host.split('.')[0];
-    
-    // Ignorar subdomínios do sistema
-    const systemSubdomains = ['app', 'www', 'admin', 'api'];
-    if (systemSubdomains.includes(subdomain)) {
-      return null;
-    }
-
-    return subdomain;
-  }, []);
-
-  /**
-   * Verifica se é domínio customizado
-   */
-  const isCustomDomain = useCallback((): boolean => {
-    const type = detectDomainType();
-    return type === 'custom_domain';
-  }, [detectDomainType]);
-
-  /**
-   * Resolve loja a partir do domínio/subdomínio
+   * Resolve loja a partir do domínio/subdomínio usando a política central de hosts da plataforma.
+   * Hostnames reservados de plataforma (como mcp.gargalozero.com.br) JAMAIS consultam banco por tenant.
    */
   const resolveStoreFromDomain = useCallback(async (): Promise<DomainInfo | null> => {
-    const domainType = detectDomainType();
-    const host = window.location.host.toLowerCase();
+    const rawHost = window.location.host;
+    const resolution = resolveHostname(rawHost);
 
-    console.log('🔍 Resolvendo loja para domínio:', { domainType, host });
+    console.log('🔍 useDomainDetection: Resolvendo host com política central:', { rawHost, resolution });
 
     try {
-      // Tipo 1: Subdomínio
-      if (domainType === 'subdomain') {
-        const subdomain = extractSubdomain();
-        
-        if (!subdomain) {
-          console.warn('⚠️ Subdomínio inválido ou do sistema');
-          return null;
-        }
+      // 1. Plataforma MCP (mcp.gargalozero.com.br, mcp.aoseudispor.com.br)
+      // NUNCA consultar o banco por loja/slug!
+      if (resolution.type === 'platform' && resolution.service === 'mcp') {
+        return {
+          type: 'platform_mcp',
+        };
+      }
 
-        console.log('🔍 Buscando loja por subdomínio:', subdomain);
+      // 2. Outros hosts de plataforma (app, admin, api, www, root, dev)
+      // NUNCA consultar o banco por loja/slug!
+      if (resolution.type === 'platform' || resolution.type === 'root' || resolution.type === 'development') {
+        return {
+          type: 'app',
+        };
+      }
+
+      // 3. Subdomínio de Tenant (ex: lojax.gargalozero.com.br ou lojax.aoseudispor.com.br)
+      if (resolution.type === 'tenant') {
+        const subdomain = resolution.slug;
+        console.log('🔍 Buscando loja por subdomínio de tenant:', subdomain);
 
         const queryResult: any = await (supabase as any)
           .from('store_settings')
@@ -99,10 +57,10 @@ export const useDomainDetection = () => {
           .maybeSingle();
 
         const data = queryResult.data;
-        const error = queryResult.error;
+        const queryError = queryResult.error;
 
-        if (error) {
-          console.error('❌ Erro ao buscar por subdomínio:', error);
+        if (queryError) {
+          console.error('❌ Erro ao buscar por subdomínio:', queryError);
           return null;
         }
 
@@ -120,8 +78,9 @@ export const useDomainDetection = () => {
         };
       }
 
-      // Tipo 2: Domínio Próprio
-      if (domainType === 'custom_domain') {
+      // 4. Domínio Próprio de Terceiro (ex: www.minhaloja.com.br)
+      if (resolution.type === 'custom_domain') {
+        const host = resolution.hostname;
         console.log('🔍 Buscando loja por domínio próprio:', host);
 
         const queryResult: any = await (supabase as any)
@@ -133,10 +92,10 @@ export const useDomainDetection = () => {
           .maybeSingle();
 
         const data = queryResult.data;
-        const error = queryResult.error;
+        const queryError = queryResult.error;
 
-        if (error) {
-          console.error('❌ Erro ao buscar por domínio próprio:', error);
+        if (queryError) {
+          console.error('❌ Erro ao buscar por domínio próprio:', queryError);
           return null;
         }
 
@@ -154,50 +113,49 @@ export const useDomainDetection = () => {
         };
       }
 
-      // Tipo 3: App/Admin - não é catálogo público
       return {
         type: 'app',
       };
-
     } catch (err) {
-      console.error('💥 Erro ao resolver loja:', err);
+      console.error('💥 Erro ao resolver domínio:', err);
       return null;
     }
-  }, [detectDomainType, extractSubdomain]);
+  }, []);
 
-  /**
-   * Auto-detecta domínio ao montar
-   */
   useEffect(() => {
-    const detectAndResolve = async () => {
-      setLoading(true);
-      setError(null);
+    let isMounted = true;
 
+    const initDetection = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
         const info = await resolveStoreFromDomain();
-        setDomainInfo(info);
+
+        if (isMounted) {
+          setDomainInfo(info);
+          setLoading(false);
+        }
       } catch (err) {
-        console.error('Erro na detecção de domínio:', err);
-        setError('Erro ao detectar domínio');
-        setDomainInfo(null);
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          console.error('💥 Erro na detecção de domínio:', err);
+          setError(err instanceof Error ? err.message : 'Erro desconhecido');
+          setLoading(false);
+        }
       }
     };
 
-    detectAndResolve();
+    initDetection();
+
+    return () => {
+      isMounted = false;
+    };
   }, [resolveStoreFromDomain]);
 
   return {
     domainInfo,
     loading,
     error,
-    detectDomainType,
-    extractSubdomain,
-    isCustomDomain,
-    resolveStoreFromDomain,
-    isPublicCatalog: domainInfo?.type === 'subdomain' || domainInfo?.type === 'custom_domain',
-    storeId: domainInfo?.storeId,
+    refreshDomain: resolveStoreFromDomain,
   };
 };
-

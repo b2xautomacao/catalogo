@@ -44,6 +44,36 @@ const DomainRouter: React.FC = () => {
     );
   }
 
+  // Plataforma MCP Endpoint (mcp.gargalozero.com.br)
+  if (domainInfo.type === 'platform_mcp') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 p-6">
+        <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+            ⚡
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight text-white">B2XCATALOGO MCP Runtime</h1>
+            <p className="text-sm text-slate-400">
+              Ambiente de infraestrutura global de Inteligência Artificial da plataforma.
+            </p>
+          </div>
+          <div className="bg-slate-950/80 border border-slate-800/80 rounded-lg p-4 text-left font-mono text-xs text-slate-300 space-y-2">
+            <div className="flex items-center justify-between text-slate-500 text-[11px] uppercase tracking-wider pb-1 border-b border-slate-800">
+              <span>Endpoint Canônico MCP</span>
+              <span className="text-emerald-400 font-semibold">Online</span>
+            </div>
+            <p className="text-blue-400 break-all">POST https://mcp.gargalozero.com.br/mcp</p>
+            <p className="text-slate-500 text-[11px]">Protocolo: Model Context Protocol (Streamable HTTP)</p>
+          </div>
+          <p className="text-xs text-slate-500">
+            A autenticação deste serviço é realizada estritamente via Bearer API Key gerada no painel administrativo da sua loja.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Subdomínio detectado
   if (domainInfo.type === 'subdomain' && domainInfo.storeId) {
     console.log('🌐 DomainRouter: Renderizando catálogo para subdomínio:', domainInfo.subdomain);

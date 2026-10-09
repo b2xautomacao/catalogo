@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { validateTenantSlug } from '@/lib/platformHosts';
 
 const VERIFICATION_PREFIX = '_vendmais-verification';
 const DNS_API_URL = 'https://dns.google.com/resolve';
@@ -177,39 +178,10 @@ export const verifyAndUpdateDomain = async (
 };
 
 /**
- * Valida formato de subdomínio
+ * Valida formato de subdomínio utilizando a política central de hosts da plataforma
  */
 export const validateSubdomain = (subdomain: string): { valid: boolean; error?: string } => {
-  // Regex: apenas letras minúsculas, números e hífen
-  const regex = /^[a-z0-9-]+$/;
-
-  if (!subdomain || subdomain.trim() === '') {
-    return { valid: false, error: 'Subdomínio não pode ser vazio' };
-  }
-
-  if (subdomain.length < 3) {
-    return { valid: false, error: 'Subdomínio deve ter pelo menos 3 caracteres' };
-  }
-
-  if (subdomain.length > 63) {
-    return { valid: false, error: 'Subdomínio deve ter no máximo 63 caracteres' };
-  }
-
-  if (!regex.test(subdomain)) {
-    return { valid: false, error: 'Apenas letras, números e hífen são permitidos' };
-  }
-
-  if (subdomain.startsWith('-') || subdomain.endsWith('-')) {
-    return { valid: false, error: 'Subdomínio não pode começar ou terminar com hífen' };
-  }
-
-  // Subdomínios reservados
-  const reserved = ['www', 'app', 'admin', 'api', 'mail', 'ftp', 'blog', 'shop', 'store'];
-  if (reserved.includes(subdomain.toLowerCase())) {
-    return { valid: false, error: 'Este subdomínio está reservado pelo sistema' };
-  }
-
-  return { valid: true };
+  return validateTenantSlug(subdomain);
 };
 
 /**
@@ -221,6 +193,14 @@ export const checkSubdomainAvailability = async (
 ): Promise<{ available: boolean; error: string | null }> => {
   try {
     console.log('🔍 Verificando disponibilidade do subdomínio:', subdomain);
+
+    const validation = validateTenantSlug(subdomain);
+    if (!validation.valid) {
+      return {
+        available: false,
+        error: validation.error || 'Este endereço é reservado pela plataforma. Escolha outro subdomínio.',
+      };
+    }
     
     let query = supabase
       .from('store_settings')

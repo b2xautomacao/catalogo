@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isReservedPlatformSubdomain } from '@/lib/platformHosts';
 
 export const useStoreResolver = () => {
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,12 @@ export const useStoreResolver = () => {
       
       console.log('useStoreResolver: Resolvendo identificador:', identifier);
       
+      // Se for subdomínio/slug reservado de plataforma, NUNCA buscar no banco
+      if (isReservedPlatformSubdomain(identifier)) {
+        console.log('🛡️ useStoreResolver: Identificador é slug reservado de plataforma, ignorando busca:', identifier);
+        return null;
+      }
+
       // Verificar se é UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       

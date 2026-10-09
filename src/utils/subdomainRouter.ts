@@ -3,6 +3,8 @@
  * Handles dynamic subdomain detection and routing logic
  */
 
+import { resolveHostname, validateTenantSlug } from '@/lib/platformHosts';
+
 export interface SubdomainInfo {
   isSubdomain: boolean;
   subdomain: string | null;
@@ -11,64 +13,28 @@ export interface SubdomainInfo {
 }
 
 /**
- * Extract subdomain information from current hostname
+ * Extract subdomain information from current hostname.
+ * Evaluates reserved platform hosts (e.g. mcp.gargalozero.com.br) BEFORE tenant resolution.
  */
 export const getSubdomainInfo = (): SubdomainInfo => {
   const hostname = window.location.hostname;
-  
-  // Development environment
-  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1') || hostname.startsWith('192.168.')) {
-    return {
-      isSubdomain: false,
-      subdomain: null,
-      isMainApp: true,
-      hostname
-    };
-  }
+  const resolution = resolveHostname(hostname);
 
-  // Main app domain
-  if (hostname === 'app.aoseudispor.com.br') {
-    return {
-      isSubdomain: false,
-      subdomain: null,
-      isMainApp: true,
-      hostname
-    };
-  }
-
-  // Check for subdomain pattern: {subdomain}.aoseudispor.com.br
-  const subdomainMatch = hostname.match(/^(.+)\.aoseudispor\.com\.br$/);
-  if (subdomainMatch) {
-    const subdomain = subdomainMatch[1];
-    
-    // Exclude known system subdomains
-    const systemSubdomains = ['app', 'www', 'api', 'admin', 'mail', 'ftp'];
-    if (systemSubdomains.includes(subdomain)) {
-      return {
-        isSubdomain: false,
-        subdomain: null,
-        isMainApp: true,
-        hostname
-      };
-    }
-
+  if (resolution.type === 'tenant') {
     return {
       isSubdomain: true,
-      subdomain,
+      subdomain: resolution.slug,
       isMainApp: false,
-      hostname
+      hostname,
     };
   }
 
-  // Custom domain (future support)
-  // This would check against a database of custom domains
-  
-  // Fallback to main app
+  // platform, root, custom_domain, development
   return {
     isSubdomain: false,
     subdomain: null,
     isMainApp: true,
-    hostname
+    hostname,
   };
 };
 
@@ -94,7 +60,7 @@ export const shouldShowAdmin = (): boolean => {
 export const getTenantCatalogUrl = (tenantSlug: string): string => {
   const baseUrl = window.location.protocol + '//' + window.location.host;
   
-  // If we're on a subdomain, construct the subdomain URL
+  // If tenantSlug is provided, construct the tenant URL
   if (tenantSlug) {
     return `https://${tenantSlug}.aoseudispor.com.br`;
   }
@@ -117,46 +83,10 @@ export const getCanonicalUrl = (tenantSlug: string, path: string = ''): string =
 };
 
 /**
- * Validate subdomain format for tenant registration
+ * Validate subdomain format for tenant registration using centralized policy
  */
 export const validateSubdomainFormat = (subdomain: string): { valid: boolean; error?: string } => {
-  if (!subdomain || subdomain.trim() === '') {
-    return { valid: false, error: 'Subdomínio não pode ser vazio' };
-  }
-
-  // Length validation
-  if (subdomain.length < 3) {
-    return { valid: false, error: 'Subdomínio deve ter pelo menos 3 caracteres' };
-  }
-
-  if (subdomain.length > 63) {
-    return { valid: false, error: 'Subdomínio deve ter no máximo 63 caracteres' };
-  }
-
-  // Format validation: only lowercase letters, numbers, and hyphens
-  const formatRegex = /^[a-z0-9-]+$/;
-  if (!formatRegex.test(subdomain)) {
-    return { valid: false, error: 'Apenas letras minúsculas, números e hífen são permitidos' };
-  }
-
-  // Cannot start or end with hyphen
-  if (subdomain.startsWith('-') || subdomain.endsWith('-')) {
-    return { valid: false, error: 'Subdomínio não pode começar ou terminar com hífen' };
-  }
-
-  // Reserved subdomains
-  const reserved = [
-    'www', 'app', 'admin', 'api', 'mail', 'ftp', 'blog', 'shop', 'store',
-    'dashboard', 'panel', 'control', 'manage', 'system', 'root', 'test',
-    'staging', 'dev', 'demo', 'support', 'help', 'docs', 'cdn', 'media',
-    'assets', 'static', 'files', 'uploads', 'downloads', 'backup'
-  ];
-  
-  if (reserved.includes(subdomain.toLowerCase())) {
-    return { valid: false, error: 'Este subdomínio está reservado pelo sistema' };
-  }
-
-  return { valid: true };
+  return validateTenantSlug(subdomain);
 };
 
 /**
@@ -164,13 +94,14 @@ export const validateSubdomainFormat = (subdomain: string): { valid: boolean; er
  */
 export const getSubdomainDebugInfo = () => {
   const info = getSubdomainInfo();
+  const resolution = resolveHostname(window.location.hostname);
   
   return {
     ...info,
-    currentUrl: window.location.href,
-    shouldShowCatalog: shouldShowCatalog(),
-    shouldShowAdmin: shouldShowAdmin(),
-    userAgent: navigator.userAgent,
+    resolution,
+    pathname: window.location.pathname,
+    port: window.location.port,
+    protocol: window.location.protocol,
     timestamp: new Date().toISOString()
   };
 };

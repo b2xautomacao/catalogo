@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSubdomainInfo } from '@/utils/subdomainRouter';
+import { isReservedPlatformSubdomain } from '@/lib/platformHosts';
 
 export interface SubdomainStoreInfo {
   id: string;
@@ -39,6 +40,12 @@ export const useSubdomainStore = (): UseSubdomainStoreReturn => {
 
     if (!isSubdomain || !subdomain) {
       console.log('📍 Not a subdomain, skipping store load');
+      setLoading(false);
+      return;
+    }
+
+    if (isReservedPlatformSubdomain(subdomain)) {
+      console.log('🛡️ useSubdomainStore: Subdomínio reservado de plataforma detectado, pulando busca de loja:', subdomain);
       setLoading(false);
       return;
     }
