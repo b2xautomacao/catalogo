@@ -240,9 +240,22 @@ export interface PreparedInventoryAdjustment {
   notes?: string;
 }
 
+export interface VariationIntent {
+  mode: 'none' | 'size_only' | 'color_only' | 'color_size';
+  colors?: string[];
+  sizes?: string[];
+}
+
+export interface GradeIntent {
+  template: string;
+  template_id?: string;
+}
+
 export interface ExecutablePayloads {
   criar_produto: Record<string, any>;
   ajustar_estoque?: PreparedInventoryAdjustment;
+  reconciliar_variacoes_produto?: Record<string, any>;
+  aplicar_grade_produto?: Record<string, any>;
 }
 
 export interface ExecutableNextAction {
@@ -269,6 +282,8 @@ export interface PreparedProductResult {
   resolved_data: Record<string, any>;
   executable_payloads?: ExecutablePayloads;
   inventory_intent?: PreparedInventoryAdjustment;
+  variation_intent?: VariationIntent;
+  grade_intent?: GradeIntent;
   unresolved_category?: CategorySuggestionInfo;
   next_actions?: ExecutableNextAction[];
   decisions: FieldResolutionMeta[];

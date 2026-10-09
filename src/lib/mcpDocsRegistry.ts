@@ -806,6 +806,51 @@ export const MCP_TOOLS: McpToolDoc[] = [
       already_exists: false,
     },
   },
+  {
+    name: 'reconciliar_variacoes_produto',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:write',
+    description:
+      'Reconcilia as variações unitárias de um produto (tamanhos, cores ou matriz cor+tamanho) de forma não-destrutiva e idempotente, preservando IDs existentes e estoques intactos.',
+    whenToUse:
+      'Ao cadastrar ou atualizar tamanhos e cores de um produto. Preserva os IDs estáveis já existentes e desativa com segurança (sem deleção destrutiva) itens removidos.',
+    riskTier: 'WRITE',
+    supportsIdempotency: true,
+    parameters: [
+      { name: 'product_id', type: 'string (UUID)', required: true, description: 'ID do produto alvo na loja ativa.' },
+      { name: 'variation_mode', type: 'string', required: false, description: 'Modo estrutural: size_only, color_only, color_size ou none.' },
+      { name: 'variations', type: 'array', required: true, description: 'Lista desejada de variações (tamanho, cor, sku, etc).' },
+      { name: 'operation_id', type: 'string', required: true, description: 'Chave de idempotência da reconciliação.' },
+    ],
+    outputDescription: 'Relatório com contagens de created, updated, unchanged, deactivated e lista de variações com seus IDs estáveis.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'PRODUCT_NOT_FOUND', 'SCOPE_DENIED'],
+    exampleRequest: {
+      product_id: '11111111-1111-1111-1111-111111111111',
+      variation_mode: 'size_only',
+      variations: [
+        { size: '37', sku: 'TENIS-37' },
+        { size: '38', sku: 'TENIS-38' },
+        { size: '39', sku: 'TENIS-39' },
+        { size: '40', sku: 'TENIS-40' },
+      ],
+      operation_id: 'op_rec_001',
+    },
+    exampleResponse: {
+      product_id: '11111111-1111-1111-1111-111111111111',
+      variation_mode: 'size_only',
+      created_count: 4,
+      updated_count: 0,
+      unchanged_count: 0,
+      deactivated_count: 0,
+      variations: [
+        { id: 'uuid-37', size: '37', sku: 'TENIS-37', stock: 0, is_grade: false, action: 'created' },
+        { id: 'uuid-38', size: '38', sku: 'TENIS-38', stock: 0, is_grade: false, action: 'created' },
+        { id: 'uuid-39', size: '39', sku: 'TENIS-39', stock: 0, is_grade: false, action: 'created' },
+        { id: 'uuid-40', size: '40', sku: 'TENIS-40', stock: 0, is_grade: false, action: 'created' },
+      ],
+    },
+  },
 ];
 
 export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
@@ -840,6 +885,7 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'criar_produto',
       'atualizar_produto',
       'desativar_produto',
+      'reconciliar_variacoes_produto',
       'criar_modelo_grade',
       'selecionar_loja',
       'adicionar_imagem_produto',

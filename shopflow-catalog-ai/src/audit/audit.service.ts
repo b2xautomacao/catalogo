@@ -339,5 +339,28 @@ export class AuditService {
       console.error('[AuditService] Failed to record tenant defaults updated event:', err);
     });
   }
+
+  async logProductVariationsReconciled(
+    context: AgentContext,
+    productId: string,
+    metadata: Record<string, any>
+  ): Promise<void> {
+    const entry: CreateAuditLogEntry = {
+      session_id: context.sessionId,
+      principal_type: context.principalType,
+      principal_id: context.principalId,
+      store_id: context.activeStoreId,
+      event_type: 'product_variations_reconciled',
+      tool_name: 'reconciliar_variacoes_produto',
+      entity_type: 'product',
+      entity_id: productId,
+      metadata,
+    };
+
+    this.repository.recordEvent(entry).catch((err) => {
+      console.error('[AuditService] Failed to record product variations reconciled event:', err);
+    });
+  }
 }
+
 

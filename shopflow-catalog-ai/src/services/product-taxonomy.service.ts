@@ -14,6 +14,8 @@ import {
   ExecutablePayloads,
   ExecutableNextAction,
   CategorySuggestionInfo,
+  VariationIntent,
+  GradeIntent,
 } from '../domain/types.js';
 import { normalizeProductInput } from './import-column-normalizer.js';
 
@@ -753,6 +755,50 @@ export class ProductTaxonomyService {
       } as any;
     }
 
+    // Variation Intent Detection (Fases S e T)
+    let rawSizes: string[] = [];
+    if (Array.isArray(rawInput.sizes)) rawSizes = rawInput.sizes.map(String);
+    else if (Array.isArray(rawInput.tamanhos)) rawSizes = rawInput.tamanhos.map(String);
+    else if (typeof rawInput.sizes === 'string') rawSizes = rawInput.sizes.split(/[,;\/]+/).map((s: string) => s.trim()).filter(Boolean);
+    else if (typeof rawInput.tamanhos === 'string') rawSizes = rawInput.tamanhos.split(/[,;\/]+/).map((s: string) => s.trim()).filter(Boolean);
+
+    let rawColors: string[] = [];
+    if (Array.isArray(rawInput.colors)) rawColors = rawInput.colors.map(String);
+    else if (Array.isArray(rawInput.cores)) rawColors = rawInput.cores.map(String);
+    else if (typeof rawInput.colors === 'string') rawColors = rawInput.colors.split(/[,;\/]+/).map((s: string) => s.trim()).filter(Boolean);
+    else if (typeof rawInput.cores === 'string') rawColors = rawInput.cores.split(/[,;\/]+/).map((s: string) => s.trim()).filter(Boolean);
+
+    let variationIntent: VariationIntent | undefined;
+    let variationMode: 'none' | 'size_only' | 'color_only' | 'color_size' = 'none';
+
+    if (rawInput.variation_mode) {
+      variationMode = rawInput.variation_mode;
+    } else if (rawColors.length > 0 && rawSizes.length > 0) {
+      variationMode = 'color_size';
+    } else if (rawSizes.length > 0) {
+      variationMode = 'size_only';
+    } else if (rawColors.length > 0) {
+      variationMode = 'color_only';
+    }
+
+    if (variationMode !== 'none') {
+      variationIntent = {
+        mode: variationMode,
+        colors: rawColors.length > 0 ? rawColors : undefined,
+        sizes: rawSizes.length > 0 ? rawSizes : undefined,
+      };
+    }
+
+    // Grade Intent Detection (Fases S e T)
+    let gradeIntent: GradeIntent | undefined;
+    const gradeRaw = rawInput.grade || rawInput.grade_template || rawInput.modelo_grade || rawInput.grade_name;
+    if (gradeRaw || rawInput.grade_template_id) {
+      gradeIntent = {
+        template: typeof gradeRaw === 'string' ? gradeRaw.trim() : 'Grade Alta',
+        template_id: rawInput.grade_template_id || undefined,
+      };
+    }
+
     // Status Determination
     const hasBlock = decisions.some((d) => d.decision === 'block') || issues.length > 0;
     const hasAsk = decisions.some((d) => d.decision === 'ask');
@@ -827,6 +873,56 @@ export class ProductTaxonomyService {
         },
       ];
 
+      // Next Action para Variações Unitárias (Fase T1)
+      if (variationIntent && variationIntent.mode !== 'none') {
+        const preparedVariations: Array<{ size?: string; color?: string }> = [];
+        if (variationIntent.mode === 'color_size' && variationIntent.colors && variationIntent.sizes) {
+          for (const c of variationIntent.colors) {
+            for (const s of variationIntent.sizes) {
+              preparedVariations.push({ color: c, size: s });
+            }
+          }
+        } else if (variationIntent.mode === 'size_only' && variationIntent.sizes) {
+          for (const s of variationIntent.sizes) {
+            preparedVariations.push({ size: s });
+          }
+        } else if (variationIntent.mode === 'color_only' && variationIntent.colors) {
+          for (const c of variationIntent.colors) {
+            preparedVariations.push({ color: c });
+          }
+        }
+
+        executablePayloads.reconciliar_variacoes_produto = {
+          product_id: '<ID_DO_PRODUTO_APOS_CRIAR>',
+          variation_mode: variationIntent.mode,
+          variations: preparedVariations,
+          operation_id: `op_var_${preparationId}`,
+        };
+
+        nextActions.push({
+          tool: 'reconciliar_variacoes_produto',
+          required: true,
+          reason: 'unit_variations_pending',
+          prepared_input: executablePayloads.reconciliar_variacoes_produto,
+        });
+      }
+
+      // Next Action para Grade / Pack Variation (Fase T2)
+      if (gradeIntent) {
+        executablePayloads.aplicar_grade_produto = {
+          product_id: '<ID_DO_PRODUTO_APOS_CRIAR>',
+          grade_template_id: gradeIntent.template_id || '<GRADE_TEMPLATE_ID>',
+          name: gradeIntent.template,
+        };
+
+        nextActions.push({
+          tool: 'aplicar_grade_produto',
+          required: true,
+          reason: 'grade_pack_pending',
+          prepared_input: executablePayloads.aplicar_grade_produto,
+        });
+      }
+
       if (inventoryIntent) {
         nextActions.push({
           tool: 'ajustar_estoque',
@@ -864,6 +960,8 @@ export class ProductTaxonomyService {
       resolved_data: resolvedData,
       executable_payloads: executablePayloads,
       inventory_intent: inventoryIntent,
+      variation_intent: variationIntent,
+      grade_intent: gradeIntent,
       unresolved_category: unresolvedCategory,
       next_actions: nextActions,
       decisions,

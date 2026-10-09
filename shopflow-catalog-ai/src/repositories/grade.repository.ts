@@ -209,7 +209,51 @@ export class GradeRepository {
       throw new Error(`Modelo de grade ${template.name} não possui itens`);
     }
 
-    // 3. Validar Unicidade de SKU se fornecido
+    const gradeName = data.name || template.name;
+    const color = data.color || null;
+
+    // 3. Checar Idempotência (Fase Q) e Snapshots Ativos Anteriores (Fase P/I)
+    let queryActiveSnap = supabase
+      .from('product_grade_snapshots')
+      .select('id, pack_variation_id, template_id, color, total_units, is_active, product_variations(id, sku, stock, name)')
+      .eq('product_id', data.productId)
+      .eq('is_active', true);
+
+    if (color) {
+      queryActiveSnap = queryActiveSnap.eq('color', color);
+    } else {
+      queryActiveSnap = queryActiveSnap.is('color', null);
+    }
+
+    const { data: existingActiveSnaps } = await queryActiveSnap;
+    const existingActiveSnap = existingActiveSnaps && existingActiveSnaps.length > 0 ? existingActiveSnaps[0] : null;
+
+    if (existingActiveSnap && existingActiveSnap.template_id === template.id) {
+      // IDEMPOTÊNCIA ESTRITA: A mesma grade já está aplicada ao produto/cor.
+      // Retorna o snapshot e pack variation existentes sem duplicar e sem resetar estoque.
+      const packVar: any = Array.isArray(existingActiveSnap.product_variations)
+        ? existingActiveSnap.product_variations[0]
+        : existingActiveSnap.product_variations;
+
+      return {
+        snapshot_id: existingActiveSnap.id,
+        product_id: data.productId,
+        variation_id: existingActiveSnap.pack_variation_id,
+        template_id: template.id,
+        name: gradeName,
+        color: color,
+        sku: packVar?.sku || data.sku || null,
+        total_units: template.total_units,
+        stock: packVar?.stock ?? 0,
+        items: template.items.map((i) => ({
+          size: i.size,
+          quantity: i.quantity,
+          position: i.position,
+        })),
+      };
+    }
+
+    // 4. Validar Unicidade de SKU se fornecido
     if (data.sku && data.sku.trim() !== '') {
       const { data: existingSku } = await supabase
         .from('product_variations')
@@ -223,14 +267,12 @@ export class GradeRepository {
       }
     }
 
-    // 4. Preparar Projeção de Compatibilidade para product_variations
+    // 5. Preparar Projeção de Compatibilidade para product_variations
     const gradeSizes = template.items.map((i) => i.size);
     const gradePairs = template.items.map((i) => i.quantity);
-    const gradeName = data.name || template.name;
-    const color = data.color || null;
     const variationName = color ? `${product.name} - ${color} (${gradeName})` : `${product.name} (${gradeName})`;
 
-    // 5. Inserir Variação de Compatibilidade (Pack Variation) em product_variations
+    // 6. Inserir Variação de Compatibilidade (Pack Variation) em product_variations
     // ESTOQUE INICIAL É RIGOROSAMENTE ZERO
     const { data: variation, error: varError } = await supabase
       .from('product_variations')
@@ -253,7 +295,7 @@ export class GradeRepository {
       throw new Error(`Erro ao criar variação de compatibilidade: ${varError?.message}`);
     }
 
-    // 6. Inserir Snapshot Imutável vinculado explicitamente à Pack Variation
+    // 7. Inserir Snapshot Imutável vinculado explicitamente à Pack Variation
     const { data: snapshot, error: snapError } = await supabase
       .from('product_grade_snapshots')
       .insert({
@@ -264,6 +306,7 @@ export class GradeRepository {
         name: gradeName,
         color: color,
         total_units: template.total_units,
+        is_active: true,
       })
       .select('*')
       .single();
@@ -274,14 +317,51 @@ export class GradeRepository {
       throw new Error(`Erro ao criar snapshot de grade: ${snapError?.message}`);
     }
 
-    // 7. Inserir Itens do Snapshot (variation_id = NULL pois representa unit variation componente, não a pack)
-    const snapshotItems = template.items.map((item) => ({
-      snapshot_id: snapshot.id,
-      size: item.size,
-      quantity: item.quantity,
-      position: item.position,
-      variation_id: null, // NULL até a implementação da Variation Matrix
-    }));
+    // Se existia snapshot anterior ativo para esse produto/cor (Edição Estrutural / Reapply com nova grade):
+    // Desativar anterior e registrar substituição (Fase I e P)
+    if (existingActiveSnap) {
+      await supabase
+        .from('product_grade_snapshots')
+        .update({
+          is_active: false,
+          replaced_by_snapshot_id: snapshot.id,
+          replaced_at: new Date().toISOString(),
+        })
+        .eq('id', existingActiveSnap.id);
+    }
+
+    // 8. Buscar Unit Variations existentes para mapeamento determinístico de componentes (Fase J)
+    const { data: existingUnitVars } = await supabase
+      .from('product_variations')
+      .select('id, size, color, is_grade')
+      .eq('product_id', data.productId)
+      .eq('is_grade', false);
+
+    const unitVars = existingUnitVars || [];
+
+    // 9. Inserir Itens do Snapshot mapeando para component variation se inequívoco
+    const snapshotItems = template.items.map((item) => {
+      // Procurar correspondência de tamanho e cor entre unit variations
+      const matchingUnits = unitVars.filter((uv) => {
+        const sizeMatch = String(uv.size).trim() === String(item.size).trim();
+        if (!sizeMatch) return false;
+        if (color) {
+          return String(uv.color || '').trim().toLowerCase() === color.trim().toLowerCase();
+        }
+        return true;
+      });
+
+      // Se houver exatamente 1 match: vincula variation_id. Se 0 ou >1 (ambíguo): variation_id = null.
+      const componentVarId = matchingUnits.length === 1 ? matchingUnits[0].id : null;
+
+      return {
+        snapshot_id: snapshot.id,
+        size: item.size,
+        quantity: item.quantity,
+        position: item.position,
+        variation_id: componentVarId,
+      };
+    });
 
     const { error: snapItemsError } = await supabase
       .from('product_grade_snapshot_items')

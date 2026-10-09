@@ -268,7 +268,7 @@ describe('Sprint 13 / Remediation: Remote MCP Streamable HTTP & Transport Lifecy
 
     assert.equal(listData.id, 2);
     assert.ok(Array.isArray(listData.result.tools));
-    assert.equal(listData.result.tools.length, 27, 'Must register exactly 27 tools');
+    assert.equal(listData.result.tools.length, 28, 'Must register exactly 28 tools');
 
     const toolNames = listData.result.tools.map((t: any) => t.name);
     assert.ok(toolNames.includes('catalog_health'));
@@ -282,6 +282,7 @@ describe('Sprint 13 / Remediation: Remote MCP Streamable HTTP & Transport Lifecy
     assert.ok(toolNames.includes('atualizar_produto'));
     assert.ok(toolNames.includes('desativar_produto'));
     assert.ok(toolNames.includes('atualizar_produtos_em_lote'));
+    assert.ok(toolNames.includes('reconciliar_variacoes_produto'));
     assert.ok(toolNames.includes('consultar_estoque'));
     assert.ok(toolNames.includes('ajustar_estoque'));
     assert.ok(toolNames.includes('listar_modelos_grade'));

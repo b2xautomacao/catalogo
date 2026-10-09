@@ -28,6 +28,7 @@ import { registerCriarProdutoTool } from './tools/criar-produto.tool.js';
 import { registerAtualizarProdutoTool } from './tools/atualizar-produto.tool.js';
 import { registerDesativarProdutoTool } from './tools/desativar-produto.tool.js';
 import { registerAtualizarProdutosEmLoteTool } from './tools/atualizar-produtos-em-lote.tool.js';
+import { registerReconciliarVariacoesProdutoTool } from './tools/reconciliar-variacoes-produto.tool.js';
 import { registerConsultarEstoqueTool } from './tools/consultar-estoque.tool.js';
 import { registerAjustarEstoqueTool } from './tools/ajustar-estoque.tool.js';
 import { registerListarModelosGradeTool } from './tools/listar-modelos-grade.tool.js';
@@ -96,11 +97,12 @@ function createConfiguredMcpServer(session: AgentSession) {
   registerSelecionarLojaTool(server, storeService);
   registerObterLojaAtivaTool(server, storeService);
 
-  // Safe Catalog Write & Lifecycle Tools (4)
+  // Safe Catalog Write & Lifecycle Tools (5)
   registerCriarProdutoTool(server, catalogService);
   registerAtualizarProdutoTool(server, catalogService);
   registerDesativarProdutoTool(server, catalogService);
   registerAtualizarProdutosEmLoteTool(server, catalogService);
+  registerReconciliarVariacoesProdutoTool(server, catalogService);
 
   // Safe Inventory Read & Write Tools (2)
   registerConsultarEstoqueTool(server, inventoryService);

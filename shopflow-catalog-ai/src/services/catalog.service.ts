@@ -34,6 +34,8 @@ import {
 } from '../domain/types.js';
 import { requireScope, requireActiveStore } from '../auth/agent-context.js';
 import { AgentSession } from '../auth/agent-session.js';
+import { ReconciliarVariacoesInput } from '../schemas/variation.schema.js';
+import { ReconcileVariationsResult } from '../domain/variation.types.js';
 
 export interface CatalogHealthStatus {
   ok: boolean;
@@ -656,5 +658,36 @@ export class CatalogService {
       already_exists: !result.created,
     };
   }
+
+  /**
+   * Reconcilia variações de um produto de forma determinística e não-destrutiva.
+   * Preserva IDs existentes, mantém estoques intactos e desativa variações removidas.
+   * Scope: catalog:write
+   */
+  async reconcileVariations(
+    input: ReconciliarVariacoesInput
+  ): Promise<ReconcileVariationsResult> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:write');
+    const activeStoreId = requireActiveStore(context);
+
+    const result = await this.repository.reconcileVariations(activeStoreId, {
+      productId: input.product_id,
+      variationMode: input.variation_mode,
+      variations: input.variations,
+      operationId: input.operation_id,
+    });
+
+    await this.auditService.logProductVariationsReconciled(context, input.product_id, {
+      operationId: input.operation_id,
+      createdCount: result.created_count,
+      updatedCount: result.updated_count,
+      unchangedCount: result.unchanged_count,
+      deactivatedCount: result.deactivated_count,
+    });
+
+    return result;
+  }
 }
+
 
