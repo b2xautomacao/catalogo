@@ -53,4 +53,32 @@ export class CategoryRepository {
 
     return data as CategoryRecord;
   }
+
+  async createCategory(
+    storeId: string,
+    name: string,
+    description?: string
+  ): Promise<{ category: CategoryRecord; created: boolean }> {
+    const existing = await this.findByNameAndStore(name, storeId);
+    if (existing) {
+      return { category: existing, created: false };
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({
+        store_id: storeId, // TENANT GUARD
+        name: name.trim(),
+        description: description?.trim() || null,
+        is_active: true,
+      })
+      .select('id, store_id, name, description, is_active')
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create category: ${error?.message || 'Unknown database error'}`);
+    }
+
+    return { category: data as CategoryRecord, created: true };
+  }
 }

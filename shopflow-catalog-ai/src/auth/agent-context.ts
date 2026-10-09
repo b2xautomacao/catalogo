@@ -21,6 +21,12 @@ export function requireScope(context: AgentContext, scope: string): void {
   }
 }
 
+export function requireAnyScope(context: AgentContext, scopes: string[]): void {
+  if (!scopes.some((s) => context.scopes.includes(s))) {
+    throw new ForbiddenError(`Missing required scope. Required one of: ${scopes.join(', ')}`);
+  }
+}
+
 export function canAccessStore(context: AgentContext, storeId: string): boolean {
   if (!storeId) return false;
   if (context.storeAccess.mode === 'all') {

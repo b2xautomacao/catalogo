@@ -33,6 +33,7 @@ import { registerObterDefaultsCadastroProdutoTool } from './tools/obter-defaults
 import { registerAtualizarDefaultsCadastroProdutoTool } from './tools/atualizar-defaults-cadastro-produto.tool.js';
 import { registerPrepararProdutoTool } from './tools/preparar-produto.tool.js';
 import { registerAnalisarImportacaoProdutosTool } from './tools/analisar-importacao-produtos.tool.js';
+import { registerCriarCategoriaTool } from './tools/criar-categoria.tool.js';
 import './config/env.js'; // Triggers env validation on startup — fatal if invalid
 
 async function main() {
@@ -85,12 +86,13 @@ async function main() {
     registerDefinirImagemPrincipalTool(server, mediaService);
     registerRemoverImagemProdutoTool(server, mediaService);
 
-    // Product Intake Automation & Tenant Defaults Tools (5)
+    // Product Intake Automation & Tenant Defaults Tools (6)
     registerObterPoliticaCadastroProdutoTool(server, catalogService);
     registerObterDefaultsCadastroProdutoTool(server, catalogService);
     registerAtualizarDefaultsCadastroProdutoTool(server, catalogService);
     registerPrepararProdutoTool(server, catalogService);
     registerAnalisarImportacaoProdutosTool(server, catalogService);
+    registerCriarCategoriaTool(server, catalogService);
 
     return server;
   }, {

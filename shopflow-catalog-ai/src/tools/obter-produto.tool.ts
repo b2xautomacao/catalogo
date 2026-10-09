@@ -1,22 +1,23 @@
-import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/server";
 import { CatalogService } from '../services/catalog.service.js';
+import { GetProductSchema } from '../schemas/product.schema.js';
 import { ProductNotFoundError, StoreContextRequiredError } from '../domain/errors.js';
-
-const ObterProdutoInputSchema = z.object({
-  product_id: z.string().uuid().describe('The UUID of the product to fetch')
-});
 
 export function registerObterProdutoTool(server: McpServer, catalogService: CatalogService) {
   server.registerTool(
     "obter_produto",
     {
-      description: "Fetches full details for a specific product by its UUID, including images and variations. Always returns PRODUCT_NOT_FOUND for non-existent or cross-tenant IDs.",
-      inputSchema: ObterProdutoInputSchema
+      description:
+        "WHEN TO USE: Obtém os detalhes completos de um produto específico (preços, estoque, imagens, variações) por UUID. " +
+        "REQUIRED SCOPE: catalog:read. " +
+        "INPUT: Aceita 'product_id' ou 'id' como UUID. " +
+        "WHAT IT RETURNS: Objeto de produto sanitizado com imagens e variações. Retorna PRODUCT_NOT_FOUND para IDs inexistentes ou de outra loja.",
+      inputSchema: GetProductSchema
     },
     async (args) => {
       try {
-        const product = await catalogService.getProduct(args.product_id);
+        const productId = (args.product_id || (args as any).id)!;
+        const product = await catalogService.getProduct(productId);
         return {
           content: [{ type: "text" as const, text: JSON.stringify(product, null, 2) }]
         };

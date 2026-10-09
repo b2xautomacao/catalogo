@@ -212,6 +212,28 @@ export class CatalogService {
         'adicionar_imagem_produto',
         'ajustar_estoque',
       ],
+      structured_next_actions: [
+        {
+          tool: 'ajustar_estoque',
+          required: true,
+          reason: 'initial_inventory_pending',
+          prepared_input: {
+            product_id: createdProduct.id,
+            operation: 'increase',
+            reason: 'initial_balance',
+            notes: 'Saldo físico inicial de cadastro',
+          },
+        },
+        {
+          tool: 'adicionar_imagem_produto',
+          required: false,
+          reason: 'product_has_no_image',
+          prepared_input: {
+            product_id: createdProduct.id,
+            is_primary: true,
+          },
+        },
+      ],
     };
 
     return result;
@@ -599,6 +621,40 @@ export class CatalogService {
       this.repository,
       tenantDefaults
     );
+  }
+
+  /**
+   * Creates a new category for the active store safely, or returns existing if already present (idempotent).
+   * Scope required: catalog:write
+   */
+  async createCategory(input: { name: string; description?: string }): Promise<{
+    id: string;
+    store_id: string;
+    name: string;
+    description: string | null;
+    is_active: boolean;
+    created: boolean;
+    already_exists: boolean;
+  }> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:write');
+    const activeStoreId = requireActiveStore(context);
+
+    const result = await this.categoryRepo.createCategory(
+      activeStoreId,
+      input.name,
+      input.description
+    );
+
+    return {
+      id: result.category.id,
+      store_id: result.category.store_id,
+      name: result.category.name,
+      description: result.category.description,
+      is_active: result.category.is_active,
+      created: result.created,
+      already_exists: !result.created,
+    };
   }
 }
 

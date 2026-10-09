@@ -8,9 +8,18 @@ export const ListProductsSchema = z.object({
   limit: z.number().int().min(1).max(50).default(20).describe('Items per page (max 50)'),
 });
 
-export const GetProductSchema = z.object({
-  product_id: z.string().uuid().describe('The UUID of the product to fetch'),
-});
+export const GetProductSchema = z
+  .object({
+    product_id: z.string().uuid().optional().describe('The UUID of the product to fetch'),
+    id: z.string().uuid().optional().describe('Alias for product_id (UUID)'),
+  })
+  .refine((data) => Boolean(data.product_id || data.id), {
+    message: 'Either product_id or id must be provided as a valid UUID',
+  })
+  .transform((data) => ({
+    product_id: (data.product_id || data.id)!,
+    id: data.id,
+  }));
 
 export const CreateProductSchema = z
   .object({
@@ -29,6 +38,7 @@ export const CreateProductSchema = z
     meta_title: z.string().trim().max(255).optional().describe('SEO meta title (auto-derived safely if omitted)'),
     meta_description: z.string().trim().max(500).optional().describe('SEO meta description (auto-derived safely if omitted)'),
     keywords: z.string().trim().max(500).optional().describe('SEO search keywords (auto-derived safely if omitted)'),
+    is_active: z.boolean().optional().default(true).describe('Active status of the product (defaults to true)'),
   })
   .strict();
 

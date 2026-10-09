@@ -193,25 +193,40 @@ describe('Store Resolution, Selection & Cross-Session Isolation', () => {
     );
   });
 
-  it('Scope enforcement: principal without store:list cannot call searchStores or getActiveStore', async () => {
+  it('Scope enforcement: principal without store:list cannot call searchStores, but catalog:read can call getActiveStore', async () => {
     const session = new AgentSession({
       principalType: 'tenant',
       principalId: storeA.id,
       storeAccess: { mode: 'restricted', storeIds: [storeA.id] },
       activeStoreId: storeA.id,
-      scopes: ['catalog:read'], // Missing store:list
+      scopes: ['catalog:read'], // Has catalog:read, missing store:list
       sessionId: 'sess-tenant-4',
     });
 
     const storeService = new StoreService(session, mockStoreRepo, mockAuditService);
 
+    // searchStores still strictly requires store:list
     await assert.rejects(
       async () => await storeService.searchStores('Mega'),
       (err: Error) => err instanceof ForbiddenError
     );
 
+    // getActiveStore works for catalog:read under single-store context (Fase I)
+    const activeStore = await storeService.getActiveStore();
+    assert.equal(activeStore.id, storeA.id);
+
+    // Session with NO permitted scopes (e.g. only order:read) is rejected
+    const restrictedSession = new AgentSession({
+      principalType: 'tenant',
+      principalId: storeA.id,
+      storeAccess: { mode: 'restricted', storeIds: [storeA.id] },
+      activeStoreId: storeA.id,
+      scopes: ['order:read'],
+      sessionId: 'sess-tenant-no-scope',
+    });
+    const restrictedStoreService = new StoreService(restrictedSession, mockStoreRepo, mockAuditService);
     await assert.rejects(
-      async () => await storeService.getActiveStore(),
+      async () => await restrictedStoreService.getActiveStore(),
       (err: Error) => err instanceof ForbiddenError
     );
   });

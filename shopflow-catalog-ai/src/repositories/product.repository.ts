@@ -216,7 +216,7 @@ export class ProductRepository {
         is_featured,
         stock_alert_threshold,
         product_images ( id, image_url, is_primary ),
-        product_variations ( id, name, sku, color, size, stock, is_grade, unit_kind, pack_quantity ),
+        product_variations ( id, name, sku, color, size, stock, is_grade ),
         product_grade_snapshots ( id, template_name, product_grade_snapshot_items ( size, quantity ) )
       `)
       .eq('store_id', storeId);

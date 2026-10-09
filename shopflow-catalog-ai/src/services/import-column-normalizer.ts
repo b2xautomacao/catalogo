@@ -55,7 +55,7 @@ export function normalizeProductInput(raw: Record<string, any>): NormalizedProdu
       if (!isNaN(parsed)) result.stock = parsed;
     }
     // Category aliases
-    else if (['category', 'categoria', 'depto', 'departamento', 'secao'].includes(normKey)) {
+    else if (['category', 'categoria', 'categoryname', 'nomecategoria', 'depto', 'departamento', 'secao'].includes(normKey)) {
       result.category = String(rawValue).trim();
     }
     else if (['categoryid', 'idcategoria'].includes(normKey)) {

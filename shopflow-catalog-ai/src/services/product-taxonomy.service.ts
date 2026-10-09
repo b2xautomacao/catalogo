@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { CategoryRepository, CategoryRecord } from '../repositories/category.repository.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
 import {
@@ -9,6 +10,10 @@ import {
   AnalyzeImportResult,
   BatchImportItemResult,
   GroupedDecision,
+  PreparedInventoryAdjustment,
+  ExecutablePayloads,
+  ExecutableNextAction,
+  CategorySuggestionInfo,
 } from '../domain/types.js';
 import { normalizeProductInput } from './import-column-normalizer.js';
 
@@ -421,6 +426,8 @@ export class ProductTaxonomyService {
     categoriesCache?: CategoryRecord[]
   ): Promise<PreparedProductResult> {
     const normalized = normalizeProductInput(rawInput);
+    const preparationId = `prep_${randomUUID()}`;
+    let unresolvedCategory: CategorySuggestionInfo | undefined;
     const decisions: FieldResolutionMeta[] = [];
     const issues: Array<{ field: string; code: string; message: string }> = [];
 
@@ -509,6 +516,32 @@ export class ProductTaxonomyService {
           allowed_values: candidateNames,
         });
       } else {
+        const allStoreCats = categoriesCache || (await categoryRepo.listByStore(storeId));
+        const rawCatNorm = normalizeText(normalized.category || '');
+        const suggestions = allStoreCats
+          .filter((c) => {
+            const cNorm = normalizeText(c.name);
+            return (
+              cNorm.includes(rawCatNorm) ||
+              rawCatNorm.includes(cNorm) ||
+              (rawCatNorm.length >= 3 && cNorm.startsWith(rawCatNorm.slice(0, 3)))
+            );
+          })
+          .map((c) => c.name);
+
+        unresolvedCategory = {
+          name: normalized.category || normalized.category_id || '',
+          requested: normalized.category || normalized.category_id || '',
+          suggestions,
+          can_create: true,
+          suggested_action: {
+            tool: 'criar_categoria',
+            input: {
+              name: normalized.category || normalized.category_id || '',
+            },
+          },
+        };
+
         issues.push({
           field: 'category',
           code: 'CATEGORY_NOT_FOUND',
@@ -705,13 +738,19 @@ export class ProductTaxonomyService {
       value: seo.meta_description,
     });
 
-    // Inventory Intent
-    let inventoryIntent: { quantity: number; mode: 'initial_balance' | 'increase' } | undefined;
-    if (normalized.stock !== undefined && normalized.stock !== null) {
+    // Inventory Intent (Canonical alignment with AdjustStockSchema)
+    let inventoryIntent: PreparedInventoryAdjustment | undefined;
+    if (normalized.stock !== undefined && normalized.stock !== null && normalized.stock > 0) {
+      const initialReason = (tenantDefaults?.inventory_import_mode as any) || 'initial_balance';
       inventoryIntent = {
+        operation: 'increase',
+        reason: initialReason,
         quantity: normalized.stock,
-        mode: tenantDefaults?.inventory_import_mode || 'initial_balance',
-      };
+        operation_id: `op_stock_${preparationId}`,
+        notes: 'Saldo físico inicial de cadastro',
+        mode: initialReason,
+        reason_code: initialReason,
+      } as any;
     }
 
     // Status Determination
@@ -742,12 +781,91 @@ export class ProductTaxonomyService {
       material: normalized.material ?? null,
       description: normalized.description ?? null,
       image_url: normalized.image_url ?? null,
+      is_active: true,
     };
 
+    let executablePayloads: ExecutablePayloads | undefined;
+    let nextActions: ExecutableNextAction[] | undefined;
+
+    if (status === 'ready') {
+      executablePayloads = {
+        criar_produto: {
+          name: resolvedData.name,
+          retail_price: resolvedData.retail_price,
+          wholesale_price: resolvedData.wholesale_price ?? undefined,
+          min_wholesale_qty: resolvedData.min_wholesale_qty ?? undefined,
+          category: resolvedData.category ?? undefined,
+          category_id: resolvedData.category_id ?? undefined,
+          product_category_type: resolvedData.product_category_type ?? undefined,
+          product_gender: resolvedData.product_gender ?? undefined,
+          sku: resolvedData.sku ?? undefined,
+          seo_slug: resolvedData.seo_slug ?? undefined,
+          meta_title: resolvedData.meta_title ?? undefined,
+          meta_description: resolvedData.meta_description ?? undefined,
+          keywords: resolvedData.keywords ?? undefined,
+          material: resolvedData.material ?? undefined,
+          description: resolvedData.description ?? undefined,
+          is_active: true,
+        },
+        ajustar_estoque: inventoryIntent
+          ? {
+              operation: inventoryIntent.operation,
+              reason: inventoryIntent.reason,
+              quantity: inventoryIntent.quantity,
+              operation_id: inventoryIntent.operation_id,
+              notes: inventoryIntent.notes,
+            }
+          : undefined,
+      };
+
+      nextActions = [
+        {
+          tool: 'criar_produto',
+          required: true,
+          reason: 'canonical_product_creation',
+          prepared_input: executablePayloads.criar_produto,
+        },
+      ];
+
+      if (inventoryIntent) {
+        nextActions.push({
+          tool: 'ajustar_estoque',
+          required: true,
+          reason: 'initial_inventory_pending',
+          prepared_input: {
+            operation: inventoryIntent.operation,
+            reason: inventoryIntent.reason,
+            quantity: inventoryIntent.quantity,
+            operation_id: inventoryIntent.operation_id,
+            notes: inventoryIntent.notes,
+          },
+        });
+      }
+
+      nextActions.push({
+        tool: 'adicionar_imagem_produto',
+        required: false,
+        reason: 'product_has_no_image',
+      });
+    } else if (unresolvedCategory) {
+      nextActions = [
+        {
+          tool: 'criar_categoria',
+          required: true,
+          reason: 'category_not_found_requires_creation_or_selection',
+          prepared_input: unresolvedCategory.suggested_action?.input,
+        },
+      ];
+    }
+
     return {
+      preparation_id: preparationId,
       status,
       resolved_data: resolvedData,
+      executable_payloads: executablePayloads,
       inventory_intent: inventoryIntent,
+      unresolved_category: unresolvedCategory,
+      next_actions: nextActions,
       decisions,
       issues: issues.length > 0 ? issues : undefined,
     };
@@ -802,7 +920,10 @@ export class ProductTaxonomyService {
         raw_input: raw,
         status: itemStatus,
         resolved_data: prep.resolved_data,
+        executable_payloads: prep.executable_payloads,
         inventory_intent: prep.inventory_intent,
+        unresolved_category: prep.unresolved_category,
+        next_actions: prep.next_actions,
         decisions: prep.decisions,
         issues: prep.issues,
       });

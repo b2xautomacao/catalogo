@@ -782,6 +782,30 @@ export const MCP_TOOLS: McpToolDoc[] = [
       ready_products: [],
     },
   },
+  {
+    name: 'criar_categoria',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:write',
+    description: 'Cria uma nova categoria no catálogo da loja ativa de forma segura e idempotente, ou retorna a existente se o nome já estiver cadastrado.',
+    whenToUse: 'Quando uma categoria necessária ainda não existir no catálogo e o usuário autorizar sua criação durante o intake.',
+    riskTier: 'WRITE',
+    parameters: [
+      { name: 'name', type: 'string', required: true, description: 'Nome da categoria (máx. 100 caracteres).' },
+      { name: 'description', type: 'string', required: false, description: 'Descrição opcional da categoria.' },
+    ],
+    outputDescription: 'Objeto com id, name, store_id, is_active e flags created/already_exists.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: { name: 'Perfumes', description: 'Fragrâncias e perfumes importados e nacionais' },
+    exampleResponse: {
+      id: 'uuid-categoria',
+      name: 'Perfumes',
+      store_id: 'uuid-loja',
+      is_active: true,
+      created: true,
+      already_exists: false,
+    },
+  },
 ];
 
 export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
@@ -822,6 +846,7 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'definir_imagem_principal',
       'remover_imagem_produto',
       'atualizar_defaults_cadastro_produto',
+      'criar_categoria',
     ],
   },
   {
@@ -1024,6 +1049,7 @@ O fluxo de ingestão e criação do MCP B2X distingue rigorosamente entre:
    - 1º Preparar/Criar produto comercialmente completo via \`criar_produto\`.
    - 2º Adicionar imagens via \`adicionar_imagem_produto\` (URL HTTPS externa; download seguro server-side). A primeira imagem se torna automaticamente a principal.
    - 3º Lançar saldo físico inicial via \`ajustar_estoque\` (motivo \`initial_balance\`).
+6. **Zero SQL Direto**: An MCP client must never use direct database access to compensate for a missing MCP capability during normal catalog operations. Todas as operações de catálogo devem transitar exclusivamente pelas ferramentas oficiais do MCP. Categoria ausente deve ser criada via \`criar_categoria\` após aprovação.
 
 ---
 
@@ -1174,6 +1200,7 @@ ${
     ? `4. **Product Intake & Criação Completa**: Ao cadastrar produtos a partir de linguagem natural, listas ou planilhas/CSV, consulte a Política de Cadastro (\`obter_politica_cadastro_produto\`) ou utilize \`preparar_produto\` / \`analisar_importacao_produtos\` antes da persistência. Aplique os Tenant Defaults configurados (\`obter_defaults_cadastro_produto\`), como quantidade mínima de atacado padrão. Não invente gênero, marca, material ou especificações. Nunca pergunte dados deriváveis (slug, SEO, SKU) ao usuário.\n5. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
     : ''
 }6. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
+7. **Zero SQL Direto**: An MCP client must never use direct database access to compensate for a missing MCP capability during normal catalog operations. Utilize a ferramenta \`criar_categoria\` se uma categoria precisar ser cadastrada após consentimento do usuário.
 `;
 
   return guide;

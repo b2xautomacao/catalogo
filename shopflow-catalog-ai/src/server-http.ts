@@ -44,6 +44,7 @@ import { registerObterDefaultsCadastroProdutoTool } from './tools/obter-defaults
 import { registerAtualizarDefaultsCadastroProdutoTool } from './tools/atualizar-defaults-cadastro-produto.tool.js';
 import { registerPrepararProdutoTool } from './tools/preparar-produto.tool.js';
 import { registerAnalisarImportacaoProdutosTool } from './tools/analisar-importacao-produtos.tool.js';
+import { registerCriarCategoriaTool } from './tools/criar-categoria.tool.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { RateLimiter } from './security/rate-limiter.js';
 import { Logger } from './observability/logger.js';
@@ -117,12 +118,13 @@ function createConfiguredMcpServer(session: AgentSession) {
   registerDefinirImagemPrincipalTool(server, mediaService);
   registerRemoverImagemProdutoTool(server, mediaService);
 
-  // Product Intake Automation & Tenant Defaults Tools (5)
+  // Product Intake Automation & Tenant Defaults Tools (6)
   registerObterPoliticaCadastroProdutoTool(server, catalogService);
   registerObterDefaultsCadastroProdutoTool(server, catalogService);
   registerAtualizarDefaultsCadastroProdutoTool(server, catalogService);
   registerPrepararProdutoTool(server, catalogService);
   registerAnalisarImportacaoProdutosTool(server, catalogService);
+  registerCriarCategoriaTool(server, catalogService);
 
   return { server, catalogService, storeService, inventoryService, gradeService, mediaService };
 }
@@ -540,6 +542,9 @@ async function handleLegacyToolDispatch(options: {
       break;
     case 'aplicar_grade_produto':
       responseData = await gradeService.applyGradeToProduct(toolArgs || {});
+      break;
+    case 'criar_categoria':
+      responseData = await catalogService.createCategory(toolArgs || {});
       break;
     default:
       res.writeHead(404, { 'Content-Type': 'application/json' });

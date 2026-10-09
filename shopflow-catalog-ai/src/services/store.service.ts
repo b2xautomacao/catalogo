@@ -1,5 +1,5 @@
 import { AgentSession } from '../auth/agent-session.js';
-import { requireScope, canAccessStore } from '../auth/agent-context.js';
+import { requireScope, requireAnyScope, canAccessStore } from '../auth/agent-context.js';
 import { StoreRepository } from '../repositories/store.repository.js';
 import { AuditService } from '../audit/audit.service.js';
 import { StoreDescriptor, StoreSearchResponse } from '../domain/types.js';
@@ -72,7 +72,7 @@ export class StoreService {
 
   async getActiveStore(): Promise<StoreDescriptor> {
     const context = this.session.getContext();
-    requireScope(context, 'store:list');
+    requireAnyScope(context, ['store:list', 'store:read', 'catalog:read']);
 
     const activeStoreId = this.session.getActiveStoreId();
     if (!activeStoreId) {

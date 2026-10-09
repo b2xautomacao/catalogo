@@ -137,6 +137,7 @@ export interface CreatedProductResult extends SafeProductResult {
   created: true;
   product: SafeProductResult;
   next_actions: string[];
+  structured_next_actions?: ExecutableNextAction[];
 }
 
 export type CreateProductResult = CreatedProductResult | NeedsInputProductResult;
@@ -231,13 +232,45 @@ export interface ProductIntakePolicyResult {
   summary: string;
 }
 
+export interface PreparedInventoryAdjustment {
+  operation: 'increase' | 'decrease' | 'count';
+  reason: 'inventory_count' | 'damage' | 'loss' | 'found_stock' | 'correction' | 'initial_balance' | 'other';
+  quantity: number;
+  operation_id: string;
+  notes?: string;
+}
+
+export interface ExecutablePayloads {
+  criar_produto: Record<string, any>;
+  ajustar_estoque?: PreparedInventoryAdjustment;
+}
+
+export interface ExecutableNextAction {
+  tool: string;
+  required: boolean;
+  reason: string;
+  prepared_input?: Record<string, any>;
+}
+
+export interface CategorySuggestionInfo {
+  name?: string;
+  requested: string;
+  suggestions: string[];
+  can_create: boolean;
+  suggested_action?: {
+    tool: 'criar_categoria';
+    input: { name: string; description?: string };
+  };
+}
+
 export interface PreparedProductResult {
+  preparation_id?: string;
   status: 'ready' | 'needs_input' | 'blocked';
   resolved_data: Record<string, any>;
-  inventory_intent?: {
-    quantity: number;
-    mode: 'initial_balance' | 'increase';
-  };
+  executable_payloads?: ExecutablePayloads;
+  inventory_intent?: PreparedInventoryAdjustment;
+  unresolved_category?: CategorySuggestionInfo;
+  next_actions?: ExecutableNextAction[];
   decisions: FieldResolutionMeta[];
   issues?: Array<{
     field: string;
@@ -251,10 +284,10 @@ export interface BatchImportItemResult {
   raw_input: Record<string, any>;
   status: 'ready' | 'needs_input' | 'invalid';
   resolved_data?: Record<string, any>;
-  inventory_intent?: {
-    quantity: number;
-    mode: string;
-  };
+  executable_payloads?: ExecutablePayloads;
+  inventory_intent?: PreparedInventoryAdjustment;
+  unresolved_category?: CategorySuggestionInfo;
+  next_actions?: ExecutableNextAction[];
   decisions: FieldResolutionMeta[];
   issues?: Array<{
     field: string;
