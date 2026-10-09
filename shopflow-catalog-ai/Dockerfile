@@ -17,6 +17,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV MCP_PORT=3000
+ENV RUN_HTTP_SERVER=true
 
 COPY package*.json ./
 RUN npm ci --omit=dev

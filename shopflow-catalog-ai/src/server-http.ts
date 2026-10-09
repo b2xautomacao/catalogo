@@ -603,17 +603,12 @@ function setupGracefulShutdown(server: http.Server) {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-if (
-  process.env.RUN_HTTP_SERVER === 'true' ||
-  process.argv[1]?.endsWith('server-http.ts') ||
-  process.argv[1]?.endsWith('server-http.js')
-) {
-  if (process.env.NODE_ENV !== 'test') {
-    const PORT = Number(process.env.MCP_PORT) || 3000;
-    const server = createHttpServer();
-    setupGracefulShutdown(server);
-    server.listen(PORT, () => {
-      Logger.info(`[MCP Remote HTTP Runtime] Listening on port ${PORT}`);
-    });
-  }
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = Number(process.env.MCP_PORT) || 3000;
+  const HOST = '0.0.0.0';
+  const server = createHttpServer();
+  setupGracefulShutdown(server);
+  server.listen(PORT, HOST, () => {
+    Logger.info(`[MCP Remote HTTP Runtime] Listening on http://${HOST}:${PORT}`);
+  });
 }
