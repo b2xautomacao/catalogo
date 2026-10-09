@@ -86,6 +86,26 @@ export class ProductRepository {
     return data.length > 0;
   }
 
+  async checkSlugExists(storeId: string, slug: string, excludeProductId?: string): Promise<boolean> {
+    let query = supabase
+      .from('products')
+      .select('id')
+      .eq('store_id', storeId) // TENANT GUARD
+      .eq('seo_slug', slug);
+
+    if (excludeProductId) {
+      query = query.neq('id', excludeProductId);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data) {
+      return false;
+    }
+
+    return data.length > 0;
+  }
+
   async createProduct(storeId: string, payload: Record<string, any>): Promise<SafeProductResult> {
     const insertData = {
       ...payload,
@@ -95,7 +115,7 @@ export class ProductRepository {
     const { data, error } = await supabase
       .from('products')
       .insert(insertData)
-      .select('id, name, sku, description, category, retail_price, wholesale_price, is_active')
+      .select('id, name, sku, description, category, category_id, retail_price, wholesale_price, min_wholesale_qty, material, product_gender, product_category_type, seo_slug, meta_title, meta_description, is_active')
       .single();
 
     if (error || !data) {

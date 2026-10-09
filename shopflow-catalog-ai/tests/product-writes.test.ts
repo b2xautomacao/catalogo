@@ -288,6 +288,14 @@ describe('CatalogService Safe Writes (createProduct & updateProduct & deactivate
         is_active: false,
       };
     },
+    async checkSlugExists(storeId: string, slug: string) {
+      for (const p of productsDb.values()) {
+        if (p.store_id === storeId && p.seo_slug === slug) {
+          return true;
+        }
+      }
+      return false;
+    },
     async checkHealth() {
       return true;
     },
@@ -296,6 +304,16 @@ describe('CatalogService Safe Writes (createProduct & updateProduct & deactivate
   const mockCategoryRepo = {
     async findByIdAndStore(categoryId: string, storeId: string) {
       return categoriesDb.get(`${categoryId}_${storeId}`) || null;
+    },
+    async listByStore(storeId: string) {
+      return Array.from(categoriesDb.values()).filter((c) => c.store_id === storeId);
+    },
+    async findByNameAndStore(name: string, storeId: string) {
+      return (
+        Array.from(categoriesDb.values()).find(
+          (c) => c.store_id === storeId && c.name.toLowerCase() === name.trim().toLowerCase()
+        ) || null
+      );
     },
   } as unknown as CategoryRepository;
 
@@ -329,6 +347,8 @@ describe('CatalogService Safe Writes (createProduct & updateProduct & deactivate
       sku: 'RUN-99',
       description: 'Super confortável',
       category_id: categoryStoreA.id,
+      product_gender: 'unissex',
+      product_category_type: 'calcado',
     });
 
     assert.ok(created.id);

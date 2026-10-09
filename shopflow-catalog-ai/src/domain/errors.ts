@@ -19,6 +19,15 @@ export class CategoryNotFoundError extends CatalogError {
   }
 }
 
+export class CategoryAmbiguousError extends CatalogError {
+  public candidates: Array<{ id: string; name: string }>;
+  constructor(message = 'CATEGORY_AMBIGUOUS', candidates: Array<{ id: string; name: string }> = []) {
+    super(message);
+    this.name = 'CategoryAmbiguousError';
+    this.candidates = candidates;
+  }
+}
+
 export class SkuAlreadyExistsError extends CatalogError {
   constructor(message = 'SKU_ALREADY_EXISTS') {
     super(message);

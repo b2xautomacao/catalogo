@@ -25,6 +25,10 @@ export const CreateProductSchema = z
     material: z.string().trim().max(100).optional().describe('Material composition'),
     product_gender: z.enum(['masculino', 'feminino', 'unissex', 'infantil']).optional().describe('Gender target'),
     product_category_type: z.enum(['calcado', 'roupa_superior', 'roupa_inferior', 'acessorio']).optional().describe('Category classification type'),
+    seo_slug: z.string().trim().max(255).optional().describe('SEO URL slug (auto-derived safely if omitted)'),
+    meta_title: z.string().trim().max(255).optional().describe('SEO meta title (auto-derived safely if omitted)'),
+    meta_description: z.string().trim().max(500).optional().describe('SEO meta description (auto-derived safely if omitted)'),
+    keywords: z.string().trim().max(500).optional().describe('SEO search keywords (auto-derived safely if omitted)'),
   })
   .strict();
 
@@ -42,6 +46,10 @@ export const UpdateProductSchema = z
     material: z.string().trim().max(100).nullable().optional().describe('Updated material'),
     product_gender: z.enum(['masculino', 'feminino', 'unissex', 'infantil']).nullable().optional().describe('Updated gender target'),
     product_category_type: z.enum(['calcado', 'roupa_superior', 'roupa_inferior', 'acessorio']).nullable().optional().describe('Updated category type'),
+    seo_slug: z.string().trim().max(255).nullable().optional().describe('Updated SEO URL slug'),
+    meta_title: z.string().trim().max(255).nullable().optional().describe('Updated SEO title'),
+    meta_description: z.string().trim().max(500).nullable().optional().describe('Updated SEO description'),
+    keywords: z.string().trim().max(500).nullable().optional().describe('Updated keywords'),
   })
   .strict()
   .refine(

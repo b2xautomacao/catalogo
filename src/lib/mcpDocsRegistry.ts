@@ -232,22 +232,55 @@ export const MCP_TOOLS: McpToolDoc[] = [
     category: 'catalog',
     categoryLabel: 'Catálogo',
     requiredScope: 'catalog:write',
-    description: 'Cadastra um novo produto simples no catálogo da loja ativa.',
-    whenToUse: 'Para criação assistida de novos produtos por IAs com permissão de escrita.',
+    description: 'Cadastra um produto comercialmente completo na loja ativa com preflight de completude, resolução de categoria, inferência de tipo/gênero, validação de atacado (MOQ), slug automático e SEO factual.',
+    whenToUse: 'Para criação segura e completa de novos produtos por IAs. Se faltarem decisões comerciais obrigatórias (como gênero em perfumes ou MOQ em preço de atacado), retorna status "needs_input" com as perguntas necessárias antes de persistir.',
     riskTier: 'WRITE',
     parameters: [
       { name: 'name', type: 'string', required: true, description: 'Nome do produto.' },
       { name: 'retail_price', type: 'number', required: true, description: 'Preço de varejo unitário.' },
-      { name: 'sku', type: 'string', required: false, description: 'Código SKU único.' },
+      { name: 'category', type: 'string', required: false, description: 'Nome da categoria cadastrada no catálogo da loja ativa.' },
+      { name: 'category_id', type: 'string (UUID)', required: false, description: 'UUID da categoria na loja ativa.' },
+      { name: 'wholesale_price', type: 'number', required: false, description: 'Preço de atacado (se informado, exige min_wholesale_qty).' },
+      { name: 'min_wholesale_qty', type: 'number', required: false, description: 'Quantidade mínima para o preço de atacado.' },
+      { name: 'product_gender', type: 'string (enum)', required: false, description: 'Gênero: "masculino", "feminino", "unissex" ou "infantil".' },
+      { name: 'product_category_type', type: 'string (enum)', required: false, description: 'Tipo: "calcado", "roupa_superior", "roupa_inferior" ou "acessorio".' },
+      { name: 'material', type: 'string', required: false, description: 'Composição de material.' },
       { name: 'description', type: 'string', required: false, description: 'Descrição textual do produto.' },
-      { name: 'wholesale_price', type: 'number', required: false, description: 'Preço de atacado.' },
-      { name: 'min_wholesale_qty', type: 'number', required: false, description: 'Quantidade mínima para atacado.' },
-      { name: 'category', type: 'string', required: false, description: 'Nome da categoria.' },
+      { name: 'sku', type: 'string', required: false, description: 'Código SKU único na loja.' },
+      { name: 'seo_slug', type: 'string', required: false, description: 'Slug amigável (auto-derivado com unicidade se omitido).' },
+      { name: 'meta_title', type: 'string', required: false, description: 'Título SEO (auto-derivado se omitido).' },
+      { name: 'meta_description', type: 'string', required: false, description: 'Descrição SEO factual (auto-derivada se omitida).' },
     ],
-    outputDescription: 'Objeto seguro com o produto criado.',
-    errors: ['SKU_ALREADY_EXISTS', 'STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
-    exampleRequest: { name: 'Tênis Casual Slip', retail_price: 149.9, sku: 'SLIP-001' },
-    exampleResponse: { id: 'uuid-gerado', name: 'Tênis Casual Slip', is_active: true },
+    outputDescription: 'Retorna status "created" com o produto completo e próximas ações sugeridas, ou "needs_input" com perguntas pontuais caso faltem decisões obrigatórias.',
+    errors: ['CATEGORY_NOT_FOUND', 'CATEGORY_AMBIGUOUS', 'SKU_ALREADY_EXISTS', 'STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: {
+      name: 'Perfume Rose Noir',
+      retail_price: 259,
+      wholesale_price: 189,
+      min_wholesale_qty: 6,
+      category: 'Perfumes',
+      product_gender: 'unissex',
+    },
+    exampleResponse: {
+      status: 'created',
+      created: true,
+      product: {
+        id: 'uuid-gerado',
+        name: 'Perfume Rose Noir',
+        category: 'Perfumes',
+        category_id: 'uuid-cat-perfumes',
+        product_category_type: 'acessorio',
+        product_gender: 'unissex',
+        retail_price: 259,
+        wholesale_price: 189,
+        min_wholesale_qty: 6,
+        seo_slug: 'perfume-rose-noir',
+        meta_title: 'Perfume Rose Noir | Perfumes no Catálogo',
+        meta_description: 'Perfume Rose Noir disponível por R$ 259.00. Confira no catálogo.',
+        is_active: true,
+      },
+      next_actions: ['adicionar_imagem_produto', 'ajustar_estoque'],
+    },
   },
   {
     name: 'atualizar_produto',
@@ -848,20 +881,31 @@ O runtime aplica janelas deslizantes de rate limiting por credencial:
   md += `
 ---
 
-## 5. Regras Críticas de Operação & Idempotência
+## 5. Criação Completa de Produtos (Guided Catalog Intake)
+O fluxo de criação do MCP distingue rigorosamente entre:
+- **Dados Fornecidos**: Parâmetros explícitos enviados pelo usuário (nome, preço de varejo).
+- **Dados Resolvidos no Catálogo**: Categorias textuais resolvidas contra a tabela `categories` da loja ativa (`exact`, `normalized`, ou erro `ambiguous`/`not_found`). Nenhuma categoria é inventada silenciosamente.
+- **Dados Derivados com Segurança**: `seo_slug` normalizado com unicidade garantida no tenant (colisões tratadas com `-2`, `-3`), `meta_title` e `meta_description` estritamente factuais (sem afirmações ou especificações técnicas não fornecidas).
+- **Dados Condicionais Obrigatórios**: Se `wholesale_price` for informado, `min_wholesale_qty` torna-se obrigatório. Não assuma valor 1 sem regra explícita.
+- **Dados Ausentes Relevantes**: Para nichos onde gênero é comercialmente relevante e ambíguo (ex: *Perfume Rose Noir*), o agente formula pergunta direcionada (*"Este perfume é feminino, masculino ou unissex?"*) em vez de salvar produtos incompletos.
+- **Estoque Ledger-Only**: O saldo físico não é injetado no produto na criação; é lançado como saldo inicial via `ajustar_estoque` (`initial_balance`).
+
+---
+
+## 6. Regras Críticas de Operação & Idempotência
 1. **Zero Mutações Diretas em Saldo**: Mutações em estoque ocorrem unicamente via ledger (\`ajustar_estoque\`).
 2. **Idempotência Obrigatória**: Operações de escrita sensíveis exigem \`operation_id\`.
    - Repetição do mesmo \`operation_id\` com o mesmo payload = sucesso sem dupla mutação (\`duplicate: true\`).
 3. **Isolamento de Loja**: O agente opera estritamente no contexto da loja autorizada. Tentativas de acessar IDs de outra loja retornam \`NOT_FOUND\` para prevenir enumeração.
 4. **Fluxo Completo de Produto + Imagem + Estoque**:
-   - 1º Criar produto via \`criar_produto\`.
+   - 1º Criar produto comercialmente completo via \`criar_produto\`.
    - 2º Adicionar imagens via \`adicionar_imagem_produto\` (URL HTTPS externa; download seguro server-side). A primeira imagem se torna automaticamente a principal.
    - 3º Lançar saldo físico inicial via \`ajustar_estoque\` (motivo \`initial_balance\`).
    - O MCP possui ferramenta nativa e dedicada para imagens (\`adicionar_imagem_produto\`).
 
 ---
 
-## 6. Catálogo de Ferramentas (${MCP_TOOLS.length} Tools)
+## 7. Catálogo de Ferramentas (${MCP_TOOLS.length} Tools)
 `;
 
   for (const [category, tools] of Object.entries(toolsByCategory)) {
@@ -1005,9 +1049,9 @@ ${
 }3. **Respeito aos Scopes**: Não tente invocar ferramentas fora do seu escopo para evitar bloqueios de taxa ou erros 403.
 ${
   hasWriteCatalog
-    ? `4. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
+    ? `4. **Criação Completa e Taxonomia Segura**: Antes de criar produtos, resolva os campos de taxonomia do catálogo e condições comerciais. Não invente silenciosamente gênero, tipo de produto, quantidade mínima de atacado ou IDs de categoria. Quando preço de atacado for informado, a quantidade mínima (\`min_wholesale_qty\`) é obrigatória. Se faltarem dados essenciais para o domínio (ex: gênero para fragrâncias/roupas), pergunte diretamente ao usuário antes de salvar. Derivações de slug e SEO são automáticas e factuais.\n5. **Criação de Produtos com Imagem e Estoque**: Quando o usuário pedir cadastro com foto e estoque, execute em cadeia: (1) \`criar_produto\` → (2) \`adicionar_imagem_produto\` usando a URL da imagem → (3) \`ajustar_estoque\` (motivo \`initial_balance\`). Nunca responda que o MCP não suporta imagens!\n`
     : ''
-}5. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
+}6. **Segurança**: Nunca exponha chaves de autenticação ou dados privados da loja em respostas públicas.
 `;
 
   return guide;

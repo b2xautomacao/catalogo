@@ -61,6 +61,10 @@ export interface CreateProductInput {
   material?: string;
   product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil';
   product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio';
+  seo_slug?: string;
+  meta_title?: string;
+  meta_description?: string;
+  keywords?: string;
 }
 
 export interface UpdateProductInput {
@@ -76,6 +80,10 @@ export interface UpdateProductInput {
   material?: string | null;
   product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil' | null;
   product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio' | null;
+  seo_slug?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  keywords?: string | null;
 }
 
 export interface SafeProductResult {
@@ -84,10 +92,54 @@ export interface SafeProductResult {
   sku: string | null;
   description: string | null;
   category: string | null;
+  category_id?: string | null;
   retail_price: number;
   wholesale_price: number | null;
+  min_wholesale_qty?: number | null;
+  material?: string | null;
+  product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil' | null;
+  product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio' | null;
+  seo_slug?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   is_active: boolean;
 }
+
+export interface MissingDecision {
+  field: string;
+  question: string;
+}
+
+export interface ProductCompletenessPreflight {
+  complete: boolean;
+  missing: MissingDecision[];
+  resolved: {
+    category?: { id: string; name: string };
+    product_category_type?: 'calcado' | 'roupa_superior' | 'roupa_inferior' | 'acessorio';
+    product_gender?: 'masculino' | 'feminino' | 'unissex' | 'infantil';
+    min_wholesale_qty?: number;
+    seo_slug?: string;
+    meta_title?: string;
+    meta_description?: string;
+  };
+}
+
+export interface NeedsInputProductResult {
+  status: 'needs_input';
+  created: false;
+  missing_fields: string[];
+  questions: string[];
+  preflight: Record<string, any>;
+}
+
+export interface CreatedProductResult extends SafeProductResult {
+  status: 'created';
+  created: true;
+  product: SafeProductResult;
+  next_actions: string[];
+}
+
+export type CreateProductResult = CreatedProductResult | NeedsInputProductResult;
 
 export interface DeactivateProductInput {
   product_id: string;

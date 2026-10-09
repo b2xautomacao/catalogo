@@ -4,6 +4,7 @@ import { CreateProductSchema } from '../schemas/product.schema.js';
 import {
   StoreContextRequiredError,
   CategoryNotFoundError,
+  CategoryAmbiguousError,
   SkuAlreadyExistsError,
   ForbiddenError,
 } from '../domain/errors.js';
@@ -13,24 +14,17 @@ export function registerCriarProdutoTool(server: McpServer, catalogService: Cata
     'criar_produto',
     {
       description:
-        'Cria persistentemente um novo produto na loja ativa da sessão. Requer catalog:write. Não altera estoque.',
+        'Cria um novo produto comercialmente completo na loja ativa. Executa preflight de completude: resolve categoria no catálogo, infere com segurança o tipo de produto, valida a quantidade mínima de atacado (se houver preço de atacado), deriva slug único e metadados de SEO factual. Se faltarem decisões comerciais obrigatórias (como gênero ou MOQ de atacado), retorna status "needs_input" com as perguntas necessárias antes de persistir. Não altera estoque diretamente (use ajustar_estoque para saldo inicial). Requer catalog:write.',
       inputSchema: CreateProductSchema,
     },
     async (args) => {
       try {
-        const product = await catalogService.createProduct(args);
+        const result = await catalogService.createProduct(args);
         return {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  created: true,
-                  product,
-                },
-                null,
-                2
-              ),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -43,6 +37,25 @@ export function registerCriarProdutoTool(server: McpServer, catalogService: Cata
         if (error instanceof CategoryNotFoundError) {
           return {
             content: [{ type: 'text' as const, text: 'CATEGORY_NOT_FOUND' }],
+          };
+        }
+        if (error instanceof CategoryAmbiguousError) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify(
+                  {
+                    status: 'needs_input',
+                    error: 'CATEGORY_AMBIGUOUS',
+                    message: error.message,
+                    candidates: error.candidates,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
         }
         if (error instanceof SkuAlreadyExistsError) {

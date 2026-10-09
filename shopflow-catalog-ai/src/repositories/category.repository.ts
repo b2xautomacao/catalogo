@@ -23,4 +23,34 @@ export class CategoryRepository {
 
     return data as CategoryRecord;
   }
+
+  async listByStore(storeId: string): Promise<CategoryRecord[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, store_id, name, description, is_active')
+      .eq('store_id', storeId) // TENANT GUARD
+      .eq('is_active', true)
+      .order('name', { ascending: true });
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data as CategoryRecord[];
+  }
+
+  async findByNameAndStore(name: string, storeId: string): Promise<CategoryRecord | null> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, store_id, name, description, is_active')
+      .eq('store_id', storeId) // TENANT GUARD
+      .ilike('name', name.trim())
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as CategoryRecord;
+  }
 }

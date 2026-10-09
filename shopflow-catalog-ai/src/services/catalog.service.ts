@@ -1,9 +1,11 @@
 import { ProductRepository } from '../repositories/product.repository.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
 import { AuditService } from '../audit/audit.service.js';
+import { ProductTaxonomyService } from './product-taxonomy.service.js';
 import {
   ProductNotFoundError,
   CategoryNotFoundError,
+  CategoryAmbiguousError,
   SkuAlreadyExistsError,
   NoChangesProvidedError,
   StoreContextRequiredError,
@@ -18,6 +20,10 @@ import {
   DeactivateProductInput,
   DeactivateProductResult,
   SafeProductResult,
+  CreateProductResult,
+  CreatedProductResult,
+  NeedsInputProductResult,
+  ProductCompletenessPreflight,
 } from '../domain/types.js';
 import { requireScope, requireActiveStore } from '../auth/agent-context.js';
 import { AgentSession } from '../auth/agent-session.js';
@@ -35,7 +41,8 @@ export class CatalogService {
     private session: AgentSession,
     private repository: ProductRepository = new ProductRepository(),
     private categoryRepo: CategoryRepository = new CategoryRepository(),
-    private auditService: AuditService = new AuditService()
+    private auditService: AuditService = new AuditService(),
+    private taxonomyService: ProductTaxonomyService = new ProductTaxonomyService()
   ) {}
 
   async checkHealth(): Promise<CatalogHealthStatus> {
@@ -72,23 +79,29 @@ export class CatalogService {
     return product;
   }
 
-  async createProduct(input: CreateProductInput): Promise<SafeProductResult> {
+  async preflightProductCreation(input: CreateProductInput): Promise<ProductCompletenessPreflight> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+    const result = await this.taxonomyService.evaluateCompleteness(
+      activeStoreId,
+      input,
+      this.categoryRepo,
+      this.repository
+    );
+    return {
+      complete: result.isComplete,
+      missing: result.missing,
+      resolved: result.derived,
+    };
+  }
+
+  async createProduct(input: CreateProductInput): Promise<CreateProductResult> {
     const context = this.session.getContext();
     requireScope(context, 'catalog:write');
     const activeStoreId = requireActiveStore(context);
 
-    let resolvedCategory: string | undefined = input.category;
-
-    // Validate tenant-scoped category if category_id is provided
-    if (input.category_id) {
-      const cat = await this.categoryRepo.findByIdAndStore(input.category_id, activeStoreId);
-      if (!cat) {
-        throw new CategoryNotFoundError('CATEGORY_NOT_FOUND');
-      }
-      resolvedCategory = cat.name;
-    }
-
-    // Validate SKU uniqueness within the active store
+    // 1. Validate SKU uniqueness within the active store upfront
     if (input.sku) {
       const skuExists = await this.repository.checkSkuExists(activeStoreId, input.sku);
       if (skuExists) {
@@ -96,29 +109,102 @@ export class CatalogService {
       }
     }
 
-    // Explicit payload allowlist (strictly excluding stock, store_id, id, etc.)
+    // 2. Resolve Category against active store if provided
+    let resolvedCategory: { id: string; name: string } | undefined;
+    if (input.category || input.category_id) {
+      const match = await this.taxonomyService.resolveCategory(activeStoreId, this.categoryRepo, {
+        category: input.category,
+        category_id: input.category_id,
+      });
+
+      if (match.status === 'not_found') {
+        throw new CategoryNotFoundError('CATEGORY_NOT_FOUND');
+      }
+      if (match.status === 'ambiguous') {
+        throw new CategoryAmbiguousError(
+          `A categoria "${input.category}" é ambígua no catálogo da loja ativa.`,
+          (match.candidates || []).map((c) => ({ id: c.id, name: c.name }))
+        );
+      }
+      if (match.category) {
+        resolvedCategory = { id: match.category.id, name: match.category.name };
+      }
+    }
+
+    // 3. Run Completeness Preflight
+    const completeness = await this.taxonomyService.evaluateCompleteness(
+      activeStoreId,
+      input,
+      this.categoryRepo,
+      this.repository
+    );
+
+    // If missing decisions, return structured needs_input without partial persistence
+    if (!completeness.isComplete) {
+      return {
+        status: 'needs_input',
+        created: false,
+        missing_fields: completeness.missing.map((m) => m.field),
+        questions: completeness.questions,
+        preflight: {
+          name: input.name,
+          retail_price: input.retail_price,
+          wholesale_price: input.wholesale_price,
+          resolved_category: resolvedCategory?.name || completeness.derived.category?.name || input.category,
+          resolved_category_id: resolvedCategory?.id || completeness.derived.category?.id || input.category_id,
+          derived_product_category_type: completeness.derived.product_category_type,
+          derived_product_gender: completeness.derived.product_gender,
+          derived_slug: completeness.derived.seo_slug,
+          derived_meta_title: completeness.derived.meta_title,
+          derived_meta_description: completeness.derived.meta_description,
+        },
+      };
+    }
+
+    // Explicit payload allowlist with derived & resolved metadata
     const payload: Record<string, any> = {
       name: input.name,
       retail_price: input.retail_price,
+      category: completeness.derived.category?.name || input.category,
+      product_category_type: completeness.derived.product_category_type,
+      product_gender: completeness.derived.product_gender,
+      seo_slug: completeness.derived.seo_slug,
+      meta_title: completeness.derived.meta_title,
+      meta_description: completeness.derived.meta_description,
+      keywords: completeness.derived.keywords,
     };
+
+    if (completeness.derived.category?.id) {
+      payload.category_id = completeness.derived.category.id;
+    } else if (input.category_id) {
+      payload.category_id = input.category_id;
+    }
 
     if (input.description !== undefined) payload.description = input.description;
     if (input.sku !== undefined) payload.sku = input.sku;
     if (input.wholesale_price !== undefined) payload.wholesale_price = input.wholesale_price;
-    if (input.min_wholesale_qty !== undefined) payload.min_wholesale_qty = input.min_wholesale_qty;
-    if (resolvedCategory !== undefined) payload.category = resolvedCategory;
-    if (input.material !== undefined) payload.material = input.material;
-    if (input.product_gender !== undefined) payload.product_gender = input.product_gender;
-    if (input.product_category_type !== undefined) {
-      payload.product_category_type = input.product_category_type;
+    if (completeness.derived.min_wholesale_qty !== undefined) {
+      payload.min_wholesale_qty = completeness.derived.min_wholesale_qty;
     }
+    if (input.material !== undefined) payload.material = input.material;
 
     const createdProduct = await this.repository.createProduct(activeStoreId, payload);
 
     // Record audit event only after successful creation
     await this.auditService.logProductCreated(context, createdProduct.id, Object.keys(payload));
 
-    return createdProduct;
+    const result: CreatedProductResult = {
+      ...createdProduct,
+      status: 'created',
+      created: true,
+      product: createdProduct,
+      next_actions: [
+        'adicionar_imagem_produto',
+        'ajustar_estoque',
+      ],
+    };
+
+    return result;
   }
 
   async updateProduct(input: UpdateProductInput): Promise<SafeProductResult> {
@@ -153,6 +239,10 @@ export class CatalogService {
     if (input.product_category_type !== undefined) {
       payload.product_category_type = input.product_category_type;
     }
+    if (input.seo_slug !== undefined) payload.seo_slug = input.seo_slug;
+    if (input.meta_title !== undefined) payload.meta_title = input.meta_title;
+    if (input.meta_description !== undefined) payload.meta_description = input.meta_description;
+    if (input.keywords !== undefined) payload.keywords = input.keywords;
 
     if (input.sku !== undefined) {
       if (input.sku !== null) {
