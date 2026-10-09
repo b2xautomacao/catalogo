@@ -1,15 +1,16 @@
 /**
  * server-http.ts
  *
- * Sprint 13 Consolidada: Production Security + Observability + Release Candidate
- * Provides hardened HTTP/JSON-RPC transport with rate limiting, structured logging,
- * metrics collection, session isolation, health/ready endpoints, Bearer authentication,
- * CORS protection, payload limits, and zero secret logging.
+ * Sprint 13 Consolidada + MCP Remote Connection Remediation:
+ * Production-ready MCP Streamable HTTP & JSON-RPC Transport with official MCP SDK
+ * (WebStandardStreamableHTTPServerTransport), session isolation, Bearer authentication,
+ * rate limiting, health/ready checks, observability metrics, and zero secret logging.
  */
 
 import http from 'node:http';
+import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { McpServer } from '@modelcontextprotocol/server';
+import { McpServer, WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/server';
 import { AuthenticatedContextProvider } from './auth/authenticated-context-provider.js';
 import { AgentSession } from './auth/agent-session.js';
 import { CatalogService } from './services/catalog.service.js';
@@ -47,6 +48,61 @@ export interface HttpServerOptions {
   rateLimiter?: RateLimiter;
 }
 
+interface McpSessionRecord {
+  sessionId: string;
+  server: McpServer;
+  transport: WebStandardStreamableHTTPServerTransport;
+  session: AgentSession;
+  principalId: string;
+  createdAt: number;
+  lastAccess: number;
+}
+
+/**
+ * Instantiates and registers all 17 official catalog tools onto an McpServer instance
+ * bound to an isolated AgentSession.
+ */
+function createConfiguredMcpServer(session: AgentSession) {
+  const server = new McpServer({
+    name: 'shopflow-catalog-ai',
+    version: '1.0.0',
+  });
+
+  const catalogService = new CatalogService(session);
+  const storeService = new StoreService(session);
+  const inventoryService = new InventoryService(session);
+  const gradeService = new GradeService(session);
+
+  // Read-Only Catalog Tools (4)
+  registerCatalogHealthTool(server, catalogService);
+  registerListarProdutosTool(server, catalogService);
+  registerObterProdutoTool(server, catalogService);
+  registerBuscarCatalogoTool(server, catalogService);
+
+  // Store Resolution & Selection Tools (3)
+  registerBuscarLojasTool(server, storeService);
+  registerSelecionarLojaTool(server, storeService);
+  registerObterLojaAtivaTool(server, storeService);
+
+  // Safe Catalog Write & Lifecycle Tools (4)
+  registerCriarProdutoTool(server, catalogService);
+  registerAtualizarProdutoTool(server, catalogService);
+  registerDesativarProdutoTool(server, catalogService);
+  registerAtualizarProdutosEmLoteTool(server, catalogService);
+
+  // Safe Inventory Read & Write Tools (2)
+  registerConsultarEstoqueTool(server, inventoryService);
+  registerAjustarEstoqueTool(server, inventoryService);
+
+  // Normalized Grade Template & Snapshot Tools (4)
+  registerListarModelosGradeTool(server, gradeService);
+  registerObterModeloGradeTool(server, gradeService);
+  registerCriarModeloGradeTool(server, gradeService);
+  registerAplicarGradeProdutoTool(server, gradeService);
+
+  return { server, catalogService, storeService, inventoryService, gradeService };
+}
+
 export function createHttpServer(options: HttpServerOptions = {}) {
   const {
     corsOrigin = '*',
@@ -57,6 +113,19 @@ export function createHttpServer(options: HttpServerOptions = {}) {
 
   const productRepo = new ProductRepository();
   const metrics = MetricsCollector.getInstance();
+  const activeSessions = new Map<string, McpSessionRecord>();
+
+  // Periodic cleanup of stale sessions (> 30 min of inactivity)
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    const TTL_MS = 30 * 60 * 1000;
+    for (const [id, rec] of activeSessions.entries()) {
+      if (now - rec.lastAccess > TTL_MS) {
+        rec.transport.close().catch(() => {});
+        activeSessions.delete(id);
+      }
+    }
+  }, 60 * 1000).unref();
 
   const server = http.createServer(async (req, res) => {
     const startTime = Date.now();
@@ -76,8 +145,12 @@ export function createHttpServer(options: HttpServerOptions = {}) {
 
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', corsOrigin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Request-ID');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Authorization, Content-Type, X-Request-ID, Mcp-Session-Id, Accept'
+    );
+    res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id, X-Request-ID');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
@@ -85,7 +158,8 @@ export function createHttpServer(options: HttpServerOptions = {}) {
       return;
     }
 
-    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const host = req.headers.host || 'localhost';
+    const url = new URL(req.url || '/', `http://${host}`);
     const pathname = url.pathname;
 
     // 1. Health check (Liveness - Lightweight, zero database load)
@@ -124,200 +198,153 @@ export function createHttpServer(options: HttpServerOptions = {}) {
       return;
     }
 
-    // 4. MCP JSON-RPC / REST Endpoint
-    if (req.method === 'POST' && (pathname === '/mcp' || pathname === '/rpc' || pathname === '/')) {
-      const authHeader = req.headers['authorization'];
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        metrics.recordAuthFailure();
-        Logger.warn('Authentication failed: Missing or invalid Authorization header', {
-          request_id: requestId,
-          status: '401',
-          error_code: 'UNAUTHORIZED',
-        });
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'Missing or invalid Authorization header' } }));
-        return;
-      }
-
-      const apiKey = authHeader.substring(7).trim();
-
-      // Read Body with payload limit
-      let bodyStr = '';
+    // 4. MCP Streamable HTTP & JSON-RPC Endpoint
+    if (pathname === '/mcp' || pathname === '/rpc' || pathname === '/') {
+      // Read body with payload limits
+      const chunks: Buffer[] = [];
       let receivedBytes = 0;
+      let bodyExceeded = false;
 
-      req.on('data', (chunk) => {
+      req.on('data', (chunk: Buffer) => {
         receivedBytes += chunk.length;
         if (receivedBytes > maxPayloadBytes) {
+          bodyExceeded = true;
           res.writeHead(413, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload exceeded limit' } }));
           req.destroy();
-          return;
+        } else {
+          chunks.push(chunk);
         }
-        bodyStr += chunk;
       });
 
       req.on('end', async () => {
+        if (bodyExceeded) return;
+
+        const bodyBuffer = Buffer.concat(chunks);
+        const bodyStr = bodyBuffer.toString('utf-8');
+
+        // Check if existing session via Mcp-Session-Id header
+        const sessionIdHeader = (req.headers['mcp-session-id'] as string)?.trim();
+
+        if (sessionIdHeader) {
+          const sessionRecord = activeSessions.get(sessionIdHeader);
+          if (!sessionRecord) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                error: { code: -32001, message: 'Session not found' },
+                id: null,
+              })
+            );
+            return;
+          }
+
+          sessionRecord.lastAccess = Date.now();
+
+          // Prepare Web Standard Request
+          const webReq = createWebStandardRequest(req, url, bodyBuffer);
+
+          try {
+            const webRes = await sessionRecord.transport.handleRequest(webReq);
+
+            // Forward Web Standard Response to Node response
+            await pipeWebResponseToNode(webRes, res, sessionIdHeader);
+
+            if (req.method === 'DELETE') {
+              activeSessions.delete(sessionIdHeader);
+            }
+          } catch (err: any) {
+            handleErrorResponse(err, res, requestId, startTime, metrics);
+          }
+          return;
+        }
+
+        // No session ID -> Must authenticate via Bearer token
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          metrics.recordAuthFailure();
+          Logger.warn('Authentication failed: Missing or invalid Authorization header', {
+            request_id: requestId,
+            status: '401',
+            error_code: 'UNAUTHORIZED',
+          });
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              error: { code: 'UNAUTHORIZED', message: 'Missing or invalid Authorization header' },
+            })
+          );
+          return;
+        }
+
+        const apiKey = authHeader.substring(7).trim();
+
         try {
           // Authenticate and obtain isolated context
           const contextProvider = new AuthenticatedContextProvider(apiKey);
           const agentContext = await contextProvider.getContext();
-          
-          // Isolated Session per Request
-          const session = new AgentSession({
-            ...agentContext,
-            sessionId: requestId,
-          });
 
-          // Parse JSON-RPC Payload
-          let payload: any;
-          try {
-            payload = JSON.parse(bodyStr || '{}');
-          } catch {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: { code: 'INVALID_JSON', message: 'Malformed JSON payload' } }));
-            return;
-          }
-
-          const { tool, arguments: toolArgs, id: rpcId = 1 } = payload;
-
-          if (!tool) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ jsonrpc: '2.0', id: rpcId, error: { code: -32600, message: 'Invalid Request: missing tool name' } }));
-            return;
-          }
-
-          // Rate Limit Check (by Principal ID and Tool Risk Tier)
-          const rateCheck = rateLimiter.check(agentContext.principalId, tool);
-          res.setHeader('X-RateLimit-Limit', String(rateCheck.limit));
-          res.setHeader('X-RateLimit-Remaining', String(rateCheck.remaining));
-          res.setHeader('X-RateLimit-Reset', String(rateCheck.resetSeconds));
-
-          if (!rateCheck.allowed) {
-            metrics.recordRateLimited();
-            res.setHeader('Retry-After', String(rateCheck.resetSeconds));
-            Logger.warn(`Rate limit exceeded for tool ${tool}`, {
-              request_id: requestId,
-              session_id: session.getSessionId(),
-              principal_id: agentContext.principalId,
-              principal_type: agentContext.principalType,
-              tool,
-              error_code: 'RATE_LIMITED',
-              status: '429',
-            });
-            res.writeHead(429, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-              error: {
-                code: 'RATE_LIMITED',
-                message: `Too many requests for tool '${tool}'. Please retry in ${rateCheck.resetSeconds} seconds.`,
-              },
-            }));
-            return;
-          }
-
-          const catalogService = new CatalogService(session);
-          const storeService = new StoreService(session);
-          const inventoryService = new InventoryService(session);
-          const gradeService = new GradeService(session);
-
-          let responseData: any;
-
-          switch (tool) {
-            case 'catalog_health':
-              responseData = await catalogService.checkHealth();
-              break;
-            case 'listar_produtos':
-              responseData = await catalogService.listProducts(toolArgs || {});
-              break;
-            case 'obter_produto':
-              responseData = await catalogService.getProduct(toolArgs?.id);
-              break;
-            case 'buscar_catalogo':
-              responseData = await catalogService.searchCatalog(toolArgs || {});
-              break;
-            case 'buscar_lojas':
-              responseData = await storeService.searchStores(toolArgs?.query);
-              break;
-            case 'selecionar_loja':
-              responseData = await storeService.selectStore(toolArgs?.store_id);
-              break;
-            case 'obter_loja_ativa':
-              responseData = await storeService.getActiveStore();
-              break;
-            case 'criar_produto':
-              responseData = await catalogService.createProduct(toolArgs || {});
-              break;
-            case 'atualizar_produto':
-              responseData = await catalogService.updateProduct(toolArgs || {});
-              break;
-            case 'desativar_produto':
-              responseData = await catalogService.deactivateProduct(toolArgs?.product_id);
-              break;
-            case 'atualizar_produtos_em_lote':
-              responseData = await catalogService.bulkUpdateProducts(toolArgs || {});
-              break;
-            case 'consultar_estoque':
-              responseData = await inventoryService.consultarEstoque(toolArgs || {});
-              break;
-            case 'ajustar_estoque':
-              responseData = await inventoryService.adjustStock(toolArgs || {});
-              break;
-            case 'listar_modelos_grade':
-              responseData = await gradeService.listTemplates();
-              break;
-            case 'obter_modelo_grade':
-              responseData = await gradeService.getTemplate(toolArgs?.template_id);
-              break;
-            case 'criar_modelo_grade':
-              responseData = await gradeService.createTemplate(toolArgs || {});
-              break;
-            case 'aplicar_grade_produto':
-              responseData = await gradeService.applyGradeToProduct(toolArgs || {});
-              break;
-            default:
-              res.writeHead(404, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ jsonrpc: '2.0', id: rpcId, error: { code: -32601, message: `Tool '${tool}' not found` } }));
+          // Check if payload is legacy direct tool invocation: { tool: "..." }
+          let parsedPayload: any = null;
+          if (bodyStr.trim().length > 0) {
+            try {
+              parsedPayload = JSON.parse(bodyStr);
+            } catch {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: { code: 'INVALID_JSON', message: 'Malformed JSON payload' } }));
               return;
             }
+          }
 
-          const durationMs = Date.now() - startTime;
-          metrics.recordToolCall(tool, durationMs, false);
+          // Legacy REST dispatch if payload has 'tool' and no 'jsonrpc'
+          if (parsedPayload && parsedPayload.tool && !parsedPayload.jsonrpc) {
+            await handleLegacyToolDispatch({
+              payload: parsedPayload,
+              agentContext,
+              rateLimiter,
+              requestId,
+              startTime,
+              metrics,
+              res,
+            });
+            return;
+          }
 
-          Logger.info(`Tool ${tool} executed successfully`, {
-            request_id: requestId,
-            session_id: session.getSessionId(),
-            principal_id: agentContext.principalId,
-            principal_type: agentContext.principalType,
-            tool,
-            duration_ms: durationMs,
-            status: '200',
+          // Official MCP Streamable HTTP Initialization
+          const newSessionId = randomUUID();
+          const session = new AgentSession({
+            ...agentContext,
+            sessionId: newSessionId,
           });
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            jsonrpc: '2.0',
-            id: rpcId,
-            result: responseData,
-          }));
+          const { server: mcpServer } = createConfiguredMcpServer(session);
+
+          const transport = new WebStandardStreamableHTTPServerTransport({
+            sessionIdGenerator: () => newSessionId,
+            enableJsonResponse: true,
+          });
+
+          await mcpServer.connect(transport);
+
+          activeSessions.set(newSessionId, {
+            sessionId: newSessionId,
+            server: mcpServer,
+            transport,
+            session,
+            principalId: agentContext.principalId,
+            createdAt: Date.now(),
+            lastAccess: Date.now(),
+          });
+
+          // Build Web Standard Request
+          const webReq = createWebStandardRequest(req, url, bodyBuffer);
+
+          const webRes = await transport.handleRequest(webReq);
+
+          await pipeWebResponseToNode(webRes, res, newSessionId);
         } catch (err: any) {
-          const durationMs = Date.now() - startTime;
-          const statusCode = err?.name === 'ForbiddenError' ? 403 : err?.name === 'AuthorizationError' || err?.code === 'INVALID_CREDENTIAL' ? 401 : 500;
-          
-          metrics.recordToolCall('unknown', durationMs, true);
-
-          Logger.error(`Request failed: ${err?.message || 'Unknown error'}`, {
-            request_id: requestId,
-            duration_ms: durationMs,
-            status: String(statusCode),
-            error_code: err?.code || 'INTERNAL_ERROR',
-          });
-
-          res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            error: {
-              code: err?.code || 'INTERNAL_ERROR',
-              message: err?.message || 'An error occurred during request processing',
-            },
-          }));
+          handleErrorResponse(err, res, requestId, startTime, metrics);
         }
       });
       return;
@@ -328,6 +355,232 @@ export function createHttpServer(options: HttpServerOptions = {}) {
   });
 
   return server;
+}
+
+/**
+ * Builds a Web Standard Request from a Node.js IncomingMessage
+ */
+function createWebStandardRequest(req: http.IncomingMessage, url: URL, bodyBuffer: Buffer): Request {
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers)) {
+    if (v) {
+      if (Array.isArray(v)) {
+        for (const item of v) headers.append(k, item);
+      } else {
+        headers.set(k, v);
+      }
+    }
+  }
+
+  // Ensure Accept header includes text/event-stream for MCP Streamable HTTP specification
+  let accept = headers.get('accept') || 'application/json, text/event-stream';
+  if (!accept.includes('text/event-stream')) {
+    accept = `${accept}, text/event-stream`;
+    headers.set('accept', accept);
+  }
+
+  const isBodyAllowed = req.method !== 'GET' && req.method !== 'HEAD';
+
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: isBodyAllowed && bodyBuffer.length > 0 ? bodyBuffer : undefined,
+    duplex: 'half',
+  } as any);
+}
+
+/**
+ * Pipes a Web Standard Response back into a Node.js ServerResponse
+ */
+async function pipeWebResponseToNode(webRes: Response, res: http.ServerResponse, sessionId?: string) {
+  res.statusCode = webRes.status;
+
+  for (const [k, v] of webRes.headers.entries()) {
+    res.setHeader(k, v);
+  }
+
+  if (sessionId) {
+    res.setHeader('Mcp-Session-Id', sessionId);
+  }
+
+  // Handle 204 No Content or body-less responses immediately
+  if (webRes.status === 204 || !webRes.body) {
+    res.end();
+    return;
+  }
+
+  const contentType = webRes.headers.get('content-type') || '';
+  if (contentType.includes('text/event-stream')) {
+    Readable.fromWeb(webRes.body as any).pipe(res);
+  } else {
+    const text = await webRes.text();
+    res.end(text);
+  }
+}
+
+/**
+ * Handles legacy tool dispatch for backwards compatibility
+ */
+async function handleLegacyToolDispatch(options: {
+  payload: any;
+  agentContext: any;
+  rateLimiter: RateLimiter;
+  requestId: string;
+  startTime: number;
+  metrics: MetricsCollector;
+  res: http.ServerResponse;
+}) {
+  const { payload, agentContext, rateLimiter, requestId, startTime, metrics, res } = options;
+  const { tool, arguments: toolArgs, id: rpcId = 1 } = payload;
+
+  const session = new AgentSession({
+    ...agentContext,
+    sessionId: requestId,
+  });
+
+  // Rate limit check
+  const rateCheck = rateLimiter.check(agentContext.principalId, tool);
+  res.setHeader('X-RateLimit-Limit', String(rateCheck.limit));
+  res.setHeader('X-RateLimit-Remaining', String(rateCheck.remaining));
+  res.setHeader('X-RateLimit-Reset', String(rateCheck.resetSeconds));
+
+  if (!rateCheck.allowed) {
+    metrics.recordRateLimited();
+    res.setHeader('Retry-After', String(rateCheck.resetSeconds));
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        error: {
+          code: 'RATE_LIMITED',
+          message: `Too many requests for tool '${tool}'. Please retry in ${rateCheck.resetSeconds} seconds.`,
+        },
+      })
+    );
+    return;
+  }
+
+  const catalogService = new CatalogService(session);
+  const storeService = new StoreService(session);
+  const inventoryService = new InventoryService(session);
+  const gradeService = new GradeService(session);
+
+  let responseData: any;
+  switch (tool) {
+    case 'catalog_health':
+      responseData = await catalogService.checkHealth();
+      break;
+    case 'listar_produtos':
+      responseData = await catalogService.listProducts(toolArgs || {});
+      break;
+    case 'obter_produto':
+      responseData = await catalogService.getProduct(toolArgs?.id);
+      break;
+    case 'buscar_catalogo':
+      responseData = await catalogService.searchCatalog(toolArgs || {});
+      break;
+    case 'buscar_lojas':
+      responseData = await storeService.searchStores(toolArgs?.query);
+      break;
+    case 'selecionar_loja':
+      responseData = await storeService.selectStore(toolArgs?.store_id);
+      break;
+    case 'obter_loja_ativa':
+      responseData = await storeService.getActiveStore();
+      break;
+    case 'criar_produto':
+      responseData = await catalogService.createProduct(toolArgs || {});
+      break;
+    case 'atualizar_produto':
+      responseData = await catalogService.updateProduct(toolArgs || {});
+      break;
+    case 'desativar_produto':
+      responseData = await catalogService.deactivateProduct(toolArgs?.product_id);
+      break;
+    case 'atualizar_produtos_em_lote':
+      responseData = await catalogService.bulkUpdateProducts(toolArgs || {});
+      break;
+    case 'consultar_estoque':
+      responseData = await inventoryService.consultarEstoque(toolArgs || {});
+      break;
+    case 'ajustar_estoque':
+      responseData = await inventoryService.adjustStock(toolArgs || {});
+      break;
+    case 'listar_modelos_grade':
+      responseData = await gradeService.listTemplates();
+      break;
+    case 'obter_modelo_grade':
+      responseData = await gradeService.getTemplate(toolArgs?.template_id);
+      break;
+    case 'criar_modelo_grade':
+      responseData = await gradeService.createTemplate(toolArgs || {});
+      break;
+    case 'aplicar_grade_produto':
+      responseData = await gradeService.applyGradeToProduct(toolArgs || {});
+      break;
+    default:
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: rpcId,
+          error: { code: -32601, message: `Tool '${tool}' not found` },
+        })
+      );
+      return;
+  }
+
+  const durationMs = Date.now() - startTime;
+  metrics.recordToolCall(tool, durationMs, false);
+
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: rpcId,
+      result: responseData,
+    })
+  );
+}
+
+/**
+ * Maps error to secure HTTP status and JSON response without leaking secrets
+ */
+function handleErrorResponse(
+  err: any,
+  res: http.ServerResponse,
+  requestId: string,
+  startTime: number,
+  metrics: MetricsCollector
+) {
+  const durationMs = Date.now() - startTime;
+  const statusCode =
+    err?.name === 'ForbiddenError'
+      ? 403
+      : err?.name === 'AuthorizationError' ||
+        err?.name === 'InvalidCredentialError' ||
+        err?.code === 'INVALID_CREDENTIAL' ||
+        err?.message?.includes('INVALID_CREDENTIAL')
+      ? 401
+      : 500;
+
+  metrics.recordToolCall('unknown', durationMs, true);
+
+  Logger.error(`Request failed: ${err?.message || 'Unknown error'}`, {
+    request_id: requestId,
+    duration_ms: durationMs,
+    status: String(statusCode),
+    error_code: err?.code || 'INTERNAL_ERROR',
+  });
+
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(
+    JSON.stringify({
+      error: {
+        code: err?.code || 'INTERNAL_ERROR',
+        message: err?.message || 'An error occurred during request processing',
+      },
+    })
+  );
 }
 
 // Graceful Shutdown Registration
@@ -350,7 +603,11 @@ function setupGracefulShutdown(server: http.Server) {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-if (process.env.RUN_HTTP_SERVER === 'true' || process.argv[1]?.endsWith('server-http.ts') || process.argv[1]?.endsWith('server-http.js')) {
+if (
+  process.env.RUN_HTTP_SERVER === 'true' ||
+  process.argv[1]?.endsWith('server-http.ts') ||
+  process.argv[1]?.endsWith('server-http.js')
+) {
   if (process.env.NODE_ENV !== 'test') {
     const PORT = Number(process.env.MCP_PORT) || 3000;
     const server = createHttpServer();

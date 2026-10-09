@@ -1,6 +1,34 @@
 # Production Runbook — B2XCATALOGO & Shopflow Catalog AI
 
-## 1. Starting & Managing Services
+## 1. Topologia EasyPanel & Roteamento de Produção
+
+### Topologia de Serviços:
+```text
+mcp.gargalozero.com.br
+        ↓
+B2XCATALOGO-MCP (porta interna 3000)
+        ↓
+Streamable HTTP Runtime (/mcp)
+
+catalogo.gargalozero.com.br (ou domínio principal)
+        ↓
+B2XCATALOGO-WEB (porta interna 80)
+        ↓
+Nginx / Vite SPA
+```
+
+### Configuração no EasyPanel:
+1. No serviço **`B2XCATALOGO-MCP`**:
+   - Adicionar o domínio `mcp.gargalozero.com.br`.
+   - Configurar a porta interna para `3000`.
+   - Garantir que o container está ativo e com status *healthy*.
+2. No serviço **`B2XCATALOGO-WEB`**:
+   - Remover o domínio `mcp.gargalozero.com.br` da lista de domínios.
+   - Manter apenas os domínios do frontend / catálogo.
+
+---
+
+## 2. Starting & Managing Services
 
 ### Running Remote MCP Runtime
 ```bash
@@ -26,15 +54,34 @@ docker run -d \
   shopflow-catalog-ai:latest
 ```
 
-## 2. Health, Readiness & Metrics Verification
-- **Liveness:** `curl -i http://localhost:3000/health` (Returns HTTP 200 `{ status: "ok" }`)
-- **Readiness:** `curl -i http://localhost:3000/ready` (Returns HTTP 200 `{ status: "ready", database: "connected" }`)
-- **Metrics:** `curl -i http://localhost:3000/metrics` (Returns aggregated request counts, error counts, and latency percentiles)
+---
 
-## 3. Credential Administration
+## 3. Health, Readiness & Metrics Verification
+- **Liveness:** `curl -i http://localhost:3000/health` (Retorna HTTP 200 `{ status: "ok" }`)
+- **Readiness:** `curl -i http://localhost:3000/ready` (Retorna HTTP 200 `{ status: "ready", database: "connected" }`)
+- **Metrics:** `curl -i http://localhost:3000/metrics` (Retorna métricas operacionais consolidadas)
+
+---
+
+## 4. MCP Streamable HTTP Handshake Verification
+```bash
+# Teste de Inicialização MCP via Streamable HTTP:
+curl -i -X POST https://mcp.gargalozero.com.br/mcp \
+  -H "Authorization: Bearer <B2X_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}'
+```
+*Resposta esperada:* HTTP 200 com header `Mcp-Session-Id` e JSON-RPC de inicialização com capabilities e serverInfo `shopflow-catalog-ai`.
+
+---
+
+## 5. Credential Administration
 - **Create Store Admin Credential:** `npm run api-key:create -- --store-id <UUID> --name "Admin Bot" --scopes "catalog:read,catalog:write,stock:read,stock:adjust,grade:read,grade:write"`
 - **Create Least-Privilege Inventory Credential:** `npm run api-key:create -- --store-id <UUID> --name "Warehouse Scanner" --scopes "stock:read,stock:adjust"`
 
-## 4. Emergency Procedures
-- **Disable Remote MCP Access:** Stop the container (`docker stop shopflow-catalog-ai`) or revoke active API keys.
-- **Rollback Deployment:** Re-deploy previous Docker image tag or checkout previous release commit.
+---
+
+## 6. Emergency Procedures
+- **Disable Remote MCP Access:** Parar o container (`docker stop shopflow-catalog-ai`) ou revogar chaves via UI/banco.
+- **Rollback Deployment:** Re-deploy da imagem anterior ou checkout do commit anterior.
