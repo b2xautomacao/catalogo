@@ -128,7 +128,15 @@ export class CatalogService {
       });
 
       if (match.status === 'not_found') {
-        throw new CategoryNotFoundError('CATEGORY_NOT_FOUND');
+        const storeCategories = await this.categoryRepo.listByStore(activeStoreId);
+        const existingList = storeCategories.map((c) => ({ id: c.id, name: c.name }));
+        const suggestions = (match.candidates || []).map((c) => ({ id: c.id, name: c.name }));
+        throw new CategoryNotFoundError(
+          'CATEGORY_NOT_FOUND',
+          input.category || input.category_id,
+          suggestions,
+          existingList
+        );
       }
       if (match.status === 'ambiguous') {
         throw new CategoryAmbiguousError(
@@ -540,7 +548,7 @@ export class CatalogService {
       },
       stock_policy: {
         mode: 'ledger_only',
-        rule: "Nunca gravar estoque diretamente em products.stock. Usar a ferramenta ajustar_estoque com reason_code = 'initial_balance' após a criação do produto.",
+        rule: "Nunca gravar estoque diretamente em products.stock. Usar a ferramenta ajustar_estoque com reason = 'initial_balance' após a criação do produto.",
       },
       image_policy: {
         mode: 'post_creation',
@@ -687,6 +695,42 @@ export class CatalogService {
     });
 
     return result;
+  }
+
+  /**
+   * Lista categorias da loja ativa com suporte a busca e paginação.
+   * Scope: catalog:read
+   */
+  async listCategories(input: { query?: string; limit?: number; offset?: number } = {}): Promise<{
+    categories: Array<{
+      id: string;
+      store_id: string;
+      name: string;
+      description: string | null;
+      is_active: boolean;
+    }>;
+    total: number;
+  }> {
+    const context = this.session.getContext();
+    requireScope(context, 'catalog:read');
+    const activeStoreId = requireActiveStore(context);
+
+    const categories = await this.categoryRepo.listByStore(activeStoreId, {
+      query: input.query,
+      limit: input.limit ?? 50,
+      offset: input.offset ?? 0,
+    });
+
+    return {
+      categories: categories.map((c) => ({
+        id: c.id,
+        store_id: c.store_id,
+        name: c.name,
+        description: c.description,
+        is_active: c.is_active,
+      })),
+      total: categories.length,
+    };
   }
 }
 

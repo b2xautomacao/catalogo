@@ -190,7 +190,7 @@ export class GradeRepository {
     // 1. Validar Produto e Tenant Guard
     const { data: product, error: prodError } = await supabase
       .from('products')
-      .select('id, store_id, name')
+      .select('id, store_id, name, retail_price, wholesale_price')
       .eq('id', data.productId)
       .eq('store_id', storeId) // TENANT GUARD
       .maybeSingle();
@@ -215,7 +215,7 @@ export class GradeRepository {
     // 3. Checar Idempotência (Fase Q) e Snapshots Ativos Anteriores (Fase P/I)
     let queryActiveSnap = supabase
       .from('product_grade_snapshots')
-      .select('id, pack_variation_id, template_id, color, total_units, is_active, product_variations(id, sku, stock, name)')
+      .select('id, pack_variation_id, template_id, color, total_units, is_active, product_variations(id, sku, stock, name, grade_price, price_adjustment)')
       .eq('product_id', data.productId)
       .eq('is_active', true);
 
@@ -235,6 +235,10 @@ export class GradeRepository {
         ? existingActiveSnap.product_variations[0]
         : existingActiveSnap.product_variations;
 
+      const hasFixedPrice = (packVar?.grade_price !== null && packVar?.grade_price !== undefined) || data.gradePrice !== undefined;
+      const effectiveGradePrice = packVar?.grade_price ?? data.gradePrice ?? null;
+      const effectiveAdjustment = packVar?.price_adjustment ?? data.priceAdjustment ?? 0;
+
       return {
         snapshot_id: existingActiveSnap.id,
         product_id: data.productId,
@@ -245,6 +249,11 @@ export class GradeRepository {
         sku: packVar?.sku || data.sku || null,
         total_units: template.total_units,
         stock: packVar?.stock ?? 0,
+        pricing_mode: hasFixedPrice ? 'grade_fixed_price' : 'inherited_product_price',
+        grade_price: effectiveGradePrice,
+        price_adjustment: effectiveAdjustment,
+        base_product_retail_price: product.retail_price ?? 0,
+        base_product_wholesale_price: product.wholesale_price ?? null,
         items: template.items.map((i) => ({
           size: i.size,
           quantity: i.quantity,
@@ -270,7 +279,8 @@ export class GradeRepository {
     // 5. Preparar Projeção de Compatibilidade para product_variations
     const gradeSizes = template.items.map((i) => i.size);
     const gradePairs = template.items.map((i) => i.quantity);
-    const variationName = color ? `${product.name} - ${color} (${gradeName})` : `${product.name} (${gradeName})`;
+    // Variação canônica: não duplica o product.name
+    const variationName = color ? `${color} - ${gradeName}` : gradeName;
 
     // 6. Inserir Variação de Compatibilidade (Pack Variation) em product_variations
     // ESTOQUE INICIAL É RIGOROSAMENTE ZERO
@@ -286,6 +296,8 @@ export class GradeRepository {
         grade_name: gradeName,
         grade_sizes: gradeSizes,
         grade_pairs: gradePairs,
+        grade_price: data.gradePrice ?? null,
+        price_adjustment: data.priceAdjustment ?? 0,
         stock: 0, // ESTOQUE INICIAL SEMPRE ZERO
       })
       .select('*')
@@ -384,6 +396,11 @@ export class GradeRepository {
       sku: variation.sku,
       total_units: template.total_units,
       stock: 0,
+      pricing_mode: data.gradePrice !== undefined ? 'grade_fixed_price' : 'inherited_product_price',
+      grade_price: data.gradePrice ?? null,
+      price_adjustment: data.priceAdjustment ?? 0,
+      base_product_retail_price: product.retail_price ?? 0,
+      base_product_wholesale_price: product.wholesale_price ?? null,
       items: template.items.map((i) => ({
         size: i.size,
         quantity: i.quantity,

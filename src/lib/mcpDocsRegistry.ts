@@ -807,6 +807,29 @@ export const MCP_TOOLS: McpToolDoc[] = [
     },
   },
   {
+    name: 'listar_categorias',
+    category: 'catalog',
+    categoryLabel: 'Catálogo',
+    requiredScope: 'catalog:read',
+    description: 'Lista categorias cadastradas na loja ativa com suporte a busca textual por nome e paginação.',
+    whenToUse: 'Para consultar categorias existentes antes de cadastrar produtos ou sugerir categorias em caso de dúvida.',
+    riskTier: 'READ',
+    parameters: [
+      { name: 'query', type: 'string', required: false, description: 'Filtro de busca por nome da categoria.' },
+      { name: 'limit', type: 'number', required: false, description: 'Limite de registros retornados (padrão 50).' },
+      { name: 'offset', type: 'number', required: false, description: 'Offset para paginação (padrão 0).' },
+    ],
+    outputDescription: 'Objeto com array categories e total de categorias encontradas.',
+    errors: ['STORE_CONTEXT_REQUIRED', 'SCOPE_DENIED'],
+    exampleRequest: { query: 'Camisa', limit: 10 },
+    exampleResponse: {
+      categories: [
+        { id: 'uuid-1', store_id: 'uuid-loja', name: 'Camisas', description: null, is_active: true }
+      ],
+      total: 1,
+    },
+  },
+  {
     name: 'reconciliar_variacoes_produto',
     category: 'catalog',
     categoryLabel: 'Catálogo',
@@ -874,6 +897,7 @@ export const MCP_RATE_LIMITS: McpRateLimitDoc[] = [
       'obter_defaults_cadastro_produto',
       'preparar_produto',
       'analisar_importacao_produtos',
+      'listar_categorias',
     ],
   },
   {

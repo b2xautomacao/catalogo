@@ -79,6 +79,8 @@ export interface ApplyGradeToProductData {
   color?: string;
   sku?: string;
   name?: string;
+  gradePrice?: number;
+  priceAdjustment?: number;
 }
 
 export interface ApplyGradeToProductResult {
@@ -91,6 +93,11 @@ export interface ApplyGradeToProductResult {
   sku: string | null;
   total_units: number;
   stock: number;
+  pricing_mode: 'grade_fixed_price' | 'inherited_product_price';
+  grade_price: number | null;
+  price_adjustment: number;
+  base_product_retail_price: number;
+  base_product_wholesale_price: number | null;
   items: Array<{
     size: string;
     quantity: number;

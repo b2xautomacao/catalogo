@@ -50,13 +50,11 @@ export const PrepararProdutoSchema = z
     retail_price: z.number().min(0).optional().describe('Preço de venda no varejo'),
     price: z.number().min(0).optional().describe('Alias para preço de varejo'),
     preco: z.number().min(0).optional().describe('Alias para preço de varejo'),
-    preço: z.number().min(0).optional().describe('Alias para preço de varejo'),
     valor: z.number().min(0).optional().describe('Alias para preço de varejo'),
 
     wholesale_price: z.number().min(0).nullable().optional().describe('Preço de venda no atacado'),
     atacado: z.number().min(0).nullable().optional().describe('Alias para preço de atacado'),
     preco_atacado: z.number().min(0).nullable().optional().describe('Alias para preço de atacado'),
-    preço_atacado: z.number().min(0).nullable().optional().describe('Alias para preço de atacado'),
 
     min_wholesale_qty: z.number().int().min(1).nullable().optional().describe('Quantidade mínima de atacado'),
     qtd_atacado: z.number().int().min(1).nullable().optional().describe('Alias para quantidade mínima de atacado'),
@@ -78,7 +76,6 @@ export const PrepararProdutoSchema = z
     material: z.string().trim().max(100).optional().describe('Material ou composição'),
     product_gender: z.enum(['masculino', 'feminino', 'unissex', 'infantil']).optional().describe('Gênero do produto'),
     genero: z.enum(['masculino', 'feminino', 'unissex', 'infantil']).optional().describe('Alias para gênero'),
-    gênero: z.enum(['masculino', 'feminino', 'unissex', 'infantil']).optional().describe('Alias para gênero'),
     product_category_type: z.enum(['calcado', 'roupa_superior', 'roupa_inferior', 'acessorio']).optional().describe('Tipo de categoria'),
     tipo: z.enum(['calcado', 'roupa_superior', 'roupa_inferior', 'acessorio']).optional().describe('Alias para tipo'),
     seo_slug: z.string().trim().max(255).optional().describe('Slug amigável para URL'),

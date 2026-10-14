@@ -89,6 +89,8 @@ export class GradeService {
       color: input.color,
       sku: input.sku,
       name: input.name,
+      gradePrice: input.grade_price,
+      priceAdjustment: input.price_adjustment,
     });
 
     await this.auditService.logGradeAppliedToProduct(context, result.snapshot_id, {

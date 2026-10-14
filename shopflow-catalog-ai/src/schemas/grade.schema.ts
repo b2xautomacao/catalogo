@@ -53,6 +53,15 @@ export const ApplyGradeToProductSchema = z
     color: z.string().max(50, 'Nome da cor inválido').optional(),
     sku: z.string().max(100, 'SKU inválido').optional(),
     name: z.string().max(150, 'Nome da grade no produto inválido').optional(),
+    grade_price: z
+      .number()
+      .min(0, 'Preço fixo da grade deve ser maior ou igual a 0')
+      .optional()
+      .describe('Preço comercial fixo da grade inteira (caixa fechada)'),
+    price_adjustment: z
+      .number()
+      .optional()
+      .describe('Ajuste de preço relativo opcional ao preço base'),
   })
   .strict();
 

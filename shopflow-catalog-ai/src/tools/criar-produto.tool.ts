@@ -36,7 +36,36 @@ export function registerCriarProdutoTool(server: McpServer, catalogService: Cata
         }
         if (error instanceof CategoryNotFoundError) {
           return {
-            content: [{ type: 'text' as const, text: 'CATEGORY_NOT_FOUND' }],
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify(
+                  {
+                    status: 'needs_input',
+                    code: 'CATEGORY_NOT_FOUND',
+                    requested: error.requested || (args as any).category,
+                    message: `Categoria "${error.requested || (args as any).category}" não encontrada na loja ativa.`,
+                    suggestions: error.suggestions || [],
+                    existing_categories: error.existingCategories || [],
+                    actions: [
+                      {
+                        tool: 'criar_categoria',
+                        allowed: true,
+                        suggested_payload: {
+                          name: error.requested || (args as any).category,
+                        },
+                      },
+                      {
+                        tool: 'listar_categorias',
+                        allowed: true,
+                      },
+                    ],
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
         }
         if (error instanceof CategoryAmbiguousError) {

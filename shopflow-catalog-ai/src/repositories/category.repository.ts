@@ -24,13 +24,28 @@ export class CategoryRepository {
     return data as CategoryRecord;
   }
 
-  async listByStore(storeId: string): Promise<CategoryRecord[]> {
-    const { data, error } = await supabase
+  async listByStore(
+    storeId: string,
+    filter?: { query?: string; limit?: number; offset?: number }
+  ): Promise<CategoryRecord[]> {
+    let queryBuilder = supabase
       .from('categories')
       .select('id, store_id, name, description, is_active')
       .eq('store_id', storeId) // TENANT GUARD
-      .eq('is_active', true)
-      .order('name', { ascending: true });
+      .eq('is_active', true);
+
+    if (filter?.query && filter.query.trim()) {
+      queryBuilder = queryBuilder.ilike('name', `%${filter.query.trim()}%`);
+    }
+
+    queryBuilder = queryBuilder.order('name', { ascending: true });
+
+    if (filter?.limit) {
+      const offset = filter.offset || 0;
+      queryBuilder = queryBuilder.range(offset, offset + filter.limit - 1);
+    }
+
+    const { data, error } = await queryBuilder;
 
     if (error || !data) {
       return [];

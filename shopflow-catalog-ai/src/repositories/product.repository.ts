@@ -53,16 +53,90 @@ export class ProductRepository {
       .eq('product_id', id)
       .order('image_order', { ascending: true });
 
-    // Fetch related variations
+    // Fetch related variations with grade fields
     const { data: variationsData } = await supabase
       .from('product_variations')
-      .select('id, name, sku, color, size, stock, price_adjustment')
+      .select('id, name, sku, color, size, stock, price_adjustment, is_grade, grade_name, grade_price, grade_sizes, grade_pairs')
       .eq('product_id', id);
+
+    // Fetch related active grade snapshots for composition exposure
+    const { data: snapshotsData } = await supabase
+      .from('product_grade_snapshots')
+      .select(`
+        id,
+        pack_variation_id,
+        name,
+        color,
+        total_units,
+        is_active,
+        product_grade_snapshot_items (
+          size,
+          quantity,
+          position
+        )
+      `)
+      .eq('product_id', id)
+      .eq('is_active', true);
+
+    const snapshots = (snapshotsData as any[]) || [];
+
+    const enrichedVariations = ((variationsData as any[]) || []).map((v) => {
+      let gradeInfo: any = null;
+
+      if (v.is_grade) {
+        // Snapshot imutável como source of truth da composição
+        const matchingSnap =
+          snapshots.find((s) => s.pack_variation_id === v.id) ||
+          (v.color ? snapshots.find((s) => s.color === v.color) : snapshots[0]);
+
+        if (matchingSnap && matchingSnap.product_grade_snapshot_items?.length > 0) {
+          const sortedItems = [...matchingSnap.product_grade_snapshot_items].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0)
+          );
+          gradeInfo = {
+            snapshot_id: matchingSnap.id,
+            name: matchingSnap.name || v.grade_name || 'Grade',
+            total_units: matchingSnap.total_units,
+            items: sortedItems.map((i: any) => ({
+              size: i.size,
+              quantity: i.quantity,
+              position: i.position ?? 0,
+            })),
+          };
+        } else if (Array.isArray(v.grade_sizes) && Array.isArray(v.grade_pairs)) {
+          // Fallback estruturado de arrays se snapshot não estiver associado
+          const items = v.grade_sizes.map((size: string, idx: number) => ({
+            size,
+            quantity: v.grade_pairs[idx] ?? 0,
+            position: idx,
+          }));
+          const totalUnits = items.reduce((sum: number, it: any) => sum + (it.quantity || 0), 0);
+          gradeInfo = {
+            name: v.grade_name || 'Grade',
+            total_units: totalUnits,
+            items,
+          };
+        }
+      }
+
+      return {
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        color: v.color,
+        size: v.size,
+        stock: v.stock,
+        price_adjustment: v.price_adjustment,
+        is_grade: !!v.is_grade,
+        grade_price: v.grade_price ?? null,
+        grade: gradeInfo,
+      };
+    });
 
     return {
       ...productData,
       images: (imagesData as any[]) || [],
-      variations: (variationsData as any[]) || [],
+      variations: enrichedVariations,
     };
   }
 

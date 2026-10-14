@@ -235,6 +235,8 @@ export interface ProductIntakePolicyResult {
 export interface PreparedInventoryAdjustment {
   operation: 'increase' | 'decrease' | 'count';
   reason: 'inventory_count' | 'damage' | 'loss' | 'found_stock' | 'correction' | 'initial_balance' | 'other';
+  mode?: string;
+  reason_code?: string;
   quantity: number;
   operation_id: string;
   notes?: string;

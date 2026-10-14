@@ -46,6 +46,7 @@ import { registerAtualizarDefaultsCadastroProdutoTool } from './tools/atualizar-
 import { registerPrepararProdutoTool } from './tools/preparar-produto.tool.js';
 import { registerAnalisarImportacaoProdutosTool } from './tools/analisar-importacao-produtos.tool.js';
 import { registerCriarCategoriaTool } from './tools/criar-categoria.tool.js';
+import { registerListarCategoriasTool } from './tools/listar-categorias.tool.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { RateLimiter } from './security/rate-limiter.js';
 import { Logger } from './observability/logger.js';
@@ -127,6 +128,7 @@ function createConfiguredMcpServer(session: AgentSession) {
   registerPrepararProdutoTool(server, catalogService);
   registerAnalisarImportacaoProdutosTool(server, catalogService);
   registerCriarCategoriaTool(server, catalogService);
+  registerListarCategoriasTool(server, catalogService);
 
   return { server, catalogService, storeService, inventoryService, gradeService, mediaService };
 }
@@ -547,6 +549,9 @@ async function handleLegacyToolDispatch(options: {
       break;
     case 'criar_categoria':
       responseData = await catalogService.createCategory(toolArgs || {});
+      break;
+    case 'listar_categorias':
+      responseData = await catalogService.listCategories(toolArgs || {});
       break;
     default:
       res.writeHead(404, { 'Content-Type': 'application/json' });

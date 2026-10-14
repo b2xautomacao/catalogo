@@ -252,7 +252,14 @@ export class ProductTaxonomyService {
     // SEO Description: factual, objective, no hallucinated specifications
     let meta_description = '';
     if (description && description.trim().length > 10) {
-      meta_description = description.trim().slice(0, 155);
+      const trimmedDesc = description.trim();
+      if (trimmedDesc.length <= 155) {
+        meta_description = trimmedDesc;
+      } else {
+        const sub = trimmedDesc.slice(0, 155);
+        const lastSpace = sub.lastIndexOf(' ');
+        meta_description = (lastSpace > 0 ? sub.slice(0, lastSpace) : sub).trim();
+      }
     } else {
       meta_description = `${name} disponível por R$ ${retailPrice.toFixed(2)}. Confira disponibilidade e faça seu pedido online.`;
     }
@@ -747,12 +754,12 @@ export class ProductTaxonomyService {
       inventoryIntent = {
         operation: 'increase',
         reason: initialReason,
+        mode: initialReason,
+        reason_code: initialReason,
         quantity: normalized.stock,
         operation_id: `op_stock_${preparationId}`,
         notes: 'Saldo físico inicial de cadastro',
-        mode: initialReason,
-        reason_code: initialReason,
-      } as any;
+      };
     }
 
     // Variation Intent Detection (Fases S e T)

@@ -13,7 +13,12 @@ export class ProductNotFoundError extends CatalogError {
 }
 
 export class CategoryNotFoundError extends CatalogError {
-  constructor(message = 'CATEGORY_NOT_FOUND') {
+  constructor(
+    message = 'CATEGORY_NOT_FOUND',
+    public requested?: string,
+    public suggestions: Array<{ id: string; name: string }> = [],
+    public existingCategories: Array<{ id: string; name: string }> = []
+  ) {
     super(message);
     this.name = 'CategoryNotFoundError';
   }
