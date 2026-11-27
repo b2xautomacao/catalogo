@@ -1,6 +1,6 @@
 import React from "react";
 import { cva } from "class-variance-authority";
-import { ShoppingBag, Heart, Menu, MessageCircle, Truck } from "lucide-react";
+import { ShoppingBag, Heart, Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Store } from "@/hooks/useCatalog";
@@ -62,43 +62,8 @@ const StorefrontHeader: React.FC<StorefrontHeaderProps> = ({
   onCategorySelect,
   storeSettings,
 }) => {
-  const freeShippingText = storeSettings?.header_badge_free_shipping
-    ? storeSettings.header_badge_free_shipping_text ||
-      (storeSettings.header_free_shipping_threshold
-        ? `Frete grátis nas compras acima de R$ ${storeSettings.header_free_shipping_threshold.toFixed(2)}`
-        : "Frete grátis")
-    : null;
-
-  const showUtilityBar = Boolean(freeShippingText || whatsappNumber);
-
   return (
     <header className={headerVariants({ variant })}>
-      {showUtilityBar && (
-        <div className="bg-foreground text-background text-xs">
-          <div className="container mx-auto px-4 py-1.5 flex items-center justify-between gap-4">
-            {freeShippingText ? (
-              <span className="flex items-center gap-1.5">
-                <Truck className="h-3.5 w-3.5" />
-                {freeShippingText}
-              </span>
-            ) : (
-              <span />
-            )}
-            {whatsappNumber && (
-              <a
-                href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                Atendimento via WhatsApp
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center gap-3 md:gap-8">
           <div className="flex items-center gap-3 flex-shrink-0">
